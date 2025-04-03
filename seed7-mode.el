@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-03 14:24:23 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-03 16:33:36 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -62,7 +62,7 @@
 ;; Instead of only using "end" in the regexp, I placed the "end KEYWORD" for
 ;; the various KEYWORDS that Seed7 supports.
 (defconst seed7-in-statement-keywords-regexp
-  (format "%s\\(%s\\)%s"
+  (format "%s?\\(%s\\)%s?"
           "[[:punct:][:space:]]"
           (rx (or
                "begin"
@@ -83,7 +83,7 @@
                "forward"
                "func"
                "if"
-               "in"
+               "in "                    ; temp hack
                "include"
                "inout"
                "is"
@@ -97,7 +97,7 @@
                "repeat"
                "result"
                "return"
-               "step"
+               "step "                  ; temp hack
                "struct"
                "syntax"
                "system"
@@ -286,7 +286,8 @@
    (cons seed7-operator-symbols-regexp               (list 1 font-lock-keyword-face))
    (cons seed7-predefined-types-regexp               (list 1 font-lock-type-face))
    (cons seed7-predefined-constants-regxp            (list 1 font-lock-constant-face))
-   (cons seed7-assignment-operator-regxp             font-lock-keyword-face))
+   (cons seed7-assignment-operator-regxp             font-lock-keyword-face)
+   )
   "Alist of Seed7 base keywords with each a specific face")
 
 
