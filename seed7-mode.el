@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-03 16:33:36 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-03 17:30:21 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -62,8 +62,8 @@
 ;; Instead of only using "end" in the regexp, I placed the "end KEYWORD" for
 ;; the various KEYWORDS that Seed7 supports.
 (defconst seed7-in-statement-keywords-regexp
-  (format "%s?\\(%s\\)%s?"
-          "[[:punct:][:space:]]"
+  (format "%s\\(%s\\)%s"
+          "\\_<"
           (rx (or
                "begin"
                "block"
@@ -83,7 +83,7 @@
                "forward"
                "func"
                "if"
-               "in "                    ; temp hack
+               "in"
                "include"
                "inout"
                "is"
@@ -97,7 +97,7 @@
                "repeat"
                "result"
                "return"
-               "step "                  ; temp hack
+               "step"
                "struct"
                "syntax"
                "system"
@@ -108,14 +108,14 @@
                "var"
                "when"
                "while"))
-          "[[:punct:][:space:]]"))
+          "\\_>"))
 
 ;; Seed7 statement introducing keywords
 ;; ------------------------------------
 
 (defconst seed7-statement-introducing-keywords-regexp
   (format "%s\\(%s\\)%s"
-          "[[:punct:][:space:]]"
+          "\\_<"
           (rx (or
                "block"
                "case"
@@ -129,14 +129,14 @@
                "syntax"
                "system"
                "while"))
-          "[[:punct:][:space:]]"))
+          "\\_>"))
 
 ;; Seed7 keywords used in middle of statements
 ;; -------------------------------------------
 
 (defconst seed7-in-middle-statement-keywords-regexp
   (format "%s\\(%s\\)%s"
-          "[[:punct:][:space:]]"
+          "[[:space:]]"
           (rx (or
                "begin"
                "do"
@@ -164,7 +164,7 @@
 
 (defconst seed7-declaration-into-keywords
   (format "%s\\(%s\\)%s"
-          "[[:punct:][:space:]]"
+          "\\_<"
           (rx (or
                "const"
                "in"
@@ -172,14 +172,14 @@
                "ref"
                "val"
                "var"))
-          "[[:punct:][:space:]]"))
+          "\\_>"))
 
 ;; Seed7 Operator Symbols
 ;; ----------------------
 
 (defconst seed7-operator-symbols-regexp
   (format "%s\\(%s\\)%s"
-          "[(,: ]"
+          "\\_<"
           (rx (or
                "and"
                "conv"
@@ -200,7 +200,7 @@
                "sci"
                "times"
                "varConv"))
-          "[:, )]"))
+          "\\_>"))
 
 
 ;; Seed7 Predefined Types
@@ -208,7 +208,7 @@
 
 (defconst seed7-predefined-types-regexp
   (format "%s\\(%s\\)%s"
-          "[[:punct:][:space:]]"
+          "\\_<"
           (rx (or
                "array"
                "bigInteger"
@@ -242,13 +242,21 @@
                "type"
                "void"
                "PRIMITIVE_WINDOW"))
-          "[[:punct:][:space:]]"))
+          "\\_>"))
 
 ;; See7 Predefined Constants
 ;; -------------------------
 
 (defconst seed7-predefined-constants-regxp
-  "[[:punct:][:space:]]\\(E\\|EOF\\|FALSE\\|PI\\|TRUE\\)[[:punct:][:space:]]")
+  (format "%s\\(%s\\)%s"
+          "\\_<"
+          (rx (or
+               "E"
+               "EOF"
+               "FALSE"
+               "PI"
+               "TRUE"))
+          "\\_>"))
 
 ;; Seed7 operator symbol keywords
 ;; ------------------------------
@@ -272,7 +280,8 @@
 ;;   &:=        https://seed7.sourceforge.net/libraries/array.htm#(inout_arrayType)&:=(in_arrayType)
 ;;   |:=        https://seed7.sourceforge.net/libraries/bin32.htm#(inout_bin32)|:=(in_bin32)
 ;;   @:=[       https://seed7.sourceforge.net/libraries/bitset.htm#(inout_bitset)@:=_[(in_integer)](in_boolean)
-;;
+;;   <&
+
 (defconst seed7-assignment-operator-regxp
   "\\(?:\\(?:[-\\+\\*/&|@]\\)\\|\\(?:<<\\|>>\\|><\\)\\)?:=")
 ;;
