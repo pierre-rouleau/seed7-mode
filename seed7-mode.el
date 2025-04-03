@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-03 17:30:21 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-03 18:26:44 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -284,7 +284,15 @@
 
 (defconst seed7-assignment-operator-regxp
   "\\(?:\\(?:[-\\+\\*/&|@]\\)\\|\\(?:<<\\|>>\\|><\\)\\)?:=")
-;;
+
+;; Seed Other operators
+;; --------------------
+;; "<&"
+;; "=" "<>"
+;; ">" ">="
+;; "<" "<="
+(defconst seed7-other-operator-regexp
+  " \\(\\(<&\\)\\|\\(=\\)\\|\\(<>\\)\\|\\([<>][=]?\\)\\) ")
 
 (defconst seed7-font-lock-keywords
   (list
@@ -296,6 +304,7 @@
    (cons seed7-predefined-types-regexp               (list 1 font-lock-type-face))
    (cons seed7-predefined-constants-regxp            (list 1 font-lock-constant-face))
    (cons seed7-assignment-operator-regxp             font-lock-keyword-face)
+   (cons seed7-other-operator-regexp                 (list 1 font-lock-builtin-face))
    )
   "Alist of Seed7 base keywords with each a specific face")
 
