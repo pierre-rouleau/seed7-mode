@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-04 15:23:09 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-04 15:39:23 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -97,7 +97,7 @@
 ;; Instead of only using "end" in the regexp, I placed the "end KEYWORD" for
 ;; the various KEYWORDS that Seed7 supports.
 
-(defconst seed7--in-statement-keywords
+(defconst seed7--lead-in-statement-keywords
   '("begin"
     "block"
     "case"
@@ -145,8 +145,20 @@
     "when"
     "while"))
 
+(defconst seed7--in-statement-keywords
+  '("is"
+    "then"))
+
+
+(defconst seed7-lead-in-statement-keywords-regexp
+  (format "^ *%s\\(%s\\)%s"        ; these are all the first keyword on a line
+          "\\_<"
+          (rx-to-string
+           `(: (or ,@seed7--lead-in-statement-keywords)))
+          "\\_>"))
+
 (defconst seed7-in-statement-keywords-regexp
-  (format "^ *%s\\(%s\\)%s"             ; these are all the first keyword on a line
+  (format ". %s\\(%s\\)%s"        ; these are all the first keyword on a line
           "\\_<"
           (rx-to-string
            `(: (or ,@seed7--in-statement-keywords)))
@@ -419,6 +431,7 @@
 
 (defconst seed7-font-lock-keywords
   (list
+   (cons seed7-lead-in-statement-keywords-regexp     (list 1 seed7-in-statement-keyword-face))
    (cons seed7-in-statement-keywords-regexp          (list 1 seed7-in-statement-keyword-face))
    (cons "^\\(\\$ +include\\)"                       (list 1 seed7-in-statement-keyword-face))
 
