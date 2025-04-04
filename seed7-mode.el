@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-04 14:22:31 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-04 14:44:29 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -144,7 +144,7 @@
     "while"))
 
 (defconst seed7-in-statement-keywords-regexp
-  (format "%s\\(%s\\)%s"
+  (format "^ *%s\\(%s\\)%s"
           "\\_<"
           (rx-to-string
            `(: (or ,@seed7--in-statement-keywords)))
