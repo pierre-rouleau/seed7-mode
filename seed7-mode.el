@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-04 16:48:57 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-04 17:04:42 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -128,6 +128,7 @@
     "of"
     "otherwise"
     "param"
+    "raise"                ; currently missing in the Seed7 keyword list
     "range"
     "ref"
     "repeat"
@@ -146,7 +147,8 @@
     "while"))
 
 (defconst seed7--in-statement-keywords
-  '("is"
+  '("do"
+    "is"
     "then"))
 
 
@@ -320,6 +322,7 @@
   '("E"
     "EOF"
     "FALSE"
+    "NIL"
     "PI"
     "TRUE"))
 
