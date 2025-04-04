@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-04 14:55:01 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-04 15:17:00 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -397,8 +397,7 @@
 (defvar seed7-dark-foreground
   (seed7-choose-color "orchid1" "orange"))
 
-;; define seed7-in-statement-keyword-face
-(defface seed7-in-statement-keyword
+(defface seed7-in-statement-keyword-face
   `(;; (((class grayscale) (background light))
     ;;  (:background "Gray90" :weight bold))
 
@@ -415,7 +414,7 @@
     (t (:weight bold)))
   "Font Lock mode face used to highlight array names."
   :group 'seed7-faces)
-
+(defvar seed7-in-statement-keyword-face 'seed7-in-statement-keyword-face)
 
 (defconst seed7-font-lock-keywords
   (list
