@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-03 19:45:38 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-04 09:10:00 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -56,6 +56,28 @@
 ;; Seed7 Syntax Information:
 ;; - https://thomasmertes.github.io/Seed7Home/faq.htm#add_syntax_highlighting
 
+;; Seed7 Customization
+;; ===================
+
+(defgroup seed7 nil
+  "Seed7 Programming Language support configuration."
+  :group 'languages
+  :link '(url-link  :tag "PEL @ GitHub"
+                    "https://github.com/pierre-rouleau/seed7-mode")
+  :package-version '(seed7-mode . "0.0.1"))
+
+(defcustom seed7-uses-block-comment nil
+  "Seed7 comments are block comments when non-nil, line comments otherwise."
+  :group 'seed7
+  :type 'boolean
+  :safe #'booleanp)
+
+(defgroup seed7-faces nil
+  "Fontification colors"
+  :link '(custom-group-link :tag "Font Lock Faces group" font-lock-faces)
+  :group 'seed7)
+
+
 ;; Seed7 keywords used in statements
 ;; ---------------------------------
 ;;
@@ -73,6 +95,7 @@
                "downto"
                "else"
                "elsif"
+               "end block"
                "end for"
                "end func"
                "end if"
@@ -294,9 +317,75 @@
 (defconst seed7-other-operator-regexp
   " \\(\\(<&\\)\\|\\(=\\)\\|\\(<>\\)\\|\\([<>][=]?\\)\\) ")
 
+
+;; Seed7 Faces
+;;
+;; ===================================== ================================================
+;; Variable name                         Description
+;; ===================================== ================================================
+;; **Standard Emacs Faces**
+;; `font-lock-builtin-face'              Face name to use for builtins.
+;; `font-lock-comment-delimiter-face'    Face name to use for comment delimiters.
+;; `font-lock-comment-face'              Face name to use for comments.
+;; `font-lock-constant-face'             Face name to use for constant and label names.
+;; `font-lock-doc-face'                  Face name to use for documentation.
+;; `font-lock-doc-markup-face'           Face name to use for documentation mark-up.
+;; `font-lock-function-name-face'        Face name to use for function names.
+;; `font-lock-keyword-face'              Face name to use for keywords.
+;; `font-lock-negation-char-face'        Face name to use for easy to overlook negation.
+;;                                       This can be an '!' or the 'n' in ifndef.
+;; `font-lock-preprocessor-face'         Face name to use for preprocessor directives.
+;; `font-lock-string-face'               Face name to use for strings.
+;; `font-lock-type-face'                 Face name to use for type and class names.
+;; `font-lock-variable-name-face'        Face name to use for variable names.
+;; `font-lock-warning-face'              Face name to use for things that should stand out.
+;;
+;; **Extra Faces for Seed7**
+;;
+;; ===================================== ================================================
+
+
+
+(defun seed7-choose-color (&rest list)
+  (let (answer)
+    (while list
+      (or answer
+          (if (or (color-defined-p (car list))
+		  (null (cdr list)))
+	      (setq answer (car list))))
+      (setq list (cdr list)))
+    answer))
+
+(defvar seed7-dark-background
+  (seed7-choose-color "navy" "os2blue" "darkgreen"))
+(defvar seed7-dark-foreground
+  (seed7-choose-color "orchid1" "orange"))
+
+(defface seed7-in-statement-keyword-face
+  `(;; (((class grayscale) (background light))
+    ;;  (:background "Gray90" :weight bold))
+
+    ;; (((class grayscale) (background dark))
+    ;;  (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
+     (:foreground "color-33" :weight bold))
+
+    ;; (((class color) (background dark))
+    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight array names."
+  :group 'seed7-faces)
+
+(defvar seed7-in-statement-keyword-face 'seed7-in-statement-keyword-face
+  "Face for Seed7 keywords used inside statements.")
+
+
 (defconst seed7-font-lock-keywords
   (list
-   (cons seed7-in-statement-keywords-regexp          (list 1 font-lock-keyword-face))
+   (cons seed7-in-statement-keywords-regexp          (list 1 seed7-in-statement-keyword-face))
    (cons seed7-statement-introducing-keywords-regexp (list 1 font-lock-keyword-face))
    (cons seed7-in-middle-statement-keywords-regexp   (list 1 font-lock-keyword-face))
    (cons seed7-declaration-into-keywords             (list 1 font-lock-keyword-face) )
@@ -309,25 +398,17 @@
   "Alist of Seed7 base keywords with each a specific face")
 
 
-;;
 ;; Seed7 Comments
+;; --------------
 ;;
 ;; Region:      "(\*" "\*)"
 ;; To line end: "#"
-(defgroup seed7 nil
-  "Seed7 Programming Language support configuration."
-  :group 'languages)
 
-(defconst  seed7-block-comment-starter "(*")
-(defconst  seed7-block-comment-ender   "*)")
-(defconst  seed7-block-comment-prefix  "**")
-(defconst  seed7-line-comment-starter  "# ")
-(defcustom seed7-uses-block-comment nil
-  "Seed7 comments are block comments when non-nil, line comments otherwise."
-  :group 'seed7
-  :type 'boolean
-  :safe #'booleanp)
 
+(defconst seed7-block-comment-starter "(*")
+(defconst seed7-block-comment-ender   "*)")
+(defconst seed7-block-comment-prefix  "**")
+(defconst seed7-line-comment-starter  "# ")
 (defconst seed7-comment-regxp "#.*$")
 
 (defun seed7--new-state-for (arg prevstate)
