@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-04 09:10:00 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-04 11:20:40 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -56,6 +56,7 @@
 ;; Seed7 Syntax Information:
 ;; - https://thomasmertes.github.io/Seed7Home/faq.htm#add_syntax_highlighting
 
+;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;; Seed7 Customization
 ;; ===================
 
@@ -78,207 +79,241 @@
   :group 'seed7)
 
 
+;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;; Seed7 Keywords
+;; ==============
+;;
+;; First define private list of keyword strings (some may be combination of
+;; Seed7 keywords) inside a constant.  Then use the powerful `rx-to-string'
+;; macro to create a regexp for this group.
+;;
+;; In the future, the private lists of keywords may be dynamically loaded for
+;; specific Seed7 syntax and the constants will become variables to allow
+;; the mode to dynamically adapt to the Seed7 extended systax.
+
 ;; Seed7 keywords used in statements
 ;; ---------------------------------
 ;;
 ;; Instead of only using "end" in the regexp, I placed the "end KEYWORD" for
 ;; the various KEYWORDS that Seed7 supports.
+
+(defconst seed7--in-statement-keywords
+  '("begin"
+    "block"
+    "case"
+    "const"
+    "do"
+    "downto"
+    "else"
+    "elsif"
+    "end block"            ; end is the keyword, but always used with a suffix
+    "end for"              ; each combination is identified.
+    "end func"
+    "end if"
+    "end while"
+    "enum"
+    "exception"
+    "for"
+    "forward"
+    "func"
+    "if"
+    "in"
+    "include"
+    "inout"
+    "is"
+    "local"
+    "new"
+    "of"
+    "otherwise"
+    "param"
+    "range"
+    "ref"
+    "repeat"
+    "result"
+    "return"
+    "step"
+    "struct"
+    "syntax"
+    "system"
+    "then"
+    "to"
+    "until"
+    "val"
+    "var"
+    "when"
+    "while"))
+
 (defconst seed7-in-statement-keywords-regexp
   (format "%s\\(%s\\)%s"
           "\\_<"
-          (rx (or
-               "begin"
-               "block"
-               "case"
-               "const"
-               "do"
-               "downto"
-               "else"
-               "elsif"
-               "end block"
-               "end for"
-               "end func"
-               "end if"
-               "end while"
-               "enum"
-               "exception"
-               "for"
-               "forward"
-               "func"
-               "if"
-               "in"
-               "include"
-               "inout"
-               "is"
-               "local"
-               "new"
-               "of"
-               "otherwise"
-               "param"
-               "range"
-               "ref"
-               "repeat"
-               "result"
-               "return"
-               "step"
-               "struct"
-               "syntax"
-               "system"
-               "then"
-               "to"
-               "until"
-               "val"
-               "var"
-               "when"
-               "while"))
+          (rx-to-string
+           `(: (or ,@seed7--in-statement-keywords)))
           "\\_>"))
 
 ;; Seed7 statement introducing keywords
 ;; ------------------------------------
 
+(defconst seed7--statement-introducing-keywords
+  '("block"
+    "case"
+    "enum"
+    "for"
+    "func"
+    "if"
+    "include"
+    "repeat"
+    "struct"
+    "syntax"
+    "system"
+    "while"))
+
 (defconst seed7-statement-introducing-keywords-regexp
   (format "%s\\(%s\\)%s"
           "\\_<"
-          (rx (or
-               "block"
-               "case"
-               "enum"
-               "for"
-               "func"
-               "if"
-               "include"
-               "repeat"
-               "struct"
-               "syntax"
-               "system"
-               "while"))
+          (rx-to-string
+           `(: (or ,@seed7--statement-introducing-keywords)))
           "\\_>"))
 
 ;; Seed7 keywords used in middle of statements
 ;; -------------------------------------------
 
+(defconst seed7--in-middle-statement-keywords
+  '("begin"
+    "do"
+    "downto"
+    "else"
+    "elsif"
+    "end"
+    "exception"
+    "local"
+    "new"
+    "otherwise"
+    "param"
+    "range"
+    "result"
+    "step"
+    "then"
+    "to"
+    "until"
+    "when"))
+
 (defconst seed7-in-middle-statement-keywords-regexp
   (format "%s\\(%s\\)%s"
           "[[:space:]]"
-          (rx (or
-               "begin"
-               "do"
-               "downto"
-               "else"
-               "elsif"
-               "end"
-               "exception"
-               "local"
-               "new"
-               "otherwise"
-               "param"
-               "range"
-               "result"
-               "step"
-               "then"
-               "to"
-               "until"
-               "when"))
+          (rx-to-string
+           `(: (or ,@seed7--in-middle-statement-keywords)))
           "[[:punct:][:space:]]"))
 
 
 ;; Seed7 declaration statement introducing keywords
 ;; ------------------------------------------------
 
-(defconst seed7-declaration-into-keywords
+(defconst seed7--declaration-intro-keywords
+  '("const"
+    "in"
+    "inout"
+    "ref"
+    "val"
+    "var"))
+
+(defconst seed7-declaration-intro-keywords-regexp
   (format "%s\\(%s\\)%s"
           "\\_<"
-          (rx (or
-               "const"
-               "in"
-               "inout"
-               "ref"
-               "val"
-               "var"))
+          (rx-to-string
+           `(:  (or ,@seed7--declaration-intro-keywords)))
           "\\_>"))
 
 ;; Seed7 Operator Symbols
 ;; ----------------------
 
+(defconst seed7--operator-symbols
+  '("and"
+    "conv"
+    "digits"
+    "div"
+    "exp"
+    "in"
+    "lapd0"
+    "lpad"
+    "mdiv"
+    "mod"
+    "mult"
+    "not"
+    "or"
+    "parse"
+    "rem"
+    "rpad"
+    "sci"
+    "times"
+    "varConv"))
+
 (defconst seed7-operator-symbols-regexp
   (format "%s\\(%s\\)%s"
           "\\_<"
-          (rx (or
-               "and"
-               "conv"
-               "digits"
-               "div"
-               "exp"
-               "in"
-               "lapd0"
-               "lpad"
-               "mdiv"
-               "mod"
-               "mult"
-               "not"
-               "or"
-               "parse"
-               "rem"
-               "rpad"
-               "sci"
-               "times"
-               "varConv"))
+          (rx-to-string
+           `(:  (or ,@seed7--operator-symbols)))
           "\\_>"))
 
 
 ;; Seed7 Predefined Types
 ;; ----------------------
 
+(defconst seed7--predefined-types
+  '("array"
+    "bigInteger"
+    "bigRational"
+    "bin32"
+    "bin64"
+    "bitset"
+    "boolean"
+    "char"
+    "clib_file"
+    "color"
+    "complex"
+    "duration"
+    "enum"
+    "expr"
+    "file"
+    "float"
+    "func"
+    "integer"
+    "object"
+    "proc"
+    "program"
+    "rational"
+    "reference"
+    "ref_list"
+    "set"
+    "string"
+    "struct"
+    "text"
+    "time"
+    "type"
+    "void"
+    "PRIMITIVE_WINDOW"))
+
 (defconst seed7-predefined-types-regexp
   (format "%s\\(%s\\)%s"
           "\\_<"
-          (rx (or
-               "array"
-               "bigInteger"
-               "bigRational"
-               "bin32"
-               "bin64"
-               "bitset"
-               "boolean"
-               "char"
-               "clib_file"
-               "color"
-               "complex"
-               "duration"
-               "enum"
-               "expr"
-               "file"
-               "float"
-               "func"
-               "integer"
-               "object"
-               "proc"
-               "program"
-               "rational"
-               "reference"
-               "ref_list"
-               "set"
-               "string"
-               "struct"
-               "text"
-               "time"
-               "type"
-               "void"
-               "PRIMITIVE_WINDOW"))
+          (rx-to-string
+           `(: (or ,@seed7--predefined-types)))
           "\\_>"))
 
 ;; See7 Predefined Constants
 ;; -------------------------
 
+(defconst seed7--predefined-constants
+  '("E"
+    "EOF"
+    "FALSE"
+    "PI"
+    "TRUE"))
+
 (defconst seed7-predefined-constants-regxp
   (format "%s\\(%s\\)%s"
           "\\_<"
-          (rx (or
-               "E"
-               "EOF"
-               "FALSE"
-               "PI"
-               "TRUE"))
+          (rx-to-string
+           `(: (or ,@seed7--predefined-constants)))
           "\\_>"))
 
 ;; Seed7 operator symbol keywords
@@ -388,7 +423,7 @@
    (cons seed7-in-statement-keywords-regexp          (list 1 seed7-in-statement-keyword-face))
    (cons seed7-statement-introducing-keywords-regexp (list 1 font-lock-keyword-face))
    (cons seed7-in-middle-statement-keywords-regexp   (list 1 font-lock-keyword-face))
-   (cons seed7-declaration-into-keywords             (list 1 font-lock-keyword-face) )
+   (cons seed7-declaration-intro-keywords-regexp     (list 1 font-lock-keyword-face))
    (cons seed7-operator-symbols-regexp               (list 1 font-lock-keyword-face))
    (cons seed7-predefined-types-regexp               (list 1 font-lock-type-face))
    (cons seed7-predefined-constants-regxp            (list 1 font-lock-constant-face))
