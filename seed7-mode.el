@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-04 11:20:40 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-04 13:43:44 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -356,27 +356,27 @@
 ;; Seed7 Faces
 ;;
 ;; ===================================== ================================================
-;; Variable name                         Description
+;; Variable name                         Description: Face for...
 ;; ===================================== ================================================
 ;; **Standard Emacs Faces**
-;; `font-lock-builtin-face'              Face name to use for builtins.
-;; `font-lock-comment-delimiter-face'    Face name to use for comment delimiters.
-;; `font-lock-comment-face'              Face name to use for comments.
-;; `font-lock-constant-face'             Face name to use for constant and label names.
-;; `font-lock-doc-face'                  Face name to use for documentation.
-;; `font-lock-doc-markup-face'           Face name to use for documentation mark-up.
-;; `font-lock-function-name-face'        Face name to use for function names.
-;; `font-lock-keyword-face'              Face name to use for keywords.
-;; `font-lock-negation-char-face'        Face name to use for easy to overlook negation.
-;;                                       This can be an '!' or the 'n' in ifndef.
-;; `font-lock-preprocessor-face'         Face name to use for preprocessor directives.
-;; `font-lock-string-face'               Face name to use for strings.
-;; `font-lock-type-face'                 Face name to use for type and class names.
-;; `font-lock-variable-name-face'        Face name to use for variable names.
-;; `font-lock-warning-face'              Face name to use for things that should stand out.
+;; `font-lock-builtin-face'              Builtins.
+;; `font-lock-comment-delimiter-face'    Comment delimiters.
+;; `font-lock-comment-face'              Comments.
+;; `font-lock-constant-face'             Constant and label names.
+;; `font-lock-doc-face'                  Documentation.
+;; `font-lock-doc-markup-face'           Documentation mark-up.
+;; `font-lock-function-name-face'        Function names.
+;; `font-lock-keyword-face'              Keywords.
+;; `font-lock-negation-char-face'        Easy to overlook negation.
+;;                                       Something like an '!' or the 'n' in ifndef.
+;; `font-lock-preprocessor-face'         Preprocessor directives.
+;; `font-lock-string-face'               Strings.
+;; `font-lock-type-face'                 Type and class names.
+;; `font-lock-variable-name-face'        Variable names.
+;; `font-lock-warning-face'              Things that should stand out.
 ;;
 ;; **Extra Faces for Seed7**
-;;
+;; `seed7-in-statement-keyword-face'     Seed7 keywords used inside statements.
 ;; ===================================== ================================================
 
 
@@ -396,7 +396,8 @@
 (defvar seed7-dark-foreground
   (seed7-choose-color "orchid1" "orange"))
 
-(defface seed7-in-statement-keyword-face
+;; define seed7-in-statement-keyword-face
+(defface seed7-in-statement-keyword
   `(;; (((class grayscale) (background light))
     ;;  (:background "Gray90" :weight bold))
 
@@ -413,9 +414,6 @@
     (t (:weight bold)))
   "Font Lock mode face used to highlight array names."
   :group 'seed7-faces)
-
-(defvar seed7-in-statement-keyword-face 'seed7-in-statement-keyword-face
-  "Face for Seed7 keywords used inside statements.")
 
 
 (defconst seed7-font-lock-keywords
