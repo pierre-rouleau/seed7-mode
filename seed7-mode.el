@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-04 15:17:00 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-04 15:23:09 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -101,6 +101,7 @@
   '("begin"
     "block"
     "case"
+    "catch"                ; currently missing in the Seed7 keyword list
     "const"
     "do"
     "downto"
