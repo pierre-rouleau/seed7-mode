@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-04 15:39:23 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-04 16:48:57 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -357,6 +357,16 @@
 (defconst seed7-assignment-operator-regxp
   "\\(?:\\(?:[-\\+\\*/&|@]\\)\\|\\(?:<<\\|>>\\|><\\)\\)?:=")
 
+;; Seed7 arithmetic operators
+;; --------------------------
+;;
+;;  + - * / **
+;;
+(defconst seed7-arithmetic-operator-regexp
+  "[[:alnum:]_ ]\\([/*+-]\\)[[:alnum:]_ ]"
+  )
+
+
 ;; Seed Other operators
 ;; --------------------
 ;; "<&"
@@ -438,7 +448,12 @@
    (cons seed7-statement-introducing-keywords-regexp (list 1 font-lock-keyword-face))
    (cons seed7-in-middle-statement-keywords-regexp   (list 1 font-lock-keyword-face))
    (cons seed7-declaration-intro-keywords-regexp     (list 1 font-lock-keyword-face))
+
    (cons seed7-operator-symbols-regexp               (list 1 font-lock-keyword-face))
+   (cons seed7-arithmetic-operator-regexp            (list 1 font-lock-keyword-face))
+   (cons "[[:alnum:] _]\\(/\\)[[:alnum:] _]"         (list 1 font-lock-keyword-face)) ; /
+   (cons "[[:alnum:] _]\\(\\*\\*\\)[[:alnum:] _]"    (list 1 font-lock-keyword-face)) ; **
+
    (cons seed7-predefined-types-regexp               (list 1 font-lock-type-face))
    (cons seed7-predefined-constants-regxp            (list 1 font-lock-constant-face))
    (cons seed7-assignment-operator-regxp             font-lock-builtin-face)
