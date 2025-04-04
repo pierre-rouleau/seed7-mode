@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-04 14:44:29 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-04 14:55:01 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -110,6 +110,7 @@
     "end for"              ; each combination is identified.
     "end func"
     "end if"
+    "end struct"
     "end while"
     "enum"
     "exception"
@@ -144,7 +145,7 @@
     "while"))
 
 (defconst seed7-in-statement-keywords-regexp
-  (format "^ *%s\\(%s\\)%s"
+  (format "^ *%s\\(%s\\)%s"             ; these are all the first keyword on a line
           "\\_<"
           (rx-to-string
            `(: (or ,@seed7--in-statement-keywords)))
@@ -419,6 +420,8 @@
 (defconst seed7-font-lock-keywords
   (list
    (cons seed7-in-statement-keywords-regexp          (list 1 seed7-in-statement-keyword-face))
+   (cons "^\\(\\$ +include\\)"                       (list 1 seed7-in-statement-keyword-face))
+
    (cons seed7-statement-introducing-keywords-regexp (list 1 font-lock-keyword-face))
    (cons seed7-in-middle-statement-keywords-regexp   (list 1 font-lock-keyword-face))
    (cons seed7-declaration-intro-keywords-regexp     (list 1 font-lock-keyword-face))
