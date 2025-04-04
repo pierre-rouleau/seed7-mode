@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-04 13:43:44 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-04 14:22:31 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -205,8 +205,8 @@
           "[[:punct:][:space:]]"))
 
 
-;; Seed7 declaration statement introducing keywords
-;; ------------------------------------------------
+;; Seed7 declaration introduction keywords
+;; ---------------------------------------
 
 (defconst seed7--declaration-intro-keywords
   '("const"
