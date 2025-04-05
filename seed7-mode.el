@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-05 17:46:22 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-05 17:58:55 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -126,14 +126,8 @@
     "const"
     "do"
     "downto"
-    "else"
-    "elsif"
-    "end block"            ; end is the keyword, but always used with a suffix
-    "end for"              ; each combination is identified.
-    "end func"
-    "end if"
-    "end struct"
-    "end while"
+    ;; "else"
+    ;; "elsif"
     ;; "enum"
     "exception"
     ;; "for"
@@ -161,7 +155,7 @@
     ;; "system"
     "then"
     "to"
-    "until"
+    ;; "until"
     "val"
     "var"
     "when"
@@ -192,18 +186,34 @@
 ;; ------------------------------------
 
 (defconst seed7--statement-introducing-keywords
-  '("block"
-    "case"
-    "enum"
-    "for"
-    "func"
-    "if"
+  '("block"                             ; end block
+    "case"                              ; end case
+    "enum"                              ; end enum
+    "for"                               ; end for
+    "func"                              ; end func
+    "if"                                ; else elsif endif
     "include"
-    "repeat"
-    "struct"
+    "repeat"                            ; until
+    "struct"                            ; end struct
     "syntax"
     "system"
-    "while"))
+    "while"                             ; end while
+
+    ;; for some of the keywords there a matching alternate or terminator
+    "else"
+    "elsif"
+    "endif"
+    "until"
+
+    ;; for most of the above there's a matching end keyword
+    "end block"
+    "end case"
+    "end enum"
+    "end for"
+    "end func"
+    "end if"
+    "end struct"
+    "end while"))
 
 (defconst seed7-statement-introducing-keywords-regexp
   (format "%s\\(%s\\)%s"
