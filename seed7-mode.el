@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-04 21:51:50 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-05 08:56:10 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -335,6 +335,30 @@
            `(: (or ,@seed7--predefined-constants)))
           "\\_>"))
 
+;; Seed7 Predefined Variables
+;; --------------------------
+
+(defconst seed7--predefined-variables
+  '(
+    "CONSOLE_KEYBOARD"
+    "GRAPH_KEYBOARD"
+    "IN"
+    "KEYBOARD"
+    "OUT"
+    "STD_CONSOLE"
+    "STD_ERR"
+    "STD_IN"
+    "STD_NULL"
+    "STD_OUT"))
+
+(defconst seed7-predefined-variables-regxp
+  (format "%s\\(%s\\)%s"
+          "\\_<"
+          (rx-to-string
+           `(: (or ,@seed7--predefined-variables)))
+          "\\_>"))
+
+
 ;; Seed7 operator symbol keywords
 ;; ------------------------------
 
@@ -444,6 +468,26 @@
   :group 'seed7-faces)
 (defvar seed7-in-statement-keyword-face 'seed7-in-statement-keyword-face)
 
+(defface seed7-predefined-variables-face
+  `(;; (((class grayscale) (background light))
+    ;;  (:background "Gray90" :weight bold))
+
+    ;; (((class grayscale) (background dark))
+    ;;  (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
+     (:foreground "color-24"))
+
+    ;; (((class color) (background dark))
+    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight array names."
+  :group 'seed7-faces)
+(defvar seed7-predefined-variables-face 'seed7-predefined-variables-face)
+
+
 (defconst seed7-font-lock-keywords
   (list
    (cons seed7-lead-in-statement-keywords-regexp     (list 1 seed7-in-statement-keyword-face))
@@ -462,7 +506,10 @@
    (cons "[[:alnum:] _)\\\"]\\(&\\)[[:alnum:] _(\\\"]" (list 1 font-lock-keyword-face)) ; /
 
    (cons seed7-predefined-types-regexp               (list 1 font-lock-type-face))
+
    (cons seed7-predefined-constants-regxp            (list 1 font-lock-constant-face))
+   (cons seed7-predefined-variables-regxp            (list 1 seed7-predefined-variables-face))
+
    (cons seed7-assignment-operator-regxp             font-lock-builtin-face)
    (cons seed7-other-operator-regexp                 (list 1 font-lock-builtin-face))
    )
