@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-05 16:39:57 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-05 16:49:52 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -535,6 +535,26 @@
 (defvar seed7-pragma-keyword-face 'seed7-pragma-keyword-face)
 
 
+(defface seed7-errinfo-value-face
+  `(;; (((class grayscale) (background light))
+    ;;  (:background "Gray90" :weight bold))
+
+    ;; (((class grayscale) (background dark))
+    ;;  (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
+     (:foreground "color-133" :weight bold))
+
+    ;; (((class color) (background dark))
+    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight array names."
+  :group 'seed7-faces)
+(defvar seed7-errinfo-value-face 'seed7-errinfo-value-face)
+
+
 (defface seed7-predefined-variables-face
   `(;; (((class grayscale) (background light))
     ;;  (:background "Gray90" :weight bold))
@@ -574,7 +594,8 @@
 
    (cons seed7-predefined-constants-regxp            (list 1 font-lock-constant-face))
    (cons seed7-predefined-variables-regxp            (list 1 seed7-predefined-variables-face))
-   (cons seed7-errinfo-values-regxp                  (list 1 font-lock-constant-face))
+
+   (cons seed7-errinfo-values-regxp                  (list 1 seed7-errinfo-value-face))
 
    (cons seed7-assignment-operator-regxp             font-lock-builtin-face)
    (cons seed7-other-operator-regexp                 (list 1 font-lock-builtin-face))
