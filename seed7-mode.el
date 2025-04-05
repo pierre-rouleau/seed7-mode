@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-05 17:39:13 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-05 17:46:22 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -120,8 +120,8 @@
 
 (defconst seed7--lead-in-statement-keywords
   '("begin"
-    "block"
-    "case"
+    ;; "block"
+    ;; "case"
     "catch"                      ; currently missing in the Seed7 keyword list
     "const"
     "do"
@@ -134,14 +134,14 @@
     "end if"
     "end struct"
     "end while"
-    "enum"
+    ;; "enum"
     "exception"
-    "for"
+    ;; "for"
     "forward"
-    "func"
-    "if"
+    ;; "func"
+    ;; "if"
     "in"
-    "include"
+    ;; "include"
     "inout"
     "is"
     "local"
@@ -152,20 +152,21 @@
     "raise"                      ; currently missing in the Seed7 keyword list
     "range"
     "ref"
-    "repeat"
+    ;; "repeat"
     "result"
     "return"
     "step"
-    "struct"
-    "syntax"
-    "system"
+    ;; "struct"
+    ;; "syntax"
+    ;; "system"
     "then"
     "to"
     "until"
     "val"
     "var"
     "when"
-    "while"))
+    ;; "while"
+    ))
 
 (defconst seed7-lead-in-statement-keywords-regexp
   (format "^ *%s\\(%s\\)%s"        ; these are all the first keyword on a line
