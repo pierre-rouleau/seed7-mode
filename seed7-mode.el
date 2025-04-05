@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-04 21:25:18 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-04 21:51:50 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -292,6 +292,7 @@
     "file"
     "float"
     "func"
+    "hash"
     "integer"
     "object"
     "proc"
@@ -324,6 +325,7 @@
     "FALSE"
     "NIL"
     "PI"
+    "STD_NULL"
     "TRUE"))
 
 (defconst seed7-predefined-constants-regxp
@@ -366,7 +368,7 @@
 ;;  + - * / **
 ;;
 (defconst seed7-arithmetic-operator-regexp
-  "[[:alnum:]_ ]\\([/*+-]\\)[[:alnum:]_ ]"
+  "[[:alnum:]_ )]\\([/*+-]\\)[[:alnum:]_ (]"
   )
 
 
@@ -454,8 +456,10 @@
 
    (cons seed7-operator-symbols-regexp               (list 1 font-lock-keyword-face))
    (cons seed7-arithmetic-operator-regexp            (list 1 font-lock-keyword-face))
-   (cons "[[:alnum:] _]\\(/\\)[[:alnum:] _]"         (list 1 font-lock-keyword-face)) ; /
-   (cons "[[:alnum:] _]\\(\\*\\*\\)[[:alnum:] _]"    (list 1 font-lock-keyword-face)) ; **
+   (cons "[[:alnum:] _)]\\(/\\)[[:alnum:] _(]"       (list 1 font-lock-keyword-face)) ; /
+   (cons "[[:alnum:] _)]\\(\\*\\*\\)[[:alnum:] _(]"  (list 1 font-lock-keyword-face)) ; **
+   ;; logic operator
+   (cons "[[:alnum:] _)\\\"]\\(&\\)[[:alnum:] _(\\\"]" (list 1 font-lock-keyword-face)) ; /
 
    (cons seed7-predefined-types-regexp               (list 1 font-lock-type-face))
    (cons seed7-predefined-constants-regxp            (list 1 font-lock-constant-face))
