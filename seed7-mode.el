@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-05 10:31:26 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-05 16:39:57 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -91,6 +91,27 @@
 ;; specific Seed7 syntax and the constants will become variables to allow
 ;; the mode to dynamically adapt to the Seed7 extended systax.
 
+;; Seed7 pragmas
+;; -------------
+;;
+;; Ref: https://thomasmertes.github.io/Seed7Home/manual/decls.htm#Pragmas
+
+(defconst seed7--pragma-keywords
+  '(
+    "library"
+    "message"
+    "info"
+    "trace"
+    "decls"
+    "names"))
+
+(defconst seed7-pragma-keywords-regexp
+  (format "^%s\\(\\$ +%s\\)%s"
+          "\\_<"
+          (rx-to-string
+           `(: (or ,@seed7--pragma-keywords)))
+          "\\_>"))
+
 ;; Seed7 keywords used in statements
 ;; ---------------------------------
 ;;
@@ -101,7 +122,7 @@
   '("begin"
     "block"
     "case"
-    "catch"                ; currently missing in the Seed7 keyword list
+    "catch"                      ; currently missing in the Seed7 keyword list
     "const"
     "do"
     "downto"
@@ -128,7 +149,7 @@
     "of"
     "otherwise"
     "param"
-    "raise"                ; currently missing in the Seed7 keyword list
+    "raise"                      ; currently missing in the Seed7 keyword list
     "range"
     "ref"
     "repeat"
@@ -146,18 +167,18 @@
     "when"
     "while"))
 
-(defconst seed7--in-statement-keywords
-  '("do"
-    "is"
-    "then"))
-
-
 (defconst seed7-lead-in-statement-keywords-regexp
   (format "^ *%s\\(%s\\)%s"        ; these are all the first keyword on a line
           "\\_<"
           (rx-to-string
            `(: (or ,@seed7--lead-in-statement-keywords)))
           "\\_>"))
+
+
+(defconst seed7--in-statement-keywords
+  '("do"
+    "is"
+    "then"))
 
 (defconst seed7-in-statement-keywords-regexp
   (format ". %s\\(%s\\)%s"        ; these are all the first keyword on a line
@@ -493,6 +514,27 @@
   :group 'seed7-faces)
 (defvar seed7-in-statement-keyword-face 'seed7-in-statement-keyword-face)
 
+
+(defface seed7-pragma-keyword-face
+  `(;; (((class grayscale) (background light))
+    ;;  (:background "Gray90" :weight bold))
+
+    ;; (((class grayscale) (background dark))
+    ;;  (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
+     (:foreground "color-20" :weight bold))
+
+    ;; (((class color) (background dark))
+    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight array names."
+  :group 'seed7-faces)
+(defvar seed7-pragma-keyword-face 'seed7-pragma-keyword-face)
+
+
 (defface seed7-predefined-variables-face
   `(;; (((class grayscale) (background light))
     ;;  (:background "Gray90" :weight bold))
@@ -514,7 +556,8 @@
   (list
    (cons seed7-lead-in-statement-keywords-regexp     (list 1 seed7-in-statement-keyword-face))
    (cons seed7-in-statement-keywords-regexp          (list 1 seed7-in-statement-keyword-face))
-   (cons "^\\(\\$ +\\(\\(include\\)\\|\\(message\\)\\)\\) " (list 1 seed7-in-statement-keyword-face))
+   (cons "^\\(\\$ +\\(include\\)\\) "                (list 1 seed7-in-statement-keyword-face))
+   (cons seed7-pragma-keywords-regexp                (list 1 seed7-pragma-keyword-face))
 
    (cons seed7-statement-introducing-keywords-regexp (list 1 font-lock-keyword-face))
    (cons seed7-in-middle-statement-keywords-regexp   (list 1 font-lock-keyword-face))
