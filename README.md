@@ -43,6 +43,15 @@ Emacs support for the Seed7 Programming language
 
     `M-x emacs-lisp-byte-compile-and-load`
 
+**To update**
+
+To update to a later revision, erase the seed7-mode.el and
+seed7-mode.elc files from the directory where you stored them
+(which would be `~/.emacs.d/utils` as described above),
+and download the new revision in the same directory.
+
+Byte-compile the new file.
+
 ## Install seed-mode with PEL ##
 
 You can also use my [PEL Emacs project](https://github.com/pierre-rouleau/pel)
@@ -52,9 +61,13 @@ Once PEL is installed, use the <kbd>C-h o pel-use-seed7 RET</kbd> key
 sequence to open the customization buffer to set this user option.  Then close
 Emacs and restart it. PEL will down load and install the file in your
 `~/.emacs.d/utils` directory and provide PEL commands available under the
-<kbd> <f12></kbd> key prefix.   Later when you need to upgrade the seed7-mode
-files just delete your `~/.emacs.d/utils/seed-mode.*` files and restart Emacs;
-it will download the new version and byte-compile it.,
+<kbd> <f12></kbd> key prefix.
+
+**To update**
+
+With PEL, updating is a little simpler:
+just delete your `~/.emacs.d/utils/seed-mode.*` files and restart Emacs;
+it will download the new version and byte-compile it.
 
 # Future #
 
