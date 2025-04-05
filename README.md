@@ -52,7 +52,7 @@ and download the new revision in the same directory.
 
 Byte-compile the new file.
 
-## Install seed-mode with PEL ##
+## Install seed7-mode with PEL ##
 
 You can also use my [PEL Emacs project](https://github.com/pierre-rouleau/pel)
 which deals with all installation and
@@ -66,7 +66,7 @@ Emacs and restart it. PEL will down load and install the file in your
 **To update**
 
 With PEL, updating is a little simpler:
-just delete your `~/.emacs.d/utils/seed-mode.*` files and restart Emacs;
+just delete your `~/.emacs.d/utils/seed7-mode.*` files and restart Emacs;
 it will download the new version and byte-compile it.
 
 # Future #
