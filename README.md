@@ -4,15 +4,46 @@ Emacs support for the Seed7 Programming language
 ⚠️  This is far from being complete  🚧  This is **work-in-progress**.
 
 
-To install in your environment, just copy the seed7-mode.el inside a directory
-that is located in your Emacs `load-path` and byte-compile it.
+# How To Install seed7-mode #
 
-Then add the following inside your Emacs initialization file:
+**Install seed7 in plain-vanilla Emacs**
 
-``` elisp
-(autoload 'seed7-mode "seed7-mode" nil :interactive)
-(add-to-list 'auto-mode-alist '("\\.s[di]7\\'" . seed7-mode))
-```
+- Create a directory to store Emacs lisp files.
+  I recommend creating the `~/.emacs.d/utils` directory for that.
+  Emacs `user-emacs-directory` should already be set to `~/.emacs.d`, it's default value.
+  Add this directory to the beginning of Emacs `load-path`.
+
+- Assuming that Emacs `user-emacs-directory` is set to `~/.emacs.d`,
+  and that you do not have any init.el file, create the file
+  `~/.emacs.d.init.el`.
+
+- Inside the `~/.emacs.d.init.el` file write the following:
+
+  ```elisp
+  ;;; -*-lexical-binding: t; -*-
+
+  (push (expand-file-name "utils" user-emacs-directory) load-path)
+  (autoload 'seed7-mode "seed7-mode" nil :interactive)
+  (add-to-list 'auto-mode-alist '("\\.s[di]7\\'" . seed7-mode))
+ ```
+
+- Download the seed7_mode.el file and copy it inside the
+  `~/.emacs.d/utils` directory.
+
+- With the file in place, open Emacs and edit (visit) the
+  `~/.emacs.d/utils/seed7-mode.el` file to byte compile it.
+  Byte compiling is not absolutely necessary but it will verify that
+  everything is ok inside the file and will also speed up Emacs startup.
+  Just remember to byte-compile that file every time you modify it,
+  otherwise Emacs will complain that it's using a byte-compile file
+  that is older than the source file.
+
+  - To byte compile the file that is visited in the current buffer,
+    type the following command:
+
+    `M-x emacs-lisp-byte-compile-and-load`
+
+**Install seed-mode with PEL**
 
 You can also use my [PEL Emacs project](https://github.com/pierre-rouleau/pel)
 which deals with all installation and
@@ -24,6 +55,8 @@ Emacs and restart it. PEL will down load and install the file in your
 <kbd> <f12></kbd> key prefix.   Later when you need to upgrade the seed7-mode
 files just delete your `~/.emacs.d/utils/seed-mode.*` files and restart Emacs;
 it will download the new version and byte-compile it.,
+
+# Future #
 
 Once this code is stable I will add the logic to make it a proper Emacs
 package and probably will include it under MELPA.  But the code is far from
