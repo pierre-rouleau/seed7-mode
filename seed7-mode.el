@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-05 08:56:10 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-05 10:31:26 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -358,6 +358,31 @@
            `(: (or ,@seed7--predefined-variables)))
           "\\_>"))
 
+;; Seed7 Predefined errinfo value
+;; ------------------------------
+(defconst seed7--errinfo-values
+  '(
+    "OKAY_NO_ERROR"
+    "MEMORY_ERROR"
+    "NUMERIC_ERROR"
+    "OVERFLOW_ERROR"
+    "RANGE_ERROR"
+    "INDEX_ERROR"
+    "FILE_ERROR"
+    "DATABASE_ERROR"
+    "GRAPHIC_ERROR"
+    "ACTION_ERROR"
+    "CREATE_ERROR"
+    "DESTROY_ERROR"
+    "COPY_ERROR"
+    "IN_ERROR"))
+
+(defconst seed7-errinfo-values-regxp
+  (format "%s\\(%s\\)%s"
+          "\\_<"
+          (rx-to-string
+           `(: (or ,@seed7--errinfo-values)))
+          "\\_>"))
 
 ;; Seed7 operator symbol keywords
 ;; ------------------------------
@@ -471,19 +496,16 @@
 (defface seed7-predefined-variables-face
   `(;; (((class grayscale) (background light))
     ;;  (:background "Gray90" :weight bold))
-
     ;; (((class grayscale) (background dark))
     ;;  (:foreground "Gray80" :weight bold))
-
-    (((class color) (background light))
+    (((class color)
+      (background light))
      ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
      (:foreground "color-24"))
-
     ;; (((class color) (background dark))
     ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
-
     (t (:weight bold)))
-  "Font Lock mode face used to highlight array names."
+  "Font Lock mode face used to highlight predefined variable names."
   :group 'seed7-faces)
 (defvar seed7-predefined-variables-face 'seed7-predefined-variables-face)
 
@@ -503,12 +525,13 @@
    (cons "[[:alnum:] _)]\\(/\\)[[:alnum:] _(]"       (list 1 font-lock-keyword-face)) ; /
    (cons "[[:alnum:] _)]\\(\\*\\*\\)[[:alnum:] _(]"  (list 1 font-lock-keyword-face)) ; **
    ;; logic operator
-   (cons "[[:alnum:] _)\\\"]\\(&\\)[[:alnum:] _(\\\"]" (list 1 font-lock-keyword-face)) ; /
+   (cons "[[:alnum:] _)\\\"]\\(&\\)[[:alnum:] _(\\\"]" (list 1 font-lock-keyword-face)) ; &
 
    (cons seed7-predefined-types-regexp               (list 1 font-lock-type-face))
 
    (cons seed7-predefined-constants-regxp            (list 1 font-lock-constant-face))
    (cons seed7-predefined-variables-regxp            (list 1 seed7-predefined-variables-face))
+   (cons seed7-errinfo-values-regxp                  (list 1 font-lock-constant-face))
 
    (cons seed7-assignment-operator-regxp             font-lock-builtin-face)
    (cons seed7-other-operator-regexp                 (list 1 font-lock-builtin-face))
