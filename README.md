@@ -6,7 +6,7 @@ Emacs support for the Seed7 Programming language
 
 # How To Install seed7-mode #
 
-**Install seed7 in plain-vanilla Emacs**
+## Install seed7 in plain-vanilla Emacs ##
 
 - Create a directory to store Emacs lisp files.
   I recommend creating the `~/.emacs.d/utils` directory for that.
@@ -43,7 +43,7 @@ Emacs support for the Seed7 Programming language
 
     `M-x emacs-lisp-byte-compile-and-load`
 
-**Install seed-mode with PEL**
+## Install seed-mode with PEL ##
 
 You can also use my [PEL Emacs project](https://github.com/pierre-rouleau/pel)
 which deals with all installation and
