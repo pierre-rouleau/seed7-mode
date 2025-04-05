@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-05 16:49:52 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-05 17:39:13 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -495,6 +495,26 @@
 (defvar seed7-dark-foreground
   (seed7-choose-color "orchid1" "orange"))
 
+(defface seed7-pragma-keyword-face
+  `(;; (((class grayscale) (background light))
+    ;;  (:background "Gray90" :weight bold))
+
+    ;; (((class grayscale) (background dark))
+    ;;  (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
+     (:foreground "color-20" :weight bold))
+
+    ;; (((class color) (background dark))
+    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight array names."
+  :group 'seed7-faces)
+(defvar seed7-pragma-keyword-face 'seed7-pragma-keyword-face)
+
+
 (defface seed7-in-statement-keyword-face
   `(;; (((class grayscale) (background light))
     ;;  (:background "Gray90" :weight bold))
@@ -515,7 +535,7 @@
 (defvar seed7-in-statement-keyword-face 'seed7-in-statement-keyword-face)
 
 
-(defface seed7-pragma-keyword-face
+(defface seed7-statement-introducing-keyword-face
   `(;; (((class grayscale) (background light))
     ;;  (:background "Gray90" :weight bold))
 
@@ -524,7 +544,7 @@
 
     (((class color) (background light))
      ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
-     (:foreground "color-20" :weight bold))
+     (:foreground "color-44" :weight bold))
 
     ;; (((class color) (background dark))
     ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
@@ -532,7 +552,7 @@
     (t (:weight bold)))
   "Font Lock mode face used to highlight array names."
   :group 'seed7-faces)
-(defvar seed7-pragma-keyword-face 'seed7-pragma-keyword-face)
+(defvar seed7-statement-introducing-keyword-face 'seed7-statement-introducing-keyword-face)
 
 
 (defface seed7-errinfo-value-face
@@ -574,12 +594,15 @@
 
 (defconst seed7-font-lock-keywords
   (list
+   ;; pragmas
+   (cons seed7-pragma-keywords-regexp                (list 1 seed7-pragma-keyword-face))
+   ;; in-statement-keywords
    (cons seed7-lead-in-statement-keywords-regexp     (list 1 seed7-in-statement-keyword-face))
    (cons seed7-in-statement-keywords-regexp          (list 1 seed7-in-statement-keyword-face))
    (cons "^\\(\\$ +\\(include\\)\\) "                (list 1 seed7-in-statement-keyword-face))
-   (cons seed7-pragma-keywords-regexp                (list 1 seed7-pragma-keyword-face))
+   ;; statement introducing  keywords
+   (cons seed7-statement-introducing-keywords-regexp (list 1 seed7-statement-introducing-keyword-face))
 
-   (cons seed7-statement-introducing-keywords-regexp (list 1 font-lock-keyword-face))
    (cons seed7-in-middle-statement-keywords-regexp   (list 1 font-lock-keyword-face))
    (cons seed7-declaration-intro-keywords-regexp     (list 1 font-lock-keyword-face))
 
