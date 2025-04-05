@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-04 17:04:42 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-04 21:25:18 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -446,7 +446,7 @@
   (list
    (cons seed7-lead-in-statement-keywords-regexp     (list 1 seed7-in-statement-keyword-face))
    (cons seed7-in-statement-keywords-regexp          (list 1 seed7-in-statement-keyword-face))
-   (cons "^\\(\\$ +include\\)"                       (list 1 seed7-in-statement-keyword-face))
+   (cons "^\\(\\$ +\\(\\(include\\)\\|\\(message\\)\\)\\) " (list 1 seed7-in-statement-keyword-face))
 
    (cons seed7-statement-introducing-keywords-regexp (list 1 font-lock-keyword-face))
    (cons seed7-in-middle-statement-keywords-regexp   (list 1 font-lock-keyword-face))
