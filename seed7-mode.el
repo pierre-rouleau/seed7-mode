@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-06 12:52:03 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-06 13:27:52 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -72,7 +72,16 @@
 ;;    - Seed7 keywords used in statements
 ;;    - Seed7 statement introducing keywords
 ;;    - Seed7 keywords used in middle of statements
-;;    -  Seed7 declaration introduction keywords
+;;    - Seed7 declaration introduction keywords
+;;    - Seed7 Predefined Types
+;;    - Seed7 Predefined Constants
+;;    - Seed7 Predefined Variables
+;;    - Seed7 Predefined errinfo value
+
+;;    - Seed7 Operator Symbols
+;;    - Seed7 Assignment Operator Symbols
+;;    - Seed7 Arithmetic Operators
+;;    - Seed Other operators
 
 ;;; --------------------------------------------------------------------------
 ;;; Dependencies:
@@ -304,40 +313,9 @@
            `(:  (or ,@seed7--declaration-intro-keywords)))
           "\\_>"))
 
-;; Seed7 Operator Symbols
-;; ----------------------
 
-(defconst seed7--operator-symbols
-  '("and"
-    "conv"
-    "digits"
-    "div"
-    "exp"
-    "in"
-    "lapd0"
-    "lpad"
-    "mdiv"
-    "mod"
-    "mult"
-    "not"
-    "or"
-    "parse"
-    "rem"
-    "rpad"
-    "sci"
-    "times"
-    "varConv"))
-
-(defconst seed7-operator-symbols-regexp
-  (format "%s\\(%s\\)%s"
-          "\\_<"
-          (rx-to-string
-           `(:  (or ,@seed7--operator-symbols)))
-          "\\_>"))
-
-
-;; Seed7 Predefined Types
-;; ----------------------
+;;* Seed7 Predefined Types
+;;  ----------------------
 
 (defconst seed7--predefined-types
   '("array"
@@ -387,8 +365,8 @@
            `(: (or ,@seed7--predefined-types)))
           "\\_>"))
 
-;; See7 Predefined Constants
-;; -------------------------
+;;* Seed7 Predefined Constants
+;;  -------------------------
 
 (defconst seed7--predefined-constants
   '("E"
@@ -406,8 +384,8 @@
            `(: (or ,@seed7--predefined-constants)))
           "\\_>"))
 
-;; Seed7 Predefined Variables
-;; --------------------------
+;;* Seed7 Predefined Variables
+;;  --------------------------
 
 (defconst seed7--predefined-variables
   '(
@@ -429,8 +407,8 @@
            `(: (or ,@seed7--predefined-variables)))
           "\\_>"))
 
-;; Seed7 Predefined errinfo value
-;; ------------------------------
+;;* Seed7 Predefined errinfo value
+;;  ------------------------------
 (defconst seed7--errinfo-values
   '(
     "OKAY_NO_ERROR"
@@ -455,8 +433,39 @@
            `(: (or ,@seed7--errinfo-values)))
           "\\_>"))
 
-;; Seed7 operator symbol keywords
-;; ------------------------------
+;;* Seed7 Operator Symbols
+;;  ----------------------
+
+(defconst seed7--operator-symbols
+  '("and"
+    "conv"
+    "digits"
+    "div"
+    "exp"
+    "in"
+    "lapd0"
+    "lpad"
+    "mdiv"
+    "mod"
+    "mult"
+    "not"
+    "or"
+    "parse"
+    "rem"
+    "rpad"
+    "sci"
+    "times"
+    "varConv"))
+
+(defconst seed7-operator-symbols-regexp
+  (format "%s\\(%s\\)%s"
+          "\\_<"
+          (rx-to-string
+           `(:  (or ,@seed7--operator-symbols)))
+          "\\_>"))
+
+;;* Seed7 Assignment Operator Symbols
+;;  ---------------------------------
 
 
 ;; syntax match    sd7Operator "[-+*/<>&[\]:{}@]"
@@ -482,8 +491,8 @@
 (defconst seed7-assignment-operator-regxp
   "\\(?:\\(?:[-\\+\\*/&|@]\\)\\|\\(?:<<\\|>>\\|><\\)\\)?:=")
 
-;; Seed7 arithmetic operators
-;; --------------------------
+;;* Seed7 Arithmetic Operators
+;;  --------------------------
 ;;
 ;;  + - * / **
 ;;
@@ -492,7 +501,7 @@
   )
 
 
-;; Seed Other operators
+;;* Seed Other operators
 ;; --------------------
 ;; "<&"
 ;; "=" "<>"
@@ -584,6 +593,7 @@
   :group 'seed7-faces)
 (defvar seed7-include-face 'seed7-include-face)
 
+
 (defface seed7-in-statement-keyword-face
   `(;; (((class grayscale) (background light))
     ;;  (:background "Gray90" :weight bold))
@@ -602,6 +612,26 @@
   "Font Lock mode face used to highlight keywords."
   :group 'seed7-faces)
 (defvar seed7-in-statement-keyword-face 'seed7-in-statement-keyword-face)
+
+
+(defface seed7-statement-introducing-keyword-face
+  `(;; (((class grayscale) (background light))
+    ;;  (:background "Gray90" :weight bold))
+
+    ;; (((class grayscale) (background dark))
+    ;;  (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
+     (:foreground "color-44" :weight bold))
+
+    ;; (((class color) (background dark))
+    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight keywords that introduce a statement."
+  :group 'seed7-faces)
+(defvar seed7-statement-introducing-keyword-face 'seed7-statement-introducing-keyword-face)
 
 
 (defface seed7-in-middle-statement-keyword-face
@@ -644,24 +674,21 @@
 (defvar seed7-intro-statement-keyword-face 'seed7-intro-statement-keyword-face)
 
 
-(defface seed7-statement-introducing-keyword-face
+(defface seed7-predefined-variables-face
   `(;; (((class grayscale) (background light))
     ;;  (:background "Gray90" :weight bold))
-
     ;; (((class grayscale) (background dark))
     ;;  (:foreground "Gray80" :weight bold))
-
-    (((class color) (background light))
+    (((class color)
+      (background light))
      ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
-     (:foreground "color-44" :weight bold))
-
+     (:foreground "color-24"))
     ;; (((class color) (background dark))
     ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
-
     (t (:weight bold)))
-  "Font Lock mode face used to highlight keywords that introduce a statement."
+  "Font Lock mode face used to highlight predefined variable names."
   :group 'seed7-faces)
-(defvar seed7-statement-introducing-keyword-face 'seed7-statement-introducing-keyword-face)
+(defvar seed7-predefined-variables-face 'seed7-predefined-variables-face)
 
 
 (defface seed7-errinfo-value-face
@@ -684,55 +711,41 @@
 (defvar seed7-errinfo-value-face 'seed7-errinfo-value-face)
 
 
-(defface seed7-predefined-variables-face
-  `(;; (((class grayscale) (background light))
-    ;;  (:background "Gray90" :weight bold))
-    ;; (((class grayscale) (background dark))
-    ;;  (:foreground "Gray80" :weight bold))
-    (((class color)
-      (background light))
-     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
-     (:foreground "color-24"))
-    ;; (((class color) (background dark))
-    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
-    (t (:weight bold)))
-  "Font Lock mode face used to highlight predefined variable names."
-  :group 'seed7-faces)
-(defvar seed7-predefined-variables-face 'seed7-predefined-variables-face)
-
 
 (defconst seed7-font-lock-keywords
   (list
    ;; pragmas
    (cons seed7-pragma-keywords-regexp                (list 1 seed7-pragma-keyword-face))
+   ;; include
+   (cons seed7-include-regexp                        (list 1 seed7-include-face))
+
    ;; in-statement keywords
    (cons seed7-lead-in-statement-keywords-regexp     (list 1 seed7-in-statement-keyword-face))
    (cons seed7-in-statement-keywords-regexp          (list 1 seed7-in-statement-keyword-face))
-   ;; include
-   (cons seed7-include-regexp                        (list 1 seed7-include-face))
    ;; statement-introducing keywords (needed??probably not)
    (cons seed7-statement-introducing-keywords-regexp (list 1 seed7-statement-introducing-keyword-face))
-   ;; Seed7 keywords used in middle of statements
+   ;; keywords used in middle of statements
    (cons seed7-in-middle-statement-keywords-regexp   (list 1 seed7-in-middle-statement-keyword-face))
-   ;; Seed7 declaration introduction keywords :probably need a better name
+   ;; declaration introduction keywords :probably need a better name
    (cons seed7-declaration-intro-keywords-regexp     (list 1 seed7-intro-statement-keyword-face))
-
+   ;; predefined types
+   (cons seed7-predefined-types-regexp               (list 1 font-lock-type-face))
+   ;; predefined constants
+   (cons seed7-predefined-constants-regxp            (list 1 font-lock-constant-face))
+   ;; predefined variables
+   (cons seed7-predefined-variables-regxp            (list 1 seed7-predefined-variables-face))
+   ;; predefined errinfo values
+   (cons seed7-errinfo-values-regxp                  (list 1 seed7-errinfo-value-face))
+   ;; operator symbols
    (cons seed7-operator-symbols-regexp               (list 1 font-lock-keyword-face))
+   (cons seed7-assignment-operator-regxp             (list 0 font-lock-keyword-face))
+   (cons seed7-other-operator-regexp                 (list 1 font-lock-keyword-face))
    (cons seed7-arithmetic-operator-regexp            (list 1 font-lock-keyword-face))
    (cons "[[:alnum:] _)]\\(/\\)[[:alnum:] _(]"       (list 1 font-lock-keyword-face)) ; /
    (cons "[[:alnum:] _)]\\(\\*\\*\\)[[:alnum:] _(]"  (list 1 font-lock-keyword-face)) ; **
    ;; logic operator
    (cons "[[:alnum:] _)\\\"]\\(&\\)[[:alnum:] _(\\\"]" (list 1 font-lock-keyword-face)) ; &
-
-   (cons seed7-predefined-types-regexp               (list 1 font-lock-type-face))
-
-   (cons seed7-predefined-constants-regxp            (list 1 font-lock-constant-face))
-   (cons seed7-predefined-variables-regxp            (list 1 seed7-predefined-variables-face))
-
-   (cons seed7-errinfo-values-regxp                  (list 1 seed7-errinfo-value-face))
-
-   (cons seed7-assignment-operator-regxp             font-lock-builtin-face)
-   (cons seed7-other-operator-regexp                 (list 1 font-lock-builtin-face))
+   (cons "[[:alnum:] _)\\\"]\\(|\\)[[:alnum:] _(\\\"]" (list 1 font-lock-keyword-face)) ; |
    )
   "Alist of Seed7 base keywords with each a specific face")
 
