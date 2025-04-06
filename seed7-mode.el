@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-05 17:58:55 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-06 09:39:56 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -39,6 +39,17 @@
 ;; - Navigation help
 ;; - Template help for code creation
 ;; - Commands to compile with error reporting
+;;
+;;
+;; Code Organization Layout
+;;
+;; -  Seed7 Customization
+;;
+;; -  Seed7 Keywords
+;;    - Seed7 Pragmas
+;;    - Seed7 include
+;;    - Seed7 keywords used in statements
+;;    -
 
 ;;; --------------------------------------------------------------------------
 ;;; Dependencies:
@@ -57,8 +68,8 @@
 ;; - https://thomasmertes.github.io/Seed7Home/faq.htm#add_syntax_highlighting
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Seed7 Customization
-;; ===================
+;;* Seed7 Customization
+;;  ===================
 
 (defgroup seed7 nil
   "Seed7 Programming Language support configuration."
@@ -80,8 +91,8 @@
 
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Seed7 Keywords
-;; ==============
+;;* Seed7 Keywords
+;;  ==============
 ;;
 ;; First define private list of keyword strings (some may be combination of
 ;; Seed7 keywords) inside a constant.  Then use the powerful `rx-to-string'
@@ -91,8 +102,8 @@
 ;; specific Seed7 syntax and the constants will become variables to allow
 ;; the mode to dynamically adapt to the Seed7 extended systax.
 
-;; Seed7 pragmas
-;; -------------
+;;* Seed7 pragmas
+;;  -------------
 ;;
 ;; Ref: https://thomasmertes.github.io/Seed7Home/manual/decls.htm#Pragmas
 
@@ -112,11 +123,21 @@
            `(: (or ,@seed7--pragma-keywords)))
           "\\_>"))
 
-;; Seed7 keywords used in statements
-;; ---------------------------------
+;;* Seed7 include
+;;  -------------
 ;;
-;; Instead of only using "end" in the regexp, I placed the "end KEYWORD" for
-;; the various KEYWORDS that Seed7 supports.
+;; The very first include statement requires a leading '$' but not
+;; the following ones."
+(defconst seed7-include-regexp
+  "^\\(\\$? +\\(include\\)\\) ")
+
+
+;;* Seed7 keywords used in statements
+;;  ---------------------------------
+;;
+;; All keywords a re listed here, but some are commented out because
+;; they are part of another list below.  The ones left are
+;;
 
 (defconst seed7--lead-in-statement-keywords
   '("begin"
@@ -128,6 +149,7 @@
     "downto"
     ;; "else"
     ;; "elsif"
+    ;; "end"
     ;; "enum"
     "exception"
     ;; "for"
@@ -192,7 +214,6 @@
     "for"                               ; end for
     "func"                              ; end func
     "if"                                ; else elsif endif
-    "include"
     "repeat"                            ; until
     "struct"                            ; end struct
     "syntax"
@@ -526,6 +547,25 @@
 (defvar seed7-pragma-keyword-face 'seed7-pragma-keyword-face)
 
 
+(defface seed7-include-face
+  `(;; (((class grayscale) (background light))
+    ;;  (:background "Gray90" :weight bold))
+
+    ;; (((class grayscale) (background dark))
+    ;;  (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
+     (:foreground "color-105" :weight bold))
+
+    ;; (((class color) (background dark))
+    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight array names."
+  :group 'seed7-faces)
+(defvar seed7-include-face 'seed7-include-face)
+
 (defface seed7-in-statement-keyword-face
   `(;; (((class grayscale) (background light))
     ;;  (:background "Gray90" :weight bold))
@@ -607,11 +647,12 @@
   (list
    ;; pragmas
    (cons seed7-pragma-keywords-regexp                (list 1 seed7-pragma-keyword-face))
-   ;; in-statement-keywords
+   ;; in-statement keywords
    (cons seed7-lead-in-statement-keywords-regexp     (list 1 seed7-in-statement-keyword-face))
    (cons seed7-in-statement-keywords-regexp          (list 1 seed7-in-statement-keyword-face))
-   (cons "^\\(\\$ +\\(include\\)\\) "                (list 1 seed7-in-statement-keyword-face))
-   ;; statement introducing  keywords
+   ;; include
+   (cons seed7-include-regexp                        (list 1 seed7-include-face))
+   ;; statement-introducing keywords
    (cons seed7-statement-introducing-keywords-regexp (list 1 seed7-statement-introducing-keyword-face))
 
    (cons seed7-in-middle-statement-keywords-regexp   (list 1 font-lock-keyword-face))
