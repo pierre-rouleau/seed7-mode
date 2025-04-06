@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-06 13:38:44 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-06 13:57:13 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -83,6 +83,7 @@
 ;; - Seed7 Faces
 ;; - Seed7 Font Locking Control
 ;; - Seed7 Comments Control
+;; - Seed7 iMenu Support
 ;; - Seed7 Major Mode
 
 ;;; --------------------------------------------------------------------------
@@ -823,6 +824,16 @@ just toggles it when zero or left out."
   ;; (c-keep-region-active)
   )
 
+;; ---------------------------------------------------------------------------
+;;* Seed7 iMenu Support
+;;  ===================
+(defconst seed7-procedure-regexp
+  "^const proc: \\([[:alnum:]][[:alnum:]_]+\\) .*is func")
+
+(defconst seed7-function-regexp
+  "^const func: \\([[:alnum:]][[:alnum:]_]+\\) .*is func")
+
+;; ---------------------------------------------------------------------------
 
 ;;* Seed7 Major Mode
 ;;  ================
@@ -832,7 +843,12 @@ just toggles it when zero or left out."
   "Major mode for editing Seed7 files.
 This is a preliminary implementation, based on `pascal-mode'"
   (seed7--set-comment-style seed7-uses-block-comment)
-  (setq font-lock-defaults '((seed7-font-lock-keywords))))
+  (setq-local font-lock-defaults '((seed7-font-lock-keywords)))
+
+  (setq-local imenu-generic-expression
+              (list
+                (list "Procedure" seed7-procedure-regexp 1)
+                (list "Function"  seed7-function-regexp  1))))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.s[di]7\\'" . seed7-mode))
