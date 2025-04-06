@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-06 14:09:17 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-06 19:08:05 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -90,7 +90,7 @@
 ;;; Dependencies:
 ;;
 ;;
-
+(require 'speedbar)
 
 ;;; --------------------------------------------------------------------------
 ;;; Code:
@@ -828,10 +828,10 @@ just toggles it when zero or left out."
 ;;* Seed7 iMenu Support
 ;;  ===================
 (defconst seed7-procedure-regexp
-  "^const proc: \\([[:alnum:]][[:alnum:]_]+\\) .*is func")
+  "^const proc: \\([[:alpha:]][[:alnum:]_]+\\) .*is func")
 
 (defconst seed7-function-regexp
-  "^const func: \\([[:alnum:]][[:alnum:]_]+\\) .*is func")
+  "^const func \\([[:alpha:]][[:alnum:]_]+\\) ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is func")
 
 (defconst seed7-enum-regexp
   "const type: \\([[:alpha:]][[:alnum:]_]+\\) is new enum")
@@ -841,6 +841,11 @@ just toggles it when zero or left out."
 
 (defconst seed7-struct-regexp
   "const type: \\([[:alpha:]][[:alnum:]_]+\\) is new struct")
+
+;;* Seed7 Speedbar Support
+;;  ======================
+
+(speedbar-add-supported-extension "\\.s[di]7\\'")
 
 ;; ---------------------------------------------------------------------------
 
@@ -860,7 +865,7 @@ This is a preliminary implementation, based on `pascal-mode'"
                (list "Interface" seed7-interface-regexp 1)
                (list "Struct"    seed7-struct-regexp 1)
                (list "Procedure" seed7-procedure-regexp 1)
-               (list "Function"  seed7-function-regexp  1))))
+               (list "Function"  seed7-function-regexp  2))))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.s[di]7\\'" . seed7-mode))
