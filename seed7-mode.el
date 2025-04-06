@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-06 09:39:56 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-06 11:09:01 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -542,7 +542,7 @@
     ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
 
     (t (:weight bold)))
-  "Font Lock mode face used to highlight array names."
+  "Font Lock mode face used to highlight pragma keywords."
   :group 'seed7-faces)
 (defvar seed7-pragma-keyword-face 'seed7-pragma-keyword-face)
 
@@ -562,7 +562,7 @@
     ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
 
     (t (:weight bold)))
-  "Font Lock mode face used to highlight array names."
+  "Font Lock mode face used to highlight include."
   :group 'seed7-faces)
 (defvar seed7-include-face 'seed7-include-face)
 
@@ -581,7 +581,7 @@
     ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
 
     (t (:weight bold)))
-  "Font Lock mode face used to highlight array names."
+  "Font Lock mode face used to highlight keywords."
   :group 'seed7-faces)
 (defvar seed7-in-statement-keyword-face 'seed7-in-statement-keyword-face)
 
@@ -601,7 +601,7 @@
     ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
 
     (t (:weight bold)))
-  "Font Lock mode face used to highlight array names."
+  "Font Lock mode face used to highlight keywords that introduce a statement."
   :group 'seed7-faces)
 (defvar seed7-statement-introducing-keyword-face 'seed7-statement-introducing-keyword-face)
 
@@ -621,7 +621,7 @@
     ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
 
     (t (:weight bold)))
-  "Font Lock mode face used to highlight array names."
+  "Font Lock mode face used to highlight errinfo values."
   :group 'seed7-faces)
 (defvar seed7-errinfo-value-face 'seed7-errinfo-value-face)
 
