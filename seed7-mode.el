@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-06 11:09:01 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-06 12:46:50 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -40,6 +40,27 @@
 ;; - Template help for code creation
 ;; - Commands to compile with error reporting
 ;;
+;; [:todo 2025-04-06, by Pierre Rouleau: Fix following problems:
+;;  Known problems:
+;;  # 01  Find why we need defvar of deface symbols. These should not be
+;;        required.
+;;  # 02  Back-Slash escaped double quote inside string is not recognized.
+;;        - The prog-mode based partly solves this but introduces issues with
+;;          escaped single quoted.  Investigate and find the proper syntax
+;;          logic to use.
+;;  # 03  Complete defface definitions:
+;;        - Support light and dark backgrounds.
+;;        - Update coloring, once testing is complete.
+;;        - Maybe add ability to reduce number of faces used (or re-use the
+;;          same face for various elements).  It would allow dual use: one
+;;          with lots of different renderings and another with not that many,
+;;          a more conservative approach.
+;;  # 04  Cleanup keyword definitions.  There are probably too many
+;;        defined, and these are used for preliminary testing.  Once testing
+;;        of this is completed, remove the duplication and keep what is
+;;        strictly necessary to eliminate un-required extra processing.
+;; ]
+;;
 ;;
 ;; Code Organization Layout
 ;;
@@ -49,7 +70,9 @@
 ;;    - Seed7 Pragmas
 ;;    - Seed7 include
 ;;    - Seed7 keywords used in statements
-;;    -
+;;    - Seed7 statement introducing keywords
+;;    - Seed7 keywords used in middle of statements
+;;    -  Seed7 declaration introduction keywords
 
 ;;; --------------------------------------------------------------------------
 ;;; Dependencies:
@@ -136,14 +159,17 @@
 ;;  ---------------------------------
 ;;
 ;; All keywords a re listed here, but some are commented out because
-;; they are part of another list below.  The ones left are
-;;
+;; they are part of another list below.  The ones left are the ones that
+;; are at the beginning of a line (with or without leading white space),
+;; identified in `seed7--lead-in-statement-keywords' and some that can also
+;; be in the middle or end of line, which are identified by
+;;`seed--in-statement-keywords'.
 
 (defconst seed7--lead-in-statement-keywords
   '("begin"
     ;; "block"
     ;; "case"
-    "catch"                      ; currently missing in the Seed7 keyword list
+    ;; "catch"
     "const"
     "do"
     "downto"
@@ -151,7 +177,7 @@
     ;; "elsif"
     ;; "end"
     ;; "enum"
-    "exception"
+    ;; "exception"
     ;; "for"
     "forward"
     ;; "func"
@@ -163,7 +189,7 @@
     "local"
     "new"
     "of"
-    "otherwise"
+    ;; "otherwise"
     "param"
     "raise"                      ; currently missing in the Seed7 keyword list
     "range"
@@ -180,7 +206,7 @@
     ;; "until"
     "val"
     "var"
-    "when"
+    ;; "when"
     ;; "while"
     ))
 
@@ -190,7 +216,6 @@
           (rx-to-string
            `(: (or ,@seed7--lead-in-statement-keywords)))
           "\\_>"))
-
 
 (defconst seed7--in-statement-keywords
   '("do"
@@ -204,37 +229,23 @@
            `(: (or ,@seed7--in-statement-keywords)))
           "\\_>"))
 
-;; Seed7 statement introducing keywords
-;; ------------------------------------
+;;* Seed7 statement introducing keywords
+;;  ------------------------------------
+;;
 
 (defconst seed7--statement-introducing-keywords
-  '("block"                             ; end block
-    "case"                              ; end case
-    "enum"                              ; end enum
-    "for"                               ; end for
-    "func"                              ; end func
-    "if"                                ; else elsif endif
-    "repeat"                            ; until
-    "struct"                            ; end struct
+  '("block"       "end block"
+    "case"        "when" "otherwise" "end case"
+    "exception"   "catch" ; otherwise
+    "enum"        "end enum"
+    "for"         "end for"
+    "func"        "end func"
+    "if"          "else" "elsif" "endif"
+    "repeat"      "until"
+    "struct"      "end struct"
     "syntax"
     "system"
-    "while"                             ; end while
-
-    ;; for some of the keywords there a matching alternate or terminator
-    "else"
-    "elsif"
-    "endif"
-    "until"
-
-    ;; for most of the above there's a matching end keyword
-    "end block"
-    "end case"
-    "end enum"
-    "end for"
-    "end func"
-    "end if"
-    "end struct"
-    "end while"))
+    "while"       "end while"))
 
 (defconst seed7-statement-introducing-keywords-regexp
   (format "%s\\(%s\\)%s"
@@ -243,28 +254,29 @@
            `(: (or ,@seed7--statement-introducing-keywords)))
           "\\_>"))
 
-;; Seed7 keywords used in middle of statements
-;; -------------------------------------------
+;;* Seed7 keywords used in middle of statements
+;;  -------------------------------------------
 
 (defconst seed7--in-middle-statement-keywords
   '("begin"
     "do"
     "downto"
-    "else"
-    "elsif"
-    "end"
+    ;; "else"
+    ;; "elsif"
+    ;; "end"
     "exception"
     "local"
     "new"
-    "otherwise"
+    ;; "otherwise"
     "param"
     "range"
     "result"
     "step"
     "then"
     "to"
-    "until"
-    "when"))
+    ;; "until"
+    ;; "when"
+    ))
 
 (defconst seed7-in-middle-statement-keywords-regexp
   (format "%s\\(%s\\)%s"
@@ -274,8 +286,8 @@
           "[[:punct:][:space:]]"))
 
 
-;; Seed7 declaration introduction keywords
-;; ---------------------------------------
+;;* Seed7 declaration introduction keywords
+;;  ---------------------------------------
 
 (defconst seed7--declaration-intro-keywords
   '("const"
@@ -335,25 +347,31 @@
     "bin64"
     "bitset"
     "boolean"
+    "bstring"
+    "category"
     "char"
     "clib_file"
     "color"
     "complex"
+    "database"
     "duration"
     "enum"
     "expr"
     "file"
+    "fileSys"
     "float"
     "func"
     "hash"
     "integer"
     "object"
     "proc"
+    "process"
     "program"
     "rational"
     "reference"
     "ref_list"
     "set"
+    "sqlStatement"
     "string"
     "struct"
     "text"
@@ -586,6 +604,46 @@
 (defvar seed7-in-statement-keyword-face 'seed7-in-statement-keyword-face)
 
 
+(defface seed7-in-middle-statement-keyword-face
+  `(;; (((class grayscale) (background light))
+    ;;  (:background "Gray90" :weight bold))
+
+    ;; (((class grayscale) (background dark))
+    ;;  (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
+     (:foreground "color-38" :weight bold))
+
+    ;; (((class color) (background dark))
+    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight keywords used in middle of statements."
+  :group 'seed7-faces)
+(defvar seed7-in-middle-statement-keyword-face 'seed7-in-middle-statement-keyword-face)
+
+
+(defface seed7-intro-statement-keyword-face
+  `(;; (((class grayscale) (background light))
+    ;;  (:background "Gray90" :weight bold))
+
+    ;; (((class grayscale) (background dark))
+    ;;  (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
+     (:foreground "color-39" :weight bold))
+
+    ;; (((class color) (background dark))
+    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight statement intro keywords."
+  :group 'seed7-faces)
+(defvar seed7-intro-statement-keyword-face 'seed7-intro-statement-keyword-face)
+
+
 (defface seed7-statement-introducing-keyword-face
   `(;; (((class grayscale) (background light))
     ;;  (:background "Gray90" :weight bold))
@@ -652,11 +710,12 @@
    (cons seed7-in-statement-keywords-regexp          (list 1 seed7-in-statement-keyword-face))
    ;; include
    (cons seed7-include-regexp                        (list 1 seed7-include-face))
-   ;; statement-introducing keywords
+   ;; statement-introducing keywords (needed??probably not)
    (cons seed7-statement-introducing-keywords-regexp (list 1 seed7-statement-introducing-keyword-face))
-
-   (cons seed7-in-middle-statement-keywords-regexp   (list 1 font-lock-keyword-face))
-   (cons seed7-declaration-intro-keywords-regexp     (list 1 font-lock-keyword-face))
+   ;; Seed7 keywords used in middle of statements
+   (cons seed7-in-middle-statement-keywords-regexp   (list 1 seed7-in-middle-statement-keyword-face))
+   ;; Seed7 declaration introduction keywords :probably need a better name
+   (cons seed7-declaration-intro-keywords-regexp     (list 1 seed7-intro-statement-keyword-face))
 
    (cons seed7-operator-symbols-regexp               (list 1 font-lock-keyword-face))
    (cons seed7-arithmetic-operator-regexp            (list 1 font-lock-keyword-face))
