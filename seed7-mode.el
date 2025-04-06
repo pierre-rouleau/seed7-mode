@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-06 13:27:52 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-06 13:38:44 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -65,7 +65,6 @@
 ;; Code Organization Layout
 ;;
 ;; -  Seed7 Customization
-;;
 ;; -  Seed7 Keywords
 ;;    - Seed7 Pragmas
 ;;    - Seed7 include
@@ -77,11 +76,14 @@
 ;;    - Seed7 Predefined Constants
 ;;    - Seed7 Predefined Variables
 ;;    - Seed7 Predefined errinfo value
-
 ;;    - Seed7 Operator Symbols
 ;;    - Seed7 Assignment Operator Symbols
 ;;    - Seed7 Arithmetic Operators
 ;;    - Seed Other operators
+;; - Seed7 Faces
+;; - Seed7 Font Locking Control
+;; - Seed7 Comments Control
+;; - Seed7 Major Mode
 
 ;;; --------------------------------------------------------------------------
 ;;; Dependencies:
@@ -511,7 +513,9 @@
   " \\(\\(<&\\)\\|\\(=\\)\\|\\(<>\\)\\|\\([<>][=]?\\)\\) ")
 
 
-;; Seed7 Faces
+;;* Seed7 Faces
+;;  ===========
+;;
 ;;
 ;; ===================================== ================================================
 ;; Variable name                         Description: Face for...
@@ -536,8 +540,6 @@
 ;; **Extra Faces for Seed7**
 ;; `seed7-in-statement-keyword-face'     Seed7 keywords used inside statements.
 ;; ===================================== ================================================
-
-
 
 (defun seed7-choose-color (&rest list)
   (let (answer)
@@ -711,6 +713,9 @@
 (defvar seed7-errinfo-value-face 'seed7-errinfo-value-face)
 
 
+;;* Seed7 Font Locking Control
+;;  ==========================
+;;
 
 (defconst seed7-font-lock-keywords
   (list
@@ -750,8 +755,8 @@
   "Alist of Seed7 base keywords with each a specific face")
 
 
-;; Seed7 Comments
-;; --------------
+;;* Seed7 Comments Control
+;;  ======================
 ;;
 ;; Region:      "(\*" "\*)"
 ;; To line end: "#"
@@ -818,6 +823,9 @@ just toggles it when zero or left out."
   ;; (c-keep-region-active)
   )
 
+
+;;* Seed7 Major Mode
+;;  ================
 
 ;;;###autoload
 (define-derived-mode seed7-mode pascal-mode "seed7"
