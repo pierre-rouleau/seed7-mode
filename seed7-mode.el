@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-07 12:33:55 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-07 15:28:33 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -837,7 +837,14 @@ just toggles it when zero or left out."
 (defconst seed7-function-regexp
   "^[[:space:]]*const func \\([[:alpha:]][[:alnum:]_]+\\) ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is\\( func\\)?")
 
-;; [:todo 2025-04-07, by Pierre Rouleau: enhance next regexp to real procedure syntax]
+;; The following regexp has the following groups:
+;; Group 1: "proc" or "func "
+;; Group 2: "proc" or "func "
+;; Group 3: The func return type.  May be empty.
+;; Group 4: The func or proc name.
+;; Group 5: - "func" for proc or function that ends with "end func".
+;;          - empty for a func that only has a return statement.
+;;
 (defconst seed7-procedure-or-function-regexp
   "^[[:space:]]*const \\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)? ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is\\( func\\)?")
 
@@ -859,26 +866,101 @@ just toggles it when zero or left out."
 ;;* Navigation in Seed7 Code
 ;;  ========================
 
-(defun seed7-beg-of-defun ()
+(defun seed7-beg-of-defun (&optional silent dont-push-mark)
   "Move backward to the beginning of the current function or procedure."
-  (interactive)
-  (unless (re-search-backward seed7-procedure-or-function-regexp nil :noerror)
-    (user-error "No Seed7 function or procedure found above.")))
+  (interactive "^")
+  (let* ((original-pos (point))
+         (final-pos    original-pos))
+    (save-excursion
+      (forward-line 1)
+      (if (re-search-backward seed7-procedure-or-function-regexp
+                              nil :noerror)
+          (progn
+            (setq final-pos (point))
+            (unless silent
+              (let ((item-name (substring-no-properties (match-string 4))))
+                (message "To beginning of: %s" item-name))))
+        (user-error "No Seed7 function or procedure found above.")))
+    (when (/= final-pos original-pos)
+        (unless dont-push-mark
+          (push-mark original-pos))
+        (goto-char final-pos))))
 
-(defun seed7-beg-of-next-defun ()
+(defun seed7-beg-of-next-defun (&optional silent dont-push-mark)
   "Move forward to the beginning of the next function or procedure."
-  (interactive)
-  (let ((original-pos (point)))
-    (right-char)
-    (if (re-search-forward seed7-procedure-or-function-regexp nil :noerror)
-        (move-beginning-of-line nil)
-      (goto-char original-pos)
-      (user-error "No Seed7 function or procedure found below."))))
+  (interactive "^")
+  (let* ((original-pos (point))
+         (final-pos    original-pos))
+    (save-excursion
+      (right-char)
+      (if (re-search-forward seed7-procedure-or-function-regexp
+                             nil :noerror)
+          (progn
+            (move-beginning-of-line nil)
+            (setq final-pos (point))
+            (unless silent
+              (let ((item-name (substring-no-properties (match-string 4))))
+                (message "To beginning of: %s" item-name))))
+        (user-error "No Seed7 function or procedure found below!")))
+    (when (/= final-pos original-pos)
+        (unless dont-push-mark
+          (push-mark original-pos))
+        (goto-char final-pos))))
 
-;; (defun seed7-end-of-defun ()
-;;   "Move forward to the end of the current function or procedure."
-;;   (interactive)
-;;   (re-search-backward seed7-procedure-or-function-regexp))
+(defun seed7-end-of-defun (&optional silent dont-push-mark)
+  "Move forward to the end of the current function or procedure."
+  (interactive "^")
+  ;; First identify the type of declaration by searching for the beginning
+  ;; of function or proc using the `seed7-procedure-or-function-regexp' regexp
+  ;; which has 5 groups
+  (let* ((original-pos (point))
+         (final-pos    original-pos))
+    (save-excursion
+      (forward-line 1)
+      (if (re-search-backward seed7-procedure-or-function-regexp)
+          (let ((item-type (substring-no-properties (match-string 1)))
+                (item-name (substring-no-properties (match-string 4))))
+            (cond
+             ;; Procedure
+             ((string-equal item-type "proc")
+              (if  (search-forward "end func;")
+                  (progn
+                    (setq final-pos (point))
+                    (unless silent
+                      (message "To end of: %s" item-name)))
+                (user-error "End of %s not found: is code valid?" item-name)))
+             ;; Function
+             ((string-equal item-type  "func ")
+              (if (string-equal (substring-no-properties
+                                 (match-string 5)) "func")
+                  ;; long func that ends with end func;
+                  (if (search-forward "end func;")
+                      (progn
+                        (setq final-pos (point))
+                        (unless silent
+                          (message "To end of: %s" item-name)))
+                    (user-error "End of %s not found: is code valid?"
+                                item-name))
+                ;; short func with simpler return
+                (if (re-search-forward "[[:space:]]return[[:space:]]+.+;")
+                    ;; [:todo 2025-04-07, by Pierre Rouleau: fix required:
+                    ;; check that syntax at point is not comment or string
+                    ;; at point to validate find. Do this only once the
+                    ;; syntax support is complete and detects strings/comments
+                    ;; properly. ]
+                    (progn
+                      (setq final-pos (point))
+                      (unless silent
+                        (message "To end of: %s" item-name)))
+                  (user-error "Function not terminated properly!"))))
+             ;; The next line should never occur, if it does report a bug
+             ;; providing a code example to reproduce.
+             (t (error "Not inside a procedure or function!"))))
+        (user-error "No Seed7 end of function or procedure found below!")))
+    (when (/= final-pos original-pos)
+        (unless dont-push-mark
+          (push-mark original-pos))
+        (goto-char final-pos))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Key Map
@@ -886,11 +968,12 @@ just toggles it when zero or left out."
 ;;
 ;; [:todo 2025-04-07, by Pierre Rouleau: Find best user-option keys for Seed7 map]
 
-;; (defvar seed7-mode-map
-;;   (let ((map (make-sparse-keymap)))
-;;     (define-key map "\M-\C-a"  'seed7-beg-of-defun)
-;;     (define-key map "\M-\C-e"  'seed7-end-of-defun)
-;;     ))
+(defvar seed7-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "\M-\C-a"  'seed7-beg-of-defun)
+    (define-key map "\M-\C-e"  'seed7-end-of-defun)
+    map)
+  "Keymap used in seed7-mode.")
 
 ;; ---------------------------------------------------------------------------
 
@@ -898,7 +981,7 @@ just toggles it when zero or left out."
 ;;  ================
 
 ;;;###autoload
-(define-derived-mode seed7-mode pascal-mode "seed7"
+(define-derived-mode seed7-mode prog-mode "seed7"
   "Major mode for editing Seed7 files.
 This is a preliminary implementation, based on `pascal-mode'"
   (seed7--set-comment-style seed7-uses-block-comment)
