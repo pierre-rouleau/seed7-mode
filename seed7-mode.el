@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-06 19:08:05 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-07 10:47:39 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -868,7 +868,7 @@ This is a preliminary implementation, based on `pascal-mode'"
                (list "Function"  seed7-function-regexp  2))))
 
 ;;;###autoload
-(add-to-list 'auto-mode-alist '("\\.s[di]7\\'" . seed7-mode))
+(add-to-list 'auto-mode-alist '("\\.s\\(d7\\|7i\\)\\'" . seed7-mode))
 
 ;;; --------------------------------------------------------------------------
 (provide 'seed7-mode)

@@ -24,7 +24,7 @@ Emacs support for the Seed7 Programming language
 
   (push (expand-file-name "utils" user-emacs-directory) load-path)
   (autoload 'seed7-mode "seed7-mode" nil :interactive)
-  (add-to-list 'auto-mode-alist '("\\.s[di]7\\'" . seed7-mode))
+  (add-to-list 'auto-mode-alist '("\\.s\\(d7\\|7i\\)\\'" . seed7-mode))
   ```
 
 - Download the seed7_mode.el file and copy it inside the
