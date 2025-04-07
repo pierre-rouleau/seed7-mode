@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-07 10:47:39 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-07 12:33:55 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -84,13 +84,17 @@
 ;; - Seed7 Font Locking Control
 ;; - Seed7 Comments Control
 ;; - Seed7 iMenu Support
+;; - Seed7 Speedbar Support
+;; - Navigation in Seed7 Code
+;; - Seed7 keymap
 ;; - Seed7 Major Mode
 
 ;;; --------------------------------------------------------------------------
 ;;; Dependencies:
 ;;
 ;;
-(require 'speedbar)
+(require 'simple)         ; use `move-beginning-of-line'
+(require 'speedbar)       ; use `speedbar-add-supported-extension'
 
 ;;; --------------------------------------------------------------------------
 ;;; Code:
@@ -828,10 +832,14 @@ just toggles it when zero or left out."
 ;;* Seed7 iMenu Support
 ;;  ===================
 (defconst seed7-procedure-regexp
-  "^const proc: \\([[:alpha:]][[:alnum:]_]+\\) .*is func")
+  "^[[:space:]]*const proc: \\([[:alpha:]][[:alnum:]_]+\\) .*is func")
 
 (defconst seed7-function-regexp
-  "^const func \\([[:alpha:]][[:alnum:]_]+\\) ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is func")
+  "^[[:space:]]*const func \\([[:alpha:]][[:alnum:]_]+\\) ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is\\( func\\)?")
+
+;; [:todo 2025-04-07, by Pierre Rouleau: enhance next regexp to real procedure syntax]
+(defconst seed7-procedure-or-function-regexp
+  "^[[:space:]]*const \\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)? ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is\\( func\\)?")
 
 (defconst seed7-enum-regexp
   "const type: \\([[:alpha:]][[:alnum:]_]+\\) is new enum")
@@ -845,7 +853,44 @@ just toggles it when zero or left out."
 ;;* Seed7 Speedbar Support
 ;;  ======================
 
-(speedbar-add-supported-extension "\\.s[di]7\\'")
+(speedbar-add-supported-extension "\\.s\\(d7\\|7i\\)\\'")
+
+;; ---------------------------------------------------------------------------
+;;* Navigation in Seed7 Code
+;;  ========================
+
+(defun seed7-beg-of-defun ()
+  "Move backward to the beginning of the current function or procedure."
+  (interactive)
+  (unless (re-search-backward seed7-procedure-or-function-regexp nil :noerror)
+    (user-error "No Seed7 function or procedure found above.")))
+
+(defun seed7-beg-of-next-defun ()
+  "Move forward to the beginning of the next function or procedure."
+  (interactive)
+  (let ((original-pos (point)))
+    (right-char)
+    (if (re-search-forward seed7-procedure-or-function-regexp nil :noerror)
+        (move-beginning-of-line nil)
+      (goto-char original-pos)
+      (user-error "No Seed7 function or procedure found below."))))
+
+;; (defun seed7-end-of-defun ()
+;;   "Move forward to the end of the current function or procedure."
+;;   (interactive)
+;;   (re-search-backward seed7-procedure-or-function-regexp))
+
+;; ---------------------------------------------------------------------------
+;;* Seed7 Key Map
+;;  =============
+;;
+;; [:todo 2025-04-07, by Pierre Rouleau: Find best user-option keys for Seed7 map]
+
+;; (defvar seed7-mode-map
+;;   (let ((map (make-sparse-keymap)))
+;;     (define-key map "\M-\C-a"  'seed7-beg-of-defun)
+;;     (define-key map "\M-\C-e"  'seed7-end-of-defun)
+;;     ))
 
 ;; ---------------------------------------------------------------------------
 
