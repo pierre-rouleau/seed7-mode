@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-07 17:04:56 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-07 18:21:07 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -95,6 +95,7 @@
 ;;
 (require 'simple)         ; use `move-beginning-of-line'
 (require 'speedbar)       ; use `speedbar-add-supported-extension'
+(require 'subr-x)         ; use: `string-trim'
 
 ;;; --------------------------------------------------------------------------
 ;;; Code:
@@ -944,9 +945,31 @@ just toggles it when zero or left out."
         (push-mark original-pos))
       (goto-char final-pos))))
 
-;; [:todo 2025-04-07, by Pierre Rouleau: Allow repeating the next operation to
-;; go to the end of the *next function or procedure. At the moment it gets
-;; stuck at the current one!]
+(defun seed7--at-end-of-defun ()
+  "Return t if point is at end of function or procedure, nil otherwise."
+  (save-excursion
+    (let ((is-at-end nil)
+          (orig-end-of-line-pos (save-excursion
+                                  (move-end-of-line 1)
+                                  (point))))
+      ;; if line is an 'end func;' we're at end of function
+      (forward-line 0)
+      (setq is-at-end
+            (string-equal
+             (string-trim (thing-at-point 'line :no-properties))
+             "end func;"))
+      (unless is-at-end
+        ;; otherwise we may still be at end of a simple function with a return
+        ;; check if we can get to the end and check if the position is the
+        ;; same as what the end of line position was.
+        (when (and (re-search-backward seed7-procedure-or-function-regexp
+                                       nil :noerror)
+                   (re-search-forward "[[:space:]]return[[:space:]]+.+;"
+                                      nil :noerror))
+          (when (eq (point) orig-end-of-line-pos)
+            (setq is-at-end t))))
+      is-at-end)))
+
 (defun seed7-end-of-defun (&optional n silent dont-push-mark)
   "Move forward to the end of the current function or procedure.
 - With optional argument N, repeat the search that many times.
@@ -965,13 +988,21 @@ just toggles it when zero or left out."
          (final-pos    original-pos)
          (verbose nil))
     (save-excursion
+      (when (seed7--at-end-of-defun)
+        (seed7-beg-of-next-defun 1 :silent :dont-push-mark))
       (dotimes (vn n)
         (setq verbose (and (not silent)
                            (eq vn (1- n))))
         (forward-line 1)
-        (if (re-search-backward seed7-procedure-or-function-regexp)
+        (if (or (re-search-backward seed7-procedure-or-function-regexp
+                                    nil :noerror)
+                (re-search-forward seed7-procedure-or-function-regexp
+                                   nil :noerror))
             (let ((item-type (substring-no-properties (match-string 1)))
-                  (item-name (substring-no-properties (match-string 4))))
+                  (item-name (substring-no-properties (match-string 4)))
+                  (group5    (let ((matched (match-string 5)))
+                                (when matched
+                                  (substring-no-properties matched)))))
               (cond
                ;; Procedure
                ((string-equal item-type "proc")
@@ -983,8 +1014,8 @@ just toggles it when zero or left out."
                   (user-error "End of %s not found: is code valid?" item-name)))
                ;; Function
                ((string-equal item-type  "func ")
-                (if (string-equal (substring-no-properties
-                                   (match-string 5)) "func")
+                (if (and group5
+                         (string-equal group5 " func"))
                     ;; long func that ends with end func;
                     (if (search-forward "end func;")
                         (progn
@@ -994,7 +1025,8 @@ just toggles it when zero or left out."
                       (user-error "End of %s not found: is code valid?"
                                   item-name))
                   ;; short func with simpler return
-                  (if (re-search-forward "[[:space:]]return[[:space:]]+.+;")
+                  (if (re-search-forward "[[:space:]]return[[:space:]]+.+;"
+                                         nil :noerror)
                       ;; [:todo 2025-04-07, by Pierre Rouleau: fix required:
                       ;; check that syntax at point is not comment or string
                       ;; at point to validate find. Do this only once the
