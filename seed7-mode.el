@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-07 16:23:36 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-07 17:04:56 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -866,46 +866,54 @@ just toggles it when zero or left out."
 ;;* Navigation in Seed7 Code
 ;;  ========================
 
-(defun seed7-beg-of-defun (&optional silent dont-push-mark)
+(defun seed7-beg-of-defun (&optional n silent dont-push-mark)
   "Move backward to the beginning of the current function or procedure.
+- With optional argument N, repeat the search that many times.
 - Unless SILENT, the function prints a message showing the name of the new
   found function or procedure.
 - When a new function or procedure is found the function pushes the mark
   unless DONT-PUSH_MARK is non-nil. Pushing the mark allows future pop to
   go back to the original position with C-u C-SPC
 - Supports shift selection."
-  (interactive "^")
+  (interactive "^p")
+  (unless n (setq n 1))
   (let* ((original-pos (point))
-         (final-pos    original-pos))
+         (final-pos    original-pos)
+         (verbose nil))
     (save-excursion
-      (move-end-of-line 1)
-      (if (re-search-backward seed7-procedure-or-function-regexp
-                              nil :noerror)
-          (if (eq original-pos (point))
+      (dotimes (vn n)
+        (setq verbose (and (not silent)
+                           (eq vn (1- n))))
+        (move-end-of-line 1)
+        (if (re-search-backward seed7-procedure-or-function-regexp
+                                nil :noerror)
+            (if (eq original-pos (point))
+                (progn
+                  (right-char)
+                  (if (re-search-backward seed7-procedure-or-function-regexp
+                                          nil :noerror)
+                      (progn
+                        (setq final-pos (point))
+                        (when verbose
+                          (let ((item-name (substring-no-properties (match-string 4))))
+                            (message "To beginning of: %s" item-name))))
+                    (user-error "No other Seed function or procedure above.")))
               (progn
-                (right-char)
-                (if (re-search-backward seed7-procedure-or-function-regexp
-                                        nil :noerror)
-                    (progn
-                      (setq final-pos (point))
-                      (unless silent
-                        (let ((item-name (substring-no-properties (match-string 4))))
-                          (message "To beginning of: %s" item-name))))
-                  (user-error "No other Seed function or procedure above.")))
-            (progn
-              (setq final-pos (point))
-              (unless silent
-                (let ((item-name (substring-no-properties (match-string 4))))
-                  (message "To beginning of: %s" item-name)))))
-        (user-error "No Seed7 function or procedure found above.")))
+                (setq final-pos (point))
+                (when verbose
+                  (let ((item-name (substring-no-properties (match-string 4))))
+                    (message "To beginning of: %s" item-name)))))
+          (user-error "No Seed7 function or procedure found above."))
+        (left-char)))
     (when (/= final-pos original-pos)
       (unless dont-push-mark
         (push-mark original-pos))
       (goto-char final-pos))))
 
 
-(defun seed7-beg-of-next-defun (&optional silent dont-push-mark)
+(defun seed7-beg-of-next-defun (&optional n silent dont-push-mark)
   "Move forward to the beginning of the next function or procedure.
+- With optional argument N, repeat the search that many times.
 - Unless SILENT, the function prints a message showing the name of the new
   found function or procedure.
 - When a new function or procedure is found the function pushes the mark
@@ -913,26 +921,35 @@ just toggles it when zero or left out."
   go back to the original position with C-u C-SPC
 - Supports shift selection."
   (interactive "^")
+  (unless n (setq n 1))
   (let* ((original-pos (point))
-         (final-pos    original-pos))
+         (final-pos    original-pos)
+         (verbose nil))
     (save-excursion
-      (right-char)
-      (if (re-search-forward seed7-procedure-or-function-regexp
-                             nil :noerror)
-          (progn
-            (move-beginning-of-line nil)
-            (setq final-pos (point))
-            (unless silent
-              (let ((item-name (substring-no-properties (match-string 4))))
-                (message "To beginning of: %s" item-name))))
-        (user-error "No Seed7 function or procedure found below!")))
+      (dotimes (vn n)
+        (setq verbose (and (not silent)
+                           (eq vn (1- n))))
+        (right-char)
+        (if (re-search-forward seed7-procedure-or-function-regexp
+                               nil :noerror)
+            (progn
+              (move-beginning-of-line nil)
+              (setq final-pos (point))
+              (when verbose
+                (let ((item-name (substring-no-properties (match-string 4))))
+                  (message "To beginning of: %s" item-name))))
+          (user-error "No Seed7 function or procedure found below!"))))
     (when (/= final-pos original-pos)
       (unless dont-push-mark
         (push-mark original-pos))
       (goto-char final-pos))))
 
-(defun seed7-end-of-defun (&optional silent dont-push-mark)
+;; [:todo 2025-04-07, by Pierre Rouleau: Allow repeating the next operation to
+;; go to the end of the *next function or procedure. At the moment it gets
+;; stuck at the current one!]
+(defun seed7-end-of-defun (&optional n silent dont-push-mark)
   "Move forward to the end of the current function or procedure.
+- With optional argument N, repeat the search that many times.
 - Unless SILENT, the function prints a message showing the name of the new
   found function or procedure.
 - When a new function or procedure is found the function pushes the mark
@@ -940,53 +957,58 @@ just toggles it when zero or left out."
   go back to the original position with C-u C-SPC
 - Supports shift selection."
   (interactive "^")
+  (unless n (setq n 1))
   ;; First identify the type of declaration by searching for the beginning
   ;; of function or proc using the `seed7-procedure-or-function-regexp' regexp
   ;; which has 5 groups
   (let* ((original-pos (point))
-         (final-pos    original-pos))
+         (final-pos    original-pos)
+         (verbose nil))
     (save-excursion
-      (forward-line 1)
-      (if (re-search-backward seed7-procedure-or-function-regexp)
-          (let ((item-type (substring-no-properties (match-string 1)))
-                (item-name (substring-no-properties (match-string 4))))
-            (cond
-             ;; Procedure
-             ((string-equal item-type "proc")
-              (if  (search-forward "end func;")
-                  (progn
-                    (setq final-pos (point))
-                    (unless silent
-                      (message "To end of: %s" item-name)))
-                (user-error "End of %s not found: is code valid?" item-name)))
-             ;; Function
-             ((string-equal item-type  "func ")
-              (if (string-equal (substring-no-properties
-                                 (match-string 5)) "func")
-                  ;; long func that ends with end func;
-                  (if (search-forward "end func;")
-                      (progn
-                        (setq final-pos (point))
-                        (unless silent
-                          (message "To end of: %s" item-name)))
-                    (user-error "End of %s not found: is code valid?"
-                                item-name))
-                ;; short func with simpler return
-                (if (re-search-forward "[[:space:]]return[[:space:]]+.+;")
-                    ;; [:todo 2025-04-07, by Pierre Rouleau: fix required:
-                    ;; check that syntax at point is not comment or string
-                    ;; at point to validate find. Do this only once the
-                    ;; syntax support is complete and detects strings/comments
-                    ;; properly. ]
+      (dotimes (vn n)
+        (setq verbose (and (not silent)
+                           (eq vn (1- n))))
+        (forward-line 1)
+        (if (re-search-backward seed7-procedure-or-function-regexp)
+            (let ((item-type (substring-no-properties (match-string 1)))
+                  (item-name (substring-no-properties (match-string 4))))
+              (cond
+               ;; Procedure
+               ((string-equal item-type "proc")
+                (if  (search-forward "end func;")
                     (progn
                       (setq final-pos (point))
-                      (unless silent
+                      (when verbose
                         (message "To end of: %s" item-name)))
-                  (user-error "Function not terminated properly!"))))
-             ;; The next line should never occur, if it does report a bug
-             ;; providing a code example to reproduce.
-             (t (error "Not inside a procedure or function!"))))
-        (user-error "No Seed7 end of function or procedure found below!")))
+                  (user-error "End of %s not found: is code valid?" item-name)))
+               ;; Function
+               ((string-equal item-type  "func ")
+                (if (string-equal (substring-no-properties
+                                   (match-string 5)) "func")
+                    ;; long func that ends with end func;
+                    (if (search-forward "end func;")
+                        (progn
+                          (setq final-pos (point))
+                          (when verbose
+                            (message "To end of: %s" item-name)))
+                      (user-error "End of %s not found: is code valid?"
+                                  item-name))
+                  ;; short func with simpler return
+                  (if (re-search-forward "[[:space:]]return[[:space:]]+.+;")
+                      ;; [:todo 2025-04-07, by Pierre Rouleau: fix required:
+                      ;; check that syntax at point is not comment or string
+                      ;; at point to validate find. Do this only once the
+                      ;; syntax support is complete and detects strings/comments
+                      ;; properly. ]
+                      (progn
+                        (setq final-pos (point))
+                        (when verbose
+                          (message "To end of: %s" item-name)))
+                    (user-error "Function not terminated properly!"))))
+               ;; The next line should never occur, if it does report a bug
+               ;; providing a code example to reproduce.
+               (t (error "Not inside a procedure or function!"))))
+          (user-error "No Seed7 end of function or procedure found below!"))))
     (when (/= final-pos original-pos)
       (unless dont-push-mark
         (push-mark original-pos))
