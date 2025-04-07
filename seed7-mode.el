@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-07 15:28:33 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-07 16:23:36 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -867,27 +867,51 @@ just toggles it when zero or left out."
 ;;  ========================
 
 (defun seed7-beg-of-defun (&optional silent dont-push-mark)
-  "Move backward to the beginning of the current function or procedure."
+  "Move backward to the beginning of the current function or procedure.
+- Unless SILENT, the function prints a message showing the name of the new
+  found function or procedure.
+- When a new function or procedure is found the function pushes the mark
+  unless DONT-PUSH_MARK is non-nil. Pushing the mark allows future pop to
+  go back to the original position with C-u C-SPC
+- Supports shift selection."
   (interactive "^")
   (let* ((original-pos (point))
          (final-pos    original-pos))
     (save-excursion
-      (forward-line 1)
+      (move-end-of-line 1)
       (if (re-search-backward seed7-procedure-or-function-regexp
                               nil :noerror)
-          (progn
-            (setq final-pos (point))
-            (unless silent
-              (let ((item-name (substring-no-properties (match-string 4))))
-                (message "To beginning of: %s" item-name))))
+          (if (eq original-pos (point))
+              (progn
+                (right-char)
+                (if (re-search-backward seed7-procedure-or-function-regexp
+                                        nil :noerror)
+                    (progn
+                      (setq final-pos (point))
+                      (unless silent
+                        (let ((item-name (substring-no-properties (match-string 4))))
+                          (message "To beginning of: %s" item-name))))
+                  (user-error "No other Seed function or procedure above.")))
+            (progn
+              (setq final-pos (point))
+              (unless silent
+                (let ((item-name (substring-no-properties (match-string 4))))
+                  (message "To beginning of: %s" item-name)))))
         (user-error "No Seed7 function or procedure found above.")))
     (when (/= final-pos original-pos)
-        (unless dont-push-mark
-          (push-mark original-pos))
-        (goto-char final-pos))))
+      (unless dont-push-mark
+        (push-mark original-pos))
+      (goto-char final-pos))))
+
 
 (defun seed7-beg-of-next-defun (&optional silent dont-push-mark)
-  "Move forward to the beginning of the next function or procedure."
+  "Move forward to the beginning of the next function or procedure.
+- Unless SILENT, the function prints a message showing the name of the new
+  found function or procedure.
+- When a new function or procedure is found the function pushes the mark
+  unless DONT-PUSH_MARK is non-nil. Pushing the mark allows future pop to
+  go back to the original position with C-u C-SPC
+- Supports shift selection."
   (interactive "^")
   (let* ((original-pos (point))
          (final-pos    original-pos))
@@ -903,12 +927,18 @@ just toggles it when zero or left out."
                 (message "To beginning of: %s" item-name))))
         (user-error "No Seed7 function or procedure found below!")))
     (when (/= final-pos original-pos)
-        (unless dont-push-mark
-          (push-mark original-pos))
-        (goto-char final-pos))))
+      (unless dont-push-mark
+        (push-mark original-pos))
+      (goto-char final-pos))))
 
 (defun seed7-end-of-defun (&optional silent dont-push-mark)
-  "Move forward to the end of the current function or procedure."
+  "Move forward to the end of the current function or procedure.
+- Unless SILENT, the function prints a message showing the name of the new
+  found function or procedure.
+- When a new function or procedure is found the function pushes the mark
+  unless DONT-PUSH_MARK is non-nil. Pushing the mark allows future pop to
+  go back to the original position with C-u C-SPC
+- Supports shift selection."
   (interactive "^")
   ;; First identify the type of declaration by searching for the beginning
   ;; of function or proc using the `seed7-procedure-or-function-regexp' regexp
@@ -958,9 +988,9 @@ just toggles it when zero or left out."
              (t (error "Not inside a procedure or function!"))))
         (user-error "No Seed7 end of function or procedure found below!")))
     (when (/= final-pos original-pos)
-        (unless dont-push-mark
-          (push-mark original-pos))
-        (goto-char final-pos))))
+      (unless dont-push-mark
+        (push-mark original-pos))
+      (goto-char final-pos))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Key Map
