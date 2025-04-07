@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-07 18:21:07 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-07 18:55:02 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -85,7 +85,7 @@
 ;; - Seed7 Comments Control
 ;; - Seed7 iMenu Support
 ;; - Seed7 Speedbar Support
-;; - Navigation in Seed7 Code
+;; - Seed7 Code Navigation
 ;; - Seed7 keymap
 ;; - Seed7 Major Mode
 
@@ -864,8 +864,8 @@ just toggles it when zero or left out."
 (speedbar-add-supported-extension "\\.s\\(d7\\|7i\\)\\'")
 
 ;; ---------------------------------------------------------------------------
-;;* Navigation in Seed7 Code
-;;  ========================
+;;* Seed7 Code Navigation
+;;  =====================
 
 (defun seed7-beg-of-defun (&optional n silent dont-push-mark)
   "Move backward to the beginning of the current function or procedure.
@@ -1071,13 +1071,21 @@ This is a preliminary implementation, based on `pascal-mode'"
   (seed7--set-comment-style seed7-uses-block-comment)
   (setq-local font-lock-defaults '((seed7-font-lock-keywords)))
 
+  ;; iMenu Support / Speedbar Support
   (setq-local imenu-generic-expression
               (list
                (list "Enum"      seed7-enum-regexp 1)
                (list "Interface" seed7-interface-regexp 1)
                (list "Struct"    seed7-struct-regexp 1)
                (list "Procedure" seed7-procedure-regexp 1)
-               (list "Function"  seed7-function-regexp  2))))
+               (list "Function"  seed7-function-regexp  2)))
+
+  ;; Code Navigation
+  ;; Allow code familiar with the standard `beginning-of-defun' and
+  ;; `end-of-defun' to work inside Seed7 buffers.  This includes iedit,
+  ;; expand-region, etc...
+  (setq-local beginning-of-defun-function 'seed7-beg-of-defun)
+  (setq-local end-of-defun-function 'seed7-end-of-defun))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.s\\(d7\\|7i\\)\\'" . seed7-mode))
