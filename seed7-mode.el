@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-08 07:50:03 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-08 08:19:50 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -42,18 +42,20 @@
 ;;
 ;; [:todo 2025-04-06, by Pierre Rouleau: Fix following problems:
 ;;  Known problems:
-;;  # 01  Back-Slash escaped double quote inside string is not recognized.
+;;  # 01  Find why we need defvar of deface symbols. These should not be
+;;        required.
+;;  # 02  Back-Slash escaped double quote inside string is not recognized.
 ;;        - The prog-mode based partly solves this but introduces issues with
 ;;          escaped single quoted.  Investigate and find the proper syntax
 ;;          logic to use.
-;;  # 02  Complete defface definitions:
+;;  # 03  Complete defface definitions:
 ;;        - Support light and dark backgrounds.
 ;;        - Update coloring, once testing is complete.
 ;;        - Maybe add ability to reduce number of faces used (or re-use the
 ;;          same face for various elements).  It would allow dual use: one
 ;;          with lots of different renderings and another with not that many,
 ;;          a more conservative approach.
-;;  # 03  Cleanup keyword definitions.  There are probably too many
+;;  # 04  Cleanup keyword definitions.  There are probably too many
 ;;        defined, and these are used for preliminary testing.  Once testing
 ;;        of this is completed, remove the duplication and keep what is
 ;;        strictly necessary to eliminate un-required extra processing.
@@ -595,6 +597,8 @@ Use s7c -h to list compiler options.")
     (t (:weight bold)))
   "Font Lock mode face used to highlight pragma keywords."
   :group 'seed7-faces)
+(defvar seed7-pragma-keyword-face 'seed7-pragma-keyword-face)
+
 
 (defface seed7-include-face
   `(;; (((class grayscale) (background light))
@@ -613,6 +617,8 @@ Use s7c -h to list compiler options.")
     (t (:weight bold)))
   "Font Lock mode face used to highlight include."
   :group 'seed7-faces)
+(defvar seed7-include-face 'seed7-include-face)
+
 
 (defface seed7-in-statement-keyword-face
   `(;; (((class grayscale) (background light))
@@ -631,6 +637,8 @@ Use s7c -h to list compiler options.")
     (t (:weight bold)))
   "Font Lock mode face used to highlight keywords."
   :group 'seed7-faces)
+(defvar seed7-in-statement-keyword-face 'seed7-in-statement-keyword-face)
+
 
 (defface seed7-statement-introducing-keyword-face
   `(;; (((class grayscale) (background light))
@@ -649,6 +657,8 @@ Use s7c -h to list compiler options.")
     (t (:weight bold)))
   "Font Lock mode face used to highlight keywords that introduce a statement."
   :group 'seed7-faces)
+(defvar seed7-statement-introducing-keyword-face 'seed7-statement-introducing-keyword-face)
+
 
 (defface seed7-in-middle-statement-keyword-face
   `(;; (((class grayscale) (background light))
@@ -667,6 +677,8 @@ Use s7c -h to list compiler options.")
     (t (:weight bold)))
   "Font Lock mode face used to highlight keywords used in middle of statements."
   :group 'seed7-faces)
+(defvar seed7-in-middle-statement-keyword-face 'seed7-in-middle-statement-keyword-face)
+
 
 (defface seed7-intro-statement-keyword-face
   `(;; (((class grayscale) (background light))
@@ -685,6 +697,8 @@ Use s7c -h to list compiler options.")
     (t (:weight bold)))
   "Font Lock mode face used to highlight statement intro keywords."
   :group 'seed7-faces)
+(defvar seed7-intro-statement-keyword-face 'seed7-intro-statement-keyword-face)
+
 
 (defface seed7-predefined-variables-face
   `(;; (((class grayscale) (background light))
@@ -700,6 +714,8 @@ Use s7c -h to list compiler options.")
     (t (:weight bold)))
   "Font Lock mode face used to highlight predefined variable names."
   :group 'seed7-faces)
+(defvar seed7-predefined-variables-face 'seed7-predefined-variables-face)
+
 
 (defface seed7-errinfo-value-face
   `(;; (((class grayscale) (background light))
@@ -718,6 +734,8 @@ Use s7c -h to list compiler options.")
     (t (:weight bold)))
   "Font Lock mode face used to highlight errinfo values."
   :group 'seed7-faces)
+(defvar seed7-errinfo-value-face 'seed7-errinfo-value-face)
+
 
 ;;* Seed7 Font Locking Control
 ;;  ==========================
@@ -726,39 +744,39 @@ Use s7c -h to list compiler options.")
 (defconst seed7-font-lock-keywords
   (list
    ;; pragmas
-   (cons seed7-pragma-keywords-regexp                (list 1 'seed7-pragma-keyword-face))
+   (cons seed7-pragma-keywords-regexp                (list 1 seed7-pragma-keyword-face))
    ;; include
-   (cons seed7-include-regexp                        (list 1 'seed7-include-face))
+   (cons seed7-include-regexp                        (list 1 seed7-include-face))
 
    ;; in-statement keywords
-   (cons seed7-lead-in-statement-keywords-regexp     (list 1 'seed7-in-statement-keyword-face))
-   (cons seed7-in-statement-keywords-regexp          (list 1 'seed7-in-statement-keyword-face))
+   (cons seed7-lead-in-statement-keywords-regexp     (list 1 seed7-in-statement-keyword-face))
+   (cons seed7-in-statement-keywords-regexp          (list 1 seed7-in-statement-keyword-face))
    ;; statement-introducing keywords (needed??probably not)
-   (cons seed7-statement-introducing-keywords-regexp (list 1 'seed7-statement-introducing-keyword-face))
+   (cons seed7-statement-introducing-keywords-regexp (list 1 seed7-statement-introducing-keyword-face))
    ;; keywords used in middle of statements
-   (cons seed7-in-middle-statement-keywords-regexp   (list 1 'seed7-in-middle-statement-keyword-face))
+   (cons seed7-in-middle-statement-keywords-regexp   (list 1 seed7-in-middle-statement-keyword-face))
    ;; declaration introduction keywords :probably need a better name
-   (cons seed7-declaration-intro-keywords-regexp     (list 1 'seed7-intro-statement-keyword-face))
+   (cons seed7-declaration-intro-keywords-regexp     (list 1 seed7-intro-statement-keyword-face))
    ;; predefined types
-   (cons seed7-predefined-types-regexp               (list 1 'font-lock-type-face))
+   (cons seed7-predefined-types-regexp               (list 1 font-lock-type-face))
    ;; predefined constants
-   (cons seed7-predefined-constants-regxp            (list 1 'font-lock-constant-face))
+   (cons seed7-predefined-constants-regxp            (list 1 font-lock-constant-face))
    ;; predefined variables
-   (cons seed7-predefined-variables-regxp            (list 1 'seed7-predefined-variables-face))
+   (cons seed7-predefined-variables-regxp            (list 1 seed7-predefined-variables-face))
    ;; predefined errinfo values
-   (cons seed7-errinfo-values-regxp                  (list 1 'seed7-errinfo-value-face))
+   (cons seed7-errinfo-values-regxp                  (list 1 seed7-errinfo-value-face))
    ;; operator symbols
-   (cons seed7-operator-symbols-regexp               (list 1 'font-lock-keyword-face))
-   (cons seed7-assignment-operator-regxp             (list 0 'font-lock-keyword-face))
-   (cons seed7-other-operator-regexp                 (list 1 'font-lock-keyword-face))
-   (cons seed7-arithmetic-operator-regexp            (list 1 'font-lock-keyword-face))
-   (cons "[[:alnum:] _)]\\(/\\)[[:alnum:] _(]"       (list 1 'font-lock-keyword-face)) ; /
-   (cons "[[:alnum:] _)]\\(\\*\\*\\)[[:alnum:] _(]"  (list 1 'font-lock-keyword-face)) ; **
+   (cons seed7-operator-symbols-regexp               (list 1 font-lock-keyword-face))
+   (cons seed7-assignment-operator-regxp             (list 0 font-lock-keyword-face))
+   (cons seed7-other-operator-regexp                 (list 1 font-lock-keyword-face))
+   (cons seed7-arithmetic-operator-regexp            (list 1 font-lock-keyword-face))
+   (cons "[[:alnum:] _)]\\(/\\)[[:alnum:] _(]"       (list 1 font-lock-keyword-face)) ; /
+   (cons "[[:alnum:] _)]\\(\\*\\*\\)[[:alnum:] _(]"  (list 1 font-lock-keyword-face)) ; **
    ;; logic operator
-   (cons "[[:alnum:] _)\\\"]\\(&\\)[[:alnum:] _(\\\"]" (list 1 'font-lock-keyword-face)) ; &
-   (cons "[[:alnum:] _)\\\"]\\(|\\)[[:alnum:] _(\\\"]" (list 1 'font-lock-keyword-face)) ; |
+   (cons "[[:alnum:] _)\\\"]\\(&\\)[[:alnum:] _(\\\"]" (list 1 font-lock-keyword-face)) ; &
+   (cons "[[:alnum:] _)\\\"]\\(|\\)[[:alnum:] _(\\\"]" (list 1 font-lock-keyword-face)) ; |
    )
-  "Alist of Seed7 base keywords with each a specific face")
+  "Associates regexp to a regexp group and a face to render it")
 
 
 ;;* Seed7 Comments Control
