@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-08 17:25:32 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-08 17:29:56 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -849,8 +849,8 @@ just toggles it when zero or left out."
 (defconst seed7-procedure-regexp
   "^[[:space:]]*const proc: \\([[:alpha:]][[:alnum:]_]+\\) .*is func")
 
-(defconst seed7-procedure-or-function-regexp
-  "^[[:space:]]*const \\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)? ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is\\( func\\)?")
+(defconst seed7-function-regexp
+  "^[[:space:]]*const func \\([[:alpha:]][[:alnum:]_]+\\) ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is\\( func\\)?")
 
 (defconst seed7-enum-regexp
   "const type: \\([[:alpha:]][[:alnum:]_]+\\) is new enum")
@@ -870,9 +870,6 @@ just toggles it when zero or left out."
 ;;* Seed7 Code Navigation
 ;;  =====================
 
-(defconst seed7-function-regexp
-  "^[[:space:]]*const func \\([[:alpha:]][[:alnum:]_]+\\) ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is\\( func\\)?")
-
 ;; The following regexp has the following groups:
 ;; Group 1: "proc" or "func "
 ;; Group 2: "proc" or "func "
@@ -881,6 +878,9 @@ just toggles it when zero or left out."
 ;; Group 5: - "func" for proc or function that ends with "end func".
 ;;          - empty for a func that only has a return statement.
 ;;
+(defconst seed7-procedure-or-function-regexp
+  "^[[:space:]]*const \\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)? ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is\\( func\\)?")
+;;                      G1 G2                   G3                                  G4                                 G5
 
 (defun seed7--move-and-mark (original-pos final-pos dont-push-mark info)
   "Move point if necessary, push mark if necessary, print info if any."
