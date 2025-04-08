@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-08 11:31:31 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-08 17:25:32 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -849,17 +849,6 @@ just toggles it when zero or left out."
 (defconst seed7-procedure-regexp
   "^[[:space:]]*const proc: \\([[:alpha:]][[:alnum:]_]+\\) .*is func")
 
-(defconst seed7-function-regexp
-  "^[[:space:]]*const func \\([[:alpha:]][[:alnum:]_]+\\) ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is\\( func\\)?")
-
-;; The following regexp has the following groups:
-;; Group 1: "proc" or "func "
-;; Group 2: "proc" or "func "
-;; Group 3: The func return type.  May be empty.
-;; Group 4: The func or proc name.
-;; Group 5: - "func" for proc or function that ends with "end func".
-;;          - empty for a func that only has a return statement.
-;;
 (defconst seed7-procedure-or-function-regexp
   "^[[:space:]]*const \\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)? ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is\\( func\\)?")
 
@@ -880,6 +869,18 @@ just toggles it when zero or left out."
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Code Navigation
 ;;  =====================
+
+(defconst seed7-function-regexp
+  "^[[:space:]]*const func \\([[:alpha:]][[:alnum:]_]+\\) ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is\\( func\\)?")
+
+;; The following regexp has the following groups:
+;; Group 1: "proc" or "func "
+;; Group 2: "proc" or "func "
+;; Group 3: The func return type.  May be empty.
+;; Group 4: The func or proc name.
+;; Group 5: - "func" for proc or function that ends with "end func".
+;;          - empty for a func that only has a return statement.
+;;
 
 (defun seed7--move-and-mark (original-pos final-pos dont-push-mark info)
   "Move point if necessary, push mark if necessary, print info if any."
