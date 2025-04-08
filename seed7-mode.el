@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-08 09:44:25 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-08 11:08:38 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -119,6 +119,15 @@
 
 (defcustom seed7-uses-block-comment nil
   "Seed7 comments are block comments when non-nil, line comments otherwise."
+  :group 'seed7
+  :type 'boolean
+  :safe #'booleanp)
+
+(defcustom seed7-verbose-navigation t
+  "Seed7 navigation command print message on success when t.
+If you do not want these navigation success message printed set this to
+nil.  Setting it to nil does not prevent user error messages to show up
+when the navigation command fails."
   :group 'seed7
   :type 'boolean
   :safe #'booleanp)
@@ -872,6 +881,18 @@ just toggles it when zero or left out."
 ;;* Seed7 Code Navigation
 ;;  =====================
 
+(defun seed7--move-and-mark (original-pos final-pos dont-push-mark info)
+  "Move point if necessary, push mark if necessary, print info if any."
+  (when (/= final-pos original-pos)
+    (unless dont-push-mark
+      (push-mark original-pos (not seed7-verbose-navigation))
+      (when info
+        (setq info (concat info ", mark set."))))
+    (goto-char final-pos)
+    (when (and info
+               seed7-verbose-navigation)
+      (message info))))
+
 (defun seed7-beg-of-defun (&optional n silent dont-push-mark)
   "Move backward to the beginning of the current function or procedure.
 - With optional argument N, repeat the search that many times.
@@ -884,8 +905,8 @@ just toggles it when zero or left out."
   (interactive "^p")
   (unless n (setq n 1))
   (let* ((original-pos (point))
-         (final-pos    original-pos)
-         (verbose nil))
+         (final-pos original-pos)
+         (verbose nil)) ; first used as a flag, then message content
     (save-excursion
       (dotimes (vn n)
         (setq verbose (and (not silent)
@@ -902,19 +923,16 @@ just toggles it when zero or left out."
                         (setq final-pos (point))
                         (when verbose
                           (let ((item-name (substring-no-properties (match-string 4))))
-                            (message "To beginning of: %s" item-name))))
+                            (setq verbose (format "To beginning of: '%s'" item-name)))))
                     (user-error "No other Seed function or procedure above.")))
               (progn
                 (setq final-pos (point))
                 (when verbose
                   (let ((item-name (substring-no-properties (match-string 4))))
-                    (message "To beginning of: %s" item-name)))))
+                    (setq verbose (format "To beginning of: '%s'" item-name))))))
           (user-error "No Seed7 function or procedure found above."))
         (left-char)))
-    (when (/= final-pos original-pos)
-      (unless dont-push-mark
-        (push-mark original-pos))
-      (goto-char final-pos))))
+    (seed7--move-and-mark original-pos final-pos dont-push-mark verbose)))
 
 
 (defun seed7-beg-of-next-defun (&optional n silent dont-push-mark)
@@ -930,7 +948,7 @@ just toggles it when zero or left out."
   (unless n (setq n 1))
   (let* ((original-pos (point))
          (final-pos    original-pos)
-         (verbose nil))
+         (verbose nil)) ; first used as a flag, then message content
     (save-excursion
       (dotimes (vn n)
         (setq verbose (and (not silent)
@@ -943,12 +961,9 @@ just toggles it when zero or left out."
               (setq final-pos (point))
               (when verbose
                 (let ((item-name (substring-no-properties (match-string 4))))
-                  (message "To beginning of: %s" item-name))))
+                  (setq verbose (format "To beginning of: '%s'" item-name)))))
           (user-error "No Seed7 function or procedure found below!"))))
-    (when (/= final-pos original-pos)
-      (unless dont-push-mark
-        (push-mark original-pos))
-      (goto-char final-pos))))
+    (seed7--move-and-mark original-pos final-pos dont-push-mark verbose)))
 
 (defun seed7--at-end-of-defun ()
   "Return t if point is at end of function or procedure, nil otherwise."
@@ -991,7 +1006,7 @@ just toggles it when zero or left out."
   ;; which has 5 groups
   (let* ((original-pos (point))
          (final-pos    original-pos)
-         (verbose nil))
+         (verbose nil)) ; first used as a flag, then message content
     (save-excursion
       (when (seed7--at-end-of-defun)
         (seed7-beg-of-next-defun 1 :silent :dont-push-mark))
@@ -1015,7 +1030,7 @@ just toggles it when zero or left out."
                     (progn
                       (setq final-pos (point))
                       (when verbose
-                        (message "To end of: %s" item-name)))
+                        (setq verbose (format"To end of: '%s'" item-name))))
                   (user-error "End of %s not found: is code valid?" item-name)))
                ;; Function
                ((string-equal item-type  "func ")
@@ -1026,7 +1041,7 @@ just toggles it when zero or left out."
                         (progn
                           (setq final-pos (point))
                           (when verbose
-                            (message "To end of: %s" item-name)))
+                            (setq verbose (format "To end of: '%s'" item-name))))
                       (user-error "End of %s not found: is code valid?"
                                   item-name))
                   ;; short func with simpler return
@@ -1040,16 +1055,13 @@ just toggles it when zero or left out."
                       (progn
                         (setq final-pos (point))
                         (when verbose
-                          (message "To end of: %s" item-name)))
+                          (setq verbose (format "To end of: '%s'" item-name))))
                     (user-error "Function not terminated properly!"))))
                ;; The next line should never occur, if it does report a bug
                ;; providing a code example to reproduce.
                (t (error "Not inside a procedure or function!"))))
           (user-error "No Seed7 end of function or procedure found below!"))))
-    (when (/= final-pos original-pos)
-      (unless dont-push-mark
-        (push-mark original-pos))
-      (goto-char final-pos))))
+    (seed7--move-and-mark original-pos final-pos dont-push-mark verbose)))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Compilation
