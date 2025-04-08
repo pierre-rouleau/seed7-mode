@@ -6,20 +6,21 @@ Emacs support for the Seed7 Programming language
 
 # How To Install seed7-mode #
 
-Preliminary notes to new Emacs users:
+**Preliminary notes to new Emacs users:**
 
 Emacs can and will use a user initialization file, `init.el` if it find one.
 See [The Emacs Initialization File](https://www.gnu.org/software/emacs/manual/html_node/emacs/Init-File.html)
 for more info.
 
-It looks for the init.el file inside the directory identified by
-the `user-emacs-directory` variable, on of many variable controls Emacs behaviour.
+Emacs looks for the init.el file inside the directory identified by
+the `user-emacs-directory` variable, one of many variable controls Emacs behaviour.
 
 To see the current value of `user-emacs-directory`,
 type `C-h o user-emacs-directory RET`.  That will open a buffer
-describing the purpose of this  variable,
+describing the purpose of this  variable and
 show it's current value.  It also has a link to the Emacs Lisp
 code that defines it (which is part of Emacs and you should not modify).
+
 The `user-emacs-directory` identifies the directory where Emacs
 looks for the init.el file.  In Unix-like OS installations it is often
 set to `"~/.emacs.d/"`.  Under Windows it will be located somewhere else.
