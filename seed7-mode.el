@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-07 18:55:02 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-07 23:15:03 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -86,6 +86,7 @@
 ;; - Seed7 iMenu Support
 ;; - Seed7 Speedbar Support
 ;; - Seed7 Code Navigation
+;; - Seed7 Compilation
 ;; - Seed7 keymap
 ;; - Seed7 Major Mode
 
@@ -123,6 +124,23 @@
   :group 'seed7
   :type 'boolean
   :safe #'booleanp)
+
+(defcustom seed7-compiler "s7c"
+  "Seed7 compiler command line.
+
+You may identify the full path of any Seed7 compiler executable file."
+  :group 'seed7
+  :type 'string)
+
+(defcustom seed7-compiler-options ""
+  (format
+   "Seed7 compiler command line options.
+
+Defaults to no options.
+You may identify any valid Seed7 compiler option.
+Use s7c -h to list compiler options.")
+  :group 'seed7
+  :type 'string)
 
 (defgroup seed7-faces nil
   "Fontification colors"
@@ -1045,6 +1063,31 @@ just toggles it when zero or left out."
       (unless dont-push-mark
         (push-mark original-pos))
       (goto-char final-pos))))
+
+;; ---------------------------------------------------------------------------
+;;* Seed7 Compilation
+;;  =================
+;;
+
+
+;; (defun seed7--filter-compiler-output ()
+;;   "Filter function to format s7c compiler output."
+;;   (save-excursion
+;;     ))
+;; compilation-filter-hook
+;; (add-hook 'compilation-filter-hook #'grep--heading-filter 80 t)
+;; [:todo 2025-04-07, by Pierre Rouleau: Filter s7c output to comply with
+;;   required compile-mode buffer format.  Remove the "*** " prefix of error
+;;   lines ]
+;;
+
+(defun seed7-compile ()
+  "Compile the current Seed7 file, show errors in compilation-mode buffer."
+  (interactive)
+  (compile (format "%s %s %s"
+                   seed7-compiler
+                   seed7-compiler-options
+                   (shell-quote-argument (buffer-file-name)))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Key Map
