@@ -6,18 +6,43 @@ Emacs support for the Seed7 Programming language
 
 # How To Install seed7-mode #
 
+Preliminary notes to new Emacs users:
+
+Emacs can and will use a user initialization file, `init.el` if it find one.
+See [The Emacs Initialization File](https://www.gnu.org/software/emacs/manual/html_node/emacs/Init-File.html)
+for more info.
+
+It looks for the init.el file inside the directory identified by
+the `user-emacs-directory` variable, on of many variable controls Emacs behaviour.
+
+To see the current value of `user-emacs-directory`,
+type `C-h o user-emacs-directory RET`.  That will open a buffer
+describing the purpose of this  variable,
+show it's current value.  It also has a link to the Emacs Lisp
+code that defines it (which is part of Emacs and you should not modify).
+The `user-emacs-directory` identifies the directory where Emacs
+looks for the init.el file.  In Unix-like OS installations it is often
+set to `"~/.emacs.d/"`.  Under Windows it will be located somewhere else.
+
+
 ## Install seed7-mode for plain-vanilla Emacs ##
 
-- Create a directory to store Emacs lisp files.
-  I recommend creating the `~/.emacs.d/utils` directory for that.
-  Emacs `user-emacs-directory` should already be set to `~/.emacs.d`, it's default value.
-  Add this directory to the beginning of Emacs `load-path`.
+- **Create the utils sub-directory** to store stand-alone utilities Emacs lisp files
+  like seed7-mode.el.
+  That directory should be located inside the directory
+  identified by Emacs `user-emacs-directory`.
 
-- Assuming that Emacs `user-emacs-directory` is set to `~/.emacs.d`,
-  and that you do not have any init.el file, create the file
-  `~/.emacs.d.init.el`.
+  - Under Unix-like OS, for example, you would normally create the `~/.emacs.d/utils` directory.
 
-- Inside the `~/.emacs.d.init.el` file write the following:
+- **Create the init.el file and add the following code**
+
+  - Emacs `user-emacs-directory` identifies the directory where the init.el file should be located.
+    - Under Unix-like OS, the file is normally `~/.emacs.d/init.el`
+  - Create the file if it does not already exist.
+
+- **In init.el, write code to find files in utils and auto-load seed7-mode**
+
+  - Inside your init.el file, write the following code:
 
   ```elisp
   ;;; -*-lexical-binding: t; -*-
@@ -27,30 +52,34 @@ Emacs support for the Seed7 Programming language
   (add-to-list 'auto-mode-alist '("\\.s\\(d7\\|7i\\)\\'" . seed7-mode))
   ```
 
-- Download the seed7_mode.el file and copy it inside the
-  `~/.emacs.d/utils` directory.
+  The first line activates lexical-binding.
+  It **must** be the very first line of the file.
 
-- With the file in place, open Emacs and edit (visit) the
-  `~/.emacs.d/utils/seed7-mode.el` file to byte compile it.
+  The other lines can be anywhere (but must be executed).
+
+- **Download seed7_mode.el file and copy it in the utils directory**
+
+  - The utils directory is the one you created above.
+
+- **Byte compile seed7-mode.el**
+
+  - Open Emacs and edit (visit) the `seed7-mode.el` file located in your utils directory.
+  - Byte compile it by typing the following command: `M-x emacs-lisp-byte-compile-and-load`
+
   Byte compiling is not absolutely necessary but it will verify that
   everything is ok inside the file and will also speed up Emacs startup.
   Just remember to byte-compile that file every time you modify it,
   otherwise Emacs will complain that it's using a byte-compile file
   that is older than the source file.
 
-  - To byte compile the file that is visited in the current buffer,
-    type the following command:
 
-    `M-x emacs-lisp-byte-compile-and-load`
-
-**To update**
+### To update seed7-mode in plain Emacs ###
 
 To update to a later revision, erase the seed7-mode.el and
-seed7-mode.elc files from the directory where you stored them
-(which would be `~/.emacs.d/utils` as described above),
+seed7-mode.elc files from the utils directory where you stored them
 and download the new revision in the same directory.
 
-Byte-compile the new file.
+Byte-compile the new file as described above.
 
 ## Install seed7-mode with PEL ##
 
