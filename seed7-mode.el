@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-08 11:08:38 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-08 11:31:31 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -893,6 +893,12 @@ just toggles it when zero or left out."
                seed7-verbose-navigation)
       (message info))))
 
+(defun seed7--pos-msg (position name)
+  "Return formatted message for start/end of NAME depending on POSITION."
+  (if (eq position 'at-start-of)
+      (format "@ start of: '%s'" name)
+    (format "@ end of  : '%s'" name)))
+
 (defun seed7-beg-of-defun (&optional n silent dont-push-mark)
   "Move backward to the beginning of the current function or procedure.
 - With optional argument N, repeat the search that many times.
@@ -906,7 +912,7 @@ just toggles it when zero or left out."
   (unless n (setq n 1))
   (let* ((original-pos (point))
          (final-pos original-pos)
-         (verbose nil)) ; first used as a flag, then message content
+         (verbose nil))           ; first used as a flag, then message content
     (save-excursion
       (dotimes (vn n)
         (setq verbose (and (not silent)
@@ -923,13 +929,13 @@ just toggles it when zero or left out."
                         (setq final-pos (point))
                         (when verbose
                           (let ((item-name (substring-no-properties (match-string 4))))
-                            (setq verbose (format "To beginning of: '%s'" item-name)))))
+                            (setq verbose (seed7--pos-msg 'at-start-of item-name)))))
                     (user-error "No other Seed function or procedure above.")))
               (progn
                 (setq final-pos (point))
                 (when verbose
                   (let ((item-name (substring-no-properties (match-string 4))))
-                    (setq verbose (format "To beginning of: '%s'" item-name))))))
+                    (setq verbose (seed7--pos-msg 'at-start-of item-name))))))
           (user-error "No Seed7 function or procedure found above."))
         (left-char)))
     (seed7--move-and-mark original-pos final-pos dont-push-mark verbose)))
@@ -961,7 +967,7 @@ just toggles it when zero or left out."
               (setq final-pos (point))
               (when verbose
                 (let ((item-name (substring-no-properties (match-string 4))))
-                  (setq verbose (format "To beginning of: '%s'" item-name)))))
+                  (setq verbose (seed7--pos-msg 'at-start-of item-name)))))
           (user-error "No Seed7 function or procedure found below!"))))
     (seed7--move-and-mark original-pos final-pos dont-push-mark verbose)))
 
@@ -1030,7 +1036,7 @@ just toggles it when zero or left out."
                     (progn
                       (setq final-pos (point))
                       (when verbose
-                        (setq verbose (format"To end of: '%s'" item-name))))
+                        (setq verbose (seed7--pos-msg 'at-end-of item-name))))
                   (user-error "End of %s not found: is code valid?" item-name)))
                ;; Function
                ((string-equal item-type  "func ")
@@ -1041,7 +1047,7 @@ just toggles it when zero or left out."
                         (progn
                           (setq final-pos (point))
                           (when verbose
-                            (setq verbose (format "To end of: '%s'" item-name))))
+                            (setq verbose (seed7--pos-msg 'at-end-of item-name))))
                       (user-error "End of %s not found: is code valid?"
                                   item-name))
                   ;; short func with simpler return
@@ -1055,7 +1061,7 @@ just toggles it when zero or left out."
                       (progn
                         (setq final-pos (point))
                         (when verbose
-                          (setq verbose (format "To end of: '%s'" item-name))))
+                          (setq verbose (seed7--pos-msg 'at-end-of item-name))))
                     (user-error "Function not terminated properly!"))))
                ;; The next line should never occur, if it does report a bug
                ;; providing a code example to reproduce.
