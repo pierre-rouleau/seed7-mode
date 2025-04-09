@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-09 09:32:25 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-09 11:52:08 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -66,7 +66,7 @@
 ;; ]
 ;;
 ;;
-;; Code Organization Layout (use these as markers to locate the code)
+;; Code Organization Layout (use these as markers to locate related code)
 ;;
 ;; -  Seed7 Customization
 ;; -  Seed7 Keywords
@@ -203,6 +203,10 @@ The name of the source code file is appended to the end of that line."
 (defconst seed7--special-char-re
   "[-!$%&*+,\\./:;<=>?@\\^`|~]"
   "Any one of the special characters.")
+
+(defconst seed7-integer-re
+  "[^[:alpha:]_]\\([[:digit:]]+\\)"
+  "Seed7 integer in group 1.")
 
 (defconst seed7-number-with-exponent-re
   "[0-9]+[eE][+-]?[0-9]+"
@@ -637,6 +641,8 @@ The name of the source code file is appended to the end of that line."
 (defvar seed7-dark-foreground
   (seed7-choose-color "orchid1" "orange"))
 
+;;** Seed7 Customization
+
 (defface seed7-pragma-keyword-face
   `(;; (((class grayscale) (background light))
     ;;  (:background "Gray90" :weight bold))
@@ -778,6 +784,43 @@ The name of the source code file is appended to the end of that line."
   "Font Lock mode face used to highlight errinfo values."
   :group 'seed7-faces)
 
+(defface seed7-integer-face
+  `(;; (((class grayscale) (background light))
+    ;;  (:background "Gray90" :weight bold))
+
+    ;; (((class grayscale) (background dark))
+    ;;  (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
+     (:foreground "color-23" ))
+
+    ;; (((class color) (background dark))
+    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight errinfo values."
+  :group 'seed7-faces)
+
+(defface seed7-number-face
+  `(;; (((class grayscale) (background light))
+    ;;  (:background "Gray90" :weight bold))
+
+    ;; (((class grayscale) (background dark))
+    ;;  (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
+     (:foreground "color-24" ))
+
+    ;; (((class color) (background dark))
+    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight errinfo values."
+  :group 'seed7-faces)
+
+
 
 ;;* Seed7 Font Locking Control
 ;;  ==========================
@@ -821,6 +864,9 @@ The name of the source code file is appended to the end of that line."
    ;; logic operator
    (cons "[[:alnum:] _)\\\"]\\(&\\)[[:alnum:] _(\\\"]" (list 1 ''font-lock-keyword-face)) ; &
    (cons "[[:alnum:] _)\\\"]\\(|\\)[[:alnum:] _(\\\"]" (list 1 ''font-lock-keyword-face)) ; |
+   ;; numbers: order is significant
+   (cons seed7-big-number-re                         (list 1 ''seed7-number-face))
+   (cons seed7-integer-re                            (list 1 ''seed7-integer-face))
    )
   "Associates regexp to a regexp group and a face to render it")
 
@@ -1169,8 +1215,14 @@ If optional COMPILE argument set, compile the file to executable instead.
 ;;* Seed7 Major Mode
 ;;  ================
 
+;; [:todo 2025-04-09, by Pierre Rouleau: stop deriving from pascal-mode once
+;;  the syntax control for Seed7 is written.  Using its own syntax will solve
+;;  the comment rendering and the multi-line string rendering.  But for now
+;;  derive from pascal so we can at least render some of the comments
+;;  properly.]
+
 ;;;###autoload
-(define-derived-mode seed7-mode prog-mode "seed7"
+(define-derived-mode seed7-mode pascal-mode "seed7"
   "Major mode for editing Seed7 files.
 This is a preliminary implementation, based on `pascal-mode'"
   (seed7--set-comment-style seed7-uses-block-comment)
