@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-09 11:52:08 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-09 16:29:53 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -91,8 +91,9 @@
 ;; - Seed7 iMenu Support
 ;; - Seed7 Speedbar Support
 ;; - Seed7 Code Navigation
+;; - Seed7 Code Marking
 ;; - Seed7 Compilation
-;; - Seed7 keymap
+;; - Seed7 Key Map
 ;; - Seed7 Major Mode
 
 ;;; --------------------------------------------------------------------------
@@ -189,8 +190,8 @@ The name of the source code file is appended to the end of that line."
 ;; specific Seed7 syntax and the constants will become variables to allow
 ;; the mode to dynamically adapt to the Seed7 extended systax.
 
-;;* Syntactic Tokens
-;;  ----------------
+;;* Seed7 Tokens
+;;  ------------
 ;;
 ;; Ref: https://seed7.sourceforge.net/manual/tokens.htm
 
@@ -1172,6 +1173,22 @@ just toggles it when zero or left out."
     (seed7--move-and-mark original-pos final-pos dont-push-mark verbose)))
 
 ;; ---------------------------------------------------------------------------
+;;* Seed7 Code Marking
+;;  ==================
+
+(defun seed7-mark-defun ()
+  "Mark the current Seed7 function or procedure.
+Put the mark at the end and point at the beginning."
+  (interactive)
+  ;; If point is right at the end of a function/procedure
+  ;; make sure to select that one,not the next one.
+  (when (seed7--at-end-of-defun)
+    (forward-line -1))
+  (seed7-end-of-defun 1 :silent)
+  (set-mark (point))
+  (seed7-beg-of-defun 1 :silent))
+
+;; ---------------------------------------------------------------------------
 ;;* Seed7 Compilation
 ;;  =================
 ;;
@@ -1207,6 +1224,7 @@ If optional COMPILE argument set, compile the file to executable instead.
   (let ((map (make-sparse-keymap)))
     (define-key map "\M-\C-a"  'seed7-beg-of-defun)
     (define-key map "\M-\C-e"  'seed7-end-of-defun)
+    (define-key map "\M-\C-h"  'seed7-mark-defun)
     map)
   "Keymap used in seed7-mode.")
 
