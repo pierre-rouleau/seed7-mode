@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-08 17:29:56 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-09 09:32:25 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -57,13 +57,20 @@
 ;;        defined, and these are used for preliminary testing.  Once testing
 ;;        of this is completed, remove the duplication and keep what is
 ;;        strictly necessary to eliminate un-required extra processing.
+;;  # 04  The regular expressions to identify functions and procedure are not 100%
+;;        valid.  They still fail for some formatting like multi-line and compound types.
+;;  # 05  The syntax for numbers is incomplete.
+;;  # 06  Currently assumes that the syntax checker is the `s7check' program.  That
+;;        program does not yet exists in the Seed7 distribution, but is available in source
+;;        here: https://github.com/ThomasMertes/seed7/issues/34#issuecomment-2789748990
 ;; ]
 ;;
 ;;
-;; Code Organization Layout
+;; Code Organization Layout (use these as markers to locate the code)
 ;;
 ;; -  Seed7 Customization
 ;; -  Seed7 Keywords
+;;    - Seed7 Tokens
 ;;    - Seed7 Pragmas
 ;;    - Seed7 include
 ;;    - Seed7 keywords used in statements
@@ -117,12 +124,14 @@
                     "https://github.com/pierre-rouleau/seed7-mode")
   :package-version '(seed7-mode . "0.0.1"))
 
+;;** Seed7 Comment Control
 (defcustom seed7-uses-block-comment nil
   "Seed7 comments are block comments when non-nil, line comments otherwise."
   :group 'seed7
   :type 'boolean
   :safe #'booleanp)
 
+;;**Seed7 Code Navigation
 (defcustom seed7-verbose-navigation t
   "Seed7 navigation command print message on success when t.
 If you do not want these navigation success message printed set this to
@@ -132,23 +141,36 @@ when the navigation command fails."
   :type 'boolean
   :safe #'booleanp)
 
+;;** Seed7 Compilation
+(defcustom seed7-checker "s7check"
+  "Seed7 source code check command line.
+
+The command line must identify the Seed7 static check tool, s7check,
+by default.
+You may:
+- Use the program name without a path if it is in the PATH of your shell.
+- The name with an absolute path.
+-  Compiler options after the program name if necessary.
+
+The name of the source code file is appended to the end of that line."
+  :group 'seed7
+  :type 'string)
+
 (defcustom seed7-compiler "s7c"
   "Seed7 compiler command line.
 
-You may identify the full path of any Seed7 compiler executable file."
+The command line must identify the Seed7 compiler, s7c, by default.
+You may:
+- Use the program name without a path if it is in the PATH of your shell.
+- The name with an absolute path.
+-  Compiler options after the program name if necessary.
+
+The name of the source code file is appended to the end of that line."
   :group 'seed7
   :type 'string)
 
-(defcustom seed7-compiler-options ""
-  (format
-   "Seed7 compiler command line options.
 
-Defaults to no options.
-You may identify any valid Seed7 compiler option.
-Use s7c -h to list compiler options.")
-  :group 'seed7
-  :type 'string)
-
+;;** Seed7 Faces
 (defgroup seed7-faces nil
   "Fontification colors"
   :link '(custom-group-link :tag "Font Lock Faces group" font-lock-faces)
@@ -166,6 +188,34 @@ Use s7c -h to list compiler options.")
 ;; In the future, the private lists of keywords may be dynamically loaded for
 ;; specific Seed7 syntax and the constants will become variables to allow
 ;; the mode to dynamically adapt to the Seed7 extended systax.
+
+;;* Syntactic Tokens
+;;  ----------------
+;;
+;; Ref: https://seed7.sourceforge.net/manual/tokens.htm
+
+;; [:todo 2025-04-09, by Pierre Rouleau: Complete the syntax for numbers.]
+
+(defconst seed7--identifier-re
+  "\\(\\_<[[:alpha:]_][[:alnum:]_]*\\_>\\)"
+  "A complete, valid name identifier.")
+
+(defconst seed7--special-char-re
+  "[-!$%&*+,\\./:;<=>?@\\^`|~]"
+  "Any one of the special characters.")
+
+(defconst seed7-number-with-exponent-re
+  "[0-9]+[eE][+-]?[0-9]+"
+  "Literal number with exponent.  Does not reject integer with negative exponent.")
+
+(defconst seed7-big-number-re
+  "[^[:digit:]#]\\(\\(\\(?:\\([2-9]\\|1[0-9]\\|2[0-9]\\|3[0-6]\\)#\\)[0-9]+_\\)\\|\\([^#][0-9]+_\\)\\)"
+  ;;              1  2       3                                                      4
+  ;; Group 1: Complete Big Number with or without base. "1_" or "1234322_" or "2#0001_", etc...
+  ;; Group 2: Complete Big number with a base. "2#01010101000_"
+  ;; Group 3: base: "2" to "36".  nil if no base.
+  ;; Group 4: Big Number without base. nil if the number has a base.
+  "Big number with/without base. With groups. See comments.")
 
 ;;* Seed7 pragmas
 ;;  -------------
@@ -870,6 +920,7 @@ just toggles it when zero or left out."
 ;;* Seed7 Code Navigation
 ;;  =====================
 
+;; [:todo 2025-04-09, by Pierre Rouleau: The following regexp does not work 100%, fix it]
 ;; The following regexp has the following groups:
 ;; Group 1: "proc" or "func "
 ;; Group 2: "proc" or "func "
@@ -881,6 +932,10 @@ just toggles it when zero or left out."
 (defconst seed7-procedure-or-function-regexp
   "^[[:space:]]*const \\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)? ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is\\( func\\)?")
 ;;                      G1 G2                   G3                                  G4                                 G5
+
+;; future?
+;; "^[[:blank:]]*const \\(\\(func\\|proc\\)\\)[[:space:]]?\\(\\([[:alpha:]][[:alnum:]_]+\\)?[[:space:]]+\\([[:alpha:]][[:alnum:]_]+\\)\\) ?: *\\([[:alpha:]][[:alnum:]_]+\\).*is[[:space:]]+\\(func\\)?")
+;;                      G1 G2                              G3 G4                                         G5                                    G6                                            G7
 
 (defun seed7--move-and-mark (original-pos final-pos dont-push-mark info)
   "Move point if necessary, push mark if necessary, print info if any."
@@ -1087,12 +1142,13 @@ just toggles it when zero or left out."
 ;;   lines ]
 ;;
 
-(defun seed7-compile ()
-  "Compile the current Seed7 file, show errors in compilation-mode buffer."
-  (interactive)
-  (compile (format "%s %s %s"
-                   seed7-compiler
-                   seed7-compiler-options
+(defun seed7-compile (&optional compile)
+  "Static check current Seed7 file, show errors in compilation-mode buffer.
+If optional COMPILE argument set, compile the file to executable instead.
+"
+  (interactive "P")
+  (compile (format "%s %s"
+                   (if compile seed7-compiler seed7-checker)
                    (shell-quote-argument (buffer-file-name)))))
 
 ;; ---------------------------------------------------------------------------
