@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-09 16:29:53 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-10 09:14:04 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -221,6 +221,55 @@ The name of the source code file is appended to the end of that line."
   ;; Group 3: base: "2" to "36".  nil if no base.
   ;; Group 4: Big Number without base. nil if the number has a base.
   "Big number with/without base. With groups. See comments.")
+
+
+(defconst seed7--base-x-integer-format-re
+  "\\%s\
+\\(?:2#[01]+\\)\\|\
+\\(?:3#[0-2]+\\)\\|\
+\\(?:4#[0-3]+\\)\\|\
+\\(?:5#[0-4]+\\)\\|\
+\\(?:6#[0-5]+\\)\\|\
+\\(?:7#[0-6]+\\)\\|\
+\\(?:8#[0-7]+\\)\\|\
+\\(?:9#[0-8]+\\)\\|\
+\\(?:10#[0-9]+\\)\\|\
+\\(?:11#[0-9aA]+\\)\\|\
+\\(?:12#[0-9aAbB]+\\)\\|\
+\\(?:13#[0-9a-cA-C]+\\)\\|\
+\\(?:14#[0-9a-dA-D]+\\)\\|\
+\\(?:15#[0-9a-eA-E]+\\)\\|\
+\\(?:16#[0-9a-fA-F]+\\)\\|\
+\\(?:17#[0-9a-gA-G]+\\)\\|\
+\\(?:18#[0-9a-hA-H]+\\)\\|\
+\\(?:19#[0-9a-iA-I]+\\)\\|\
+\\(?:20#[0-9a-jA-J]+\\)\\|\
+\\(?:21#[0-9a-kA-K]+\\)\\|\
+\\(?:22#[0-9a-lA-L]+\\)\\|\
+\\(?:23#[0-9a-mA-M]+\\)\\|\
+\\(?:24#[0-9a-nA-N]+\\)\\|\
+\\(?:25#[0-9a-oA-O]+\\)\\|\
+\\(?:26#[0-9a-pA-P]+\\)\\|\
+\\(?:27#[0-9a-qA-Q]+\\)\\|\
+\\(?:28#[0-9a-rA-R]+\\)\\|\
+\\(?:29#[0-9a-sA-S]+\\)\\|\
+\\(?:30#[0-9a-tA-T]+\\)\\|\
+\\(?:31#[0-9a-uA-U]+\\)\\|\
+\\(?:32#[0-9a-vA-V]+\\)\\|\
+\\(?:33#[0-9a-wA-W]+\\)\\|\
+\\(?:34#[0-9a-xA-X]+\\)\\|\
+\\(?:35#[0-9a-yA-Y]+\\)\\|\
+\\(?:36#[0-9a-zA-Z]+\\)\\)%s")
+
+(defconst seed7-base-x-integer-re (format seed7--base-x-integer-format-re
+                                          "("
+                                          "[^#0-9a-zA-z]"))
+
+(defconst seed7-base-x-big-number-re (format seed7--base-x-integer-format-re
+                                             "(\\(?:"
+                                             "_\\)[^#0-9a-zA-z]"))
+
+
 
 ;;* Seed7 pragmas
 ;;  -------------
@@ -866,7 +915,9 @@ The name of the source code file is appended to the end of that line."
    (cons "[[:alnum:] _)\\\"]\\(&\\)[[:alnum:] _(\\\"]" (list 1 ''font-lock-keyword-face)) ; &
    (cons "[[:alnum:] _)\\\"]\\(|\\)[[:alnum:] _(\\\"]" (list 1 ''font-lock-keyword-face)) ; |
    ;; numbers: order is significant
+   (cons seed7-base-x-big-number-re                  (list 1 ''seed7-number-face))
    (cons seed7-big-number-re                         (list 1 ''seed7-number-face))
+   (cons seed7-base-x-integer-re                     (list 1 ''seed7-integer-face))
    (cons seed7-integer-re                            (list 1 ''seed7-integer-face))
    )
   "Associates regexp to a regexp group and a face to render it")
