@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-10 16:05:22 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-10 16:18:26 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -656,7 +656,7 @@ The name of the source code file is appended to the end of that line."
 ;; Other predefined operators are: + - * / ** ! << >> & | >< <& ?
 ;;                                            -------     -------
 (defconst seed7-other-predef-operator-regxp
-  "\\(?:[!?]\\|\\(?:<<\\|>>\\|><\\|<&\\)\\)"
+  "[!?]\\|<<\\|>>\\|><\\|<&"
   "Symbol is in group 0.")
 
 
@@ -951,8 +951,8 @@ The name of the source code file is appended to the end of that line."
    ;; operator symbols
    (cons seed7-operator-symbols-regexp               (list 1 ''font-lock-keyword-face))
    (cons seed7-predef-assignment-operator-regxp      (list 0 ''font-lock-keyword-face))
+   (cons seed7-other-predef-operator-regxp           (list 0 ''font-lock-keyword-face)) ; before comparison because that has single char operators that are part of other predef
    (cons seed7-predef-comparison-operator-regxp      (list 0 ''font-lock-keyword-face))
-   (cons seed7-other-predef-operator-regxp           (list 0 ''font-lock-keyword-face))
    (cons seed7-arithmetic-operator-regxp             (list 1 ''font-lock-keyword-face))
    (cons "[[:alnum:] _)]\\(/\\)[[:alnum:] _(]"       (list 1 ''font-lock-keyword-face)) ; /
    (cons "[[:alnum:] _)]\\(\\*\\*\\)[[:alnum:] _(]"  (list 1 ''font-lock-keyword-face)) ; **
