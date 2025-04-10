@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-10 09:14:04 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-10 14:45:03 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -197,7 +197,10 @@ The name of the source code file is appended to the end of that line."
 
 ;; [:todo 2025-04-09, by Pierre Rouleau: Complete the syntax for numbers.]
 
-(defconst seed7--identifier-re
+(defconst seed7--bracket-re
+  "[])(}{[]")
+
+(defconst seed7-identifier-regexp
   "\\(\\_<[[:alpha:]_][[:alnum:]_]*\\_>\\)"
   "A complete, valid name identifier.")
 
@@ -205,16 +208,21 @@ The name of the source code file is appended to the end of that line."
   "[-!$%&*+,\\./:;<=>?@\\^`|~]"
   "Any one of the special characters.")
 
-(defconst seed7-integer-re
-  "[^[:alpha:]_]\\([[:digit:]]+\\)"
+(defconst seed7--number-separator-re
+  "[]!$%&*+,\\./:;<=>?@\\^`|~ )(}{ -[]")
+
+(defconst seed7-integer-re (format
+                            "%s\\(-?[[:digit:]]+\\)%s"
+                            seed7--number-separator-re
+                            seed7--number-separator-re)
   "Seed7 integer in group 1.")
 
 (defconst seed7-number-with-exponent-re
   "[0-9]+[eE][+-]?[0-9]+"
   "Literal number with exponent.  Does not reject integer with negative exponent.")
 
-(defconst seed7-big-number-re
-  "[^[:digit:]#]\\(\\(\\(?:\\([2-9]\\|1[0-9]\\|2[0-9]\\|3[0-6]\\)#\\)[0-9]+_\\)\\|\\([^#][0-9]+_\\)\\)"
+(defconst seed7--big-number-re-format
+  "%s\\(\\(\\(?:\\([2-9]\\|1[0-9]\\|2[0-9]\\|3[0-6]\\)#\\)[0-9]+_\\)\\|\\([^#][0-9]+_\\)\\)%s"
   ;;              1  2       3                                                      4
   ;; Group 1: Complete Big Number with or without base. "1_" or "1234322_" or "2#0001_", etc...
   ;; Group 2: Complete Big number with a base. "2#01010101000_"
@@ -222,8 +230,12 @@ The name of the source code file is appended to the end of that line."
   ;; Group 4: Big Number without base. nil if the number has a base.
   "Big number with/without base. With groups. See comments.")
 
+(defconst seed7-big-number-re (format
+                               seed7--big-number-re-format
+                               seed7--number-separator-re
+                               seed7--number-separator-re))
 
-(defconst seed7--base-x-integer-format-re
+(defconst seed7--base-x-integer-re-format
   "\\%s\
 \\(?:2#[01]+\\)\\|\
 \\(?:3#[0-2]+\\)\\|\
@@ -261,11 +273,11 @@ The name of the source code file is appended to the end of that line."
 \\(?:35#[0-9a-yA-Y]+\\)\\|\
 \\(?:36#[0-9a-zA-Z]+\\)\\)%s")
 
-(defconst seed7-base-x-integer-re (format seed7--base-x-integer-format-re
+(defconst seed7-base-x-integer-re (format seed7--base-x-integer-re-format
                                           "("
                                           "[^#0-9a-zA-z]"))
 
-(defconst seed7-base-x-big-number-re (format seed7--base-x-integer-format-re
+(defconst seed7-base-x-big-number-re (format seed7--base-x-integer-re-format
                                              "(\\(?:"
                                              "_\\)[^#0-9a-zA-z]"))
 
@@ -634,9 +646,12 @@ The name of the source code file is appended to the end of that line."
 ;;  + - * / **
 ;;
 (defconst seed7-arithmetic-operator-regexp
-  "[[:alnum:]_ )]\\([/*+-]\\)[[:alnum:]_ (]"
-  )
+  "[[:alnum:]_ )]\\([/*]\\)[[:alnum:]_ (]"
+  "Arithmetic operator except the minus sign")
 
+(defconst seed7-minus-operator-regexp
+  "[^+-]\\([+-]\\)[^+-]"
+  "Arithmetic minus operator in group 1")
 
 ;;* Seed Other operators
 ;; --------------------
@@ -870,6 +885,24 @@ The name of the source code file is appended to the end of that line."
   "Font Lock mode face used to highlight errinfo values."
   :group 'seed7-faces)
 
+(defface seed7-identifier-face
+  `(;; (((class grayscale) (background light))
+    ;;  (:background "Gray90" :weight bold))
+
+    ;; (((class grayscale) (background dark))
+    ;;  (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
+     (:foreground "black"  :weight bold))
+
+    ;; (((class color) (background dark))
+    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight errinfo values."
+  :group 'seed7-faces)
+
 
 
 ;;* Seed7 Font Locking Control
@@ -916,9 +949,14 @@ The name of the source code file is appended to the end of that line."
    (cons "[[:alnum:] _)\\\"]\\(|\\)[[:alnum:] _(\\\"]" (list 1 ''font-lock-keyword-face)) ; |
    ;; numbers: order is significant
    (cons seed7-base-x-big-number-re                  (list 1 ''seed7-number-face))
-   (cons seed7-big-number-re                         (list 1 ''seed7-number-face))
    (cons seed7-base-x-integer-re                     (list 1 ''seed7-integer-face))
+   ;; identifiers
+   (cons seed7-identifier-regexp                     (list 1 ''seed7-identifier-face))
+   ;; other numbers
+   (cons seed7-big-number-re                         (list 1 ''seed-number-face))
    (cons seed7-integer-re                            (list 1 ''seed7-integer-face))
+   ;; low priority rendering of arithmetic + and -
+   (cons seed7-minus-operator-regexp                 (list 1 ''font-lock-keyword-face))
    )
   "Associates regexp to a regexp group and a face to render it")
 
@@ -948,7 +986,7 @@ The name of the source code file is appended to the end of that line."
 
 (defun seed7--set-comment-style (use-block &optional verbose)
   "Set Seed7 command style to block style when USE-BLOCK is non nil.
-Set it to line-style otherwise."
+  Set it to line-style otherwise."
   (setq seed7-uses-block-comment use-block)
   (setq comment-start
 	    (concat (if seed7-uses-block-comment
@@ -966,9 +1004,9 @@ Set it to line-style otherwise."
 
 (defun seed7-toggle-comment-style (&optional arg)
   "Toggle the Seed7 comment style between block and line comments.
-Optional numeric ARG, if supplied, switches to block comment
-style when positive, to line comment style when negative, and
-just toggles it when zero or left out."
+  Optional numeric ARG, if supplied, switches to block comment
+  style when positive, to line comment style when negative, and
+  just toggles it when zero or left out."
   (interactive "P")
   (let ((use-block (cond
 	                ((and seed7-line-comment-starter seed7-block-comment-starter)
@@ -1055,13 +1093,13 @@ just toggles it when zero or left out."
 
 (defun seed7-beg-of-defun (&optional n silent dont-push-mark)
   "Move backward to the beginning of the current function or procedure.
-- With optional argument N, repeat the search that many times.
-- Unless SILENT, the function prints a message showing the name of the new
+  - With optional argument N, repeat the search that many times.
+  - Unless SILENT, the function prints a message showing the name of the new
   found function or procedure.
-- When a new function or procedure is found the function pushes the mark
+  - When a new function or procedure is found the function pushes the mark
   unless DONT-PUSH_MARK is non-nil. Pushing the mark allows future pop to
   go back to the original position with C-u C-SPC
-- Supports shift selection."
+  - Supports shift selection."
   (interactive "^p")
   (unless n (setq n 1))
   (let* ((original-pos (point))
@@ -1097,13 +1135,13 @@ just toggles it when zero or left out."
 
 (defun seed7-beg-of-next-defun (&optional n silent dont-push-mark)
   "Move forward to the beginning of the next function or procedure.
-- With optional argument N, repeat the search that many times.
-- Unless SILENT, the function prints a message showing the name of the new
+  - With optional argument N, repeat the search that many times.
+  - Unless SILENT, the function prints a message showing the name of the new
   found function or procedure.
-- When a new function or procedure is found the function pushes the mark
+  - When a new function or procedure is found the function pushes the mark
   unless DONT-PUSH_MARK is non-nil. Pushing the mark allows future pop to
   go back to the original position with C-u C-SPC
-- Supports shift selection."
+  - Supports shift selection."
   (interactive "^")
   (unless n (setq n 1))
   (let* ((original-pos (point))
@@ -1137,18 +1175,18 @@ just toggles it when zero or left out."
       (setq is-at-end
             (string-equal
              (string-trim (thing-at-point 'line :no-properties))
-             "end func;"))
-      (unless is-at-end
-        ;; otherwise we may still be at end of a simple function with a return
-        ;; check if we can get to the end and check if the position is the
-        ;; same as what the end of line position was.
-        (when (and (re-search-backward seed7-procedure-or-function-regexp
-                                       nil :noerror)
-                   (re-search-forward "[[:space:]]return[[:space:]]+.+;"
-                                      nil :noerror))
-          (when (eq (point) orig-end-of-line-pos)
-            (setq is-at-end t))))
-      is-at-end)))
+             "end func                  ;"))
+  (unless is-at-end
+    ;; otherwise we may still be at end of a simple function with a return
+    ;; check if we can get to the end and check if the position is the
+    ;; same as what the end of line position was.
+    (when (and (re-search-backward seed7-procedure-or-function-regexp
+                                   nil :noerror)
+               (re-search-forward "[[:space:]]return[[:space:]]+.+;"
+                                  nil :noerror))
+      (when (eq (point) orig-end-of-line-pos)
+        (setq is-at-end t))))
+  is-at-end)))
 
 (defun seed7-end-of-defun (&optional n silent dont-push-mark)
   "Move forward to the end of the current function or procedure.
