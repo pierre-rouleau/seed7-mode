@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-10 16:18:26 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-10 16:40:12 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -584,6 +584,7 @@ The name of the source code file is appended to the end of that line."
 ;;* Seed7 Operator Symbols
 ;;  ----------------------
 
+;; [:todo 2025-04-10, by Pierre Rouleau: categorize 'noop' according to Seed7 spec once I find it ]
 (defconst seed7--operator-symbols
   '("and"
     "conv"
@@ -596,6 +597,7 @@ The name of the source code file is appended to the end of that line."
     "mdiv"
     "mod"
     "mult"
+    "noop" ; not mentioned in operators but not an identifier, probably a special case
     "not"
     "or"
     "parse"
