@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-10 14:45:03 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-10 16:05:22 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -82,9 +82,11 @@
 ;;    - Seed7 Predefined Variables
 ;;    - Seed7 Predefined errinfo value
 ;;    - Seed7 Operator Symbols
-;;    - Seed7 Assignment Operator Symbols
-;;    - Seed7 Arithmetic Operators
-;;    - Seed Other operators
+;;    - Seed7 Predefined Assignment Operators
+;;    - Seed7 Predefined Comparison Operators
+;;    - Seed7 Other Predefined Operators
+;;      - Seed7 Arithmetic Operators
+;;      - Seed Other operators
 ;; - Seed7 Faces
 ;; - Seed7 Font Locking Control
 ;; - Seed7 Comments Control
@@ -114,7 +116,7 @@
 ;; Seed7 Syntax Information:
 ;; - https://thomasmertes.github.io/Seed7Home/faq.htm#add_syntax_highlighting
 
-;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;; ---------------------------------------------------------------------------
 ;;* Seed7 Customization
 ;;  ===================
 
@@ -176,7 +178,6 @@ The name of the source code file is appended to the end of that line."
   "Fontification colors"
   :link '(custom-group-link :tag "Font Lock Faces group" font-lock-faces)
   :group 'seed7)
-
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;;* Seed7 Keywords
@@ -280,8 +281,6 @@ The name of the source code file is appended to the end of that line."
 (defconst seed7-base-x-big-number-re (format seed7--base-x-integer-re-format
                                              "(\\(?:"
                                              "_\\)[^#0-9a-zA-z]"))
-
-
 
 ;;* Seed7 pragmas
 ;;  -------------
@@ -613,39 +612,60 @@ The name of the source code file is appended to the end of that line."
            `(:  (or ,@seed7--operator-symbols)))
           "\\_>"))
 
-;;* Seed7 Assignment Operator Symbols
-;;  ---------------------------------
-
-
-;; syntax match    sd7Operator "[-+*/<>&[\]:{}@]"
-;; syntax keyword  sd7Operator ** ><
-;; syntax match    sd7Operator "[/<>]="
-;; syntax match    sd7Operator "\.\."
-;; syntax match    sd7Operator "="
+;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;* Seed7 Predefined Assignment Operators
+;;  -------------------------------------
 ;;
-;; S7 Assignment operators:
+;; Ref: https://seed7.sourceforge.net/faq.htm#syntax_highlighting
+;;
+;; Predefined assignment operators are: := +:= -:= *:= /:= <<:= >>:= &:= |:= ><:= @:=
+;;
 ;;    :=
-;;   -:=        https://seed7.sourceforge.net/libraries/bigint.htm#(inout_bigInteger)-:=(in_bigInteger)
 ;;   +:=        https://seed7.sourceforge.net/libraries/integer.htm#(inout_integer)+:=(in_integer)
+;;   -:=        https://seed7.sourceforge.net/libraries/bigint.htm#(inout_bigInteger)-:=(in_bigInteger)
 ;;   *:=        https://seed7.sourceforge.net/libraries/bigint.htm#(inout_bigInteger)*:=(in_bigInteger)
 ;;   /:=        https://seed7.sourceforge.net/libraries/bigrat.htm#(inout_bigRational)/:=(in_bigRational)
 ;;  <<:=        https://seed7.sourceforge.net/libraries/bigint.htm#(inout_bigInteger)%3C%3C:=(in_integer)
 ;;  >>:=        https://seed7.sourceforge.net/libraries/bigint.htm#(inout_bigInteger)%3E%3E:=(in_integer)
-;;  ><:=        https://seed7.sourceforge.net/libraries/bin32.htm#(inout_bin32)%3E%3C:=(in_bin32)
 ;;   &:=        https://seed7.sourceforge.net/libraries/array.htm#(inout_arrayType)&:=(in_arrayType)
 ;;   |:=        https://seed7.sourceforge.net/libraries/bin32.htm#(inout_bin32)|:=(in_bin32)
-;;   @:=[       https://seed7.sourceforge.net/libraries/bitset.htm#(inout_bitset)@:=_[(in_integer)](in_boolean)
-;;   <&
+;;  ><:=        https://seed7.sourceforge.net/libraries/bin32.htm#(inout_bin32)%3E%3C:=(in_bin32)
+;;   @:=        https://seed7.sourceforge.net/libraries/bitset.htm#(inout_bitset)@:=_[(in_integer)](in_boolean)
 
-(defconst seed7-assignment-operator-regxp
-  "\\(?:\\(?:[-\\+\\*/&|@]\\)\\|\\(?:<<\\|>>\\|><\\)\\)?:=")
+(defconst seed7-predef-assignment-operator-regxp
+  "\\(?:\\(?:[+*/&|@-]\\)\\|\\(?:<<\\|>>\\|><\\)\\)?:="
+  "Symbol is in group 0.")
 
-;;* Seed7 Arithmetic Operators
-;;  --------------------------
+;;* Seed7 Predefined Comparison Operators
+;;  -------------------------------------
 ;;
-;;  + - * / **
+;; Ref: https://seed7.sourceforge.net/faq.htm#syntax_highlighting
 ;;
-(defconst seed7-arithmetic-operator-regexp
+;; Predefined comparison operators are: = <> < <= > >=
+
+(defconst seed7-predef-comparison-operator-regxp
+  "\\(?:[=><]\\|\\(?:<>\\|<=\\|>=\\)\\)"
+  "Symbol is in group 0.")
+
+
+;;* Seed7 Other Predefined Operators
+;;  --------------------------------
+;;
+;; Ref: https://seed7.sourceforge.net/faq.htm#syntax_highlighting
+;;
+;; Other predefined operators are: + - * / ** ! << >> & | >< <& ?
+;;                                            -------     -------
+(defconst seed7-other-predef-operator-regxp
+  "\\(?:[!?]\\|\\(?:<<\\|>>\\|><\\|<&\\)\\)"
+  "Symbol is in group 0.")
+
+
+;;** Seed7 Arithmetic Operators
+;;   --------------------------
+;;
+;;   + - * / **
+;;
+(defconst seed7-arithmetic-operator-regxp
   "[[:alnum:]_ )]\\([/*]\\)[[:alnum:]_ (]"
   "Arithmetic operator except the minus sign")
 
@@ -653,16 +673,7 @@ The name of the source code file is appended to the end of that line."
   "[^+-]\\([+-]\\)[^+-]"
   "Arithmetic minus operator in group 1")
 
-;;* Seed Other operators
-;; --------------------
-;; "<&"
-;; "=" "<>"
-;; ">" ">="
-;; "<" "<="
-(defconst seed7-other-operator-regexp
-  " \\(\\(<&\\)\\|\\(=\\)\\|\\(<>\\)\\|\\([<>][=]?\\)\\) ")
-
-
+;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
 ;;  ===========
 ;;
@@ -939,9 +950,10 @@ The name of the source code file is appended to the end of that line."
    (cons seed7-errinfo-values-regxp                  (list 1 ''seed7-errinfo-value-face))
    ;; operator symbols
    (cons seed7-operator-symbols-regexp               (list 1 ''font-lock-keyword-face))
-   (cons seed7-assignment-operator-regxp             (list 0 ''font-lock-keyword-face))
-   (cons seed7-other-operator-regexp                 (list 1 ''font-lock-keyword-face))
-   (cons seed7-arithmetic-operator-regexp            (list 1 ''font-lock-keyword-face))
+   (cons seed7-predef-assignment-operator-regxp      (list 0 ''font-lock-keyword-face))
+   (cons seed7-predef-comparison-operator-regxp      (list 0 ''font-lock-keyword-face))
+   (cons seed7-other-predef-operator-regxp           (list 0 ''font-lock-keyword-face))
+   (cons seed7-arithmetic-operator-regxp             (list 1 ''font-lock-keyword-face))
    (cons "[[:alnum:] _)]\\(/\\)[[:alnum:] _(]"       (list 1 ''font-lock-keyword-face)) ; /
    (cons "[[:alnum:] _)]\\(\\*\\*\\)[[:alnum:] _(]"  (list 1 ''font-lock-keyword-face)) ; **
    ;; logic operator
