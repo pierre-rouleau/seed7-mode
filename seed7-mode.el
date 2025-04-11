@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-11 10:07:43 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-11 12:40:14 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -60,12 +60,17 @@
 ;;  # 04  Currently assumes that the syntax checker is the `s7check' program.  That
 ;;        program does not yet exists in the Seed7 distribution, but is available in source
 ;;        here: https://github.com/ThomasMertes/seed7/issues/34#issuecomment-2789748990
+;;  # 05  Line comments are created with '##' instead of '#' as a work-around to the
+;;        to clash with number literals with base.
+;;  # 06  Escaped single and double quote in strings are not recognized,
+;;        so the string is not properly terminated and leaks out.
 ;; ]
 ;;
 ;;
 ;; Code Organization Layout (use these as markers to locate related code)
 ;;
 ;; -  Seed7 Customization
+;; - Seed7 Mode Syntax Table
 ;; -  Seed7 Keywords
 ;;    - Seed7 Tokens
 ;;    - Seed7 Pragmas
@@ -176,6 +181,57 @@ The name of the source code file is appended to the end of that line."
   "Fontification colors"
   :link '(custom-group-link :tag "Font Lock Faces group" font-lock-faces)
   :group 'seed7)
+
+
+;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;* Seed7 Mode Syntax Table
+;;  =======================
+;;
+;; Ref: Comments:      https://seed7.sourceforge.net/manual/tokens.htm#Comments
+;; Ref: Line comments: https://seed7.sourceforge.net/manual/tokens.htm#Line_comments
+;;
+;; Comments: (* This is a comment *)
+;;           (* This is a
+;;              multi-line comment *)
+;;           # this is a line comment
+;;
+;;  Note that '#' is also used as a number base separator.
+;;  For the moment the mode requires '##' as the line comment starter.
+;;  So it's not always a comment.  For now require a space after '#' to consider it a comment.
+
+(defvar seed7-mode-syntax-table
+  (let ((st (make-syntax-table)))
+    (modify-syntax-entry ?\\ "."   st)
+
+    (modify-syntax-entry ?\( "()1n" st) ; The comment "(*" can be nested ...
+    (modify-syntax-entry ?\) ")(4n" st) ; ...  and end with the matching "*)"
+    (modify-syntax-entry ?* ". 23" st) ; '*' as second of "(*" and previous of; "*)"
+
+    ;; [:todo 2025-04-11, by Pierre Rouleau: Fix problem with line comments.
+    ;;                 Currently only support "##" as line comments
+    ;;                 to prevent comments inside number literals with base.
+    ;;                 I tried specifying space as the second comment character
+    ;;                 but it did not work. I'm not sure how to handle it.
+    ;;                 It's too bad the character used to identify the base is
+    ;;                 not 'r' (for radix) as used in Python.  It would be much
+    ;;                 simpler to handle because it would not clash with line comments..]
+    ;; A '#' starts a comment, but require a second '#' to prevent
+    ;; number literals with base to be interpreted as start of line comment.
+    (modify-syntax-entry ?# ". 12c" st)
+    (modify-syntax-entry ?\n "> c" st)
+
+    (modify-syntax-entry ?+ "."    st)
+    (modify-syntax-entry ?- "."    st)
+    (modify-syntax-entry ?= "."    st)
+    (modify-syntax-entry ?% "."    st)
+    (modify-syntax-entry ?< "."    st)
+    (modify-syntax-entry ?> "."    st)
+    (modify-syntax-entry ?& "."    st)
+    (modify-syntax-entry ?| "."    st)
+    (modify-syntax-entry ?_ "_"    st)
+    (modify-syntax-entry ?\' "\""  st)
+    st)
+  "Syntax table in use in seed7-mode buffers.")
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;;* Seed7 Keywords
@@ -960,14 +1016,16 @@ The name of the source code file is appended to the end of that line."
 ;;  ======================
 ;;
 ;; Region:      "(\*" "\*)"
-;; To line end: "#"
-
+;; To line end: "##"
+;; [:todo 2025-04-11, by Pierre Rouleau: Fix line end comment support.
+;;                    Now only support '##' to prevent interpreting the
+;;                    number literals with a base to be interpreted as
+;;                    line comment start. ]
 
 (defconst seed7-block-comment-starter "(*")
 (defconst seed7-block-comment-ender   "*)")
 (defconst seed7-block-comment-prefix  "**")
-(defconst seed7-line-comment-starter  "# ")
-(defconst seed7-comment-regxp "#.*$")
+(defconst seed7-line-comment-starter  "## ")
 
 (defun seed7--new-state-for (arg prevstate)
   ;; Calculate the new state of PREVSTATE, t or nil, based on ARG.
@@ -1329,7 +1387,7 @@ If optional COMPILE argument set, compile the file to executable instead.
 ;;  properly.]
 
 ;;;###autoload
-(define-derived-mode seed7-mode pascal-mode "seed7"
+(define-derived-mode seed7-mode prog-mode "seed7"
   "Major mode for editing Seed7 files.
 This is a preliminary implementation, based on `pascal-mode'"
   (seed7--set-comment-style seed7-uses-block-comment)
