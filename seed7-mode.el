@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-11 14:55:41 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-11 16:19:50 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -64,10 +64,9 @@
 ;;        as a work-around to the to clash with number literals with base.
 ;;        To ensure that mode supports the '#' as line comments, the code also uses a
 ;;        specific regexp, `seed7--line-comment-regexp' to render matching text as comment.
-
-
-;;  # 06  Escaped single and double quote in strings are not recognized,
-;;        so the string is not properly terminated and leaks out.
+;;  # 06  Escaped single and double quote in strings are now recognized.
+;;        However the surprising multi-line strings that end with '\"' are not
+;;        handled.
 ;; ]
 ;;
 ;;
@@ -223,6 +222,8 @@ The name of the source code file is appended to the end of that line."
     ;; number literals with base to be interpreted as start of line comment.
     (modify-syntax-entry ?# ". 12c" st)
     (modify-syntax-entry ?\n "> c" st)
+    ;; string escape
+    (modify-syntax-entry ?\\ "\\"  st)
 
     (modify-syntax-entry ?+ "."    st)
     (modify-syntax-entry ?- "."    st)
