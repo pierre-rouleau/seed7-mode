@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-11 09:26:25 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-11 09:53:20 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -74,6 +74,7 @@
 ;;    - Seed7 Pragmas
 ;;    - Seed7 include
 ;;    - Seed7 keywords used in statements
+;;    - Seed7 is-statemement keywords
 ;;    - Seed7 keywords used in middle of statements
 ;;    - Seed7 statement enclosing keywords
 ;;    - Seed7 declaration introduction keywords
@@ -197,6 +198,11 @@ The name of the source code file is appended to the end of that line."
 ;; Ref: https://seed7.sourceforge.net/manual/tokens.htm
 
 ;; [:todo 2025-04-09, by Pierre Rouleau: Complete the syntax for numbers.]
+
+(defconst seed7--whitespace-re
+  "[[:space:]
+]"
+  "Match any horizontal whitespace character and new line.")
 
 (defconst seed7--bracket-re
   "[])(}{[]")
@@ -367,7 +373,8 @@ The name of the source code file is appended to the end of that line."
     ))
 
 (defconst seed7--is-statement-keywords-regexp
-  (format " is[[:space:]]+\\(%s\\)\\_>"
+  (format " is%s+\\(%s\\)\\_>"
+          seed7--whitespace-re
           (rx-to-string
            `(: (or ,@seed7-is-statement-keywords)))))
 
@@ -1057,8 +1064,13 @@ The name of the source code file is appended to the end of that line."
 ;;          - empty for a func that only has a return statement.
 ;;
 (defconst seed7-procedure-or-function-regexp
-  "^[[:space:]]*const \\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)? ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is\\( func\\)?")
-;;                      G1 G2                   G3                                  G4                                 G5
+  (format
+   "^[[:space:]]*const%s+\\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)?%s?:%s*\\([[:alpha:]][[:alnum:]_]+\\)%s.*is\\( func\\)?"
+;;                         G1 G2                   G3                                    G4                                  G5
+   seed7--whitespace-re
+   seed7--whitespace-re
+   seed7--whitespace-re
+   seed7--whitespace-re))
 
 ;; future?
 ;; "^[[:blank:]]*const \\(\\(func\\|proc\\)\\)[[:space:]]?\\(\\([[:alpha:]][[:alnum:]_]+\\)?[[:space:]]+\\([[:alpha:]][[:alnum:]_]+\\)\\) ?: *\\([[:alpha:]][[:alnum:]_]+\\).*is[[:space:]]+\\(func\\)?")
