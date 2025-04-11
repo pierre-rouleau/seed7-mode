@@ -39,8 +39,9 @@ Emacs support for the Seed7 Programming language
 
     The static checking and compilation commands are identified in customizable user options.
     The static checking defaults to `s7check` and the compilation to `s7c`.
-    Currently the `s7check` is not part of seed7 distribution but the customization
-    buffer points to simple Seed7 code that implements it.
+    Currently the `s7check` is not part of seed7 distribution but you can use
+    this [simple Seed7 program](https://github.com/ThomasMertes/seed7/issues/34#issuecomment-2789748990)
+    that implements it.
 
 Note that seed7-mode is compatible with [iedit](https://github.com/victorhge/iedit)
 and [expand-region](https://github.com/magnars/expand-region.el?tab=readme-ov-file#readme).
