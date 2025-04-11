@@ -1,8 +1,51 @@
 # seed7-mode
 Emacs support for the Seed7 Programming language
 
-⚠️  This is far from being complete  🚧  This is **work-in-progress**.
+⚠️  Early, **work-in-progress** version of seed7-mode  🚧 .
 
+# Currently Implemented Features #
+
+- Syntax highlighting with customizable faces.
+- Support [Emacs imenu mode](https://www.gnu.org/software/emacs/manual/html_node/elisp/Imenu.html) and
+  [Emacs Speedbar](https://www.gnu.org/software/emacs/manual/html_node/speedbar/) for:
+
+  - Seed7 procedures,
+  - Seed7 functions,
+  - Seed7 interfaces,
+  - Seed7 structures,
+  - Seed7 enums.
+
+- Implemented Commands:
+
+  - Code Navigation Commands:
+
+    | Function | Key Binding | Description |
+    | -------- | ----------- | ----------- |
+    | seed7-beg-of-defun | `C-M-a` | Move point backward to beginning of function or procedure. Optional repeat argument. |
+    | seed7-end-of-defun | `C-M-e` | Move point backward to beginning of function or procedure. Optional repeat argument. |
+    | seed7-beg-of-next-defun |    | Move point forward to beginning of next function or procedure. Optional repeat argument. |
+
+  - Code Marking Commands:
+
+    | Function | Key Binding | Description |
+    | -------- | ----------- | ----------- |
+    | seed7-mark-defun | `C-M-h` | Mark the current function or procedure. |
+
+  - Compilation commands:
+
+    | Function | Key Binding | Description |
+    | -------- | ----------- | ----------- |
+    | seed7-compile |  | Static check Seed7 file visited in current buffer. With optional argument compile it. |
+
+    The static checking and compilation commands are identified in customizable user options.
+    The static checking defaults to `s7check` and the compilation to `s7c`.
+    Currently the `s7check` is not part of seed7 distribution but the customization
+    buffer points to simple Seed7 code that implements it.
+
+Note that seed7-mode is compatible with [iedit](https://github.com/victorhge/iedit)
+and [expand-region](https://github.com/magnars/expand-region.el?tab=readme-ov-file#readme).
+
+More commands will be implemented.
 
 # How To Install seed7-mode #
 
