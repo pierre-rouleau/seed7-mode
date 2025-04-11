@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-10 16:40:12 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-10 23:06:13 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -282,7 +282,7 @@ The name of the source code file is appended to the end of that line."
                                              "(\\(?:"
                                              "_\\)[^#0-9a-zA-z]"))
 
-;;* Seed7 pragmas
+;;* Seed7 Pragmas
 ;;  -------------
 ;;
 ;; Ref: https://thomasmertes.github.io/Seed7Home/manual/decls.htm#Pragmas
@@ -294,7 +294,13 @@ The name of the source code file is appended to the end of that line."
     "info"
     "trace"
     "decls"
-    "names"))
+    "names"
+
+    ;; The next ones are not identified specifically as pragmas
+    ;; but they are special and are also used with a leading '$'
+    "syntax"
+    "system"
+    ))
 
 (defconst seed7-pragma-keywords-regexp
   (format "^%s\\(\\$ +%s\\)%s"
@@ -323,13 +329,13 @@ The name of the source code file is appended to the end of that line."
 ;;`seed--in-statement-keywords'.
 
 (defconst seed7--lead-in-statement-keywords
-  '("begin"
+  '(;; "begin"
     ;; "block"
     ;; "case"
     ;; "catch"
-    "const"
-    "do"
-    "downto"
+    ;; "const"
+    ;; "do"
+    ;; "downto"
     ;; "else"
     ;; "elsif"
     ;; "end"
@@ -339,30 +345,31 @@ The name of the source code file is appended to the end of that line."
     "forward"
     ;; "func"
     ;; "if"
-    "in"
+    ;; "in"
     ;; "include"
-    "inout"
-    "is"
-    "local"
-    "new"
+    ;; "inout"
+    ;; "is"
+    ;; "local"
+    ;; "new"
+    "noop" ; not mentioned in operators but not an identifier, probably a special case
     "of"
     ;; "otherwise"
-    "param"
+    ;; "param"
     "raise"                      ; currently missing in the Seed7 keyword list
-    "range"
-    "ref"
+    ;; "range"
+    ;; "ref"
     ;; "repeat"
-    "result"
+    ;; "result"
     "return"
-    "step"
+    ;; "step"
     ;; "struct"
     ;; "syntax"
     ;; "system"
-    "then"
-    "to"
+    ;; "then"
+    ;; "to"
     ;; "until"
-    "val"
-    "var"
+    ;; "val"
+    ;; "var"
     ;; "when"
     ;; "while"
     ))
@@ -400,8 +407,6 @@ The name of the source code file is appended to the end of that line."
     "if"          "else" "elsif" "end if"
     "repeat"      "until"
     "struct"      "end struct"
-    "syntax"
-    "system"
     "while"       "end while"))
 
 (defconst seed7-statement-introducing-keywords-regexp
@@ -597,7 +602,6 @@ The name of the source code file is appended to the end of that line."
     "mdiv"
     "mod"
     "mult"
-    "noop" ; not mentioned in operators but not an identifier, probably a special case
     "not"
     "or"
     "parse"
