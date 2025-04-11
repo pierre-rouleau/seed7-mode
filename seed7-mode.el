@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-11 09:53:20 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-11 10:00:51 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1178,7 +1178,7 @@ The name of the source code file is appended to the end of that line."
       (setq is-at-end
             (string-equal
              (string-trim (thing-at-point 'line :no-properties))
-             "end func                  ;"))
+             "end func;"))
   (unless is-at-end
     ;; otherwise we may still be at end of a simple function with a return
     ;; check if we can get to the end and check if the position is the
