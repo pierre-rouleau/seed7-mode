@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-11 12:40:14 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-11 14:39:36 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -60,8 +60,12 @@
 ;;  # 04  Currently assumes that the syntax checker is the `s7check' program.  That
 ;;        program does not yet exists in the Seed7 distribution, but is available in source
 ;;        here: https://github.com/ThomasMertes/seed7/issues/34#issuecomment-2789748990
-;;  # 05  Line comments are created with '##' instead of '#' as a work-around to the
-;;        to clash with number literals with base.
+;;  # 05  Syntax table only support line comments are created with '##' instead of '#'
+;;        as a work-around to the to clash with number literals with base.
+;;        To ensure that mode supports the '#' as line comments, the code also uses a
+;;        specific regexp, `seed7--line-comment-regexp' to render matching text as comment.
+
+
 ;;  # 06  Escaped single and double quote in strings are not recognized,
 ;;        so the string is not properly terminated and leaks out.
 ;; ]
@@ -250,7 +254,12 @@ The name of the source code file is appended to the end of that line."
 ;;
 ;; Ref: https://seed7.sourceforge.net/manual/tokens.htm
 
-;; [:todo 2025-04-09, by Pierre Rouleau: Complete the syntax for numbers.]
+;; [:todo 2025-04-09, by Pierre Rouleau: Complete the syntax for floating point numbers.]
+
+;;** Seed7 Comment Control
+(defconst seed7--line-comment-regexp
+  "[^[:digit:]]\\(#.+\\)$"
+  "Single line comment in group 1")
 
 (defconst seed7--whitespace-re
   "[[:space:]
@@ -965,6 +974,8 @@ The name of the source code file is appended to the end of that line."
 ;;
 (defconst seed7-font-lock-keywords
   (list
+   ;; line comments with a single #
+   (cons seed7--line-comment-regexp                  (list 1 ''font-lock-comment-delimiter-face))
    ;; pragmas
    (cons seed7-pragma-keywords-regexp                (list 1 ''seed7-pragma-keyword-face))
    ;; include
