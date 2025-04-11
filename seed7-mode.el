@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-10 23:06:13 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-11 08:23:29 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -74,7 +74,7 @@
 ;;    - Seed7 Pragmas
 ;;    - Seed7 include
 ;;    - Seed7 keywords used in statements
-;;    - Seed7 statement introducing keywords
+;;    - Seed7 statement enclosing keywords
 ;;    - Seed7 keywords used in middle of statements
 ;;    - Seed7 declaration introduction keywords
 ;;    - Seed7 Predefined Types
@@ -329,49 +329,11 @@ The name of the source code file is appended to the end of that line."
 ;;`seed--in-statement-keywords'.
 
 (defconst seed7--lead-in-statement-keywords
-  '(;; "begin"
-    ;; "block"
-    ;; "case"
-    ;; "catch"
-    ;; "const"
-    ;; "do"
-    ;; "downto"
-    ;; "else"
-    ;; "elsif"
-    ;; "end"
-    ;; "enum"
-    ;; "exception"
-    ;; "for"
+  '(
     "forward"
-    ;; "func"
-    ;; "if"
-    ;; "in"
-    ;; "include"
-    ;; "inout"
-    ;; "is"
-    ;; "local"
-    ;; "new"
-    "noop" ; not mentioned in operators but not an identifier, probably a special case
     "of"
-    ;; "otherwise"
-    ;; "param"
     "raise"                      ; currently missing in the Seed7 keyword list
-    ;; "range"
-    ;; "ref"
-    ;; "repeat"
-    ;; "result"
     "return"
-    ;; "step"
-    ;; "struct"
-    ;; "syntax"
-    ;; "system"
-    ;; "then"
-    ;; "to"
-    ;; "until"
-    ;; "val"
-    ;; "var"
-    ;; "when"
-    ;; "while"
     ))
 
 (defconst seed7-lead-in-statement-keywords-regexp
@@ -384,6 +346,7 @@ The name of the source code file is appended to the end of that line."
 (defconst seed7--in-statement-keywords
   '("do"
     "is"
+    "noop" ; not mentioned in operators but not an identifier, probably a special case
     "then"))
 
 (defconst seed7-in-statement-keywords-regexp
@@ -393,11 +356,11 @@ The name of the source code file is appended to the end of that line."
            `(: (or ,@seed7--in-statement-keywords)))
           "\\_>"))
 
-;;* Seed7 statement introducing keywords
-;;  ------------------------------------
+;;* Seed7 statement enclosing keywords
+;;  ----------------------------------
 ;;
 
-(defconst seed7--statement-introducing-keywords
+(defconst seed7--statement-enclosing-keywords
   '("block"       "end block"
     "case"        "when" "otherwise" "end case"
     "exception"   "catch" ; otherwise
@@ -409,11 +372,11 @@ The name of the source code file is appended to the end of that line."
     "struct"      "end struct"
     "while"       "end while"))
 
-(defconst seed7-statement-introducing-keywords-regexp
+(defconst seed7-statement-enclosing-keywords-regexp
   (format "%s\\(%s\\)%s"
           "\\_<"
           (rx-to-string
-           `(: (or ,@seed7--statement-introducing-keywords)))
+           `(: (or ,@seed7--statement-enclosing-keywords)))
           "\\_>"))
 
 ;;* Seed7 keywords used in middle of statements
@@ -445,7 +408,7 @@ The name of the source code file is appended to the end of that line."
           "[[:space:]]"
           (rx-to-string
            `(: (or ,@seed7--in-middle-statement-keywords)))
-          "[[:punct:][:space:]]"))
+          "\\_>"))
 
 
 ;;* Seed7 declaration introduction keywords
@@ -941,7 +904,7 @@ The name of the source code file is appended to the end of that line."
    (cons seed7-lead-in-statement-keywords-regexp     (list 1 ''seed7-in-statement-keyword-face))
    (cons seed7-in-statement-keywords-regexp          (list 1 ''seed7-in-statement-keyword-face))
    ;; statement-introducing keywords (needed??probably not)
-   (cons seed7-statement-introducing-keywords-regexp (list 1 ''seed7-statement-introducing-keyword-face))
+   (cons seed7-statement-enclosing-keywords-regexp   (list 1 ''seed7-statement-introducing-keyword-face))
    ;; keywords used in middle of statements
    (cons seed7-in-middle-statement-keywords-regexp   (list 1 ''seed7-in-middle-statement-keyword-face))
    ;; declaration introduction keywords :probably need a better name
