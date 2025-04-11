@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-11 08:23:29 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-11 09:06:52 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -74,8 +74,8 @@
 ;;    - Seed7 Pragmas
 ;;    - Seed7 include
 ;;    - Seed7 keywords used in statements
-;;    - Seed7 statement enclosing keywords
 ;;    - Seed7 keywords used in middle of statements
+;;    - Seed7 statement enclosing keywords
 ;;    - Seed7 declaration introduction keywords
 ;;    - Seed7 Predefined Types
 ;;    - Seed7 Predefined Constants
@@ -331,7 +331,6 @@ The name of the source code file is appended to the end of that line."
 (defconst seed7--lead-in-statement-keywords
   '(
     "forward"
-    "of"
     "raise"                      ; currently missing in the Seed7 keyword list
     "return"
     ))
@@ -356,13 +355,40 @@ The name of the source code file is appended to the end of that line."
            `(: (or ,@seed7--in-statement-keywords)))
           "\\_>"))
 
+
+;;* Seed7 keywords used in middle of statements
+;;  -------------------------------------------
+
+(defconst seed7--in-middle-statement-keywords
+  '("begin"
+    "do"
+    "downto"
+    "exception"
+    "local"
+    "new"
+    "param"
+    "range"
+    "result"
+    "step"
+    "then"
+    "to"
+    ))
+
+(defconst seed7-in-middle-statement-keywords-regexp
+  (format "%s\\(%s\\)%s"
+          "[[:space:]]"
+          (rx-to-string
+           `(: (or ,@seed7--in-middle-statement-keywords)))
+          "\\_>"))
+
+
 ;;* Seed7 statement enclosing keywords
 ;;  ----------------------------------
 ;;
 
 (defconst seed7--statement-enclosing-keywords
   '("block"       "end block"
-    "case"        "when" "otherwise" "end case"
+    "case"        "of" "when" "otherwise" "end case"
     "exception"   "catch" ; otherwise
     "enum"        "end enum"
     "for"         "end for"
@@ -378,38 +404,6 @@ The name of the source code file is appended to the end of that line."
           (rx-to-string
            `(: (or ,@seed7--statement-enclosing-keywords)))
           "\\_>"))
-
-;;* Seed7 keywords used in middle of statements
-;;  -------------------------------------------
-
-(defconst seed7--in-middle-statement-keywords
-  '("begin"
-    "do"
-    "downto"
-    ;; "else"
-    ;; "elsif"
-    ;; "end"
-    "exception"
-    "local"
-    "new"
-    ;; "otherwise"
-    "param"
-    "range"
-    "result"
-    "step"
-    "then"
-    "to"
-    ;; "until"
-    ;; "when"
-    ))
-
-(defconst seed7-in-middle-statement-keywords-regexp
-  (format "%s\\(%s\\)%s"
-          "[[:space:]]"
-          (rx-to-string
-           `(: (or ,@seed7--in-middle-statement-keywords)))
-          "\\_>"))
-
 
 ;;* Seed7 declaration introduction keywords
 ;;  ---------------------------------------
