@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-11 09:06:52 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-11 09:26:25 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -330,7 +330,6 @@ The name of the source code file is appended to the end of that line."
 
 (defconst seed7--lead-in-statement-keywords
   '(
-    "forward"
     "raise"                      ; currently missing in the Seed7 keyword list
     "return"
     ))
@@ -356,6 +355,22 @@ The name of the source code file is appended to the end of that line."
           "\\_>"))
 
 
+;;* Seed7 is-statemement keywords
+;;  -----------------------------
+;;
+;; These keywords are exclusively used following the 'is' keyword.
+;;
+(defconst seed7-is-statement-keywords
+  '(
+    "forward"
+    "new"
+    ))
+
+(defconst seed7--is-statement-keywords-regexp
+  (format " is[[:space:]]+\\(%s\\)\\_>"
+          (rx-to-string
+           `(: (or ,@seed7-is-statement-keywords)))))
+
 ;;* Seed7 keywords used in middle of statements
 ;;  -------------------------------------------
 
@@ -365,7 +380,6 @@ The name of the source code file is appended to the end of that line."
     "downto"
     "exception"
     "local"
-    "new"
     "param"
     "range"
     "result"
@@ -388,8 +402,9 @@ The name of the source code file is appended to the end of that line."
 
 (defconst seed7--statement-enclosing-keywords
   '("block"       "end block"
-    "case"        "of" "when" "otherwise" "end case"
-    "exception"   "catch" ; otherwise
+    "case"         "when" "otherwise" "end case"
+    "of"                                ; in 'case' or 'is set'
+    "exception"   "catch"               ; otherwise
     "enum"        "end enum"
     "for"         "end for"
     "func"        "end func"
@@ -900,6 +915,7 @@ The name of the source code file is appended to the end of that line."
    ;; statement-introducing keywords (needed??probably not)
    (cons seed7-statement-enclosing-keywords-regexp   (list 1 ''seed7-statement-introducing-keyword-face))
    ;; keywords used in middle of statements
+   (cons seed7--is-statement-keywords-regexp         (list 1 ''seed7-in-middle-statement-keyword-face))
    (cons seed7-in-middle-statement-keywords-regexp   (list 1 ''seed7-in-middle-statement-keyword-face))
    ;; declaration introduction keywords :probably need a better name
    (cons seed7-declaration-intro-keywords-regexp     (list 1 ''seed7-intro-statement-keyword-face))
