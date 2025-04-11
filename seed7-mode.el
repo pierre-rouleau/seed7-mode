@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-11 10:00:51 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-11 10:07:43 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -57,10 +57,7 @@
 ;;        defined, and these are used for preliminary testing.  Once testing
 ;;        of this is completed, remove the duplication and keep what is
 ;;        strictly necessary to eliminate un-required extra processing.
-;;  # 04  The regular expressions to identify functions and procedure are not 100%
-;;        valid.  They still fail for some formatting like multi-line and compound types.
-;;  # 05  The syntax for numbers is incomplete.
-;;  # 06  Currently assumes that the syntax checker is the `s7check' program.  That
+;;  # 04  Currently assumes that the syntax checker is the `s7check' program.  That
 ;;        program does not yet exists in the Seed7 distribution, but is available in source
 ;;        here: https://github.com/ThomasMertes/seed7/issues/34#issuecomment-2789748990
 ;; ]
