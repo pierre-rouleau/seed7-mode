@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-14 14:32:47 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-14 14:57:33 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -747,7 +747,8 @@ The name of the source code file is appended to the end of that line."
 ;; `font-lock-warning-face'              Things that should stand out.
 ;;
 ;; **Extra Faces for Seed7**
-;; `seed7-in-statement-keyword-face'     Seed7 keywords used inside statements.
+;; `seed7-in-statement-keyword-face1'    Seed7 keywords used inside statements: raise, return
+;; `seed7-in-statement-keyword-face2'    Seed7 keywords used inside statements: do, is, noop, then
 ;; ===================================== ================================================
 
 (defun seed7-choose-color (&rest list)
@@ -767,6 +768,7 @@ The name of the source code file is appended to the end of that line."
 
 ;;** Seed7 Customization
 
+;; --
 (defface seed7-pragma-keyword-face
   `((((class grayscale) (background light))
      (:background "Gray90" :weight bold))
@@ -797,23 +799,38 @@ The name of the source code file is appended to the end of that line."
   "Font Lock mode face used to highlight include."
   :group 'seed7-faces)
 
-(defface seed7-in-statement-keyword-face
-  `(;; (((class grayscale) (background light))
-    ;;  (:background "Gray90" :weight bold))
-
-    ;; (((class grayscale) (background dark))
-    ;;  (:foreground "Gray80" :weight bold))
+;; --
+(defface seed7-in-statement-keyword-face1
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold))
 
     (((class color) (background light))
-     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
-     (:foreground "color-33" :weight bold))
-
-    ;; (((class color) (background dark))
-    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+     (:foreground "DodgerBlue3" :weight bold))
+    (((class color) (background dark))
+     (:foreground "DodgerBlue3" :background ,seed7-dark-background :weight bold))
 
     (t (:weight bold)))
   "Font Lock mode face used to highlight keywords."
   :group 'seed7-faces)
+
+(defface seed7-in-statement-keyword-face2
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     (:foreground "SteelBlue3" :weight bold))
+    (((class color) (background dark))
+     (:foreground "SteelBlue3" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight keywords."
+  :group 'seed7-faces)
+
+;; --
 
 (defface seed7-statement-introducing-keyword-face
   `(;; (((class grayscale) (background light))
@@ -977,8 +994,8 @@ The name of the source code file is appended to the end of that line."
    ;; include
    (cons seed7-include-regexp                        (list 1 ''seed7-include-face))
    ;; in-statement keywords
-   (cons seed7-lead-in-statement-keywords-regexp     (list 1 ''seed7-in-statement-keyword-face))
-   (cons seed7-in-statement-keywords-regexp          (list 1 ''seed7-in-statement-keyword-face))
+   (cons seed7-lead-in-statement-keywords-regexp     (list 1 ''seed7-in-statement-keyword-face1))
+   (cons seed7-in-statement-keywords-regexp          (list 1 ''seed7-in-statement-keyword-face2))
    ;; statement-introducing keywords (needed??probably not)
    (cons seed7-statement-enclosing-keywords-regexp   (list 1 ''seed7-statement-introducing-keyword-face))
    ;; keywords used in middle of statements
