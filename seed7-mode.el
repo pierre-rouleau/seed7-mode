@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-14 15:13:17 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-14 16:06:10 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -411,10 +411,9 @@ The name of the source code file is appended to the end of that line."
           "\\_>"))
 
 (defconst seed7--in-statement-keywords
-  '("do"
-    "is"
+  '("is"
     "noop" ; not mentioned in operators but not an identifier, probably a special case
-    "then"))
+    ))
 
 (defconst seed7-in-statement-keywords-regexp
   (format ". %s\\(%s\\)%s"        ; these are all the first keyword on a line
@@ -831,7 +830,6 @@ The name of the source code file is appended to the end of that line."
   :group 'seed7-faces)
 
 ;; --
-
 (defface seed7-statement-introducing-keyword-face
   `((((class grayscale) (background light))
      (:background "Gray90" :weight bold))
@@ -847,24 +845,38 @@ The name of the source code file is appended to the end of that line."
   "Font Lock mode face used to highlight keywords that introduce a statement."
   :group 'seed7-faces)
 
-(defface seed7-in-middle-statement-keyword-face
-  `(;; (((class grayscale) (background light))
-    ;;  (:background "Gray90" :weight bold))
-
-    ;; (((class grayscale) (background dark))
-    ;;  (:foreground "Gray80" :weight bold))
+;; --
+(defface seed7-in-middle-statement-keyword-face1
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold))
 
     (((class color) (background light))
-     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
-     (:foreground "color-38" :weight bold))
-
-    ;; (((class color) (background dark))
-    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+     (:foreground "RoyalBlue2" :weight bold))
+    (((class color) (background dark))
+     (:foreground "RoyalBlue2" :background ,seed7-dark-background :weight bold))
 
     (t (:weight bold)))
   "Font Lock mode face used to highlight keywords used in middle of statements."
   :group 'seed7-faces)
 
+(defface seed7-in-middle-statement-keyword-face2
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     (:foreground "RoyalBlue1" :weight bold))
+    (((class color) (background dark))
+     (:foreground "RoyalBlue1" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight keywords used in middle of statements."
+  :group 'seed7-faces)
+
+;; --
 (defface seed7-intro-statement-keyword-face
   `(;; (((class grayscale) (background light))
     ;;  (:background "Gray90" :weight bold))
@@ -996,8 +1008,8 @@ The name of the source code file is appended to the end of that line."
    ;; statement-introducing keywords
    (cons seed7-statement-enclosing-keywords-regexp   (list 1 ''seed7-statement-introducing-keyword-face))
    ;; keywords used in middle of statements
-   (cons seed7--is-statement-keywords-regexp         (list 1 ''seed7-in-middle-statement-keyword-face))
-   (cons seed7-in-middle-statement-keywords-regexp   (list 1 ''seed7-in-middle-statement-keyword-face))
+   (cons seed7--is-statement-keywords-regexp         (list 1 ''seed7-in-middle-statement-keyword-face1))
+   (cons seed7-in-middle-statement-keywords-regexp   (list 1 ''seed7-in-middle-statement-keyword-face2))
    ;; declaration introduction keywords :probably need a better name
    (cons seed7-declaration-intro-keywords-regexp     (list 1 ''seed7-intro-statement-keyword-face))
    ;; predefined types
