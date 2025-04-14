@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-14 16:14:49 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-14 16:35:42 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -894,38 +894,37 @@ The name of the source code file is appended to the end of that line."
 
 ;; --
 (defface seed7-predefined-variables-face
-  `(;; (((class grayscale) (background light))
-    ;;  (:background "Gray90" :weight bold))
-    ;; (((class grayscale) (background dark))
-    ;;  (:foreground "Gray80" :weight bold))
-    (((class color)
-      (background light))
-     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
-     (:foreground "color-24"))
-    ;; (((class color) (background dark))
-    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     (:foreground "dark cyan"))
+    (((class color) (background dark))
+     (:foreground "dark cyan" :background ,seed7-dark-background :weight bold))
+
     (t (:weight bold)))
   "Font Lock mode face used to highlight predefined variable names."
   :group 'seed7-faces)
 
+;; --
 (defface seed7-errinfo-value-face
-  `(;; (((class grayscale) (background light))
-    ;;  (:background "Gray90" :weight bold))
-
-    ;; (((class grayscale) (background dark))
-    ;;  (:foreground "Gray80" :weight bold))
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold))
 
     (((class color) (background light))
-     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
-     (:foreground "color-133" :weight bold))
-
-    ;; (((class color) (background dark))
-    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+     (:foreground "cadet blue" :weight bold))
+    (((class color) (background dark))
+     (:foreground "cadet blue" :background ,seed7-dark-background :weight bold))
 
     (t (:weight bold)))
   "Font Lock mode face used to highlight errinfo values."
   :group 'seed7-faces)
 
+;; --
 (defface seed7-integer-face
   `(;; (((class grayscale) (background light))
     ;;  (:background "Gray90" :weight bold))
