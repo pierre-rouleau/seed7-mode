@@ -40,14 +40,23 @@ Emacs support for the Seed7 Programming language
     | -------- | ----------- | ----------- |
     | seed7-compile |  | Static check Seed7 file visited in current buffer. With optional argument compile it. |
 
-    The static checking and compilation commands are identified in customizable user options.
-    The static checking defaults to `s7check` and the compilation to `s7c`.
-    Currently the `s7check` is not part of seed7 distribution but you can use
-    this [simple Seed7 program](https://github.com/ThomasMertes/seed7/issues/34#issuecomment-2789748990)
-    that implements it.
 
-Note that seed7-mode is compatible with [iedit](https://github.com/victorhge/iedit)
-and [expand-region](https://github.com/magnars/expand-region.el?tab=readme-ov-file#readme).
+   Also:
+
+   - The static checking and compilation commands are identified in customizable user options.
+   - The static checking defaults to `s7check` and the compilation to `s7c`.
+   - Currently the `s7check` is not part of seed7 distribution but you can use
+     this [simple Seed7 program](https://github.com/ThomasMertes/seed7/issues/34#issuecomment-2789748990)
+     that implements it.
+
+# Compatibility#
+
+The seed7-mode is compatible with:
+
+- Emacs comment-dwim.  The recommended key binding for it is `M-;`
+- [iedit](https://github.com/victorhge/iedit)
+- [expand-region](https://github.com/magnars/expand-region.el?tab=readme-ov-file#readme).
+
 
 More commands will be implemented.
 
