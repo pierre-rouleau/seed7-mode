@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-14 16:35:42 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-14 16:51:50 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -926,54 +926,46 @@ The name of the source code file is appended to the end of that line."
 
 ;; --
 (defface seed7-integer-face
-  `(;; (((class grayscale) (background light))
-    ;;  (:background "Gray90" :weight bold))
-
-    ;; (((class grayscale) (background dark))
-    ;;  (:foreground "Gray80" :weight bold))
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold))
 
     (((class color) (background light))
-     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
-     (:foreground "color-23" ))
-
-    ;; (((class color) (background dark))
-    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+     (:foreground "peru" ))
+    (((class color) (background dark))
+     (:foreground "peru" :background ,seed7-dark-background :weight bold))
 
     (t (:weight bold)))
   "Font Lock mode face used to highlight errinfo values."
   :group 'seed7-faces)
 
 (defface seed7-number-face
-  `(;; (((class grayscale) (background light))
-    ;;  (:background "Gray90" :weight bold))
-
-    ;; (((class grayscale) (background dark))
-    ;;  (:foreground "Gray80" :weight bold))
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold))
 
     (((class color) (background light))
-     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
-     (:foreground "color-24" ))
-
-    ;; (((class color) (background dark))
-    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+     (:foreground "sienna" ))
+    (((class color) (background dark))
+     (:foreground "sienna" :background ,seed7-dark-background :weight bold))
 
     (t (:weight bold)))
   "Font Lock mode face used to highlight errinfo values."
   :group 'seed7-faces)
 
+;; --
 (defface seed7-identifier-face
-  `(;; (((class grayscale) (background light))
-    ;;  (:background "Gray90" :weight bold))
-
-    ;; (((class grayscale) (background dark))
-    ;;  (:foreground "Gray80" :weight bold))
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold))
 
     (((class color) (background light))
-     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
      (:foreground "black"  :weight bold))
-
-    ;; (((class color) (background dark))
-    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+    (((class color) (background dark))
+     (:foreground "black" :background ,seed7-dark-background :weight bold))
 
     (t (:weight bold)))
   "Font Lock mode face used to highlight errinfo values."
@@ -1034,7 +1026,7 @@ The name of the source code file is appended to the end of that line."
    ;; identifiers
    (cons seed7-identifier-regexp                     (list 1 ''seed7-identifier-face))
    ;; other numbers
-   (cons seed7-big-number-re                         (list 1 ''seed-number-face))
+   (cons seed7-big-number-re                         (list 1 ''seed7-number-face))
    (cons seed7-integer-re                            (list 1 ''seed7-integer-face))
    ;; low priority rendering of arithmetic + and -
    (cons seed7-minus-operator-regexp                 (list 1 ''font-lock-keyword-face))
