@@ -5,7 +5,10 @@ Emacs support for the Seed7 Programming language
 
 # Currently Implemented Features #
 
-- Syntax highlighting with customizable faces.
+- Syntax highlighting with user-customizable faces.
+  See [terminal-mode Emacs](screenshots/graphic-light-example-01.png) and
+  [graphical Emacs](screenshots/terminal-example-01.png) screen-shots of Seed7 library code.
+
 - Support [Emacs imenu mode](https://www.gnu.org/software/emacs/manual/html_node/elisp/Imenu.html) and
   [Emacs Speedbar](https://www.gnu.org/software/emacs/manual/html_node/speedbar/) for:
 
