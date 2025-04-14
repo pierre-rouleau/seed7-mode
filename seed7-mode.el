@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-14 14:57:33 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-14 15:13:17 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -833,18 +833,15 @@ The name of the source code file is appended to the end of that line."
 ;; --
 
 (defface seed7-statement-introducing-keyword-face
-  `(;; (((class grayscale) (background light))
-    ;;  (:background "Gray90" :weight bold))
-
-    ;; (((class grayscale) (background dark))
-    ;;  (:foreground "Gray80" :weight bold))
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold))
 
     (((class color) (background light))
-     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
-     (:foreground "color-44" :weight bold))
-
-    ;; (((class color) (background dark))
-    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+     (:foreground "DeepSkyBlue2" :weight bold))
+    (((class color) (background dark))
+     (:foreground "DeepSkyBlue2" :background ,seed7-dark-background :weight bold))
 
     (t (:weight bold)))
   "Font Lock mode face used to highlight keywords that introduce a statement."
@@ -996,7 +993,7 @@ The name of the source code file is appended to the end of that line."
    ;; in-statement keywords
    (cons seed7-lead-in-statement-keywords-regexp     (list 1 ''seed7-in-statement-keyword-face1))
    (cons seed7-in-statement-keywords-regexp          (list 1 ''seed7-in-statement-keyword-face2))
-   ;; statement-introducing keywords (needed??probably not)
+   ;; statement-introducing keywords
    (cons seed7-statement-enclosing-keywords-regexp   (list 1 ''seed7-statement-introducing-keyword-face))
    ;; keywords used in middle of statements
    (cons seed7--is-statement-keywords-regexp         (list 1 ''seed7-in-middle-statement-keyword-face))
