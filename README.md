@@ -49,7 +49,7 @@ Emacs support for the Seed7 Programming language
      this [simple Seed7 program](https://github.com/ThomasMertes/seed7/issues/34#issuecomment-2789748990)
      that implements it.
 
-# Compatibility#
+# Compatibility #
 
 The seed7-mode is compatible with:
 
