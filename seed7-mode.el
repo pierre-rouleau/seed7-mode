@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-14 17:06:24 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-14 19:43:43 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -42,31 +42,23 @@
 ;;
 ;; [:todo 2025-04-06, by Pierre Rouleau: Fix following problems:
 ;;  Known problems:
-;;  # 01  Back-Slash escaped double quote inside string is not recognized.
-;;        - The prog-mode based partly solves this but introduces issues with
-;;          escaped single quoted.  Investigate and find the proper syntax
-;;          logic to use.
-;;  # 02  Complete defface definitions:
-;;        - Support light and dark backgrounds.
-;;        - Update coloring, once testing is complete.
+;;  # 01  Complete defface definitions:
+;;        - Complete the dark backgrounds coloring.
 ;;        - Maybe add ability to reduce number of faces used (or re-use the
 ;;          same face for various elements).  It would allow dual use: one
 ;;          with lots of different renderings and another with not that many,
 ;;          a more conservative approach.
-;;  # 03  Cleanup keyword definitions.  There are probably too many
-;;        defined, and these are used for preliminary testing.  Once testing
-;;        of this is completed, remove the duplication and keep what is
-;;        strictly necessary to eliminate un-required extra processing.
+;;  # 02  Comments to line end are not supported by the syntax table, only
+;;        by regexp associated with face. This is done to prevent syntax table
+;;        confusion with number with base where the '#' is the base separator.
+;;        This causes `commwent-dwim' to mis-behave and treat the '#' used for
+;;        a base as the start for a comment to line end.
+;;  # 03  Escaped single and double quote in strings are now recognized.
+;;        However a string continuation that ends with a backslash just before
+;;        the terminating quote is not supported.
 ;;  # 04  Currently assumes that the syntax checker is the `s7check' program.  That
 ;;        program does not yet exists in the Seed7 distribution, but is available in source
 ;;        here: https://github.com/ThomasMertes/seed7/issues/34#issuecomment-2789748990
-;;  # 05  Syntax table only support line comments are created with '##' instead of '#'
-;;        as a work-around to the to clash with number literals with base.
-;;        To ensure that mode supports the '#' as line comments, the code also uses a
-;;        specific regexp, `seed7--line-comment-regexp' to render matching text as comment.
-;;  # 06  Escaped single and double quote in strings are now recognized.
-;;        However the surprising multi-line strings that end with '\"' are not
-;;        handled.
 ;; ]
 ;;
 ;;
@@ -135,7 +127,8 @@
 
 ;;** Seed7 Comment Control
 (defcustom seed7-uses-block-comment nil
-  "Seed7 comments are block comments when non-nil, line comments otherwise."
+  "When commenting, use Seed7 \"(*   *)\" block comments when non-nil,
+line comments otherwise."
   :group 'seed7
   :type 'boolean
   :safe #'booleanp)
@@ -210,30 +203,14 @@ The name of the source code file is appended to the end of that line."
     (modify-syntax-entry ?\) ")(4n" st) ; ...  and end with the matching "*)"
     (modify-syntax-entry ?* ". 23" st) ; '*' as second of "(*" and previous of; "*)"
 
-    ;; [:todo 2025-04-11, by Pierre Rouleau: Fix problem with line comments.
-    ;;                 Currently only support "##" as line comments
-    ;;                 to prevent comments inside number literals with base.
-    ;;                 I tried specifying space as the second comment character
-    ;;                 but it did not work. I'm not sure how to handle it.
-    ;;                 It's too bad the character used to identify the base is
-    ;;                 not 'r' (for radix) as used in Python.  It would be much
-    ;;                 simpler to handle because it would not clash with line comments..]
-    ;; A '#' starts a comment, but require a second '#' to prevent
-    ;; number literals with base to be interpreted as start of line comment.
-    (modify-syntax-entry ?# ". 12c" st)
-    (modify-syntax-entry ?\n "> c" st)
+    ;; [:todo 2025-04-11, by Pierre Rouleau: Fix Seed7 Comment Control problem .
+    ;;                 There is no syntax support for line comments yet,
+    ;;                 to prevent commenting number literals with base.
+    ;;                 The detection of comments is currently done by regexp
+    ;;                 with face association.]
+
     ;; string escape
     (modify-syntax-entry ?\\ "\\"  st)
-
-    (modify-syntax-entry ?+ "."    st)
-    (modify-syntax-entry ?- "."    st)
-    (modify-syntax-entry ?= "."    st)
-    (modify-syntax-entry ?% "."    st)
-    (modify-syntax-entry ?< "."    st)
-    (modify-syntax-entry ?> "."    st)
-    (modify-syntax-entry ?& "."    st)
-    (modify-syntax-entry ?| "."    st)
-    (modify-syntax-entry ?_ "_"    st)
     (modify-syntax-entry ?\' "\""  st)
     st)
   "Syntax table in use in seed7-mode buffers.")
@@ -984,9 +961,9 @@ The name of the source code file is appended to the end of that line."
 ;;
 (defconst seed7-font-lock-keywords
   (list
-   ;; line comments with a single #
-   (cons seed7--line-comment-regexp                  (list 1 ''font-lock-comment-face))
+   ;; Seed7 Comment Control : line comments with a single #
    (cons "^\\(#.*\\)$"                               (list 1 ''font-lock-comment-face))
+   (cons seed7--line-comment-regexp                  (list 1 ''font-lock-comment-face))
    ;; pragmas
    (cons seed7-pragma-keywords-regexp                (list 1 ''seed7-pragma-keyword-face))
    ;; include
@@ -1038,17 +1015,13 @@ The name of the source code file is appended to the end of that line."
 ;;* Seed7 Comments Control
 ;;  ======================
 ;;
-;; Region:      "(\*" "\*)"
-;; To line end: "##"
-;; [:todo 2025-04-11, by Pierre Rouleau: Fix line end comment support.
-;;                    Now only support '##' to prevent interpreting the
-;;                    number literals with a base to be interpreted as
-;;                    line comment start. ]
+;; - Region:      "(\*" "\*)"
+;; - To line end: "#"
 
 (defconst seed7-block-comment-starter "(*")
 (defconst seed7-block-comment-ender   "*)")
 (defconst seed7-block-comment-prefix  "**")
-(defconst seed7-line-comment-starter  "## ")
+(defconst seed7-line-comment-starter  "#")
 
 (defun seed7--new-state-for (arg prevstate)
   ;; Calculate the new state of PREVSTATE, t or nil, based on ARG.
