@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-11 16:19:50 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-14 14:32:47 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -259,7 +259,7 @@ The name of the source code file is appended to the end of that line."
 
 ;;** Seed7 Comment Control
 (defconst seed7--line-comment-regexp
-  "[^[:digit:]]\\(#.+\\)$"
+  "[^[:digit:]]\\(#.*\\)$"
   "Single line comment in group 1")
 
 (defconst seed7--whitespace-re
@@ -384,7 +384,7 @@ The name of the source code file is appended to the end of that line."
 ;; The very first include statement requires a leading '$' but not
 ;; the following ones."
 (defconst seed7-include-regexp
-  "^\\(\\$? +\\(include\\)\\) ")
+  "^\\(\\$? *\\(?:include\\)\\) ")
 
 
 ;;* Seed7 keywords used in statements
@@ -768,36 +768,30 @@ The name of the source code file is appended to the end of that line."
 ;;** Seed7 Customization
 
 (defface seed7-pragma-keyword-face
-  `(;; (((class grayscale) (background light))
-    ;;  (:background "Gray90" :weight bold))
-
-    ;; (((class grayscale) (background dark))
-    ;;  (:foreground "Gray80" :weight bold))
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold))
 
     (((class color) (background light))
-     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
-     (:foreground "color-20" :weight bold))
-
-    ;; (((class color) (background dark))
-    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+     (:foreground "SlateBlue2" :background "lightYellow1" :weight bold))
+    (((class color) (background dark))
+     (:foreground "SlateBlue2" :background ,seed7-dark-background :weight bold))
 
     (t (:weight bold)))
   "Font Lock mode face used to highlight pragma keywords."
   :group 'seed7-faces)
 
 (defface seed7-include-face
-  `(;; (((class grayscale) (background light))
-    ;;  (:background "Gray90" :weight bold))
-
-    ;; (((class grayscale) (background dark))
-    ;;  (:foreground "Gray80" :weight bold))
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold))
 
     (((class color) (background light))
-     ;; (:foreground "Blue" :background "lightyellow2" :weight bold)
-     (:foreground "color-105" :weight bold))
-
-    ;; (((class color) (background dark))
-    ;;  (:foreground "yellow" :background ,seed7-dark-background :weight bold))
+     (:foreground "SlateBlue3" :background "lightYellow1" :weight bold))
+    (((class color) (background dark))
+     (:foreground "SlateBlue3" :background ,seed7-dark-background :weight bold))
 
     (t (:weight bold)))
   "Font Lock mode face used to highlight include."
