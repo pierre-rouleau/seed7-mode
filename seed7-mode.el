@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-14 16:51:50 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-14 17:06:24 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1026,6 +1026,7 @@ The name of the source code file is appended to the end of that line."
    ;; identifiers
    (cons seed7-identifier-regexp                     (list 1 ''seed7-identifier-face))
    ;; other numbers
+   (cons seed7-number-with-exponent-re               (list 0 ''seed7-integer-face))
    (cons seed7-big-number-re                         (list 1 ''seed7-number-face))
    (cons seed7-integer-re                            (list 1 ''seed7-integer-face))
    ;; low priority rendering of arithmetic + and -
