@@ -47,9 +47,8 @@ Emacs support for the Seed7 Programming language
 
    - The static checking and compilation commands are identified in customizable user options.
    - The static checking defaults to `s7check` and the compilation to `s7c`.
-   - Currently the `s7check` is not part of seed7 distribution but you can use
-     this [simple Seed7 program](https://github.com/ThomasMertes/seed7/issues/34#issuecomment-2789748990)
-     that implements it.
+   - To perform static checking of Seed7 files, compile the [s7check.sd7](https://github.com/pierre-rouleau/seed7/blob/master/prg/s7check.sd7)
+     part of seed7 program examples and use the generated executable.
 
 # Compatibility #
 
