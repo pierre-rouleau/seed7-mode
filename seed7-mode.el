@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-15 08:11:15 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-15 10:35:27 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1075,21 +1075,7 @@ The name of the source code file is appended to the end of that line."
 	                 (seed7--new-state-for arg seed7-uses-block-comment))
 	                (seed7-line-comment-starter nil)
 	                (t t))))
-    (seed7--set-comment-style use-block 'verbose))
-
-  ;; If necessary, invert the sense of fontification of wrong style comments.
-  ;; (when (and c-mark-wrong-style-of-comment
-  ;;            font-lock-mode
-  ;;            seed7-block-comment-starter
-  ;;            seed7-block-comment-ender)
-  ;;   (save-excursion
-  ;;     (save-restriction
-  ;;       (widen)
-  ;;       (goto-char (point-min))
-  ;;       (c-font-lock-flush (point-min) (point-max)))))
-  ;; (c-update-modeline)
-  ;; (c-keep-region-active)
-  )
+    (seed7--set-comment-style use-block 'verbose)))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 iMenu Support
@@ -1482,6 +1468,7 @@ If optional COMPILE argument set, compile the file to executable instead.
     (define-key map "\M-\C-a"  'seed7-beg-of-defun)
     (define-key map "\M-\C-e"  'seed7-end-of-defun)
     (define-key map "\M-\C-h"  'seed7-mark-defun)
+    (define-key map (kbd "C-c C-c")  'seed7-toggle-comment-style)
     map)
   "Keymap used in seed7-mode.")
 
