@@ -154,7 +154,7 @@ Once PEL is installed, use the <kbd>C-h o pel-use-seed7 RET</kbd> key
 sequence to open the customization buffer to set this user option.  Then close
 Emacs and restart it. PEL will down load and install the file in your
 `~/.emacs.d/utils` directory and provide PEL commands available under the
-<kbd> <f12></kbd> key prefix.
+<kbd><f12></kbd> key prefix.
 
 **To update**
 
