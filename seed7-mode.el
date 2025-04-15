@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-15 10:35:27 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-15 16:18:28 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -29,16 +29,18 @@
 
 ;; Feature wish-list:
 ;;
-;; - Syntax and semantics support for Seed7
-;; - Support all comment syntax: colorization, creation, deletion
-;; - keyword colorization
+;; - Syntax and semantics support for Seed7 - done.
+;;   - keyword colorization - done.
+;; - Support comment:
+;;   - comment syntax: colorization, creation, deletion - done.
+;;   - hiding/showing comments: working but for 1 comment style only.
 ;; - Launch help on keywords, perhaps implement statement help
 ;; - Indentation help: with TAB: adjusts indentation when typed
 ;;                               anywhere on the line.
 ;; - Keyword Completion help.
-;; - Navigation help
+;; - Navigation help - underway.
 ;; - Template help for code creation
-;; - Commands to compile with error reporting
+;; - Commands to compile with error reporting - done.
 ;;
 ;; [:todo 2025-04-06, by Pierre Rouleau: Fix following problems:
 ;;  Known problems:
@@ -51,20 +53,31 @@
 ;;  # 02  Comments to line end are not supported by the syntax table, only
 ;;        by regexp associated with face. This is done to prevent syntax table
 ;;        confusion with number with base where the '#' is the base separator.
-;;        This causes `commwent-dwim' to mis-behave and treat the '#' used for
-;;        a base as the start for a comment to line end.
+;;        - This causes `commwent-dwim' to mis-behave and treat the '#' used for
+;;          a base as the start for a comment to line end.
+;;        - This also prevents `forward-comment' to work properly causing
+;;          issues in code using it.
+;;        - Another problem is comment hiding performed by
+;;          `hide/show-comment-toggle' from the hide-comnt package: it can
+;;          only hide comments of the style currently specified by
+;;          the value of `seed7-uses-block-comment' .
 ;;  # 03  Escaped single and double quote in strings are now recognized.
 ;;        However a string continuation that ends with a backslash just before
 ;;        the terminating quote is not supported.
+;;  # 04  Floating point numbers are not always recognized (code is missing).
+;;  # 05  Negation of value with a '-' prefix is not handled: separating space
+;;        is currently required to allow detection of the symbol.
 ;; ]
 ;;
 ;;
 ;; Code Organization Layout (use these as markers to locate related code)
 ;;
-;; -  Seed7 Customization
+;; - Seed7 Customization
 ;; - Seed7 Mode Syntax Table
-;; -  Seed7 Keywords
+;; - Seed7 Keywords
 ;;    - Seed7 Tokens
+;;      - Seed7 BigInteger Literals
+;;      - Seed7 Integer Literals
 ;;    - Seed7 Pragmas
 ;;    - Seed7 include
 ;;    - Seed7 keywords used in statements
@@ -88,7 +101,7 @@
 ;; - Seed7 iMenu Support
 ;; - Seed7 Speedbar Support
 ;; - Seed7 Code Navigation
-;; - Seed7 Navigation by Block
+;;   - Seed7 Navigation by Block
 ;; - Seed7 Code Marking
 ;; - Seed7 Compilation
 ;; - Seed7 Key Map
@@ -123,7 +136,7 @@
                     "https://github.com/pierre-rouleau/seed7-mode")
   :package-version '(seed7-mode . "0.0.1"))
 
-;;** Seed7 Comment Control
+;;** Seed7 Comments Control
 (defcustom seed7-uses-block-comment nil
   "When commenting, use Seed7 \"(*   *)\" block comments when non-nil,
 line comments otherwise."
@@ -204,7 +217,7 @@ The name of the source code file is appended to the end of that line."
     (modify-syntax-entry ?\) ")(4n" st) ; ...  and end with the matching "*)"
     (modify-syntax-entry ?* ". 23" st) ; '*' as second of "(*" and previous of; "*)"
 
-    ;; [:todo 2025-04-11, by Pierre Rouleau: Fix Seed7 Comment Control problem .
+    ;; [:todo 2025-04-11, by Pierre Rouleau: Fix Seed7 Comments Control problem .
     ;;                 There is no syntax support for line comments yet,
     ;;                 to prevent commenting number literals with base.
     ;;                 The detection of comments is currently done by regexp
@@ -235,7 +248,7 @@ The name of the source code file is appended to the end of that line."
 
 ;; [:todo 2025-04-09, by Pierre Rouleau: Complete the syntax for floating point numbers.]
 
-;;** Seed7 Comment Control
+;;** Seed7 Comments Control
 (defconst seed7--line-comment-regexp
   "[^[:digit:]]\\(#.*\\)$"
   "Single line comment in group 1")
@@ -269,20 +282,26 @@ The name of the source code file is appended to the end of that line."
   "[0-9]+[eE][+-]?[0-9]+"
   "Literal number with exponent.  Does not reject integer with negative exponent.")
 
+;;** Seed7 BigInteger Literals
+;;
+;; Ref: https://seed7.sourceforge.net/manual/tokens.htm#BigInteger_literals
+;;
 (defconst seed7--big-number-re-format
-  "%s\\(\\(\\(?:\\([2-9]\\|1[0-9]\\|2[0-9]\\|3[0-6]\\)#\\)[0-9]+_\\)\\|\\([^#][0-9]+_\\)\\)%s"
-  ;;              1  2       3                                                      4
+  "%s\\(\\(?:\\(?:\\([2-9]\\|1[0-9]\\|2[0-9]\\|3[0-6]\\)#\\)?[0-9]+_\\)\\)%s"
+  ;;   1            2
   ;; Group 1: Complete Big Number with or without base. "1_" or "1234322_" or "2#0001_", etc...
-  ;; Group 2: Complete Big number with a base. "2#01010101000_"
-  ;; Group 3: base: "2" to "36".  nil if no base.
-  ;; Group 4: Big Number without base. nil if the number has a base.
-  "Big number with/without base. With groups. See comments.")
+  ;; Group 2: base: "2" to "36".  nil if no base.
+  "Big number with/without base. Group 1: number, group 2: base or nil.")
 
 (defconst seed7-big-number-re (format
                                seed7--big-number-re-format
                                seed7--number-separator-re
-                               seed7--number-separator-re))
+                               "\\_>"))
 
+;;** Seed7 Integer Literals
+;;
+;; Ref: https://seed7.sourceforge.net/manual/tokens.htm#Integer_literals
+;;
 (defconst seed7--base-x-integer-re-format
   "\\%s\
 \\(?:2#[01]+\\)\\|\
@@ -974,7 +993,7 @@ The name of the source code file is appended to the end of that line."
 ;;
 (defconst seed7-font-lock-keywords
   (list
-   ;; Seed7 Comment Control : line comments with a single #
+   ;; Seed7 Comments Control : line comments with a single #
    (cons "^\\(#.*\\)$"                               (list 1 ''font-lock-comment-face))
    (cons seed7--line-comment-regexp                  (list 1 ''font-lock-comment-face))
    ;; pragmas
@@ -1499,7 +1518,17 @@ This is a preliminary implementation, based on `pascal-mode'"
                (list "Procedure" seed7-procedure-regexp 1)
                (list "Function"  seed7-function-regexp  2)))
 
-  ;; Code Navigation
+  ;; Seed7 Comments Control
+  ;; - Currently cannot rely on syntax table to identify line-end comments
+  ;;   because Seed7 uses the '#' as integer base separator.
+  (with-no-warnings
+    (when (< emacs-major-version 24)
+      (setq-local comment-use-global-state nil))
+    (when (> emacs-major-version 26)
+      (setq-local comment-use-syntax-ppss  nil)))
+  (setq-local comment-use-syntax nil)
+
+  ;; Seed7 Code Navigation
   ;; Allow code familiar with the standard `beginning-of-defun' and
   ;; `end-of-defun' to work inside Seed7 buffers.  This includes iedit,
   ;; expand-region, etc...
