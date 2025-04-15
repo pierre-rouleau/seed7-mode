@@ -27,6 +27,8 @@ Emacs support for the Seed7 Programming language
     | seed7-beg-of-defun | `C-M-a` | Move point backward to beginning of function or procedure. Optional repeat argument. |
     | seed7-end-of-defun | `C-M-e` | Move point backward to beginning of function or procedure. Optional repeat argument. |
     | seed7-beg-of-next-defun |    | Move point forward to beginning of next function or procedure. Optional repeat argument. |
+    | seed7-to-block-backward |    | Move point backward to the beginning line of the matching `block`, `case`, `enum`, `for`, `if`, `struct` or `while` statement. |
+    | seed7-to-block-forward  |    | Move point forward to the end line of the matching `block`, `case`, `enum`, `for`, `if`, `struct` or `while` statement. |
 
   - Code Marking Commands:
 
