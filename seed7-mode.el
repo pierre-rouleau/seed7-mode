@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-15 16:18:28 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-15 18:55:51 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -50,17 +50,14 @@
 ;;          same face for various elements).  It would allow dual use: one
 ;;          with lots of different renderings and another with not that many,
 ;;          a more conservative approach.
-;;  # 02  Comments to line end are not supported by the syntax table, only
-;;        by regexp associated with face. This is done to prevent syntax table
-;;        confusion with number with base where the '#' is the base separator.
-;;        - This causes `commwent-dwim' to mis-behave and treat the '#' used for
-;;          a base as the start for a comment to line end.
-;;        - This also prevents `forward-comment' to work properly causing
-;;          issues in code using it.
-;;        - Another problem is comment hiding performed by
-;;          `hide/show-comment-toggle' from the hide-comnt package: it can
-;;          only hide comments of the style currently specified by
-;;          the value of `seed7-uses-block-comment' .
+;;  # 02  The '#' used as base separator is no longer detected as a comment
+;;        BUT a comment that follows a digit will not render as a comment
+;;        unless a non alphanumeric character follows it.
+;;        The 'seed7-mode-syntax-propertize' uses a simple regexp to prevent
+;;        interpretation as comment: `seed7-base-x-number-re'.  A more complex
+;;        one could be used,similar to `seed7-base-x-big-number-re' what does
+;;        but by only capturing the '#'.  This however might be too processing
+;;        expensive.  I will only try it once everything else is done.
 ;;  # 03  Escaped single and double quote in strings are now recognized.
 ;;        However a string continuation that ends with a backslash just before
 ;;        the terminating quote is not supported.
@@ -73,7 +70,8 @@
 ;; Code Organization Layout (use these as markers to locate related code)
 ;;
 ;; - Seed7 Customization
-;; - Seed7 Mode Syntax Table
+;; - Seed7 Mode Syntax Control
+;;   - Seed7 Mode Syntax Table
 ;; - Seed7 Keywords
 ;;    - Seed7 Tokens
 ;;      - Seed7 BigInteger Literals
@@ -95,6 +93,7 @@
 ;;    - Seed7 Other Predefined Operators
 ;;      - Seed7 Arithmetic Operators
 ;;      - Seed Other operators
+;;   - Seed7 Mode Syntax Propertize Function
 ;; - Seed7 Faces
 ;; - Seed7 Font Locking Control
 ;; - Seed7 Comments Control
@@ -194,8 +193,11 @@ The name of the source code file is appended to the end of that line."
 
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;;* Seed7 Mode Syntax Table
-;;  =======================
+;;* Seed7 Mode Syntax Control
+;;  =========================
+;;
+;;** Seed7 Mode Syntax Table
+;;   -----------------------
 ;;
 ;; Ref: Comments:      https://seed7.sourceforge.net/manual/tokens.htm#Comments
 ;; Ref: Line comments: https://seed7.sourceforge.net/manual/tokens.htm#Line_comments
@@ -212,17 +214,15 @@ The name of the source code file is appended to the end of that line."
 (defvar seed7-mode-syntax-table
   (let ((st (make-syntax-table)))
     (modify-syntax-entry ?\\ "."   st)
-
+    ;;
     (modify-syntax-entry ?\( "()1n" st) ; The comment "(*" can be nested ...
     (modify-syntax-entry ?\) ")(4n" st) ; ...  and end with the matching "*)"
     (modify-syntax-entry ?* ". 23" st) ; '*' as second of "(*" and previous of; "*)"
-
-    ;; [:todo 2025-04-11, by Pierre Rouleau: Fix Seed7 Comments Control problem .
-    ;;                 There is no syntax support for line comments yet,
-    ;;                 to prevent commenting number literals with base.
-    ;;                 The detection of comments is currently done by regexp
-    ;;                 with face association.]
-
+    ;;
+    ;; Seed7 Comments Control : line-end comment.
+    (modify-syntax-entry ?# "<"  st)
+    (modify-syntax-entry ?\n ">" st)
+    ;;
     ;; string escape
     (modify-syntax-entry ?\\ "\\"  st)
     (modify-syntax-entry ?\' "\""  st)
@@ -347,6 +347,10 @@ The name of the source code file is appended to the end of that line."
 (defconst seed7-base-x-big-number-re (format seed7--base-x-integer-re-format
                                              "(\\(?:"
                                              "_\\)[^#0-9a-zA-z]"))
+
+;; A regexp to identify both types of numbers with a base
+(defconst seed7-base-x-number-re "[[:digit:]]\\(#\\)[[:alnum:]]"
+  "A simpler base number regexp with group1 capturing the #")
 
 ;;* Seed7 Pragmas
 ;;  -------------
@@ -729,6 +733,19 @@ The name of the source code file is appended to the end of that line."
   "[^+-]\\([+-]\\)[^+-]"
   "Arithmetic minus operator in group 1")
 
+
+;; ---------------------------------------------------------------------------
+;;** Seed7 Mode Syntax Propertize Function
+;;   -------------------------------------
+
+(defun seed7-mode-syntax-propertize (start end)
+  (goto-char start)
+  (funcall
+   (syntax-propertize-rules
+    ;; prevent the # in base numbers to be interpreted as comment
+    (seed7-base-x-number-re (1 (string-to-syntax "."))))
+   start end))
+
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
 ;;  ===========
@@ -764,8 +781,8 @@ The name of the source code file is appended to the end of that line."
     (while list
       (or answer
           (if (or (color-defined-p (car list))
-		  (null (cdr list)))
-	      (setq answer (car list))))
+		          (null (cdr list)))
+	          (setq answer (car list))))
       (setq list (cdr list)))
     answer))
 
@@ -993,9 +1010,6 @@ The name of the source code file is appended to the end of that line."
 ;;
 (defconst seed7-font-lock-keywords
   (list
-   ;; Seed7 Comments Control : line comments with a single #
-   (cons "^\\(#.*\\)$"                               (list 1 ''font-lock-comment-face))
-   (cons seed7--line-comment-regexp                  (list 1 ''font-lock-comment-face))
    ;; pragmas
    (cons seed7-pragma-keywords-regexp                (list 1 ''seed7-pragma-keyword-face))
    ;; include
@@ -1504,10 +1518,13 @@ If optional COMPILE argument set, compile the file to executable instead.
 
 ;;;###autoload
 (define-derived-mode seed7-mode prog-mode "seed7"
-  "Major mode for editing Seed7 files.
-This is a preliminary implementation, based on `pascal-mode'"
-  (seed7--set-comment-style seed7-uses-block-comment)
+  "Major mode for editing Seed7 files."
+
+  ;; Seed7 Font Locking Control
   (setq-local font-lock-defaults '((seed7-font-lock-keywords)))
+
+  ;; Seed7 Mode Syntax Propertize Function
+  (setq-local syntax-propertize-function #'seed7-mode-syntax-propertize)
 
   ;; iMenu Support / Speedbar Support
   (setq-local imenu-generic-expression
@@ -1519,6 +1536,7 @@ This is a preliminary implementation, based on `pascal-mode'"
                (list "Function"  seed7-function-regexp  2)))
 
   ;; Seed7 Comments Control
+  (seed7--set-comment-style seed7-uses-block-comment)
   ;; - Currently cannot rely on syntax table to identify line-end comments
   ;;   because Seed7 uses the '#' as integer base separator.
   (with-no-warnings
