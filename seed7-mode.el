@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-15 00:01:32 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-15 08:11:15 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -56,9 +56,6 @@
 ;;  # 03  Escaped single and double quote in strings are now recognized.
 ;;        However a string continuation that ends with a backslash just before
 ;;        the terminating quote is not supported.
-;;  # 04  Currently assumes that the syntax checker is the `s7check' program.  That
-;;        program does not yet exists in the Seed7 distribution, but is available in source
-;;        here: https://github.com/ThomasMertes/seed7/issues/34#issuecomment-2789748990
 ;; ]
 ;;
 ;;
@@ -155,7 +152,10 @@ You may:
 - The name with an absolute path.
 -  Compiler options after the program name if necessary.
 
-The name of the source code file is appended to the end of that line."
+The name of the source code file is appended to the end of that line.
+Note that the s7check is part of the example programs located inside
+the Seed7 prg directory.  Compile the prg/s7check.sd7 with s7c to create
+the executable you can use for this."
   :group 'seed7
   :type 'string)
 
