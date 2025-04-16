@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-16 09:31:20 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-16 09:52:46 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -347,10 +347,6 @@ The name of the source code file is appended to the end of that line."
 (defconst seed7-base-x-big-number-re (format seed7--base-x-integer-re-format
                                              "(\\(?:"
                                              "_\\)[^#0-9a-zA-z]"))
-
-;; A regexp to identify both types of numbers with a base
-(defconst seed7-base-x-number-re "[[:digit:]]\\(#\\)[[:alnum:]]"
-  "A simpler base number regexp with group1 capturing the #")
 
 ;;* Seed7 Pragmas
 ;;  -------------
@@ -745,7 +741,7 @@ The name of the source code file is appended to the end of that line."
     ;; Prevent the # in base numbers to be interpreted as comment.
     ;; Use "_" (word) syntax so `forward-sexp' does not stop at the '#'
     ;; in numbers with a base.
-    (seed7-base-x-number-re (1 (string-to-syntax "_"))))
+    ("[[:digit:]]\\(#\\)[[:alnum:]]" (1 (string-to-syntax "_"))))
    start end))
 
 ;; ---------------------------------------------------------------------------
