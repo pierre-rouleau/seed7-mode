@@ -48,7 +48,6 @@ Emacs support for the Seed7 Programming language
     | -------- | ----------- | ----------- |
     | seed7-toggle-comment-style | `C-c C-c` | Toggle between comments to line-end and block comments. Use `comment-dwim` and `comment-block` to create or remove comments of selected style. The default style is selected by `seed7-uses-block-comment` (off by default), and `comment-style`.|
 
-
    Also:
 
    - The static checking and compilation commands are identified in customizable user options.
@@ -63,7 +62,8 @@ The seed7-mode is compatible with:
 - Emacs comment-dwim.  The recommended key binding for it is `M-;`
 - [iedit](https://github.com/victorhge/iedit)
 - [expand-region](https://github.com/magnars/expand-region.el?tab=readme-ov-file#readme).
-
+- Drew Adam's [hide-comnt](https://github.com/emacsmirror/hide-comnt) package; it provides
+  the `hide/show-comments-toggle` command that hide or show all comments.
 
 More commands will be implemented.
 
