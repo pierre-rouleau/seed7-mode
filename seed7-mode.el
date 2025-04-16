@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-15 18:55:51 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-15 20:05:56 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -742,8 +742,10 @@ The name of the source code file is appended to the end of that line."
   (goto-char start)
   (funcall
    (syntax-propertize-rules
-    ;; prevent the # in base numbers to be interpreted as comment
-    (seed7-base-x-number-re (1 (string-to-syntax "."))))
+    ;; Prevent the # in base numbers to be interpreted as comment.
+    ;; Use "_" (word) syntax so `forward-word' does not stop at the '#'
+    ;; in numbers with a base.
+    (seed7-base-x-number-re (1 (string-to-syntax "_"))))
    start end))
 
 ;; ---------------------------------------------------------------------------
