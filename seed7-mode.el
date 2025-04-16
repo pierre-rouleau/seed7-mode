@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-15 20:05:56 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-15 21:36:42 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -50,7 +50,7 @@
 ;;          same face for various elements).  It would allow dual use: one
 ;;          with lots of different renderings and another with not that many,
 ;;          a more conservative approach.
-;;  # 02  The '#' used as base separator is no longer detected as a comment
+;;  # 02  The '#' used as base separator is not detected as a comment
 ;;        BUT a comment that follows a digit will not render as a comment
 ;;        unless a non alphanumeric character follows it.
 ;;        The 'seed7-mode-syntax-propertize' uses a simple regexp to prevent
@@ -743,7 +743,7 @@ The name of the source code file is appended to the end of that line."
   (funcall
    (syntax-propertize-rules
     ;; Prevent the # in base numbers to be interpreted as comment.
-    ;; Use "_" (word) syntax so `forward-word' does not stop at the '#'
+    ;; Use "_" (word) syntax so `forward-sexp' does not stop at the '#'
     ;; in numbers with a base.
     (seed7-base-x-number-re (1 (string-to-syntax "_"))))
    start end))
@@ -1539,14 +1539,6 @@ If optional COMPILE argument set, compile the file to executable instead.
 
   ;; Seed7 Comments Control
   (seed7--set-comment-style seed7-uses-block-comment)
-  ;; - Currently cannot rely on syntax table to identify line-end comments
-  ;;   because Seed7 uses the '#' as integer base separator.
-  (with-no-warnings
-    (when (< emacs-major-version 24)
-      (setq-local comment-use-global-state nil))
-    (when (> emacs-major-version 26)
-      (setq-local comment-use-syntax-ppss  nil)))
-  (setq-local comment-use-syntax nil)
 
   ;; Seed7 Code Navigation
   ;; Allow code familiar with the standard `beginning-of-defun' and
