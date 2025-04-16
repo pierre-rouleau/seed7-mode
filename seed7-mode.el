@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-16 09:52:46 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-16 15:31:01 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -575,10 +575,13 @@ The name of the source code file is appended to the end of that line."
   '("E"
     "EOF"
     "FALSE"
+    "Infinity"
     "NIL"
+    "NaN"
     "PI"
     "STD_NULL"
-    "TRUE"))
+    "TRUE"
+    "empty"))
 
 (defconst seed7-predefined-constants-regxp
   (format "%s\\(%s\\)%s"
