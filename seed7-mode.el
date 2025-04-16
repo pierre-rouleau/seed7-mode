@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-15 21:36:42 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-16 09:31:20 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1082,18 +1082,21 @@ The name of the source code file is appended to the end of that line."
     (> arg 0)))
 
 (defun seed7--set-comment-style (use-block &optional verbose)
-  "Set Seed7 command style to block style when USE-BLOCK is non nil.
-  Set it to line-style otherwise."
-  (setq seed7-uses-block-comment use-block)
-  (setq comment-start
-	    (concat (if seed7-uses-block-comment
-		            seed7-block-comment-starter
-		          seed7-line-comment-starter)
-		        " "))
-  (setq comment-end
-	    (if seed7-uses-block-comment
-	        (concat " " seed7-block-comment-ender)
-	      ""))
+  "Set Seed7 buffer comment style to block style when USE-BLOCK is non nil.
+Set it to line-style otherwise.  Only affect current buffer.
+Print message when VERBOSE is non-nil.
+Note: the default style for all Seed7 buffers is controlled by the
+`seed7-uses-block-comment' customizable user-option."
+  (setq-local seed7-uses-block-comment use-block)
+  (setq-local comment-start
+	          (concat (if seed7-uses-block-comment
+		                  seed7-block-comment-starter
+		                seed7-line-comment-starter)
+		              " "))
+  (setq-local comment-end
+	          (if seed7-uses-block-comment
+	              (concat " " seed7-block-comment-ender)
+	            ""))
   (when verbose
     (message "Now use %s style comments" (if use-block
                                              "block"
