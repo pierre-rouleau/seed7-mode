@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-17 09:27:11 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-17 14:40:43 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1250,7 +1250,11 @@ Note: the default style for all Seed7 buffers is controlled by the
         (if (re-search-forward seed7-procedure-or-function-regexp
                                nil :noerror)
             (progn
-              (move-beginning-of-line nil)
+              ;; Point is now at end of function definition.
+              ;; Move to the beginning of the function definition.
+              (right-char)
+              (re-search-backward seed7-procedure-or-function-regexp
+                                  nil :noerror)
               (setq final-pos (point))
               (when verbose
                 (let ((item-name (substring-no-properties (match-string 4))))
@@ -1299,14 +1303,35 @@ Note: the default style for all Seed7 buffers is controlled by the
   ;; which has 5 groups
   (let* ((original-pos (point))
          (final-pos    original-pos)
-         (verbose nil)) ; first used as a flag, then message content
+         (verbose nil)            ; first used as a flag, then message content
+         (current-pos nil)
+         (is-func-pos nil)
+         (end-func-pos nil))
     (save-excursion
       (when (seed7--at-end-of-defun)
         (seed7-beg-of-next-defun 1 :silent :dont-push-mark))
       (dotimes (vn n)
         (setq verbose (and (not silent)
                            (eq vn (1- n))))
-        (forward-line 1)
+
+        ;; Point should be at the beginning of a function or procedure here.
+        ;; - Attempt to move past the 'is func' portion of the function or
+        ;;   procedure header part, so we can search for the whole beginning to
+        ;;   go back to the top to retrieve the function/procedure name.
+        ;;   - Make sure we don't find the 'is func' in the next function
+        ;;     by checking that 'is func' is *before* 'end func;'`
+        (setq current-pos (point))
+        (save-excursion
+          (setq end-func-pos
+                (re-search-forward "end[[:space:]]+func;" nil :noerror)))
+        (save-excursion
+          (setq is-func-pos
+                (re-search-forward "is[[:space:]]+func" nil :noerror)))
+        (if is-func-pos
+            (if (> is-func-pos end-func-pos)
+                (goto-char current-pos)
+              (goto-char (+ is-func-pos 1)))
+          (forward-line 1))
         (if (or (re-search-backward seed7-procedure-or-function-regexp
                                     nil :noerror)
                 (re-search-forward seed7-procedure-or-function-regexp
@@ -1314,8 +1339,8 @@ Note: the default style for all Seed7 buffers is controlled by the
             (let ((item-type (substring-no-properties (match-string 1)))
                   (item-name (substring-no-properties (match-string 4)))
                   (group5    (let ((matched (match-string 5)))
-                                (when matched
-                                  (substring-no-properties matched)))))
+                               (when matched
+                                 (substring-no-properties matched)))))
               (cond
                ;; Procedure
                ((string-equal item-type "proc")
