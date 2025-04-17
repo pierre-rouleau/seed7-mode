@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-17 14:40:43 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-17 14:50:33 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -72,6 +72,7 @@
 ;; - Seed7 Customization
 ;; - Seed7 Mode Syntax Control
 ;;   - Seed7 Mode Syntax Table
+;;   - Seed7 Mode Syntax Propertize Function
 ;; - Seed7 Keywords
 ;;    - Seed7 Tokens
 ;;      - Seed7 BigInteger Literals
@@ -228,6 +229,20 @@ The name of the source code file is appended to the end of that line."
     (modify-syntax-entry ?\' "\""  st)
     st)
   "Syntax table in use in seed7-mode buffers.")
+
+;;** Seed7 Mode Syntax Propertize Function
+;;   -------------------------------------
+
+(defun seed7-mode-syntax-propertize (start end)
+  (goto-char start)
+  (funcall
+   (syntax-propertize-rules
+    ;; Prevent the # in base numbers to be interpreted as comment.
+    ;; Use "_" (word) syntax so `forward-sexp' does not stop at the '#'
+    ;; in numbers with a base.
+    ("[[:digit:]]\\(#\\)[[:alnum:]]" (1 (string-to-syntax "_"))))
+   start end))
+
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;;* Seed7 Keywords
@@ -736,20 +751,6 @@ The name of the source code file is appended to the end of that line."
   "[^+-]\\([+-]\\)[^+-]"
   "Arithmetic minus operator in group 1")
 
-
-;; ---------------------------------------------------------------------------
-;;** Seed7 Mode Syntax Propertize Function
-;;   -------------------------------------
-
-(defun seed7-mode-syntax-propertize (start end)
-  (goto-char start)
-  (funcall
-   (syntax-propertize-rules
-    ;; Prevent the # in base numbers to be interpreted as comment.
-    ;; Use "_" (word) syntax so `forward-sexp' does not stop at the '#'
-    ;; in numbers with a base.
-    ("[[:digit:]]\\(#\\)[[:alnum:]]" (1 (string-to-syntax "_"))))
-   start end))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
