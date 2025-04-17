@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-17 17:16:32 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-17 17:46:57 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1309,8 +1309,7 @@ Note: the default style for all Seed7 buffers is controlled by the
 (defun seed7--is-first (a b c)
   "Return t is A is smaller than B and C.
 If A is nil return nil.
-If B or C are nil consider A smaller.
-  "
+If B or C are nil consider A smaller."
   (unless (not a)
     (and
      (or (not b) (< a b))
