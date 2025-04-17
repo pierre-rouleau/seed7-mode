@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-17 14:50:33 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-17 15:08:05 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -73,6 +73,7 @@
 ;; - Seed7 Mode Syntax Control
 ;;   - Seed7 Mode Syntax Table
 ;;   - Seed7 Mode Syntax Propertize Function
+;;     - `seed7-mode-syntax-propertize'
 ;; - Seed7 Keywords
 ;;    - Seed7 Tokens
 ;;      - Seed7 BigInteger Literals
@@ -96,16 +97,32 @@
 ;;      - Seed Other operators
 ;;   - Seed7 Mode Syntax Propertize Function
 ;; - Seed7 Faces
+;;   - `seed7-choose-color'
 ;; - Seed7 Font Locking Control
 ;; - Seed7 Comments Control
+;;   * `seed7-toggle-comment-style'
+;;     - `seed7--new-state-for'
+;;     - `seed7--set-comment-style'
 ;; - Seed7 iMenu Support
 ;; - Seed7 Speedbar Support
 ;; - Seed7 Code Navigation
+;;   * `seed7-beg-of-defun'
+;;   * `seed7-beg-of-next-defun'
+;;   * `seed7-end-of-defun'
+;;     - `seed7--at-end-of-defun'
+;;     + `seed7--move-and-mark'
+;;     + `seed7--pos-msg'
 ;;   - Seed7 Navigation by Block
+;;   * `seed7-to-block-forward'
+;;   * `seed7-to-block-backward'
+;;     - `seed7--current-line-nth-word'
 ;; - Seed7 Code Marking
+;;   * `seed7-mark-defun'
 ;; - Seed7 Compilation
+;;   * `seed7-compile'
 ;; - Seed7 Key Map
 ;; - Seed7 Major Mode
+;;   * `seed7-mode'
 
 ;;; --------------------------------------------------------------------------
 ;;; Dependencies:
@@ -1385,6 +1402,10 @@ Note: the default style for all Seed7 buffers is controlled by the
 
 ;;* Seed7 Navigation by Block
 ;;  -------------------------
+;;
+;; The following commands allow moving to the end or the beginning of if/end
+;; if and other types of blocks as identified by the keywords that start them
+;; in `seed7--block-start-keywords'.
 
 (defun seed7--current-line-nth-word (n)
   "Return the N-th word at beginning of current line, nil if none.
