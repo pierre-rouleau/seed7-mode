@@ -1,0 +1,22 @@
+# Ref: https://seed7.sourceforge.net/faq.htm#call_by_name
+
+
+const func integer: conditional (in boolean: condition,
+    ref func integer: trueValue, ref func integer: falseValue) is func
+  result
+    var integer: conditionalResult is 0;
+  begin
+    if condition then
+      conditionalResult := trueValue;
+    else
+      conditionalResult := falseValue;
+    end if;
+  end func;
+
+
+conditional(a >= 0, sqrt(a), a ** 2)
+
+# ----------------------------------------------------------------------------
+
+const func boolean: isZero (in integer: number) is
+  return number = 0;
