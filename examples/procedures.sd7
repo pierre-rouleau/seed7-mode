@@ -1,0 +1,78 @@
+# Taken from seed7 code (and modified: code is valid Seed7 but not working code!!):
+
+
+const proc: expandIt (inout array bin32: subKey) is func
+  local
+    var integer: rconIdx is 0;
+    var integer: keyIdx is 1;
+    var integer: temp is 0;
+  begin
+    for rconIdx range 1 to 10 do
+      temp := ord(subKey[keyIdx + 3]);
+      subKey[keyIdx + 4] := subKey[keyIdx + 0] ><
+          (Te[5][(temp >> 16) mod 256] & bin32(16#ff000000)) ><
+          (Te[5][(temp >> 24) mod 256] & bin32(16#000000ff)) ><
+          rcon[rconIdx];
+      subKey[keyIdx + 5] := subKey[keyIdx + 1] >< subKey[keyIdx + 4];
+      subKey[keyIdx + 7] := subKey[keyIdx + 3] >< subKey[keyIdx + 6];
+      keyIdx +:= 4;
+    end for;
+  end func;
+
+
+const proc: showHeader (inout file: outFile, in arHeader: header) is func
+  begin
+    writeln(outFile, "name: " <& header.name);
+    writeln(outFile, "mtime: " <& header.mtime);
+    writeln(outFile, "ownerId: " <& header.ownerId);
+    writeln(outFile, "groupId: " <& header.groupId);
+    writeln(outFile, "mode: " <& header.mode radix 8);
+    writeln(outFile, "fileSize: " <& header.fileSize);
+    writeln(outFile, "okay: " <& header.okay);
+    writeln(outFile, "longNameStart: " <& header.longNameStart);
+    writeln(outFile, "filePath: " <& header.filePath);
+    writeln(outFile, "dataStartPos: " <& header.dataStartPos);
+  end func;
+
+const proc: showHeader (inout file: outFile, in arHeader: header) is func
+  begin
+    writeln(outFile, "name: " <& header.name);
+    writeln(outFile, "mtime: " <& header.mtime);
+    writeln(outFile, "ownerId: " <& header.ownerId);
+    writeln(outFile, "groupId: " <& header.groupId);
+    writeln(outFile, "mode: " <& header.mode radix 8);
+    writeln(outFile, "fileSize: " <& header.fileSize);
+    writeln(outFile, "okay: " <& header.okay);
+    writeln(outFile, "longNameStart: " <& header.longNameStart);
+    writeln(outFile, "filePath: " <& header.filePath);
+    writeln(outFile, "dataStartPos: " <& header.dataStartPos);
+  end func;
+const proc: showHeader (inout file: outFile,
+                        in arHeader: header) is func
+  begin
+    writeln(outFile, "name: " <& header.name);
+    writeln(outFile, "mtime: " <& header.mtime);
+    writeln(outFile, "ownerId: " <& header.ownerId);
+    writeln(outFile, "groupId: " <& header.groupId);
+    writeln(outFile, "mode: " <& header.mode radix 8);
+    writeln(outFile, "fileSize: " <& header.fileSize);
+    writeln(outFile, "okay: " <& header.okay);
+    writeln(outFile, "longNameStart: " <& header.longNameStart);
+    writeln(outFile, "filePath: " <& header.filePath);
+    writeln(outFile, "dataStartPos: " <& header.dataStartPos);
+  end func;
+
+const proc: showHeader ( inout file: outFile
+                       , in arHeader: header) is func
+  begin
+    writeln(outFile, "name: " <& header.name);
+    writeln(outFile, "mtime: " <& header.mtime);
+    writeln(outFile, "ownerId: " <& header.ownerId);
+    writeln(outFile, "groupId: " <& header.groupId);
+    writeln(outFile, "mode: " <& header.mode radix 8);
+    writeln(outFile, "fileSize: " <& header.fileSize);
+    writeln(outFile, "okay: " <& header.okay);
+    writeln(outFile, "longNameStart: " <& header.longNameStart);
+    writeln(outFile, "filePath: " <& header.filePath);
+    writeln(outFile, "dataStartPos: " <& header.dataStartPos);
+  end func;
