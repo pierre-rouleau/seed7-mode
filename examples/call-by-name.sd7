@@ -1,6 +1,6 @@
 # Ref: https://seed7.sourceforge.net/faq.htm#call_by_name
 
-
+# The original one
 const func integer: conditional (in boolean: condition,
     ref func integer: trueValue, ref func integer: falseValue) is func
   result
@@ -13,6 +13,61 @@ const func integer: conditional (in boolean: condition,
     end if;
   end func;
 
+# And several of the same with slightly modified white space
+# They should all be recognized.
+
+const func integer: conditional (in boolean: condition,
+    ref func integer: trueValue, ref func integer: falseValue) is    func
+  result
+    var integer: conditionalResult is 0;
+  begin
+    if condition then
+      conditionalResult := trueValue;
+    else
+      conditionalResult := falseValue;
+    end if;
+  end func;
+
+
+const func integer: conditional (in boolean: condition,
+    ref func integer: trueValue, ref func integer: falseValue)     is    func
+  result
+    var integer: conditionalResult is 0;
+  begin
+    if condition then
+      conditionalResult := trueValue;
+    else
+      conditionalResult := falseValue;
+    end if;
+  end func;
+
+
+const func integer: conditional (in boolean: condition,
+    ref func integer: trueValue,
+    ref func integer: falseValue)     is    func
+  result
+    var integer: conditionalResult is 0;
+  begin
+    if condition then
+      conditionalResult := trueValue;
+    else
+      conditionalResult := falseValue;
+    end if;
+  end func;
+
+const func integer: conditional (in boolean: condition,
+    ref func integer: trueValue,
+    ref func integer: falseValue)
+    is    func
+  result
+    var integer: conditionalResult is 0;
+  begin
+    if condition then
+      conditionalResult := trueValue;
+    else
+      conditionalResult := falseValue;
+    end if;
+  end func;
 
 conditional(a >= 0, sqrt(a), a ** 2)
 

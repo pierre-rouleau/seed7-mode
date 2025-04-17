@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-17 09:04:43 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-17 09:27:11 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1156,12 +1156,13 @@ Note: the default style for all Seed7 buffers is controlled by the
 ;;
 (defconst seed7-procedure-or-function-regexp
   (format
-   "^[[:space:]]*const%s+\\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)?%s?:%s*\\([[:alpha:]][[:alnum:]_]+\\)%s*?is\\( func\\)?"
+   "^[[:space:]]*const%s+\\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)?%s?:%s*\\([[:alpha:]][[:alnum:]_]+\\)%s*?is%s+\\(func\\)?"
    ;;                         G1 G2                   G3                                    G4                               G5
    seed7--whitespace-re
    seed7--whitespace-re
    seed7--whitespace-re
-   seed7--anychar-re))
+   seed7--anychar-re
+   seed7--whitespace-re))
 
 ;; future?
 ;; "^[[:blank:]]*const \\(\\(func\\|proc\\)\\)[[:space:]]?\\(\\([[:alpha:]][[:alnum:]_]+\\)?[[:space:]]+\\([[:alpha:]][[:alnum:]_]+\\)\\) ?: *\\([[:alpha:]][[:alnum:]_]+\\).*is[[:space:]]+\\(func\\)?")
@@ -1327,7 +1328,7 @@ Note: the default style for all Seed7 buffers is controlled by the
                ;; Function
                ((string-equal item-type  "func ")
                 (if (and group5
-                         (string-equal group5 " func"))
+                         (string-equal group5 "func"))
                     ;; long func that ends with end func;
                     (if (search-forward "end func;")
                         (progn
