@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-16 15:31:01 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-17 09:04:43 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -257,6 +257,10 @@ The name of the source code file is appended to the end of that line."
   "[[:space:]
 ]"
   "Match any horizontal whitespace character and new line.")
+
+(defconst seed7--anychar-re
+  "[^\\0]"
+  "Match any character including new-line")
 
 (defconst seed7--bracket-re
   "[])(}{[]")
@@ -1152,12 +1156,12 @@ Note: the default style for all Seed7 buffers is controlled by the
 ;;
 (defconst seed7-procedure-or-function-regexp
   (format
-   "^[[:space:]]*const%s+\\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)?%s?:%s*\\([[:alpha:]][[:alnum:]_]+\\)%s.*is\\( func\\)?"
-;;                         G1 G2                   G3                                    G4                                  G5
+   "^[[:space:]]*const%s+\\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)?%s?:%s*\\([[:alpha:]][[:alnum:]_]+\\)%s*?is\\( func\\)?"
+   ;;                         G1 G2                   G3                                    G4                               G5
    seed7--whitespace-re
    seed7--whitespace-re
    seed7--whitespace-re
-   seed7--whitespace-re))
+   seed7--anychar-re))
 
 ;; future?
 ;; "^[[:blank:]]*const \\(\\(func\\|proc\\)\\)[[:space:]]?\\(\\([[:alpha:]][[:alnum:]_]+\\)?[[:space:]]+\\([[:alpha:]][[:alnum:]_]+\\)\\) ?: *\\([[:alpha:]][[:alnum:]_]+\\).*is[[:space:]]+\\(func\\)?")
