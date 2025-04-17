@@ -34,7 +34,7 @@ Emacs support for the Seed7 Programming language
 
     | Function | Key Binding | Description |
     | -------- | ----------- | ----------- |
-    | seed7-mark-defun | `C-M-h` | Mark the current function or procedure. |
+    | seed7-mark-defun | `C-M-h` | Mark the current function or procedure. With point between two; mark the next one. |
 
   - Compilation commands:
 
