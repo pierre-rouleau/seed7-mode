@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-17 17:46:57 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-17 18:50:06 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1141,10 +1141,24 @@ Note: the default style for all Seed7 buffers is controlled by the
 ;;* Seed7 iMenu Support
 ;;  ===================
 (defconst seed7-procedure-regexp
-  "^[[:space:]]*const proc: \\([[:alpha:]][[:alnum:]_]+\\) .*is func")
+  (format
+   "^[[:space:]]*const%s+proc:%s\\([[:alpha:]][[:alnum:]_]+\\)%s*?is func"
+   ;;                             G1
+   seed7--whitespace-re
+   seed7--whitespace-re
+   seed7--anychar-re)
+  "Match procedure name in group 1.")
 
 (defconst seed7-function-regexp
-  "^[[:space:]]*const func \\([[:alpha:]][[:alnum:]_]+\\) ?: *\\([[:alpha:]][[:alnum:]_]+\\) .*is\\( func\\)?")
+  (format
+   "^[[:space:]]*const%s+func \\([[:alpha:]][[:alnum:]_]+\\)%s?:%s*\\([[:alpha:]][[:alnum:]_]+\\)%s*?is%s+\\(func\\|return\\)"
+  ;;                  %         G1                          %   %  G2
+   seed7--whitespace-re
+   seed7--whitespace-re
+   seed7--whitespace-re
+   seed7--anychar-re
+   seed7--whitespace-re)
+  "Match function name in group 2, returned type in group 1.")
 
 (defconst seed7-enum-regexp
   "const type: \\([[:alpha:]][[:alnum:]_]+\\) is new enum")
@@ -1176,7 +1190,7 @@ Note: the default style for all Seed7 buffers is controlled by the
 (defconst seed7-procedure-or-function-regexp
   (format
    "^[[:space:]]*const%s+\\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)?%s?:%s*\\([[:alpha:]][[:alnum:]_]+\\)%s*?is%s+\\(func\\|return\\)"
-   ;;                      G1 G2                   G3                                    G4                                     G5
+   ;;                 %    G1 G2                   G3                           %   %    G4                          %     %    G5
    seed7--whitespace-re
    seed7--whitespace-re
    seed7--whitespace-re
