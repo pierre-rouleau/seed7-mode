@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-17 18:50:06 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-17 23:55:54 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1467,11 +1467,14 @@ For the first word N must be 1."
 Push mark. Supports shift-marking."
   (interactive "^")
   (let* ((start-word (seed7--current-line-nth-word 1))
-         (end-expr (format "end %s;" start-word))
+         (end-expr (if (string= start-word "repeat")
+                       "until"
+                     (format "end %s;" start-word)))
          (found-position nil))
     (save-excursion
       (if (and start-word
-               (member start-word seed7--block-start-keywords))
+               (or (member start-word seed7--block-start-keywords)
+                   (string= start-word "repeat")))
           (let ((nesting 0)
                 (searching t)
                 (found-text nil)
@@ -1509,44 +1512,50 @@ beginning of the line.
 
 Push mark. Supports shift-marking."
   (interactive "^P")
-  (if (string= "end" (seed7--current-line-nth-word 1))
-      (let* ((start-word (seed7--current-line-nth-word 2))
-             (end-expr (format "end %s;" start-word))
-             (found-position nil))
-        (save-excursion
-          (if (and start-word
-                   (member start-word seed7--block-start-keywords))
-              (let ((nesting 0)
-                    (searching t)
-                    (found-text nil)
-                    (regexp (format "^[[:space:]]+\\(%s\\|%s\\)"
-                                    end-expr
-                                    start-word)))
-                (while searching
-                  (forward-line 0)      ; move to beginning of current line.
-                  (if (re-search-backward regexp nil :noerror)
-                      (progn
-                        (setq found-text (match-string 1))
-                        (cond
-                         ((string= found-text start-word)
-                          (if (eq nesting 0)
-                              (progn
-                                (setq searching nil)
-                                (setq found-position (point)))
-                            (setq nesting (1- nesting))))
-                         ((string= found-text end-expr)
-                          (setq nesting (1+ nesting)))
-                         (t (user-error "No match!"))))
-                    (user-error "NO match!")
-                    )))
-            (user-error "Point is not on a block end line!")))
-        (when found-position
-          (push-mark)
-          (goto-char found-position)
-          (unless at-beginning-of-line
-            (forward-word)
-            (backward-word))))
-    (user-error "Point is not on a block end line!")))
+  (let ((first-word (seed7--current-line-nth-word 1)))
+    (if (member first-word '("end" "until"))
+        (let* ((start-word (if (string= first-word "until")
+                               "repeat"
+                             (seed7--current-line-nth-word 2)))
+               (end-expr (if (string= first-word "until")
+                             "until[^\\0];"
+                             (format "end %s;" start-word)))
+               (found-position nil))
+          (save-excursion
+            (if (and start-word
+                     (or (string= start-word "repeat")
+                         (member start-word seed7--block-start-keywords)))
+                (let ((nesting 0)
+                      (searching t)
+                      (found-text nil)
+                      (regexp (format "^[[:space:]]+\\(%s\\|%s\\)"
+                                      end-expr
+                                      start-word)))
+                  (while searching
+                    (forward-line 0)    ; move to beginning of current line.
+                    (if (re-search-backward regexp nil :noerror)
+                        (progn
+                          (setq found-text (match-string 1))
+                          (cond
+                           ((string= found-text start-word)
+                            (if (eq nesting 0)
+                                (progn
+                                  (setq searching nil)
+                                  (setq found-position (point)))
+                              (setq nesting (1- nesting))))
+                           ((string= found-text end-expr)
+                            (setq nesting (1+ nesting)))
+                           (t (user-error "No match!"))))
+                      (user-error "NO match!")
+                      )))
+              (user-error "Point is not on a block end line!")))
+          (when found-position
+            (push-mark)
+            (goto-char found-position)
+            (unless at-beginning-of-line
+              (forward-word)
+              (backward-word))))
+      (user-error "Point is not on a block end line!"))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Code Marking
