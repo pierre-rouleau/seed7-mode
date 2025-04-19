@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-17 23:55:54 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-19 11:10:54 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -61,9 +61,8 @@
 ;;  # 03  Escaped single and double quote in strings are now recognized.
 ;;        However a string continuation that ends with a backslash just before
 ;;        the terminating quote is not supported.
-;;  # 04  Floating point numbers are not always recognized (code is missing).
-;;  # 05  Negation of value with a '-' prefix is not handled: separating space
-;;        is currently required to allow detection of the symbol.
+;;  # 04  seed7-predefined-constants-regxp is not perfect: it does not allow
+;;        an operator just at right of it.
 ;; ]
 ;;
 ;;
@@ -76,6 +75,9 @@
 ;;     - `seed7-mode-syntax-propertize'
 ;; - Seed7 Keywords
 ;;    - Seed7 Tokens
+;;      - Seed7 Comments Control
+;;      - Seed7 Float Literals
+;;      - Seed7 Numbers with Exponents
 ;;      - Seed7 BigInteger Literals
 ;;      - Seed7 Integer Literals
 ;;    - Seed7 Pragmas
@@ -315,9 +317,17 @@ The name of the source code file is appended to the end of that line."
                             seed7--number-separator-re)
   "Seed7 integer in group 1.")
 
+;; ** Seed7 Float Literals
+(defconst seed7-float-number-re
+  "[0-9]+\\.[0-9]+\\(?:\\(?:[eE][+-]?\\)?[0-9]+\\)?"
+  "Seed7 float number in group 0")
+
+;; ** Seed7 Numbers with Exponents
+
 (defconst seed7-number-with-exponent-re
   "[0-9]+[eE][+-]?[0-9]+"
   "Literal number with exponent.  Does not reject integer with negative exponent.")
+
 
 ;;** Seed7 BigInteger Literals
 ;;
@@ -622,7 +632,7 @@ The name of the source code file is appended to the end of that line."
 
 (defconst seed7-predefined-constants-regxp
   (format "%s\\(%s\\)%s"
-          "\\_<"
+          ""
           (rx-to-string
            `(: (or ,@seed7--predefined-constants)))
           "\\_>"))
@@ -975,6 +985,21 @@ The name of the source code file is appended to the end of that line."
   :group 'seed7-faces)
 
 ;; --
+(defface seed7-float-face
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     (:foreground "Chocolate3" ))
+    (((class color) (background dark))
+     (:foreground "Chocolate3" :background ,seed7-dark-background :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face used to highlight errinfo values."
+  :group 'seed7-faces)
+
 (defface seed7-integer-face
   `((((class grayscale) (background light))
      (:background "Gray90" :weight bold))
@@ -1073,6 +1098,7 @@ The name of the source code file is appended to the end of that line."
    ;; identifiers
    (cons seed7-identifier-regexp                     (list 1 ''seed7-identifier-face))
    ;; other numbers
+   (cons seed7-float-number-re                       (list 0 ''seed7-float-face))
    (cons seed7-number-with-exponent-re               (list 0 ''seed7-integer-face))
    (cons seed7-big-number-re                         (list 1 ''seed7-number-face))
    (cons seed7-integer-re                            (list 1 ''seed7-integer-face))
