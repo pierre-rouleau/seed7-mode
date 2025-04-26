@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-19 11:10:54 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-04-26 09:22:47 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1154,7 +1154,9 @@ Note: the default style for all Seed7 buffers is controlled by the
   "Toggle the Seed7 comment style between block and line comments.
   Optional numeric ARG, if supplied, switches to block comment
   style when positive, to line comment style when negative, and
-  just toggles it when zero or left out."
+  just toggles it when zero or left out.
+Note: the default style for all Seed7 buffers is controlled by the
+`seed7-uses-block-comment' customizable user-option."
   (interactive "P")
   (let ((use-block (cond
 	                ((and seed7-line-comment-starter seed7-block-comment-starter)
@@ -1524,7 +1526,8 @@ Push mark. Supports shift-marking."
                      (t (user-error "No match!"))))
                 (user-error "NO match!")
                 )))
-        (user-error "Point is not on a block starting line!")))
+        (seed7-end-of-defun)
+        (setq found-position (point))))
     (when found-position
       (push-mark)
       (goto-char found-position))))
@@ -1574,14 +1577,15 @@ Push mark. Supports shift-marking."
                            (t (user-error "No match!"))))
                       (user-error "NO match!")
                       )))
-              (user-error "Point is not on a block end line!")))
+              (seed7-beg-of-defun)
+              (setq found-position (point))))
           (when found-position
             (push-mark)
             (goto-char found-position)
             (unless at-beginning-of-line
               (forward-word)
               (backward-word))))
-      (user-error "Point is not on a block end line!"))))
+      (seed7-beg-of-defun))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Code Marking
@@ -1650,7 +1654,7 @@ If optional COMPILE argument set, compile the file to executable instead.
     (define-key map "\M-\C-a"  'seed7-beg-of-defun)
     (define-key map "\M-\C-e"  'seed7-end-of-defun)
     (define-key map "\M-\C-h"  'seed7-mark-defun)
-    (define-key map (kbd "C-c C-c")  'seed7-toggle-comment-style)
+    (define-key map (kbd "C-c ;")  'seed7-toggle-comment-style)
     map)
   "Keymap used in seed7-mode.")
 
