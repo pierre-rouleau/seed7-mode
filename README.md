@@ -46,7 +46,7 @@ Emacs support for the Seed7 Programming language
 
     | Function | Key Binding | Description |
     | -------- | ----------- | ----------- |
-    | seed7-toggle-comment-style | `C-c C-c` | Toggle between comments to line-end and block comments. Use `comment-dwim` and `comment-block` to create or remove comments of selected style. The default style is selected by `seed7-uses-block-comment` (off by default), and `comment-style`.|
+    | seed7-toggle-comment-style | `C-c ;` | Toggle between comments to line-end and block comments. Use `comment-dwim` and `comment-block` to create or remove comments of selected style. The default style is selected by `seed7-uses-block-comment` (off by default), and `comment-style`.|
 
    Also:
 
