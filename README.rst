@@ -21,79 +21,80 @@ Currently Implemented Features
 
 - Implemented Commands:
 
-  - Code Navigation Commands:
+**Code Navigation Commands**:
 
-    = ============================ =========== =============================================================
-    . Function                     Key Binding Description
-    = ============================ =========== =============================================================
-    . seed7-beg-of-defun           ``C-M-a``   Move point backward to beginning of function or procedure.
-                                               With optional repeat argument.
-    . seed7-end-of-defun           ``C-M-e``   Move point backward to beginning of function or procedure.
-                                               With optional repeat argument.
-    . seed7-beg-of-next-defun                  Move point forward to beginning of next function or procedure.
-                                               With optional repeat argument.
-    . seed7-to-block-forward                   Move point forward to the end line of the matching statement:
+= ============================ =========== =============================================================
+. Function                     Key Binding Description
+= ============================ =========== =============================================================
+. seed7-beg-of-defun           ``C-M-a``   Move point backward to beginning of function or procedure.
+                                           With optional repeat argument.
+. seed7-end-of-defun           ``C-M-e``   Move point backward to beginning of function or procedure.
+                                           With optional repeat argument.
+. seed7-beg-of-next-defun                  Move point forward to beginning of next function or procedure.
+                                           With optional repeat argument.
+. seed7-to-block-forward                   Move point forward to the end line of the matching statement:
 
-                                               - ``block``,
-                                               - `case statement`_,
-                                               - ``enum block``
-                                               - any of the for statements:
+                                           - ``block``,
+                                           - `case statement`_,
+                                           - ``enum block``
+                                           - any of the for statements:
 
-                                                 - `for`_
-                                                 - `for-each`_
-                                                 - `for-each-key`_
-                                                 - `for-key`_
-                                                 - `for-step`_
-                                                 - `for-until`_
+                                             - `for`_
+                                             - `for-each`_
+                                             - `for-each-key`_
+                                             - `for-key`_
+                                             - `for-step`_
+                                             - `for-until`_
 
-                                               - `if statement`_,
-                                               - `repeat - until statement`_
-                                               - ``struct`` or
-                                               - `while statement`_.
+                                           - `if statement`_,
+                                           - `repeat - until statement`_
+                                           - ``struct`` or
+                                           - `while statement`_.
 
-    . seed7-to-block-backward                  Move point backward to the beginning line of the matching
-                                               block or statement (listed above).
-    = ============================ =========== =============================================================
+. seed7-to-block-backward                  Move point backward to the beginning line of the matching
+                                           block or statement (listed above).
+= ============================ =========== =============================================================
 
-  - Code Marking Commands:
+**Code Marking Commands**:
 
-    = ============================ =========== =============================================================
-    . Function                     Key Binding Description
-    = ============================ =========== =============================================================
-    . seed7-mark-defun             ``C-M-h``   Mark the current function or procedure.
-                                               With point between two; mark the next one.
-    = ============================ =========== =============================================================
+= ============================ =========== =============================================================
+. Function                     Key Binding Description
+= ============================ =========== =============================================================
+. seed7-mark-defun             ``C-M-h``   Mark the current function or procedure.
+                                           With point between two; mark the next one.
+= ============================ =========== =============================================================
 
-  - Compilation commands:
+**Compilation commands**:
 
-    = ============================ =========== =============================================================
-    . Function                     Key Binding Description
-    = ============================ =========== =============================================================
-    . seed7-compile                            Static check Seed7 file visited in current buffer.
-                                               With optional argument compile it.
-                                               All resulting warning or errors are shown in a compile-mode buffer.
-    = ============================ =========== =============================================================
+= ============================ =========== =============================================================
+. Function                     Key Binding Description
+= ============================ =========== =============================================================
+. seed7-compile                            Static check Seed7 file visited in current buffer.
+                                           With optional argument compile it.
+                                           All resulting warning or errors are shown in a compile-mode buffer.
+= ============================ =========== =============================================================
 
-  - Comments:
+**Commands for Managing Comments**:
 
-    = ============================ =========== =============================================================
-    . Function                     Key Binding Description
-    = ============================ =========== =============================================================
-    . seed7-toggle-comment-style   ``C-c ;``   Toggle between comments to line-end and block comments.
+= ============================ =========== =============================================================
+. Function                     Key Binding Description
+= ============================ =========== =============================================================
+. seed7-toggle-comment-style   ``C-c ;``   Toggle between comments to line-end and block comments.
 
-                                               - Use ``comment-dwim`` and ``comment-block`` to create or
-                                                 remove comments of selected style.
-                                                 The default style is selected by **seed7-uses-block-comment**
-                                                 (off by default), and the **comment-style**
-                                                 customizable user-options.
-    = ============================ =========== =============================================================
+                                           - Use ``comment-dwim`` and ``comment-block`` to create or
+                                             remove comments of selected style.
+                                             The default style is selected by **seed7-uses-block-comment**
+                                             (off by default), and the **comment-style**
+                                             customizable user-options.
+= ============================ =========== =============================================================
 
-   Also:
+Also:
 
-   - The static checking and compilation commands are identified in customizable user options.
-   - The static checking defaults to ``s7check`` and the compilation to ``s7c``.
-   - To perform static checking of Seed7 files, compile the `s7check.sd7`_
-     part of seed7 program examples and use the generated executable.
+- The static checking and compilation commands are identified in customizable user options.
+- The static checking defaults to ``s7check`` and the compilation to ``s7c``.
+- To perform static checking of Seed7 files, compile the `s7check.sd7`_
+  part of seed7 program examples and use the generated executable.
+
 
 Compatibility
 =============
