@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-04-26 09:22:47 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-09 17:35:41 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1288,6 +1288,17 @@ Note: the default style for all Seed7 buffers is controlled by the
         (left-char)))
     (seed7--move-and-mark original-pos final-pos dont-push-mark verbose)))
 
+(defun seed7--beg-of-defun-simple (&optional arg)
+  "Simple beginning of defun to use as `beginning-of-defun-function'.
+
+This is silent, does not issue an error when nothing is found.
+Return t if point moved to the beginning of function, nil if nothing found."
+  (interactive "^p")
+  (condition-case nil
+      (progn
+        (seed7-beg-of-defun arg :silent)
+        t)
+    (error nil)))
 
 (defun seed7-beg-of-next-defun (&optional n silent dont-push-mark)
   "Move forward to the beginning of the next function or procedure.
@@ -1302,7 +1313,7 @@ Note: the default style for all Seed7 buffers is controlled by the
   (unless n (setq n 1))
   (let* ((original-pos (point))
          (final-pos    original-pos)
-         (verbose nil)) ; first used as a flag, then message content
+         (verbose nil))           ; first used as a flag, then message content
     (save-excursion
       (dotimes (vn n)
         (setq verbose (and (not silent)
@@ -1472,6 +1483,18 @@ If B or C are nil consider A smaller."
     (seed7--move-and-mark original-pos final-pos dont-push-mark verbose)))
 
 
+(defun seed7--end-of-defun-simple (&optional arg)
+  "Simple end of defun to use as `end-of-defun-function'.
+
+This is silent, does not issue an error when nothing is found.
+Return t if point moved to the beginning of function, nil if nothing found."
+  (interactive "^p")
+  (condition-case nil
+      (progn
+        (seed7-end-of-defun arg :silent)
+        t)
+    (error nil)))
+
 ;;* Seed7 Navigation by Block
 ;;  -------------------------
 ;;
@@ -1524,8 +1547,7 @@ Push mark. Supports shift-marking."
                             (setq found-position (point)))
                         (setq nesting (1- nesting))))
                      (t (user-error "No match!"))))
-                (user-error "NO match!")
-                )))
+                (user-error "NO match!"))))
         (seed7-end-of-defun)
         (setq found-position (point))))
     (when found-position
@@ -1695,8 +1717,8 @@ If optional COMPILE argument set, compile the file to executable instead.
   ;; Allow code familiar with the standard `beginning-of-defun' and
   ;; `end-of-defun' to work inside Seed7 buffers.  This includes iedit,
   ;; expand-region, etc...
-  (setq-local beginning-of-defun-function 'seed7-beg-of-defun)
-  (setq-local end-of-defun-function 'seed7-end-of-defun))
+  (setq-local beginning-of-defun-function (function seed7--beg-of-defun-simple))
+  (setq-local end-of-defun-function       (function seed7--end-of-defun-simple)))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.s\\(d7\\|7i\\)\\'" . seed7-mode))
