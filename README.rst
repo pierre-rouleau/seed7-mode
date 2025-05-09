@@ -9,8 +9,6 @@ Currently Implemented Features
 ==============================
 
 - Syntax highlighting with user-customizable faces.
-  See `terminal-mode Emacs`_ and `graphical Emacs`_
-  screen-shots of Seed7 library code.
 - Support `Emacs imenu mode`_ and `Emacs Speedbar`_ for:
 
   - Seed7 procedures,
@@ -19,9 +17,56 @@ Currently Implemented Features
   - Seed7 structures,
   - Seed7 enums.
 
-- Implemented Commands:
+See the following example screenshots:
+
+=========================== ================================================
+Screenshot                  Description
+=========================== ================================================
+`Terminal-mode Emacs`_      Shows the default highlighting of Seed7 code on
+                            Emacs running in a macOS Terminal.
+
+`Graphical Emacs`_          Shows the default highlighting of Seed7 code on
+                            a basic GUI Emacs running in a macOS with the
+                            default scheme.
+
+`Terminal Emacs Speedbar`_  Using Emacs Speedbar to navigate the Seed7/pgm
+                            directory, listing function, procedures,
+                            structures, etc...
+
+`GUI Emacs Speedbar`_       Using macOS GUI Emacs with Speedbar in a separate
+                            GUI frame showing beside the local instance of
+                            the `PEL Speedbar PDF`_.
+
+`GUI Emacs menu`_           Using macOS GUI Emacs with iMenu to list the
+                            functions is the Seed7 file.  Unlike Windows
+                            and most Linux desktops,
+                            the Emacs menu shows up inside the macOS
+                            top screen menu.
+
+`Terminal menu 1`_          Using the top menu to access Seed7 code browsing
+                            inside a terminal Emacs.
+
+`Terminal menu 2`_          The selecting the Seed7 item as a second step
+                            in the menu using a terminal Emacs.
+
+`Terminal Ivy prompt`_      Instead of using the menu, using a prompt
+                            with completion driven by ivy to search and select
+                            Seed7 element.  In side a terminal Emacs.
+=========================== ================================================
+
+
+
+
+
+
+
+Implemented Commands
+--------------------
 
 **Code Navigation Commands**:
+
+Some of the commands have a built-in key binding in the seed7-key-map but not
+all of them.  The `PEL Seed7 support`_ provides more key bindings using function keys.
 
 = ============================ =========== =============================================================
 . Function                     Key Binding Description
@@ -283,8 +328,15 @@ Any help, questions, suggestions are welcome!
 .. links
 
 
-.. _terminal-mode Emacs:      screenshots/terminal-example-01.png
-.. _graphical Emacs:          screenshots/graphic-light-example-01.png
+.. _Terminal-mode Emacs:      screenshots/terminal-example-01.png
+.. _Graphical Emacs:          screenshots/graphic-light-example-01.png
+.. _Terminal Emacs Speedbar:  screenshots/terminal-seed7-speedbar-01.png
+.. _GUI Emacs Speedbar:       screenshots/macOS-gui-speedbar-frame.png
+.. _GUI Emacs menu:           screenshots/macOS-gui-menu-01.png
+.. _Terminal menu 1:          screenshots/terminal-menu-01.png
+.. _Terminal menu 2:          screenshots/terminal-menu-02.png
+.. _Terminal Ivy prompt:      screenshots/terminal-imenu-gh-01.png
+
 .. _Emacs imenu mode:                           https://www.gnu.org/software/emacs/manual/html_node/elisp/Imenu.html
 .. _Emacs Speedbar:                             https://www.gnu.org/software/emacs/manual/html_node/speedbar/
 .. _while statement:                            https://seed7.sourceforge.net/manual/stats.htm#while-statement
@@ -304,8 +356,10 @@ Any help, questions, suggestions are welcome!
 .. _The Emacs Initialization File:              https://www.gnu.org/software/emacs/manual/html_node/emacs/Init-File.html
 .. _PEL Emacs project:                          https://github.com/pierre-rouleau/pel
 .. _install PEL as described in the PEL manual: https://github.com/pierre-rouleau/pel/blob/master/doc/pel-manual.rst#how-to-install-pel
+.. _PEL Seed7 support:
 .. _PEL Seed7 PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/pl-seed7.pdf
 .. _PEL Index PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/-index.pdf
+.. _PEL Speedbar PDF:                           https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/speedbar.pdf
 
 
 .. ---------------------------------------------------------------------------
