@@ -354,7 +354,7 @@ Any help, questions, suggestions are welcome!
 .. _expand-region:                              https://github.com/magnars/expand-region.el?tab=readme-ov-file#readme
 .. _hide-comnt:                                 https://github.com/emacsmirror/hide-comnt
 .. _The Emacs Initialization File:              https://www.gnu.org/software/emacs/manual/html_node/emacs/Init-File.html
-.. _PEL Emacs project:                          https://github.com/pierre-rouleau/pel
+.. _PEL Emacs project:                          https://github.com/pierre-rouleau/pel?tab=readme-ov-file#readme
 .. _install PEL as described in the PEL manual: https://github.com/pierre-rouleau/pel/blob/master/doc/pel-manual.rst#how-to-install-pel
 .. _PEL Seed7 support:
 .. _PEL Seed7 PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/pl-seed7.pdf
