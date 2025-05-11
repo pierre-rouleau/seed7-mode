@@ -64,7 +64,8 @@ Screenshot                  Description
 Implemented Commands
 --------------------
 
-**Code Navigation Commands**:
+Code Navigation Commands
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Some of the commands have a built-in key binding in the seed7-key-map but not
 all of them.  The `PEL Seed7 support`_ provides more key bindings using function keys.
@@ -101,7 +102,8 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                            block or statement (listed above).
 = ============================ =========== =============================================================
 
-**Code Marking Commands**:
+Code Marking Commands
+~~~~~~~~~~~~~~~~~~~~~
 
 = ============================ =========== =============================================================
 . Function                     Key Binding Description
@@ -110,7 +112,8 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                            With point between two; mark the next one.
 = ============================ =========== =============================================================
 
-**Compilation commands**:
+Compilation Command
+~~~~~~~~~~~~~~~~~~~
 
 = ============================ =========== =============================================================
 . Function                     Key Binding Description
@@ -120,8 +123,14 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                            All resulting warning or errors are shown in a compile-mode buffer.
 = ============================ =========== =============================================================
 
-**Commands for Managing Comments**:
 
+- The static checking and compilation commands are identified in customizable user options.
+- The static checking defaults to ``s7check`` and the compilation to ``s7c``.
+- To perform static checking of Seed7 files, compile the `s7check.sd7`_
+  part of seed7 program examples and use the generated executable.
+
+Comment Management Commands
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 = ============================ =========== =============================================================
 . Function                     Key Binding Description
 = ============================ =========== =============================================================
@@ -133,14 +142,6 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                              (off by default), and the **comment-style**
                                              customizable user-options.
 = ============================ =========== =============================================================
-
-Also:
-
-- The static checking and compilation commands are identified in customizable user options.
-- The static checking defaults to ``s7check`` and the compilation to ``s7c``.
-- To perform static checking of Seed7 files, compile the `s7check.sd7`_
-  part of seed7 program examples and use the generated executable.
-
 
 Compatibility
 =============
@@ -157,8 +158,8 @@ More commands will be implemented.
 
 .. ---------------------------------------------------------------------------
 
-How To Install seed7-mode
-=========================
+How To Install seed7-mode with plain vanilla Emacs
+==================================================
 
 
 Preliminary notes to new Emacs users
@@ -270,7 +271,7 @@ previous section.  Once this is done proceed with the following:
 
 
 How To update seed7-mode in plain Emacs
----------------------------------------
+=======================================
 
 To update to a later revision,
 
@@ -282,8 +283,8 @@ To update to a later revision,
 
 .. ---------------------------------------------------------------------------
 
-Using seed7-mode with PEL
-=========================
+How to install and use seed7-mode with PEL
+==========================================
 
 You can also use my `PEL Emacs project`_ which deals with all installation and
 control details of several packages including this seed7-mode.
@@ -306,7 +307,7 @@ control details of several packages including this seed7-mode.
       Emacs-specific topics.
 
 How to Update Seed7-Mode with PEL
----------------------------------
+=================================
 
 With PEL, updating is a little simpler:
 just delete your ``~/.emacs.d/utils/seed7-mode.*`` files and restart Emacs;
