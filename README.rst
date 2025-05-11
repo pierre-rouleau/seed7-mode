@@ -51,7 +51,8 @@ Screenshot                  Description
 
 `Terminal Ivy prompt`_      Instead of using the menu, using a prompt
                             with completion driven by ivy to search and select
-                            Seed7 element.  In side a terminal Emacs.
+                            Seed7 element.
+                            Shown inside a terminal Emacs.
 =========================== ================================================
 
 
