@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-09 17:35:41 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-11 18:38:45 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -55,7 +55,7 @@
 ;;        unless a non alphanumeric character follows it.
 ;;        The 'seed7-mode-syntax-propertize' uses a simple regexp to prevent
 ;;        interpretation as comment: `seed7-base-x-number-re'.  A more complex
-;;        one could be used,similar to `seed7-base-x-big-number-re' what does
+;;        one could be used, similar to what `seed7-base-x-big-number-re' does
 ;;        but by only capturing the '#'.  This however might be too processing
 ;;        expensive.  I will only try it once everything else is done.
 ;;  # 03  Escaped single and double quote in strings are now recognized.
@@ -158,8 +158,8 @@
 
 ;;** Seed7 Comments Control
 (defcustom seed7-uses-block-comment nil
-  "When commenting, use Seed7 \"(*   *)\" block comments when non-nil,
-line comments otherwise."
+  "When non-nil, use Seed7 \"(*   *)\" block comments.
+Use line comments otherwise."
   :group 'seed7
   :type 'boolean
   :safe #'booleanp)
@@ -208,7 +208,7 @@ The name of the source code file is appended to the end of that line."
 
 ;;** Seed7 Faces
 (defgroup seed7-faces nil
-  "Fontification colors"
+  "Fontification colors."
   :link '(custom-group-link :tag "Font Lock Faces group" font-lock-faces)
   :group 'seed7)
 
@@ -254,6 +254,7 @@ The name of the source code file is appended to the end of that line."
 ;;   -------------------------------------
 
 (defun seed7-mode-syntax-propertize (start end)
+  "Apply syntax property between START and END to # character in number."
   (goto-char start)
   (funcall
    (syntax-propertize-rules
@@ -286,7 +287,7 @@ The name of the source code file is appended to the end of that line."
 ;;** Seed7 Comments Control
 (defconst seed7--line-comment-regexp
   "[^[:digit:]]\\(#.*\\)$"
-  "Single line comment in group 1")
+  "Single line comment in group 1.")
 
 (defconst seed7--whitespace-re
   "[[:space:]
@@ -295,7 +296,7 @@ The name of the source code file is appended to the end of that line."
 
 (defconst seed7--anychar-re
   "[^\\0]"
-  "Match any character including new-line")
+  "Match any character including new-line.")
 
 (defconst seed7--bracket-re
   "[])(}{[]")
@@ -320,7 +321,7 @@ The name of the source code file is appended to the end of that line."
 ;; ** Seed7 Float Literals
 (defconst seed7-float-number-re
   "[0-9]+\\.[0-9]+\\(?:\\(?:[eE][+-]?\\)?[0-9]+\\)?"
-  "Seed7 float number in group 0")
+  "Seed7 float number in group 0.")
 
 ;; ** Seed7 Numbers with Exponents
 
@@ -338,7 +339,7 @@ The name of the source code file is appended to the end of that line."
   ;;   1            2
   ;; Group 1: Complete Big Number with or without base. "1_" or "1234322_" or "2#0001_", etc...
   ;; Group 2: base: "2" to "36".  nil if no base.
-  "Big number with/without base. Group 1: number, group 2: base or nil.")
+  "Big number with/without base.  Group 1: number, group 2: base or nil.")
 
 (defconst seed7-big-number-re (format
                                seed7--big-number-re-format
@@ -773,11 +774,11 @@ The name of the source code file is appended to the end of that line."
 ;;
 (defconst seed7-arithmetic-operator-regxp
   "[[:alnum:]_ )]\\([/*]\\)[[:alnum:]_ (]"
-  "Arithmetic operator except the minus sign")
+  "Arithmetic operator except the minus sign.")
 
 (defconst seed7-minus-operator-regexp
   "[^+-]\\([+-]\\)[^+-]"
-  "Arithmetic minus operator in group 1")
+  "Arithmetic minus operator in group 1.")
 
 
 ;; ---------------------------------------------------------------------------
@@ -811,6 +812,9 @@ The name of the source code file is appended to the end of that line."
 ;; ===================================== ================================================
 
 (defun seed7-choose-color (&rest list)
+  "Use the first colour available from the specified LIST of color names.
+
+Allows selecting similar colours for various systems."
   (let (answer)
     (while list
       (or answer
@@ -1105,7 +1109,7 @@ The name of the source code file is appended to the end of that line."
    ;; low priority rendering of arithmetic + and -
    (cons seed7-minus-operator-regexp                 (list 1 ''font-lock-keyword-face))
    )
-  "Associates regexp to a regexp group and a face to render it")
+  "Associates regexp to a regexp group and a face to render it.")
 
 
 ;;* Seed7 Comments Control
@@ -1120,10 +1124,11 @@ The name of the source code file is appended to the end of that line."
 (defconst seed7-line-comment-starter  "#")
 
 (defun seed7--new-state-for (arg prevstate)
-  ;; Calculate the new state of PREVSTATE, t or nil, based on ARG.
-  ;; If ARG is nil or zero, toggle the state,
-  ;; If ARG is negative, turn the state off,
-  ;; If ARG is positive, turn the state on.
+  "Calculate the new state of PREVSTATE, t or nil, based on ARG.
+
+- If ARG is nil or zero, toggle the state,
+- If ARG is negative, turn the state off,
+- If ARG is positive, turn the state on."
   (if (or (not arg)
 	      (zerop (setq arg (prefix-numeric-value arg))))
       (not prevstate)
@@ -1152,9 +1157,11 @@ Note: the default style for all Seed7 buffers is controlled by the
 
 (defun seed7-toggle-comment-style (&optional arg)
   "Toggle the Seed7 comment style between block and line comments.
-  Optional numeric ARG, if supplied, switches to block comment
-  style when positive, to line comment style when negative, and
-  just toggles it when zero or left out.
+
+Optional numeric ARG, if supplied, switches to block comment
+style when positive, to line comment style when negative, and
+just toggles it when zero or left out.
+
 Note: the default style for all Seed7 buffers is controlled by the
 `seed7-uses-block-comment' customizable user-option."
   (interactive "P")
@@ -1230,7 +1237,12 @@ Note: the default style for all Seed7 buffers is controlled by the
 ;;                      G1 G2                              G3 G4                                         G5                                    G6                                            G7
 
 (defun seed7--move-and-mark (original-pos final-pos dont-push-mark info)
-  "Move point if necessary, push mark if necessary, print info if any."
+  "Move point if necessary, push mark if necessary, print info if any.
+
+- ORIGINAL-POS and FINAL-POS are the original and final position
+  of the operations.
+- DONT-PUSH-MARK a flag indicating whether mark should be pushed.
+- INFO a string to issue as message if non nil."
   (when (/= final-pos original-pos)
     (unless dont-push-mark
       (push-mark original-pos (not seed7-verbose-navigation))
@@ -1249,13 +1261,14 @@ Note: the default style for all Seed7 buffers is controlled by the
 
 (defun seed7-beg-of-defun (&optional n silent dont-push-mark)
   "Move backward to the beginning of the current function or procedure.
-  - With optional argument N, repeat the search that many times.
-  - Unless SILENT, the function prints a message showing the name of the new
+
+- With optional argument N, repeat the search that many times.
+- Unless SILENT, the function prints a message showing the name of the new
   found function or procedure.
-  - When a new function or procedure is found the function pushes the mark
-  unless DONT-PUSH_MARK is non-nil. Pushing the mark allows future pop to
-  go back to the original position with C-u C-SPC
-  - Supports shift selection."
+- When a new function or procedure is found the function pushes the mark
+  unless DONT-PUSH-MARK is non-nil.  Pushing the mark allows future pop to
+  go back to the original position with \\[universal-argument] \\[set-mark-command].
+- Supports shift selection."
   (interactive "^p")
   (unless n (setq n 1))
   (let* ((original-pos (point))
@@ -1278,37 +1291,42 @@ Note: the default style for all Seed7 buffers is controlled by the
                         (when verbose
                           (let ((item-name (substring-no-properties (match-string 4))))
                             (setq verbose (seed7--pos-msg 'at-start-of item-name)))))
-                    (user-error "No other Seed function or procedure above.")))
+                    (user-error "No other Seed function or procedure above!")))
               (progn
                 (setq final-pos (point))
                 (when verbose
                   (let ((item-name (substring-no-properties (match-string 4))))
                     (setq verbose (seed7--pos-msg 'at-start-of item-name))))))
-          (user-error "No Seed7 function or procedure found above."))
+          (user-error "No Seed7 function or procedure found above!"))
         (left-char)))
     (seed7--move-and-mark original-pos final-pos dont-push-mark verbose)))
 
-(defun seed7--beg-of-defun-simple (&optional arg)
+(defun seed7--beg-of-defun-simple (&optional n)
   "Simple beginning of defun to use as `beginning-of-defun-function'.
 
-This is silent, does not issue an error when nothing is found.
+Move once, unless N specifies a different count.
+Operate silently; do not issue an error when nothing is found.
 Return t if point moved to the beginning of function, nil if nothing found."
   (interactive "^p")
   (condition-case nil
       (progn
-        (seed7-beg-of-defun arg :silent)
+        (seed7-beg-of-defun n :silent)
         t)
     (error nil)))
 
 (defun seed7-beg-of-next-defun (&optional n silent dont-push-mark)
   "Move forward to the beginning of the next function or procedure.
-  - With optional argument N, repeat the search that many times.
-  - Unless SILENT, the function prints a message showing the name of the new
-  found function or procedure.
-  - When a new function or procedure is found the function pushes the mark
-  unless DONT-PUSH_MARK is non-nil. Pushing the mark allows future pop to
-  go back to the original position with C-u C-SPC
-  - Supports shift selection."
+
+With optional argument N, repeat the search that many times.
+
+Unless SILENT, the function prints a message showing the name of the new
+found function or procedure.
+
+When a new function or procedure is found the function pushes the mark
+unless DONT-PUSH-MARK is non-nil.  Pushing the mark allows future pop to
+go back to the original position with \\[universal-argument] \\[set-mark-command].
+
+Supports shift selection."
   (interactive "^")
   (unless n (setq n 1))
   (let* ((original-pos (point))
@@ -1374,8 +1392,8 @@ If B or C are nil consider A smaller."
 - Unless SILENT, the function prints a message showing the name of the new
   found function or procedure.
 - When a new function or procedure is found the function pushes the mark
-  unless DONT-PUSH_MARK is non-nil. Pushing the mark allows future pop to
-  go back to the original position with C-u C-SPC
+  unless DONT-PUSH-MARK is non-nil.  Pushing the mark allows future pop to
+  go back to the original position with \\[universal-argument] \\[set-mark-command].
 - Supports shift selection."
   (interactive "^")
   (unless n (setq n 1))
@@ -1483,15 +1501,16 @@ If B or C are nil consider A smaller."
     (seed7--move-and-mark original-pos final-pos dont-push-mark verbose)))
 
 
-(defun seed7--end-of-defun-simple (&optional arg)
+(defun seed7--end-of-defun-simple (&optional n)
   "Simple end of defun to use as `end-of-defun-function'.
 
-This is silent, does not issue an error when nothing is found.
+Move once, unless N specifies a different count.
+Operate silently; do not issue an error when nothing is found.
 Return t if point moved to the beginning of function, nil if nothing found."
   (interactive "^p")
   (condition-case nil
       (progn
-        (seed7-end-of-defun arg :silent)
+        (seed7-end-of-defun n :silent)
         t)
     (error nil)))
 
@@ -1515,7 +1534,7 @@ For the first word N must be 1."
 (defun seed7-to-block-forward ()
   "Move forward from the block beginning to its end.
 
-Push mark. Supports shift-marking."
+Push mark.  Supports shift-marking."
   (interactive "^")
   (let* ((start-word (seed7--current-line-nth-word 1))
          (end-expr (if (string= start-word "repeat")
@@ -1561,7 +1580,7 @@ Move point to the beginning of the block keyword, unless
 AT-BEGINNING-OF-LINE optional argument is set; in that case move point to the
 beginning of the line.
 
-Push mark. Supports shift-marking."
+Push mark.  Supports shift-marking."
   (interactive "^P")
   (let ((first-word (seed7--current-line-nth-word 1)))
     (if (member first-word '("end" "until"))
@@ -1657,9 +1676,9 @@ If point is between 2 functions or procedure, mark the next one."
 ;;
 
 (defun seed7-compile (&optional compile)
-  "Static check current Seed7 file, show errors in compilation-mode buffer.
-If optional COMPILE argument set, compile the file to executable instead.
-"
+  "Static check current Seed7 file, show errors in `compilation-mode' buffer.
+
+If optional COMPILE argument set, compile the file to executable instead."
   (interactive "P")
   (compile (format "%s %s"
                    (if compile seed7-compiler seed7-checker)
