@@ -81,8 +81,13 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                            With optional repeat argument.
 . seed7-to-block-forward                   Move point forward to the end line of the matching statement:
 
+                                           - array declaration (from begin to end)
                                            - ``block``,
-                                           - `case statement`_,
+                                           - `case statement`_:
+
+                                             - Move from ``case`` to ``end case``
+                                               but also across the ``when`` sections.
+
                                            - ``enum block``
                                            - any of the for statements:
 
@@ -93,10 +98,17 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                              - `for-step`_
                                              - `for-until`_
 
-                                           - `if statement`_,
+                                           - `if statement`_:
+
+                                             - Move from ``if`` to ``end if``,
+                                               but also when at ``else`` or
+                                               ``elsif`` move to the next portion.
+
                                            - `repeat - until statement`_
                                            - ``struct`` or
                                            - `while statement`_.
+
+                                           If none is found move to the end of the function or procedure.
 
 . seed7-to-block-backward                  Move point backward to the beginning line of the matching
                                            block or statement (listed above).
