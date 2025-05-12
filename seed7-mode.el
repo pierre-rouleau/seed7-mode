@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-11 18:38:45 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-12 12:01:49 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -515,12 +515,12 @@ The name of the source code file is appended to the end of that line."
 ;;
 
 (defconst seed7--block-start-keywords
-  '("block"
-    "case"
+  '("block"      ; "end block;"
+    "case"       ; "end case;"
     "enum"
     "for"
     ;; "func"
-    "if"
+    "if"       ; "elsif"      "end if;"
     ;; "repeat"      "until"
     "struct"
     "while"))
@@ -1523,55 +1523,135 @@ Return t if point moved to the beginning of function, nil if nothing found."
 
 (defun seed7--current-line-nth-word (n)
   "Return the N-th word at beginning of current line, nil if none.
-For the first word N must be 1."
+For the first word N must be 1.
+Negative N starts counting from the end of the line: -1 is the last word."
   (save-excursion
-    (forward-line 0)
-    (dotimes (_ n)
-      (forward-word))
-    (backward-word)
-    (thing-at-point 'word :no-properties)))
+    (let ((line-number-str (format-mode-line "%l")))
+      (if (< n 0)
+          ;; Count from end of line
+          (progn
+            (setq n (abs n))
+            (move-end-of-line 1)
+            (dotimes (_ n)
+              (backward-word)))
+        (forward-line 0)
+        (dotimes (_ n)
+          (forward-word))
+        (backward-word))
+      ;; Return the identified word or nil if found on a different line
+      (when (string= line-number-str (format-mode-line "%l"))
+        (thing-at-point 'word :no-properties)))))
+
+(defun seed7--type-regexp (keyword)
+  "Return a regexp to search for the start/end of KEYWORD type block.
+
+The regexp has 2 capture groups:
+- group1 for the starting expression,
+- group2 for then end part."
+  (format "^\\(?:[[:space:]]*?\\(const[[:space:]]+?type:.+?[[:space:]]%s\\)\\|[[:space:]]+?\\(end %s;\\)\\)"
+          keyword keyword))
+
+(defun seed7--end-regxp-for (word1 word2 last-word)
+  "Return regexps for end and start of block for specified arguments.
+
+- WORD1 : the first word
+- WORD2 : the second word
+- LAST-WORD: the last word.
+
+Return a regexp that searches for the start or end of the block.
+The start text is in group1, the end text is in group 2."
+  (cond
+   ;; deal with special cases first
+   ((string= word1 "repeat") "^[[:space:]]+?\\(repeat\\)\\|\\(until\\) " )
+   ((string= word1 "when")   "^[[:space:]]+?\\(when\\) \\|\\(end case;\\)")
+   ((string= word1 "elsif")  "^[[:space:]]+?\\(if\\) \\|\\(else\\|end if;\\)")
+   ((string= word1 "else")   "^[[:space:]]+?\\(if\\) \\|\\(end if;\\)")
+   ((string= word1 "const")
+    (cond
+     ((string= word2 "type")
+      (cond
+       ((member last-word '("enum"
+                            "struct"))
+        (seed7--type-regexp last-word))
+       (t nil)))
+     ((string= word2 "array") "^\\(?:[[:space:]]*?\\(const[[:space:]]+?array[[:space:]]+?.+?:\\)\\|[[:space:]]+?\\();\\)\\)")
+     (t nil)))
+   ;; then deal with general case: block, case, for, while.
+   ((member word1 seed7--block-start-keywords)
+    (format "^[[:space:]]+\\(%s \\)\\|\\(end %s;\\)" word1 word1))
+   (t nil)))
+
+
+(defun seed7--start-regxp-for (word1 word2)
+  "Return a regexp to search the starting string block specified by the arguments.
+
+- WORD1 : the first word of the end statement.
+- WORD2 : the second word of the end statement.
+
+Return a regexp that searches for the start or end of the block.
+The start text is in group1, the end text is in group 2."
+  (cond
+   ;; deal with special cases first
+   ;; [:todo 2025-05-12, by Pierre Rouleau: only support array: add more if needed.]
+   ((not word1) "^\\(?:[[:space:]]*?\\(const[[:space:]]+?array[[:space:]]+?.+?:\\)\\|[[:space:]]+?\\();\\)\\)")
+   ((string= word1 "until") "^[[:space:]]+?\\(repeat\\)\\|\\(until\\) ")
+   ((string= word1 "when")  "^[[:space:]]+?\\(when\\) \\|\\(end case;\\)")
+   ((string= word1 "elsif")  "^[[:space:]]+?\\(if\\) \\|\\(end if;\\)")
+   ((string= word1 "else")   "^[[:space:]]+?\\(if\\|elsif\\) \\|\\(end if;\\)")
+   ((string= word1 "end")
+    (cond
+     ((member word2 '( "block"
+                       "case"
+                       "for"
+                       "if"
+                       "while"))
+      (format"^[[:space:]]+?\\(%s \\)\\|\\(end %s;\\)" word2 word2))
+     ((member word2 '("enum"
+                      "struct"))
+      (seed7--type-regexp word2))
+     (t nil)))
+   (t nil)))
+
 
 (defun seed7-to-block-forward ()
   "Move forward from the block beginning to its end.
 
 Push mark.  Supports shift-marking."
   (interactive "^")
-  (let* ((start-word (seed7--current-line-nth-word 1))
-         (end-expr (if (string= start-word "repeat")
-                       "until"
-                     (format "end %s;" start-word)))
+  (let* ((first-word  (seed7--current-line-nth-word 1))
+         (second-word (seed7--current-line-nth-word 2))
+         (last-word   (seed7--current-line-nth-word -1))
+         (regexp      (seed7--end-regxp-for first-word second-word last-word))
          (found-position nil))
     (save-excursion
-      (if (and start-word
-               (or (member start-word seed7--block-start-keywords)
-                   (string= start-word "repeat")))
+      (if regexp
           (let ((nesting 0)
-                (searching t)
-                (found-text nil)
-                (regexp (format "[[:space:]]\\(%s\\|%s\\)"
-                                end-expr
-                                start-word)))
+                (searching t))
             (while searching
+              ;; skip current line: move to end of line to search forward
               (forward-line 1)
               (if (re-search-forward regexp nil :noerror)
-                  (progn
-                    (setq found-text (match-string 1))
-                    (cond
-                     ((string= found-text start-word)
-                      (setq nesting (1+ nesting)))
-                     ((string= found-text end-expr)
-                      (if (eq nesting 0)
-                          (progn
-                            (setq searching nil)
-                            (setq found-position (point)))
-                        (setq nesting (1- nesting))))
-                     (t (user-error "No match!"))))
+                  (cond
+                   ;; found another block start text
+                   ((match-string 1)
+                    (setq nesting (1+ nesting)))
+
+                   ;; found block end text
+                   ((match-string 2)
+                    (if (eq nesting 0)
+                        (progn
+                          (setq searching nil)
+                          (setq found-position (point)))
+                      (setq nesting (1- nesting))))
+                   ;; found nothing
+                   (t (user-error "No match!")))
                 (user-error "NO match!"))))
         (seed7-end-of-defun)
         (setq found-position (point))))
     (when found-position
       (push-mark)
       (goto-char found-position))))
+
 
 (defun seed7-to-block-backward (&optional at-beginning-of-line)
   "Move backward from block end to its beginning.
@@ -1582,51 +1662,41 @@ beginning of the line.
 
 Push mark.  Supports shift-marking."
   (interactive "^P")
-  (let ((first-word (seed7--current-line-nth-word 1)))
-    (if (member first-word '("end" "until"))
-        (let* ((start-word (if (string= first-word "until")
-                               "repeat"
-                             (seed7--current-line-nth-word 2)))
-               (end-expr (if (string= first-word "until")
-                             "until[^\\0];"
-                             (format "end %s;" start-word)))
-               (found-position nil))
-          (save-excursion
-            (if (and start-word
-                     (or (string= start-word "repeat")
-                         (member start-word seed7--block-start-keywords)))
-                (let ((nesting 0)
-                      (searching t)
-                      (found-text nil)
-                      (regexp (format "^[[:space:]]+\\(%s\\|%s\\)"
-                                      end-expr
-                                      start-word)))
-                  (while searching
-                    (forward-line 0)    ; move to beginning of current line.
-                    (if (re-search-backward regexp nil :noerror)
+  (let* ((first-word (seed7--current-line-nth-word 1))
+         (second-word (seed7--current-line-nth-word 2))
+         (regexp      (seed7--start-regxp-for first-word second-word))
+         (found-position nil))
+    (save-excursion
+      (if regexp
+          (let ((nesting 0)
+                (searching t))
+            (while searching
+              ;; skip current line: move to beginning of current line
+              (forward-line 0)
+              (if (re-search-backward regexp nil :noerror)
+                  (cond
+                   ;; found another block start text
+                   ((match-string 1)
+                    (if (eq nesting 0)
                         (progn
-                          (setq found-text (match-string 1))
-                          (cond
-                           ((string= found-text start-word)
-                            (if (eq nesting 0)
-                                (progn
-                                  (setq searching nil)
-                                  (setq found-position (point)))
-                              (setq nesting (1- nesting))))
-                           ((string= found-text end-expr)
-                            (setq nesting (1+ nesting)))
-                           (t (user-error "No match!"))))
-                      (user-error "NO match!")
-                      )))
-              (seed7-beg-of-defun)
-              (setq found-position (point))))
-          (when found-position
-            (push-mark)
-            (goto-char found-position)
-            (unless at-beginning-of-line
-              (forward-word)
-              (backward-word))))
-      (seed7-beg-of-defun))))
+                          (setq searching nil)
+                          (setq found-position (point)))
+                      (setq nesting (1- nesting))))
+
+                   ;; found a block end text
+                   ((match-string 2)
+                    (setq nesting (1+ nesting)))
+                   ;; found nothing
+                   (t (user-error "No match!")))
+                (user-error "NO match!"))))
+        (seed7-beg-of-defun)
+        (setq found-position (point))))
+    (when found-position
+      (push-mark)
+      (goto-char found-position)
+      (unless at-beginning-of-line
+        (forward-word)
+        (backward-word)))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Code Marking
