@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-12 12:01:49 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-12 13:13:02 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1600,11 +1600,12 @@ The start text is in group1, the end text is in group 2."
    ((string= word1 "else")   "^[[:space:]]+?\\(if\\|elsif\\) \\|\\(end if;\\)")
    ((string= word1 "end")
     (cond
-     ((member word2 '( "block"
-                       "case"
-                       "for"
-                       "if"
-                       "while"))
+     ((string= word2 "block")
+      "^[[:space:]]+?\\(block\\(?:[[:space:]]*?#.*?\\)?$\\)\\|\\(end block;\\)")
+     ((member word2 '("case"
+                      "for"
+                      "if"
+                      "while"))
       (format"^[[:space:]]+?\\(%s \\)\\|\\(end %s;\\)" word2 word2))
      ((member word2 '("enum"
                       "struct"))
