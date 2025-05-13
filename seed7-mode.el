@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-12 13:13:02 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-12 21:48:35 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -124,6 +124,7 @@
 ;; - Seed7 Compilation
 ;;   * `seed7-compile'
 ;; - Seed7 Key Map
+;; - Seed7 Menu
 ;; - Seed7 Major Mode
 ;;   * `seed7-mode'
 
@@ -134,7 +135,7 @@
 (require 'simple)         ; use `move-beginning-of-line'
 (require 'speedbar)       ; use `speedbar-add-supported-extension'
 (require 'subr-x)         ; use: `string-trim'
-
+(require 'easymenu)       ; use: `easy-menu-define'
 ;;; --------------------------------------------------------------------------
 ;;; Code:
 ;;
@@ -1759,7 +1760,6 @@ If optional COMPILE argument set, compile the file to executable instead."
 ;;* Seed7 Key Map
 ;;  =============
 ;;
-;; [:todo 2025-04-07, by Pierre Rouleau: Find best user-option keys for Seed7 map]
 
 (defvar seed7-mode-map
   (let ((map (make-sparse-keymap)))
@@ -1769,6 +1769,30 @@ If optional COMPILE argument set, compile the file to executable instead."
     (define-key map (kbd "C-c ;")  'seed7-toggle-comment-style)
     map)
   "Keymap used in seed7-mode.")
+
+;; ---------------------------------------------------------------------------
+;; Seed7 Menu
+;; ==========
+
+(easy-menu-define seed7-mode-menu seed7-mode-map
+  "Menu for Seed7 Mode."
+  '("Seed7"
+    ("Navigation"
+     ["Forward func/proc" seed7-end-of-defun
+      :help "Go forward to end of function or procedure"]
+     ["Backward to func/proc" seed7-beg-of-defun
+      :help "Go backward to the beginning of function or procedure"]
+     ["Forward to next func/proc" seed7-beg-of-next-defun
+      :help "Go forward to the beginning of next function or procedure"]
+     ["Block end" seed7-to-block-forward
+      :help "Go forward to end of block"]
+     ["Block start" seed7-to-block-backward
+      :help "Go backward to start of block"])
+    "---"
+    ["Static check"  seed7-compile t]
+    ["Compile"       (seed7-compile t) t]
+    "---"
+    ["Customize Mode" (customize-group 'seed7) t]))
 
 ;; ---------------------------------------------------------------------------
 
