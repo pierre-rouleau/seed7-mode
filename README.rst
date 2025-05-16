@@ -9,6 +9,10 @@ Currently Implemented Features
 ==============================
 
 - Syntax highlighting with user-customizable faces.
+- Supports `Emacs outline minor mode`_: collapse and expansion of blocks,
+  where heading is the first line of a declaration block. This allows
+  navigation and code manipulation by headings (blocks).
+- Provides a Seed7 top level menu entry.
 - Support `Emacs imenu mode`_ and `Emacs Speedbar`_ for:
 
   - Seed7 procedures,
@@ -54,12 +58,6 @@ Screenshot                  Description
                             Seed7 element.
                             Shown inside a terminal Emacs.
 =========================== ================================================
-
-
-
-
-
-
 
 Implemented Commands
 --------------------
@@ -374,6 +372,7 @@ Any help, questions, suggestions are welcome!
 .. _PEL Seed7 PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/pl-seed7.pdf
 .. _PEL Index PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/-index.pdf
 .. _PEL Speedbar PDF:                           https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/speedbar.pdf
+.. _Emacs outline minor mode:                   https://www.gnu.org/software/emacs/manual/html_node/emacs/Outline-Minor-Mode.html
 
 
 .. ---------------------------------------------------------------------------

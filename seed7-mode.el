@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-12 21:48:35 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-16 14:23:25 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1777,6 +1777,8 @@ If optional COMPILE argument set, compile the file to executable instead."
 (easy-menu-define seed7-mode-menu seed7-mode-map
   "Menu for Seed7 Mode."
   '("Seed7"
+    ["Toggle outline-minor-mode" outline-minor-mode
+      :help "Control hiding/showing content of blocks"]
     ("Navigation"
      ["Forward func/proc" seed7-end-of-defun
       :help "Go forward to end of function or procedure"]
@@ -1831,8 +1833,16 @@ If optional COMPILE argument set, compile the file to executable instead."
   ;; Allow code familiar with the standard `beginning-of-defun' and
   ;; `end-of-defun' to work inside Seed7 buffers.  This includes iedit,
   ;; expand-region, etc...
-  (setq-local beginning-of-defun-function (function seed7--beg-of-defun-simple))
-  (setq-local end-of-defun-function       (function seed7--end-of-defun-simple)))
+  (setq-local beginning-of-defun-function
+              (function seed7--beg-of-defun-simple))
+  (setq-local end-of-defun-function
+              (function seed7--end-of-defun-simple))
+
+  ;; Seed7 outline minor-mode support
+  (setq-local outline-regexp
+              "const \\(type: \\|proc: \\|func \\)")
+  (setq-local outline-heading-end-regexp
+              "\\( is\\(?:\\ new struct| func\\)?\\)"))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.s\\(d7\\|7i\\)\\'" . seed7-mode))
