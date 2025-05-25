@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-25 17:27:07 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-25 18:01:37 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1591,7 +1591,10 @@ Return a regexp that searches for the start or end of the block.
 The start text is in group1, the end text is in group 2."
   (cond
    ;; deal with special cases first
+   ;; Get the regexp for searching a block. Each regex is a string with 2
+   ;; capturing sections: match 1 is the start of the block, match 2 is the end.
    ((string= word1 "repeat") "^[[:space:]]+?\\(repeat\\)\\|\\(until\\) " )
+   ((string= word1 "block")  "^[[:space:]]+?\\(block\\)\\|\\(end block\\)" )
    ((string= word1 "when")   "^[[:space:]]+?\\(when\\) \\|\\(end case;\\)")
    ((string= word1 "elsif")  "^[[:space:]]+?\\(if\\) \\|\\(else\\|end if;\\)")
    ((string= word1 "else")   "^[[:space:]]+?\\(if\\) \\|\\(end if;\\)")
