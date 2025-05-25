@@ -21,6 +21,15 @@ Currently Implemented Features
   - Seed7 structures,
   - Seed7 enums.
 
+- Automatic indentation in progress 🚧 but not complete.
+  There are still several code scenarios that are not handled
+  properly but a large majority of them are. The indentation is
+  done automatically when the TAB key is pressed (from anywhere on the line)
+  and when auto-fill is active.
+  Set ``seed7-auto-indent`` to nil, then disable and re-enable ``seed7-mode``
+  to disable it.   You can also disable it permanently by customizing it.
+  I am currently working on the remaining cases.
+
 See the following example screenshots:
 
 =========================== ================================================
@@ -141,6 +150,7 @@ Compilation Command
 
 Comment Management Commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 = ============================ =========== =============================================================
 . Function                     Key Binding Description
 = ============================ =========== =============================================================
