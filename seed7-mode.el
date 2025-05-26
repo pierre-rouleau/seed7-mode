@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-26 11:30:35 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-26 15:01:39 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -2177,7 +2177,7 @@ N is: - :previous-non-empty for the previous non empty line,
   (seed7-line-starts-with n seed7-block-end-regexp dont-skip-comment-start))
 
 
-(defun seed7-line-inside-a-block-p (n &optional dont-skip-comment-start)
+(defun seed7-line-inside-a-block (n &optional dont-skip-comment-start)
   "Check if line N is inside a Seed7 block.
 N is: - :previous-non-empty for the previous non empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
@@ -2704,17 +2704,28 @@ N is: - :previous-non-empty for the previous non empty line,
            (or  (looking-at "#" :inhibit-modify)
                 (looking-at "(\\*" :inhibit-modify)))
       (if (seed7-above-char-pos  ";")
-          ;; if there are statements above, line up the comment according
-          ;; to the nature of the previous line as if the current line was
-          ;; not a comment: re-use the logic of `seed7-calc-indent' to
-          ;; get the indentation.
-          ;; Only 1 level of recursion should be necessary (and allowed).
-          (condition-case nil
-              (setq current-column (seed7-calc-indent :treat-comment-line-as-code
-                                                      (1+ recurse-count)))
-            ;; If no rule was found for the code, force the indentation to 0
-            ;; as if there was no statements above.
-            (error 0))
+          (let ((spec-list nil))
+            ;; if just below a closed when case, leave the comment at the
+            ;; same level as the when keyword
+            (if (and (seed7-line-starts-with :previous-non-empty
+                                             "when[[:blank:]]")
+                     (seed7--set (seed7-line-inside-a-block 0)
+                                 spec-list)
+                     (string= (substring-no-properties (nth 1 spec-list))
+                              "case "))
+                (nth 0 spec-list)
+              ;; if there are (other) statements above, line up the comment
+              ;; according to the nature of the previous line as if the
+              ;; current line was not a comment: re-use the logic of
+              ;; `seed7-calc-indent' to get the indentation.  Only 1 level of
+              ;; recursion should be necessary (and allowed).
+              (condition-case nil
+                  (setq current-column (seed7-calc-indent
+                                        :treat-comment-line-as-code
+                                        (1+ recurse-count)))
+                ;; If no rule was found for the code, force the indentation to 0
+                ;; as if there was no statements above.
+                (error 0))))
         ;; If there are no statements above indent a column 0.
         0))
 
@@ -2854,6 +2865,14 @@ of a string."
       (setq indent-column (+ (seed7-column-of-line-that-starts-with "case ")
                              seed7-indent-width)))
 
+     ;; when-end-case otherwise clause:
+     ((and
+       (string= first-word-on-line "otherwise")
+       (seed7--set (seed7-line-inside-a-block 0)
+                   spec-list)
+       (string= (substring-no-properties (nth 1 spec-list)) "case "))
+      (setq indent-column (nth 0 spec-list)))
+
      ((seed7--set (seed7-line-starts-with :previous-non-empty "when")
                   indent-column)
       (setq indent-column (+ indent-column seed7-indent-width)))
@@ -2893,7 +2912,7 @@ of a string."
                   indent-column)
       (setq indent-column (+ indent-column seed7-indent-width)))
 
-     ((seed7--set (seed7-line-inside-a-block-p 0)
+     ((seed7--set (seed7-line-inside-a-block 0)
                   spec-list)
       (setq indent-column (nth 0 spec-list))
       (if (string= (nth 1 spec-list)
