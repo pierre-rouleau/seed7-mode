@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-25 18:01:37 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-26 10:24:56 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1563,6 +1563,7 @@ Negative N starts counting from the end of the line: -1 is the last word."
             (move-end-of-line 1)
             (dotimes (_ n)
               (backward-word)))
+        ;; count from beginning of line
         (forward-line 0)
         (dotimes (_ n)
           (forward-word))
@@ -1825,6 +1826,10 @@ The SYNTAX argument holds the value returned by `syntax-ppss' for point."
   "Return the current line number.  0 for the first line."
   (string-to-number (format-mode-line "%l")))
 
+(defun seed7-to-indent ()
+  "Move point to the first non-whitespace character of the line."
+  (forward-line 0)
+    (skip-chars-forward " \t"))
 
 ;;*** Seed7 Indentation Code Character Search Utilities
 
@@ -1932,8 +1937,7 @@ Note that the leading quote character does not register as inside a string."
 (defun seed7-current-line-start-inside-comment-p ()
   "Return non-nil if the current line start inside a comment."
   (save-excursion
-    (forward-line 0)
-    (skip-chars-forward " \t")
+    (seed7-to-indent)
     (seed7-inside-comment-p (point))))
 
 ;;*** Seed7 Indentation Base Line Navigation
@@ -1948,7 +1952,7 @@ Return nil if nothing found, but do not move point."
     (save-excursion
       (while (and (not found-pos)
                   (not (bobp)))
-        ;; Note: I would have used re-search-backward but found it unreliable.
+        ;; Note: I would have used re-search-backward but found it unreliable here.
         ;;       Checking line by line is the most reliable way and since code
         ;;       normally does not have large set of empty lines it will
         ;;       behave fast enough.
@@ -2003,6 +2007,27 @@ the `seed7-indent-width' user-option."
 
 ;;** Seed7 Indentation Line Checking Base Functions
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(defun seed7-to-line-starts-with (regexp)
+  "Move to previous line that starts with text specified by the REGEXP.
+Return position of the text found if found, nil otherwise.
+When something is found, leave point at the found position, if nothing
+found do not move point."
+  (let ((found-pos nil)
+        (keep-searching t)
+        (regexp (concat "^[[:blank:]]*?" regexp)))
+    (save-excursion
+      (while (and keep-searching
+                  (not (bobp)))
+        (when (re-search-backward regexp nil :noerror)
+          (skip-chars-forward " \t")
+          (if (or (seed7-inside-comment-p)
+                  (seed7-inside-string-p))
+              (forward-line 0)
+            (setq found-pos (point))
+            (setq keep-searching nil)))))
+    (when found-pos
+      (goto-char found-pos))))
 
 (defun seed7-line-starts-with (n regexp &optional dont-skip-comment-start)
   "Return indent column when line N non-white space begins with REGEXP.
@@ -2250,8 +2275,7 @@ If it detects that it is outside, it returns nil."
                     (setq block-end-pos (seed7-statement-end-pos))
                     (when (< block-start-pos current-pos block-end-pos)
                       (goto-char block-start-pos)
-                      (forward-line 0)
-                      (skip-chars-forward " \t")
+                      (seed7-to-indent)
                       (setq found-column (+ 6 (current-column))))))
               ;; Found comment, move to beginning of line and search again
               (forward-line 0))))
@@ -2285,8 +2309,7 @@ If it detects that it is outside, it returns nil."
             (if (seed7--point-in-code-p syntax)
                 (progn
                   (setq found t)
-                  (forward-line 0)
-                  (skip-chars-forward " \t")
+                  (seed7-to-indent)
                   (setq start-pos (point))
                   (setq found-column (+  (current-column) 5))
                   (setq end-pos (seed7-below-char-pos ";"))
@@ -2328,15 +2351,14 @@ If it detects that it is outside, it returns nil."
             (if (seed7--point-in-code-p syntax)
                 (progn
                   (setq found t)
-                  (forward-line 0)
-                  (skip-chars-forward " \t")
+                  (seed7-to-indent)
                   (setq start-pos (point))
                   (setq found-column (current-column))
                   (when (search-forward " is func" nil :noerror)
-                      (progn
-                        (setq end-pos (point))
-                        (unless (< start-pos current-pos end-pos)
-                          (setq found-column nil)))))
+                    (progn
+                      (setq end-pos (point))
+                      (unless (< start-pos current-pos end-pos)
+                        (setq found-column nil)))))
               ;; found inside comment. Move to beginning of line
               ;; and search again
               (forward-line 0))))
@@ -2402,8 +2424,7 @@ N is: - :previous-non-empty for the previous non empty line,
           (forward-char)
           (setq block-end-pos (point))
           (backward-sexp)
-          (forward-line 0)
-          (skip-chars-forward " \t")
+          (seed7-to-indent)
           (when (looking-at "\\(?:const\\|var\\) +?array +?.+?:.+?("
                             :inhibit-modify)
             (setq block-start-pos (point))
@@ -2440,6 +2461,49 @@ N is: - :previous-non-empty for the previous non empty line,
             (setq block-end-pos (point))
             (when (< block-start-pos original-pos block-end-pos)
               block-indent-column)))))))
+
+
+(defun seed7-line-inside-logic-check-expression-p (n
+                                                   &optional
+                                                   dont-skip-comment-start)
+  "Check if line N is inside a logic check expression.
+Return the indentation column of the space following the check keyword
+if line N is inside an array block, nil otherwise.
+N is: - :previous-non-empty for the previous non empty line,
+        skipping lines with starting comments unless DONT-SKIP-COMMENT-START
+        is non-nil,
+      - 0 for the current line,
+      - A negative number for previous lines: -1 previous, -2 line before..."
+  (save-excursion
+    (when (seed7-move-to-line n dont-skip-comment-start)
+      (let* ((current-pos (point))
+             (end-pos nil)
+             (keep-searching t)
+             (start-pos (seed7-to-line-starts-with
+                         "\\(?:while\\|if\\|when\\)[[:blank:]]"))
+             (keyword  (and start-pos
+                            (seed7--current-line-nth-word 1)))
+             (end-str (cond
+                       ((string= keyword "while") " do")
+                       ((string= keyword "if")    " then")
+                       ((string= keyword "when")  ":")
+                       (t nil))))
+        (when end-str
+          (while (and keep-searching
+                      (not (eobp)))
+            (when (search-forward end-str nil :noerror)
+              (if (or (seed7-inside-comment-p)
+                      (seed7-inside-string-p))
+                  ;; found end-str but no in code
+                  (forward-char)
+                ;; found end-str
+                (setq end-pos (point))
+                (setq keep-searching nil)))))
+        (when (and end-pos
+                   (< start-pos current-pos end-pos))
+          (goto-char start-pos)
+          (skip-chars-forward " \t")
+          (+ (current-column) (length keyword) 1))))))
 
 ;; [:todo 2025-05-22, by Pierre Rouleau: is this handling comment?]
 (defun seed7-line-inside-assign-statement-continuation-p (n
@@ -2494,8 +2558,7 @@ N is: - :previous-non-empty for the previous non empty line,
           (forward-char)
           (setq block-end-pos (point))
           (backward-sexp)
-          (forward-line 0)
-          (skip-chars-forward " \t")
+          (seed7-to-indent)
           (when (looking-at "\\(?:const\\|var\\) +?set +?.+?:.+?{"
                             :inhibit-modify)
             (setq block-start-pos (point))
@@ -2617,8 +2680,7 @@ N is: - :previous-non-empty for the previous non empty line,
   "Return the column number for comment start or continuation."
   (save-excursion
     ;; What type of comment is this line ?
-    (forward-line 0)
-    (skip-chars-forward " \t")
+    (seed7-to-indent)
     (cond
      ;; If at the beginning of a new comment
      ((and (or (bobp)
@@ -2675,8 +2737,8 @@ of a string."
      ((> recurse-count 1)
       (error "Recursion done more than once: implementation logic error!"))
 
-     ((and (not treat-comment-line-as-code)
-           (seed7-current-line-start-inside-comment-p))
+     ((and (seed7-current-line-start-inside-comment-p)
+           (not treat-comment-line-as-code))
       (setq indent-column (seed7-comment-column recurse-count)))
 
      ((or (seed7--set (seed7-line-inside-array-definition-block-p 0)
@@ -2745,6 +2807,9 @@ of a string."
 
      ((seed7-line-is-type-block-start :previous-non-empty)
       (setq indent-step (+ indent-step 2)))
+
+     ((seed7--set (seed7-line-inside-logic-check-expression-p 0)
+                  indent-column))
 
      ((seed7-line-is-block-start :previous-non-empty)
       (setq indent-step (1+ indent-step)))
@@ -2865,8 +2930,7 @@ of a string."
   "Indent the current Seed7 line of code."
   (interactive "*")
   (save-excursion
-    (forward-line 0)
-    (skip-chars-forward " \t")
+    (seed7-to-indent)
     (let ((current-indent (current-column))
           (indent (seed7-calc-indent)))
       (when (not (= indent current-indent))
