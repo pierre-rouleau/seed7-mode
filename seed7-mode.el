@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-26 10:24:56 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-26 11:30:35 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -127,7 +127,6 @@
 ;;   * `seed7-beg-of-defun'
 ;;   * `seed7-beg-of-next-defun'
 ;;   * `seed7-end-of-defun'
-;;     - `seed7--is-first'
 ;;     - `seed7--at-end-of-defun'
 ;;     + `seed7--move-and-mark'
 ;;     + `seed7--pos-msg'
@@ -1253,7 +1252,7 @@ Note: the default style for all Seed7 buffers is controlled by the
 ;;
 (defconst seed7-procedure-or-function-regexp
   (format
-   "^[[:space:]]*const%s+\\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)?%s?:%s*\\([[:alpha:]][[:alnum:]_]+\\)%s*?is%s+\\(func\\|return\\)"
+   "^[[:space:]]*const%s+\\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)?%s?:%s*\\([[:alpha:]][[:alnum:]_]+\\)%s*?is%s+\\(func\\|return\\|forward;\\)"
    ;;                 %    G1 G2                   G3                           %   %    G4                          %     %    G5
    seed7--whitespace-re
    seed7--whitespace-re
@@ -1406,14 +1405,17 @@ Supports shift selection."
         (setq is-at-end t))))
   is-at-end)))
 
-(defun seed7--is-first (a b c)
-  "Return t is A is smaller than B and C.
-If A is nil return nil.
-If B or C are nil consider A smaller."
-  (unless (not a)
-    (and
-     (or (not b) (< a b))
-     (or (not c) (< a c)))))
+(defun seed7--defun-name (&optional pos)
+  "Extract and return name of current function or procedure.
+Search backward from POS or point.
+Return the string or nil if cannot identify it.
+Do not move point."
+  (save-excursion
+    (when pos
+      (goto-char pos))
+    (when (re-search-backward seed7-procedure-or-function-regexp
+                              nil :noerror)
+      (substring-no-properties (match-string 4)))))
 
 (defun seed7-end-of-defun (&optional n silent dont-push-mark)
   "Move forward to the end of the current function or procedure.
@@ -1434,6 +1436,7 @@ If B or C are nil consider A smaller."
          (verbose nil)            ; first used as a flag, then message content
          (current-pos nil)
          (is-func-pos nil)
+         (is-forward-decl-pos nil)
          (end-short-func-pos nil)
          (end-long-func-pos nil))
     (save-excursion
@@ -1460,73 +1463,84 @@ If B or C are nil consider A smaller."
                 (re-search-forward "^[[:space:]]+return\\(.\\|[^\\0]\\)+?;"
                                    nil :noerror)))
         (save-excursion
+          (setq is-forward-decl-pos
+                (re-search-forward ")[[:blank:]]*?is[[:blank:]]+?forward;")))
+        (save-excursion
           (setq end-long-func-pos
                 (re-search-forward "end[[:space:]]+func;" nil :noerror)))
-        (if (seed7--is-first end-short-func-pos
-                             is-func-pos
-                             end-long-func-pos)
+        (if (and is-forward-decl-pos
+                 (< is-forward-decl-pos
+                    (or end-long-func-pos 0)))
+            ;; this is a forward declaration the end is is-forward-decl-pos
             (progn
-              (setq final-pos end-short-func-pos)
-              (save-excursion
-                ;; extract current function name
-                (let ((item-name nil))
-                  (when (re-search-backward seed7-procedure-or-function-regexp
-                                            nil :noerror)
-                    (setq item-name (substring-no-properties (match-string 4))))
-                  (setq verbose (seed7--pos-msg 'at-end-of (or item-name  "??"))))))
-          (if (and end-long-func-pos
-                   is-func-pos)
-              (if (> is-func-pos end-long-func-pos)
-                  (goto-char current-pos)
-                (goto-char (+ is-func-pos 1)))
-            (forward-line 1))
-          (if (or (re-search-backward seed7-procedure-or-function-regexp
-                                      nil :noerror)
-                  (re-search-forward seed7-procedure-or-function-regexp
-                                     nil :noerror))
-              (let ((item-type (substring-no-properties (match-string 1)))
-                    (item-name (substring-no-properties (match-string 4)))
-                    (group5    (let ((matched (match-string 5)))
-                                 (when matched
-                                   (substring-no-properties matched)))))
-                (cond
-                 ;; Procedure
-                 ((string-equal item-type "proc")
-                  (if  (search-forward "end func;")
-                      (progn
-                        (setq final-pos (point))
-                        (when verbose
-                          (setq verbose (seed7--pos-msg 'at-end-of item-name))))
-                    (user-error "End of %s not found: is code valid?" item-name)))
-                 ;; Function
-                 ((string-equal item-type  "func ")
-                  (if (and group5
-                           (string-equal group5 "func"))
-                      ;; long func that ends with end func;
-                      (if (search-forward "end func;")
-                          (progn
-                            (setq final-pos (point))
-                            (when verbose
-                              (setq verbose (seed7--pos-msg 'at-end-of item-name))))
-                        (user-error "End of %s not found: is code valid?"
-                                    item-name))
-                    ;; short func with simpler return
-                    (if (re-search-forward "[[:space:]]return[[:space:]]+[^\\0]+?;"
-                                           nil :noerror)
-                        ;; [:todo 2025-04-07, by Pierre Rouleau: fix required:
-                        ;; check that syntax at point is not comment or string
-                        ;; at point to validate find. Do this only once the
-                        ;; syntax support is complete and detects strings/comments
-                        ;; properly. ]
+              (setq final-pos is-forward-decl-pos)
+              (when verbose
+                (setq verbose
+                      (seed7--pos-msg 'at-end-of
+                                      (or (seed7--defun-name final-pos)
+                                          "forward declaration of ?")))))
+          (if (< (or end-short-func-pos 0)
+                 (or is-func-pos 0)
+                 (or end-long-func-pos 0))
+              (progn
+                (setq final-pos end-short-func-pos)
+                (when verbose
+                  (setq verbose (seed7--pos-msg 'at-end-of
+                                                (or (seed7--defun-name)
+                                                    "??")))))
+            (if (and end-long-func-pos
+                     is-func-pos)
+                (if (> is-func-pos end-long-func-pos)
+                    (goto-char current-pos)
+                  (goto-char (+ is-func-pos 1)))
+              (forward-line 1))
+            (if (or (re-search-backward seed7-procedure-or-function-regexp
+                                        nil :noerror)
+                    (re-search-forward seed7-procedure-or-function-regexp
+                                       nil :noerror))
+                (let ((item-type (substring-no-properties (match-string 1)))
+                      (item-name (substring-no-properties (match-string 4)))
+                      (group5    (let ((matched (match-string 5)))
+                                   (when matched
+                                     (substring-no-properties matched)))))
+                  (cond
+                   ;; Procedure
+                   ((string-equal item-type "proc")
+                    (if  (search-forward "end func;")
                         (progn
                           (setq final-pos (point))
                           (when verbose
                             (setq verbose (seed7--pos-msg 'at-end-of item-name))))
-                      (user-error "Function not terminated properly!"))))
-                 ;; The next line should never occur, if it does report a bug
-                 ;; providing a code example to reproduce.
-                 (t (error "Not inside a procedure or function!"))))
-            (user-error "No Seed7 end of function or procedure found below!")))))
+                      (user-error "End of %s not found: is code valid?" item-name)))
+                   ;; Function
+                   ((string-equal item-type  "func ")
+                    (if (and group5
+                             (string-equal group5 "func"))
+                        ;; long func that ends with end func;
+                        (if (search-forward "end func;")
+                            (progn
+                              (setq final-pos (point))
+                              (when verbose
+                                (setq verbose (seed7--pos-msg 'at-end-of item-name))))
+                          (user-error "End of %s not found: is code valid?"
+                                      item-name))
+                      ;; short func with simpler return
+                      (if (re-search-forward "[[:space:]]return[[:space:]]+[^\\0]+?;"
+                                             nil :noerror)
+                          ;; [:todo 2025-04-07, by Pierre Rouleau: fix required:
+                          ;; check that syntax at point is not comment or string
+                          ;; at point to validate find. Do this only once the
+                          ;; syntax support is complete and detects strings/comments
+                          ;; properly. ]
+                          (progn
+                            (setq final-pos (point))
+                            (when verbose
+                              (setq verbose (seed7--pos-msg 'at-end-of item-name))))
+                        (user-error "Function not terminated properly!"))))
+                   ;; The next line should never occur, if it does report a bug
+                   ;; providing a code example to reproduce.
+                   (t (error "Not inside a procedure or function!"))))
+              (user-error "No Seed7 end of function or procedure found below!"))))))
     (seed7--move-and-mark original-pos final-pos dont-push-mark verbose)))
 
 
@@ -1650,6 +1664,7 @@ The start text is in group1, the end text is in group 2."
 (defun seed7-to-block-forward (&optional dont-push-mark)
   "Move forward from the block beginning to its end.
 
+Handle function and forward declarations blocks.
 Push mark unless DONT-PUSH-MARK is non-nil.  Supports shift-marking."
   (interactive "^")
   (let* ((first-word  (seed7--current-line-nth-word 1))
