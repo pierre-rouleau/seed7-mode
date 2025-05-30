@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-30 11:59:10 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-30 15:09:05 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -82,12 +82,11 @@
 ;;        I will fix that once I get the auto indentation working properly
 ;;        for all code.  I will then have to decide if that's considered a
 ;;        defun to allow marking the block just like procedure and functions.
-;;  # 08  The `seed7-procfunc-regexp' does not extract the name of a function
-;;        definition that behaves (like Seed7 and) as a infix operator.
-;;        That regexp  must be improved further to allow extraction of all
-;;        function names in library files and allowing this regexp to be used
-;;        by imenu: imenu does not handle regexp that fail to extract a specified group.
-;; # 09   Indentation inside arrays needs improvement: the nesting inside parens is not done yet.
+;; # 08  Indentation inside arrays needs improvement: the nesting inside
+;;       parens is not done yet.
+;; # 09  Add ability to extract operator function names, also providing ability
+;;       to detect them, list them and auto-indent them properly.
+;;       This currently does not work.
 ;; ]
 ;;
 ;;
@@ -1377,32 +1376,42 @@ Move point."
 ;;** Seed7 Procedure/Function Regular Expressions
 ;;   --------------------------------------------
 
-;; [:todo 2025-05-30, by Pierre Rouleau: Add ability to extract name of prefix function in library.
-;;                    The Group 5 should never be empty, allowing it to be used inside iMenu
-;;                    and possibly replace seed7-function-regexp. ]
+;; [:todo 2025-05-30, by Pierre Rouleau: Add ability to extract name of
+;;       operator functions.  Currently the identifiers are not geared
+;;       to match those. ]
+
+
 (defconst seed7-procfunc-regexp
   (format
-   "^[[:space:]]*const%s+\\(\\(func \\|proc\\)\\)%s?%s?:\\(?: \\((attr%s?+[[:alnum:]_]+)\\)\\)?%s*\\([[:alpha:]][[:alnum:]_]+\\)?%s*?is%s+\\(func\\|return\\|forward;\\|action%s\".+\";\\)"
-   ;;                 %    G1 G2                 G3 %           G4    %                        %    G5                           %     %    G6                                %
-   ;;                 1                          %2 3                 4                        5                                 6     7                                      8
+   "^[[:space:]]*const%s+\\(\\(func \\|proc\\)\\)%s?%s?:\\(?:%s+?\\(?:(%s?+)\\)\\)?%s*\\(%s\\)\\(?:%s(%s?+)\\)?%s*?is%s+\\(func\\|return\\|forward;\\|action%s\".+\";\\)"
+   ;;                 %    G1 G2                 G3 %        %         %           %   G4%         %  %        %     %    G5                                %
+   ;;                 1                          %2 3        4         5           6     7         8  9        10    11                                     12
+
    seed7--whitespace-re                 ; 1
    seed7-type-identifier-re             ; 2
    seed7--whitespace-re                 ; 3
    seed7--whitespace-re                 ; 4
-   seed7--whitespace-re                 ; 5
-   seed7--anychar-re                    ; 6
-   seed7--whitespace-re                 ; 7
-   seed7--whitespace-re)                ; 8
+   seed7--anychar-re                    ; 5
+   seed7--whitespace-re                 ; 6
+   seed7--non-capturing-identifier-re   ; 7
+   seed7--whitespace-re                 ; 8
+   seed7--anychar-re                    ; 9
+   seed7--anychar-re                    ; 10
+   seed7--whitespace-re                 ; 11
+   seed7--whitespace-re)                ; 12
   "Regexp identifying beginning of procedures and functions.
 Group 1: \"proc\" or \"func \"
 Group 2: \"proc\" or \"func \"
 Group 3: The func return type.  May be empty.
-Group 4: \"(attr TYPE)\" string used in library file.  May be empty.
-Group 5: The func or proc name. May be empty in a library file.
-Group 6: - \"func\" for proc or function that ends with \"end func\".
+Group 4: The func or proc name. May be empty in a library file.
+Group 5: - \"func\" for proc or function that ends with \"end func\".
          - \"return\" for a func that only has a return statement.
          - \"forward\" for a forward declaration.
          - \"action ACTION\" for an action function." )
+
+(defconst seed7-procfunc-regexp-item-type-group 2)
+(defconst seed7-procfunc-regexp-item-name-group 4)
+(defconst seed7-procfunc-regexp-tail-type-group 5)
 
 (defconst seed7-procfunc-end-regexp
   "end[[:blank:]]+func;"
@@ -1513,10 +1522,10 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
           (setq found-pos nil)
           (when (seed7-re-search-backward seed7-procfunc-regexp)
             (setq found-pos (point))
-            (setq item-type (substring-no-properties (match-string 2)))
-            (setq item-name (substring-no-properties (or (match-string 5)
+            (setq item-type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group)))
+            (setq item-name (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group)
                                                          "?")))
-            (setq tail-type (substring-no-properties (match-string 6))))))
+            (setq tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group))))))
       (if found-pos
           (seed7--move-and-mark
            original-pos
@@ -1533,7 +1542,7 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
   only when that many function or procedures are found.
   A value of zero means no action. A negative value is not allowed and raises
   a user error.
-- Unless SILENT, the function prints a message showing the name of the new
+- Unless SILENT, the function prints a message showing the name of the
   found function or procedure.
 - When a new function or procedure is found the function pushes the mark
   unless DONT-PUSH-MARK is non-nil.  Pushing the mark allows future pop to
@@ -1543,8 +1552,8 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
   (let* ((n (prefix-numeric-value n))
          (original-pos (point))
          (found-pos nil)
-         (type nil)
-         (name nil)
+         (item-type nil)
+         (item-name nil)
          (tail-type nil))
     (when (< n 0)
       (user-error "Negative N (%d) not allowed!" n))
@@ -1556,10 +1565,10 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
           (if (seed7-re-search-forward seed7-procfunc-regexp)
               (progn
                 (setq found-pos (point))
-                (setq type (substring-no-properties (match-string 2)))
-                (setq name (substring-no-properties (or (match-string 5)
+                (setq item-type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group)))
+                (setq item-name (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group)
                                                         "?")))
-                (setq tail-type (substring-no-properties (match-string 6))))
+                (setq tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group))))
             (user-error (seed7--no-defun-found-msg-for n 'forward))))
         (when found-pos
           ;; When found, point is somewhere past the very beginning of the
@@ -1574,7 +1583,7 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
            found-pos
            dont-push-mark
            (unless silent
-             (seed7--show-info 'at-start-of name type tail-type))))))
+             (seed7--show-info 'at-start-of item-name item-type tail-type))))))
 
 (defun seed7-end-of-defun (&optional n silent dont-push-mark)
   "Move forward to the end of the current or next function or procedure.
@@ -1620,10 +1629,10 @@ Move inside the current if inside one, to the next if outside one.
                  (setq final-pos
                        (seed7-re-search-forward seed7-procfunc-end-regexp))
                  (when (seed7-re-search-backward seed7-procfunc-regexp)
-                   (setq type (substring-no-properties (match-string 2)))
-                   (setq name (substring-no-properties (or (match-string 5)
+                   (setq type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group)))
+                   (setq name (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group)
                                                            "?")))
-                   (setq tail-type (substring-no-properties (match-string 6)))
+                   (setq tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                    t)
                  (seed7-re-search-forward  seed7-procfunc-end-regexp)
                  (eq (point) final-pos))
@@ -1634,10 +1643,10 @@ Move inside the current if inside one, to the next if outside one.
                 (and
                  (setq found-pos (seed7-re-search-forward seed7-short-func-end-regexp))
                  (when (seed7-re-search-backward seed7-procfunc-regexp)
-                   (setq type2 (substring-no-properties (match-string 2)))
-                   (setq name2 (substring-no-properties (or (match-string 5)
+                   (setq type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group)))
+                   (setq name2 (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group)
                                                             "?")))
-                   (setq tail-type2 (substring-no-properties (match-string 6)))
+                   (setq tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                    t)
                  (seed7-re-search-forward seed7-short-func-end-regexp)
                  (eq (point) found-pos)
@@ -1654,10 +1663,10 @@ Move inside the current if inside one, to the next if outside one.
                  (setq found-pos
                        (seed7-re-search-forward seed7-forward-declaration-end-regexp))
                  (when (seed7-re-search-backward seed7-procfunc-regexp)
-                   (setq type2 (substring-no-properties (match-string 2)))
-                   (setq name2 (substring-no-properties (or (match-string 5)
+                   (setq type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group)))
+                   (setq name2 (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group)
                                                             "?")))
-                   (setq tail-type2 (substring-no-properties (match-string 6)))
+                   (setq tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                    t)
                  (seed7-re-search-forward seed7-forward-declaration-end-regexp)
                  (eq (point) found-pos)
@@ -1674,10 +1683,10 @@ Move inside the current if inside one, to the next if outside one.
                  (setq found-pos (seed7-re-search-forward
                                   seed7-action-function-end-regexp))
                  (when (seed7-re-search-backward seed7-procfunc-regexp)
-                   (setq type2 (substring-no-properties (match-string 2)))
-                   (setq name2 (substring-no-properties (or (match-string 5)
+                   (setq type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group)))
+                   (setq name2 (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group)
                                                             "?")))
-                   (setq tail-type2 (substring-no-properties (match-string 6)))
+                   (setq tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                    t)
                  (seed7-re-search-forward seed7-action-function-end-regexp)
                  (eq (point) found-pos)
@@ -3340,15 +3349,21 @@ If optional COMPILE argument set, compile the file to executable instead."
   ;; Seed7 Mode Syntax Propertize Function
   (setq-local syntax-propertize-function #'seed7-mode-syntax-propertize)
 
+  ;; [:todo 2025-05-30, by Pierre Rouleau: Add ability to select whether
+  ;;   functions and procedures are listed together or separately.
+  ;;   For now, list them together, as it tests the regexp on files.]
+
   ;; iMenu Support / Speedbar Support
   (setq-local imenu-generic-expression
               (list
                (list "Enum"      seed7-enum-regexp 1)
                (list "Interface" seed7-interface-regexp 1)
                (list "Struct"    seed7-struct-regexp 1)
-               ;; (list "Proc/func" seed7-procfunc-regexp 5)
-               (list "Procedure" seed7-procedure-regexp 1)
-               (list "Function"  seed7-function-regexp  2)))
+               (list "Callable"  seed7-procfunc-regexp
+                     seed7-procfunc-regexp-item-name-group )
+               ;; (list "Procedure" seed7-procedure-regexp 1)
+               ;; (list "Function"  seed7-function-regexp  2)
+               ))
 
   ;; Seed7 Comments Control
   (seed7--set-comment-style seed7-uses-block-comment)
