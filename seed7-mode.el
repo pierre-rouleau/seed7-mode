@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-30 07:14:51 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-30 07:34:34 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -3052,7 +3052,7 @@ N is: - :previous-non-empty for the previous non empty line,
                                  spec-list)
                      (string= (substring-no-properties (nth 1 spec-list))
                               "case "))
-                (nth 0 spec-list)
+                (- (nth 0 spec-list) seed7-indent-width)
               ;; if there are (other) statements above, line up the comment
               ;; according to the nature of the previous line as if the
               ;; current line was not a comment: re-use the logic of
