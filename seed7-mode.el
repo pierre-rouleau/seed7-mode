@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-29 22:51:15 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-30 07:14:51 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -2785,10 +2785,10 @@ N is: - :previous-non-empty for the previous non empty line,
               block-indent-column)))))))
 
 
-(defun seed7-line-inside-logic-check-expression-p (n &optional
-                                                     scope-begin-pos
-                                                     scope-end-pos
-                                                     dont-skip-comment-start)
+(defun seed7-line-inside-logic-check-expression (n &optional
+                                                   scope-begin-pos
+                                                   scope-end-pos
+                                                   dont-skip-comment-start)
   "Check if line N is inside a logic check expression.
 Return the indentation column of the space following the check keyword
 if line N is inside an array block, nil otherwise.
@@ -2810,13 +2810,13 @@ of scope where to search."
              (end-pos nil)
              (keep-searching t)
              (start-pos (seed7-to-previous-line-starts-with
-                         "\\(?:while\\|if\\|when\\)[[:blank:]]"
+                         "\\(?:while\\|if\\|elsif\\|when\\)[[:blank:]]"
                          scope-begin-pos))
              (keyword  (and start-pos
                             (seed7--current-line-nth-word 1)))
              (end-str (cond
                        ((string= keyword "while") " do")
-                       ((string= keyword "if")    " then")
+                       ((member  keyword '("if" "elsif")) " then")
                        ((string= keyword "when")  ":")
                        (t nil))))
         (when end-str
@@ -3188,9 +3188,9 @@ of a string."
          ((seed7--set (seed7-line-inside-parens-pair 0 begin-pos end-pos)
                       indent-column))
 
-         ((seed7--set (seed7-line-inside-logic-check-expression-p 0
-                                                                  begin-pos
-                                                                  end-pos)
+         ((seed7--set (seed7-line-inside-logic-check-expression 0
+                                                                begin-pos
+                                                                end-pos)
                       indent-column))
 
          ((seed7--set (seed7-line-inside-proc-argument-list-section 0
