@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-30 07:34:34 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-30 09:16:40 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -95,9 +95,10 @@
 ;;   - Seed7 Mode Syntax Table
 ;;   - Seed7 Mode Syntax Propertize Function
 ;;     - `seed7-mode-syntax-propertize'
-;; - Seed7 Keywords
+;; - Seed7 Keyword Regexp
 ;;    - Seed7 Tokens
 ;;      - Seed7 Comments Control
+;;      - Seed7 Basic Element Regexp
 ;;      - Seed7 Float Literals
 ;;      - Seed7 Numbers with Exponents
 ;;      - Seed7 BigInteger Literals
@@ -117,9 +118,8 @@
 ;;    - Seed7 Predefined Assignment Operators
 ;;    - Seed7 Predefined Comparison Operators
 ;;    - Seed7 Other Predefined Operators
-;;      - Seed7 Arithmetic Operators
-;;      - Seed Other operators
-;;   - Seed7 Mode Syntax Propertize Function
+;;    - Seed7 Other Predefined Operators
+;;    - Seed7 Arithmetic Operators
 ;; - Seed7 Faces
 ;;   - `seed7-choose-color'
 ;; - Seed7 Font Locking Control
@@ -287,8 +287,8 @@ The name of the source code file is appended to the end of that line."
 
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;;* Seed7 Keywords
-;;  ==============
+;;* Seed7 Keyword Regexp
+;;  ====================
 ;;
 ;; First define private list of keyword strings (some may be combination of
 ;; Seed7 keywords) inside a constant.  Then use the powerful `rx-to-string'
@@ -298,17 +298,21 @@ The name of the source code file is appended to the end of that line."
 ;; specific Seed7 syntax and the constants will become variables to allow
 ;; the mode to dynamically adapt to the Seed7 extended systax.
 
-;;* Seed7 Tokens
-;;  ------------
+;;** Seed7 Tokens
+;;   ------------
 ;;
 ;; Ref: https://seed7.sourceforge.net/manual/tokens.htm
 
 ;; [:todo 2025-04-09, by Pierre Rouleau: Complete the syntax for floating point numbers.]
 
-;;** Seed7 Comments Control
-(defconst seed7--line-comment-regexp
+;;*** Seed7 Comments Control
+
+(defconst seed7--line-comment-re
   "[^[:digit:]]\\(#.*\\)$"
   "Single line comment in group 1.")
+
+
+;;*** Seed7 Basic Element Regexp
 
 (defconst seed7--whitespace-re
   "[[:space:]
@@ -322,9 +326,20 @@ The name of the source code file is appended to the end of that line."
 (defconst seed7--bracket-re
   "[])(}{[]")
 
-(defconst seed7-identifier-regexp
-  "\\(\\_<[[:alpha:]_][[:alnum:]_]*\\_>\\)"
-  "A complete, valid name identifier.")
+(defconst seed7--non-capturing-identifier-re
+  "\\(?:\\_<[[:alpha:]_][[:alnum:]_]*\\_>\\)"
+  "A complete, valid name identifier. No capturing group.")
+
+(defconst seed7-identifier-re
+  (format "\\(%s\\)" seed7--non-capturing-identifier-re)
+  "A complete, valid name identifier. One capturing group.")
+
+(defconst seed7-type-identifier-re
+  (format "\\(%s\\(?:[[:blank:]]+?%s\\)??\\)"
+          seed7--non-capturing-identifier-re
+          seed7--non-capturing-identifier-re)
+  "A complete, valid type identifier name with one or 2 identifiers.
+Has only one capturing group.")
 
 (defconst seed7--special-char-re
   "[-!$%&*+,\\./:;<=>?@\\^`|~]"
@@ -339,19 +354,22 @@ The name of the source code file is appended to the end of that line."
                             seed7--number-separator-re)
   "Seed7 integer in group 1.")
 
-;; ** Seed7 Float Literals
+
+;;*** Seed7 Float Literals
+
 (defconst seed7-float-number-re
   "[0-9]+\\.[0-9]+\\(?:\\(?:[eE][+-]?\\)?[0-9]+\\)?"
   "Seed7 float number in group 0.")
 
-;; ** Seed7 Numbers with Exponents
+
+;;*** Seed7 Numbers with Exponents
 
 (defconst seed7-number-with-exponent-re
   "[0-9]+[eE][+-]?[0-9]+"
   "Literal number with exponent.  Does not reject integer with negative exponent.")
 
 
-;;** Seed7 BigInteger Literals
+;;*** Seed7 BigInteger Literals
 ;;
 ;; Ref: https://seed7.sourceforge.net/manual/tokens.htm#BigInteger_literals
 ;;
@@ -367,7 +385,7 @@ The name of the source code file is appended to the end of that line."
                                seed7--number-separator-re
                                "\\_>"))
 
-;;** Seed7 Integer Literals
+;;*** Seed7 Integer Literals
 ;;
 ;; Ref: https://seed7.sourceforge.net/manual/tokens.htm#Integer_literals
 ;;
@@ -417,8 +435,8 @@ The name of the source code file is appended to the end of that line."
                                              "(\\(?:"
                                              "_\\)[^#0-9a-zA-z]"))
 
-;;* Seed7 Pragmas
-;;  -------------
+;;** Seed7 Pragmas
+;;   -------------
 ;;
 ;; Ref: https://thomasmertes.github.io/Seed7Home/manual/decls.htm#Pragmas
 
@@ -444,8 +462,8 @@ The name of the source code file is appended to the end of that line."
            `(: (or ,@seed7--pragma-keywords)))
           "\\_>"))
 
-;;* Seed7 include
-;;  -------------
+;;** Seed7 include
+;;   -------------
 ;;
 ;; The very first include statement requires a leading '$' but not
 ;; the following ones."
@@ -453,8 +471,8 @@ The name of the source code file is appended to the end of that line."
   "^\\(\\$? *\\(?:include\\)\\) ")
 
 
-;;* Seed7 keywords used in statements
-;;  ---------------------------------
+;;** Seed7 keywords used in statements
+;;   ---------------------------------
 ;;
 ;; All keywords a re listed here, but some are commented out because
 ;; they are part of another list below.  The ones left are the ones that
@@ -489,8 +507,8 @@ The name of the source code file is appended to the end of that line."
           "\\_>"))
 
 
-;;* Seed7 is-statemement keywords
-;;  -----------------------------
+;;** Seed7 is-statemement keywords
+;;   -----------------------------
 ;;
 ;; These keywords are exclusively used following the 'is' keyword.
 ;;
@@ -506,8 +524,8 @@ The name of the source code file is appended to the end of that line."
           (rx-to-string
            `(: (or ,@seed7-is-statement-keywords)))))
 
-;;* Seed7 keywords used in middle of statements
-;;  -------------------------------------------
+;;** Seed7 keywords used in middle of statements
+;;   -------------------------------------------
 
 (defconst seed7--in-middle-statement-keywords
   '("begin"
@@ -531,8 +549,8 @@ The name of the source code file is appended to the end of that line."
           "\\_>"))
 
 
-;;* Seed7 statement enclosing keywords
-;;  ----------------------------------
+;;** Seed7 statement enclosing keywords
+;;   ----------------------------------
 ;;
 
 (defconst seed7--block-start-keywords
@@ -567,8 +585,8 @@ The name of the source code file is appended to the end of that line."
            `(: (or ,@seed7--statement-enclosing-keywords)))
           "\\_>"))
 
-;;* Seed7 declaration introduction keywords
-;;  ---------------------------------------
+;;** Seed7 declaration introduction keywords
+;;   ---------------------------------------
 
 (defconst seed7--declaration-intro-keywords
   '("const"
@@ -586,8 +604,8 @@ The name of the source code file is appended to the end of that line."
           "\\_>"))
 
 
-;;* Seed7 Predefined Types
-;;  ----------------------
+;;** Seed7 Predefined Types
+;;   ----------------------
 
 (defconst seed7--predefined-types
   '("array"
@@ -637,8 +655,8 @@ The name of the source code file is appended to the end of that line."
            `(: (or ,@seed7--predefined-types)))
           "\\_>"))
 
-;;* Seed7 Predefined Constants
-;;  -------------------------
+;;** Seed7 Predefined Constants
+;;   --------------------------
 
 (defconst seed7--predefined-constants
   '("E"
@@ -659,8 +677,8 @@ The name of the source code file is appended to the end of that line."
            `(: (or ,@seed7--predefined-constants)))
           "\\_>"))
 
-;;* Seed7 Predefined Variables
-;;  --------------------------
+;;** Seed7 Predefined Variables
+;;   --------------------------
 
 (defconst seed7--predefined-variables
   '(
@@ -682,8 +700,8 @@ The name of the source code file is appended to the end of that line."
            `(: (or ,@seed7--predefined-variables)))
           "\\_>"))
 
-;;* Seed7 Predefined errinfo value
-;;  ------------------------------
+;;** Seed7 Predefined errinfo value
+;;   ------------------------------
 (defconst seed7--errinfo-values
   '(
     "OKAY_NO_ERROR"
@@ -708,8 +726,8 @@ The name of the source code file is appended to the end of that line."
            `(: (or ,@seed7--errinfo-values)))
           "\\_>"))
 
-;;* Seed7 Operator Symbols
-;;  ----------------------
+;;** Seed7 Operator Symbols
+;;   ----------------------
 
 ;; [:todo 2025-04-10, by Pierre Rouleau: categorize 'noop' according to Seed7 spec once I find it ]
 (defconst seed7--operator-symbols
@@ -741,8 +759,8 @@ The name of the source code file is appended to the end of that line."
           "\\_>"))
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;;* Seed7 Predefined Assignment Operators
-;;  -------------------------------------
+;;** Seed7 Predefined Assignment Operators
+;;   -------------------------------------
 ;;
 ;; Ref: https://seed7.sourceforge.net/faq.htm#syntax_highlighting
 ;;
@@ -764,8 +782,8 @@ The name of the source code file is appended to the end of that line."
   "\\(?:\\(?:[+*/&|@-]\\)\\|\\(?:<<\\|>>\\|><\\)\\)?:="
   "Symbol is in group 0.")
 
-;;* Seed7 Predefined Comparison Operators
-;;  -------------------------------------
+;;** Seed7 Predefined Comparison Operators
+;;   -------------------------------------
 ;;
 ;; Ref: https://seed7.sourceforge.net/faq.htm#syntax_highlighting
 ;;
@@ -776,8 +794,8 @@ The name of the source code file is appended to the end of that line."
   "Symbol is in group 0.")
 
 
-;;* Seed7 Other Predefined Operators
-;;  --------------------------------
+;;** Seed7 Other Predefined Operators
+;;   --------------------------------
 ;;
 ;; Ref: https://seed7.sourceforge.net/faq.htm#syntax_highlighting
 ;;
@@ -1133,7 +1151,7 @@ Allows selecting similar colours for various systems."
    (cons seed7-base-x-big-number-re                  (list 1 ''seed7-number-face))
    (cons seed7-base-x-integer-re                     (list 1 ''seed7-integer-face))
    ;; identifiers
-   (cons seed7-identifier-regexp                     (list 1 ''seed7-identifier-face))
+   (cons seed7-identifier-re                     (list 1 ''seed7-identifier-face))
    ;; other numbers
    (cons seed7-float-number-re                       (list 0 ''seed7-float-face))
    (cons seed7-number-with-exponent-re               (list 0 ''seed7-integer-face))
@@ -1345,16 +1363,17 @@ Return found position or nil if nothing found."
 
 (defconst seed7-procfunc-regexp
   (format
-   "^[[:space:]]*const%s+\\(\\(func \\|proc\\)\\)\\([[:alpha:]][[:alnum:]_]+\\)?%s?:\\(?: \\((attr%s?+[[:alnum:]_]+)\\)\\)?%s*\\([[:alpha:]][[:alnum:]_]+\\)?%s*?is%s+\\(func\\|return\\|forward;\\|action%s\".+\";\\)"
-   ;;                 %    G1 G2                   G3                           %           G4     %                     %      G5                           %     %    G6                                %
-   ;;                 1                                                         2                  3                     4                                   5     6                                      7
+   "^[[:space:]]*const%s+\\(\\(func \\|proc\\)\\)%s?%s?:\\(?: \\((attr%s?+[[:alnum:]_]+)\\)\\)?%s*\\([[:alpha:]][[:alnum:]_]+\\)?%s*?is%s+\\(func\\|return\\|forward;\\|action%s\".+\";\\)"
+   ;;                 %    G1 G2                 G3 %           G4    %                        %    G5                           %     %    G6                                %
+   ;;                 1                          %2 3                 4                        5                                 6     7                                      8
    seed7--whitespace-re                 ; 1
-   seed7--whitespace-re                 ; 2
+   seed7-type-identifier-re             ; 2
    seed7--whitespace-re                 ; 3
    seed7--whitespace-re                 ; 4
-   seed7--anychar-re                    ; 5
-   seed7--whitespace-re                 ; 6
-   seed7--whitespace-re)                ; 7
+   seed7--whitespace-re                 ; 5
+   seed7--anychar-re                    ; 6
+   seed7--whitespace-re                 ; 7
+   seed7--whitespace-re)                ; 8
   "Regexp identifying beginning of procedures and functions.
 Group 1: \"proc\" or \"func \"
 Group 2: \"proc\" or \"func \"
