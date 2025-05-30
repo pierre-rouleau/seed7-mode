@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-30 15:09:05 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-30 17:01:52 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -84,9 +84,6 @@
 ;;        defun to allow marking the block just like procedure and functions.
 ;; # 08  Indentation inside arrays needs improvement: the nesting inside
 ;;       parens is not done yet.
-;; # 09  Add ability to extract operator function names, also providing ability
-;;       to detect them, list them and auto-indent them properly.
-;;       This currently does not work.
 ;; ]
 ;;
 ;;
@@ -331,24 +328,32 @@ The name of the source code file is appended to the end of that line."
 (defconst seed7--bracket-re
   "[])(}{[]")
 
-(defconst seed7--non-capturing-identifier-re
+(defconst seed7--non-capturing-name-identifier-re
   "\\(?:\\_<[[:alpha:]_][[:alnum:]_]*\\_>\\)"
   "A complete, valid name identifier. No capturing group.")
 
-(defconst seed7-identifier-re
-  (format "\\(%s\\)" seed7--non-capturing-identifier-re)
+(defconst seed7-name-identifier-re
+  (format "\\(%s\\)" seed7--non-capturing-name-identifier-re)
   "A complete, valid name identifier. One capturing group.")
 
 (defconst seed7-type-identifier-re
   (format "\\(%s\\(?:[[:blank:]]+?%s\\)??\\)"
-          seed7--non-capturing-identifier-re
-          seed7--non-capturing-identifier-re)
+          seed7--non-capturing-name-identifier-re
+          seed7--non-capturing-name-identifier-re)
   "A complete, valid type identifier name with one or 2 identifiers.
 Has only one capturing group.")
 
 (defconst seed7--special-char-re
   "[-!$%&*+,\\./:;<=>?@\\^`|~]"
   "Any one of the special characters.")
+
+(defconst seed7--non-capturing-special-identifier-re
+  (format "\\(?:\\_<%s+?\\_>\\)" seed7--special-char-re)
+  "A complete, valid Seed7 special identifier. Non capturing.")
+
+(defconst seed7-special-identifier-re
+  (format "\\(%s\\)" seed7--non-capturing-special-identifier-re)
+  "A complete, valid Seed7 special identifier. One capturing group.")
 
 (defconst seed7--number-separator-re
   "[]!$%&*+,\\./:;<=>?@\\^`|~ )(}{ -[]")
@@ -1092,7 +1097,7 @@ Allows selecting similar colours for various systems."
   :group 'seed7-faces)
 
 ;; --
-(defface seed7-identifier-face
+(defface seed7-name-identifier-face
   `((((class grayscale) (background light))
      (:background "Gray90" :weight bold))
     (((class grayscale) (background dark))
@@ -1156,7 +1161,7 @@ Allows selecting similar colours for various systems."
    (cons seed7-base-x-big-number-re                  (list 1 ''seed7-number-face))
    (cons seed7-base-x-integer-re                     (list 1 ''seed7-integer-face))
    ;; identifiers
-   (cons seed7-identifier-re                     (list 1 ''seed7-identifier-face))
+   (cons seed7-name-identifier-re                    (list 1 ''seed7-name-identifier-face))
    ;; other numbers
    (cons seed7-float-number-re                       (list 0 ''seed7-float-face))
    (cons seed7-number-with-exponent-re               (list 0 ''seed7-integer-face))
@@ -1376,42 +1381,37 @@ Move point."
 ;;** Seed7 Procedure/Function Regular Expressions
 ;;   --------------------------------------------
 
-;; [:todo 2025-05-30, by Pierre Rouleau: Add ability to extract name of
-;;       operator functions.  Currently the identifiers are not geared
-;;       to match those. ]
-
-
 (defconst seed7-procfunc-regexp
   (format
-   "^[[:space:]]*const%s+\\(\\(func \\|proc\\)\\)%s?%s?:\\(?:%s+?\\(?:(%s?+)\\)\\)?%s*\\(%s\\)\\(?:%s(%s?+)\\)?%s*?is%s+\\(func\\|return\\|forward;\\|action%s\".+\";\\)"
-   ;;                 %    G1 G2                 G3 %        %         %           %   G4%         %  %        %     %    G5                                %
-   ;;                 1                          %2 3        4         5           6     7         8  9        10    11                                     12
+   "^[[:space:]]*const%s+\\(func \\|proc\\)%s?%s?:\\(?:%s+?\\(?:(%s?+)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s?+)\\)?%s*?is%s+\\(func\\|return\\|forward;\\|action%s\".+\";\\)"
+   ;;                 %    G1              G2 %        %         %           %   G3%    %         %  %        %     %    G4                                %
+   ;;                 1                    %2 3        4         5           6     7    8         9  10       11    12                                     13
 
-   seed7--whitespace-re                 ; 1
-   seed7-type-identifier-re             ; 2
-   seed7--whitespace-re                 ; 3
-   seed7--whitespace-re                 ; 4
-   seed7--anychar-re                    ; 5
-   seed7--whitespace-re                 ; 6
-   seed7--non-capturing-identifier-re   ; 7
-   seed7--whitespace-re                 ; 8
-   seed7--anychar-re                    ; 9
-   seed7--anychar-re                    ; 10
-   seed7--whitespace-re                 ; 11
-   seed7--whitespace-re)                ; 12
+   seed7--whitespace-re                       ; 1
+   seed7-type-identifier-re                   ; 2
+   seed7--whitespace-re                       ; 3
+   seed7--whitespace-re                       ; 4
+   seed7--anychar-re                          ; 5
+   seed7--whitespace-re                       ; 6
+   seed7--non-capturing-name-identifier-re    ; 7
+   seed7--non-capturing-special-identifier-re ; 8
+   seed7--whitespace-re                       ; 9
+   seed7--anychar-re                          ; 10
+   seed7--anychar-re                          ; 11
+   seed7--whitespace-re                       ; 12
+   seed7--whitespace-re)                      ; 13
   "Regexp identifying beginning of procedures and functions.
 Group 1: \"proc\" or \"func \"
-Group 2: \"proc\" or \"func \"
-Group 3: The func return type.  May be empty.
-Group 4: The func or proc name. May be empty in a library file.
-Group 5: - \"func\" for proc or function that ends with \"end func\".
+Group 2: The func return type.  May be empty.
+Group 3: The func or proc name.
+Group 4: - \"func\" for proc or function that ends with \"end func\".
          - \"return\" for a func that only has a return statement.
          - \"forward\" for a forward declaration.
          - \"action ACTION\" for an action function." )
 
-(defconst seed7-procfunc-regexp-item-type-group 2)
-(defconst seed7-procfunc-regexp-item-name-group 4)
-(defconst seed7-procfunc-regexp-tail-type-group 5)
+(defconst seed7-procfunc-regexp-item-type-group 1)
+(defconst seed7-procfunc-regexp-item-name-group 3)
+(defconst seed7-procfunc-regexp-tail-type-group 4)
 
 (defconst seed7-procfunc-end-regexp
   "end[[:blank:]]+func;"
