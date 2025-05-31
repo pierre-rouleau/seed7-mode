@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-31 18:30:16 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-31 19:51:01 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1489,7 +1489,7 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
   "Regexp to detect end of procedure or long function. No group.")
 
 (defconst seed7-short-func-end-regexp
-  (format "^[[:blank:]]+?return\\(?:%s+?.+?\\)+?;?"
+  (format "^[[:blank:]]+?return\\(?:%s+?.+?\\)+?;"
           ;;                        %
           seed7--whitespace-re)
   "Regexp to detect end of short function.  No group.")
@@ -2793,10 +2793,8 @@ N is: - :previous-non-empty for the previous non empty line,
       - A negative number for previous lines: -1 previous, -2 line before..."
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
-      (let* ((line-start-pos (point))
-             (block-indent-column (progn
-                                    (skip-chars-forward " \t")
-                                    (current-column)))
+      (let* ((block-indent-column nil)
+             (line-start-pos (point))
              (line-end-pos (progn
                              (end-of-line)
                              (point)))
@@ -2809,6 +2807,7 @@ N is: - :previous-non-empty for the previous non empty line,
           (seed7-to-indent)
           (when (looking-at-p "\\(?:const\\|var\\) +?array +?.+?:.+?(")
             (setq block-start-pos (point))
+            (setq block-indent-column (current-column))
             (when (< block-start-pos line-start-pos block-end-pos line-end-pos)
               block-indent-column)))))))
 
@@ -2927,10 +2926,8 @@ N is: - :previous-non-empty for the previous non empty line,
       - A negative number for previous lines: -1 previous, -2 line before..."
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
-      (let* ((line-start-pos (point))
-             (block-indent-column (progn
-                                    (skip-chars-forward " \t")
-                                    (current-column)))
+      (let* ((block-indent-column nil)
+             (line-start-pos (point))
              (line-end-pos (progn
                              (end-of-line)
                              (point)))
@@ -2943,6 +2940,7 @@ N is: - :previous-non-empty for the previous non empty line,
           (seed7-to-indent)
           (when (looking-at-p "\\(?:const\\|var\\) +?set +?.+?:.+?{")
             (setq block-start-pos (point))
+            (setq block-indent-column (current-column))
             (when (< block-start-pos line-start-pos block-end-pos line-end-pos)
               block-indent-column)))))))
 
