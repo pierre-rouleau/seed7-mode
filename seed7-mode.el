@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-31 16:51:08 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-31 18:30:16 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -149,12 +149,7 @@
 ;;        an operator just at right of it.
 ;;  # 05  A sequence of 3 consecutive single quote is not handled by the
 ;;        syntax highlighting.
-;;  # 06  Some code sequences are still not handled properly by the tab
-;;        indentation control. It's almost complete but the logic expects
-;;        if/endif, do/repeat, while/endif, for/end-for, case/when statements
-;;        to end with a semicolon, but the semicolon is optional in Seed7.
-;;        You can disable auto-indent by setting `seed7-auto-indent' to nil.
-;;  # 07  The `seed7-to-block-backward' and `seed7-to-block-forward' can
+;;  # 06  The `seed7-to-block-backward' and `seed7-to-block-forward' can
 ;;        detect the other end when point is on the beginning or end line,
 ;;        but they fail when point is inside the block.
 ;;        I will fix that once I get the auto indentation working properly
@@ -640,12 +635,12 @@ Has only one capturing group.")
 ;;
 
 (defconst seed7--block-start-keywords
-  '("block"      ; "end block;"
-    "case"       ; "end case;"
+  '("block"      ; "end block"
+    "case"       ; "end case"
     "enum"
     "for"
     ;; "func"
-    "if"       ; "elsif"      "end if;"
+    "if"       ; "elsif"      "end if"
     ;; "repeat"      "until"
     "struct"
     "while"))
@@ -1490,11 +1485,11 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
 (defconst seed7-procfunc-regexp-tail-type-group 4)
 
 (defconst seed7-procfunc-end-regexp
-  "end[[:blank:]]+func;"
+  "end[[:blank:]]+func;?"
   "Regexp to detect end of procedure or long function. No group.")
 
 (defconst seed7-short-func-end-regexp
-  (format "^[[:blank:]]+?return\\(?:%s+?.+?\\)+?;"
+  (format "^[[:blank:]]+?return\\(?:%s+?.+?\\)+?;?"
           ;;                        %
           seed7--whitespace-re)
   "Regexp to detect end of short function.  No group.")
@@ -1850,25 +1845,29 @@ The regexp has 2 capture groups:
   (format "^\\(?:[[:space:]]*?\\(const[[:space:]]+?type:.+?[[:space:]]%s\\)\\|[[:space:]]+?\\(end %s;\\)\\)"
           keyword keyword))
 
+;; [:todo 2025-05-31, by Pierre Rouleau: Add support for hard tab after keyword
 (defun seed7--end-regxp-for (word1 word2 last-word)
   "Return regexps for end and start of block for specified arguments.
+Used when searching forward.
 
 - WORD1 : the first word
 - WORD2 : the second word
 - LAST-WORD: the last word.
 
-Return a regexp that searches for the start or end of the block.
-The start text is in group1, the end text is in group 2."
+The regexp has 2 or 3 groups:
+- group 1: block start text,
+- group 2: the block end text,
+- group 3: optional, a peer level clause."
   (cond
    ;; deal with special cases first
    ;; Get the regexp for searching a block. Each regex is a string with 2
    ;; capturing sections: match 1 is the start of the block, match 2 is the end.
    ((string= word1 "repeat")    "^[[:blank:]]+?\\(?:\\(repeat\\)\\|\\(until\\) \\)" )
    ((string= word1 "block")     "^[[:blank:]]+?\\(?:\\(block\\)\\|\\(end block\\)\\)" )
-   ((string= word1 "when")      "^[[:blank:]]+?\\(?:\\(case\\) \\|\\(end case;\\|when \\|otherwise\\)\\)")
-   ((string= word1 "otherwise") "^[[:blank:]]+?\\(?:\\(case \\|when \\)\\|\\(end case;\\)\\)")
-   ((string= word1 "elsif")     "^[[:blank:]]+?\\(?:\\(if \\)\\|\\(else\\|elsif \\|end if;\\)\\)")
-   ((string= word1 "else")      "^[[:blank:]]+?\\(?:\\(if \\)\\|\\(end if;\\)\\)")
+   ((string= word1 "when")      "^[[:blank:]]+?\\(?:\\(case \\)\\|\\(end case;?\\)\\|\\(when \\|otherwise\\)\\)")
+   ((string= word1 "otherwise") "^[[:blank:]]+?\\(?:\\(case \\)\\|\\(end case;?\\)\\)")
+   ((string= word1 "elsif")     "^[[:blank:]]+?\\(?:\\(if \\)\\|\\(end if;?\\)\\|\\((elsif \\|else\\)\\)")
+   ((string= word1 "else")      "^[[:blank:]]+?\\(?:\\(if \\)\\|\\(end if;?\\)\\)")
    ((string= word1 "const")
     (cond
      ((string= word2 "type")
@@ -1885,22 +1884,25 @@ The start text is in group1, the end text is in group 2."
    (t nil)))
 
 
+;; [:todo 2025-05-31, by Pierre Rouleau: Add support for hard tab after keyword
 (defun seed7--start-regxp-for (word1 word2)
   "Return a regexp to search the starting string block specified by the arguments.
+Used when searching backward.
 
 - WORD1 : the first word of the end statement.
 - WORD2 : the second word of the end statement.
 
 Return a regexp that searches for the start or end of the block.
-The start text is in group1, the end text is in group 2."
+The regexp has 2 or 3 groups:
+- group 1: block start text,
+- group 2: the block end text,
+- group 3: optional, a peer level clause."
   (cond
    ;; deal with special cases first
    ((not word1) "^\\(?:[[:space:]]*?\\(const[[:space:]]+?array[[:space:]]+?.+?:\\)\\|[[:space:]]+?\\();\\)\\)")
    ((string= word1 "until")     "^[[:blank:]]+?\\(?:\\(repeat\\)\\|\\(until\\) \\)")
-   ((string= word1 "when")      "^[[:blank:]]+?\\(?:\\(case \\|when \\|otherwise\\)\\|\\(end case;\\)\\)")
-   ((string= word1 "otherwise") "^[[:blank:]]+?\\(?:\\(case \\|when \\)\\|\\(end case;\\)\\)")
-   ((string= word1 "elsif")     "^[[:blank:]]+?\\(?:\\(if\\|elsif\\) \\|\\(end if;\\)\\)")
-   ((string= word1 "else")      "^[[:blank:]]+?\\(?:\\(if\\|elsif\\) \\|\\(end if;\\)\\)")
+   ((member  word1 '("when" "otherwise")) "^[[:blank:]]+?\\(?:\\(case \\)\\|\\(end case;?\\)\\|\\(when \\)\\)")
+   ((member  word1 '("elsif" "else"))     "^[[:blank:]]+?\\(?:\\(if \\)\\|\\(end if;?\\)\\|\\(elsif \\)\\)")
    ((string= word1 "end")
     (cond
      ((string= word2 "block")
@@ -1949,6 +1951,13 @@ Return found position or nil if nothing found."
                           (setq searching nil)
                           (setq found-position (point)))
                       (setq nesting (1- nesting))))
+
+                   ;; Found a peer level clause: stop if at nesting level 0
+                   ((match-string 3)
+                    (when (eq nesting 0)
+                      (setq searching nil)
+                      (setq found-position (point))))
+
                    ;; found nothing
                    (t (user-error "No match!")))
                 (user-error "NO match!"))))
@@ -1994,6 +2003,13 @@ Return found position if found, nil if nothing found."
                    ;; Found a block end text: entering a deeper nesting level.
                    ((match-string 2)
                     (setq nesting (1+ nesting)))
+
+                   ;; Found a peer level clause: stop if at nesting level 0
+                   ((match-string 3)
+                    (when (eq nesting 0)
+                      (setq searching nil)
+                      (setq found-position (point))))
+
                    ;; found nothing
                    (t (user-error "No match!")))
                 (user-error "NO match!"))))
@@ -2347,38 +2363,6 @@ result\\)"
 \\|\\(?:until \\)"
   "regexp for generic end of block.")
 
-;; (defun seed7-line-is-block-start (n &optional dont-skip-comment-start)
-;;   "Return t if line N is a block start, nil otherwise.
-;; N is: - :previous-non-empty for the previous non empty line,
-;;         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
-;;          is non-nil,
-;;       - 0 for the current line,
-;;       - A negative number for previous lines: -1 previous, -2 line before..."
-;;   (save-excursion
-;;     (and
-;;      (seed7-move-to-line n dont-skip-comment-start)
-;;      (seed7-line-starts-with 0 seed7-block-start-regexp)
-;;      (not (seed7-line-ends-with 0 "is .+;")))))
-
-;; (defun seed7-line-is-type-block-start (n)
-;;   "Return t if line N is a block start, nil otherwise.
-;; N is: - :previous-non-empty for the previous non empty line,
-;;       - 0 for the current line,
-;;       - A negative number for previous lines: -1 previous, -2 line before..."
-;;   (and (seed7-line-starts-with n "const type: ")
-;;        (not (seed7-line-ends-with n "is .+;"))))
-
-;; (defun seed7-line-is-section-start (n)
-;;   "Return t if line N is a section start, nil otherwise.
-;; N is: - :previous-non-empty for the previous non empty line,
-;;       - 0 for the current line,
-;;       - A negative number for previous lines: -1 previous, -2 line before..."
-;;   (seed7-line-starts-with
-;;    n
-;;    "\\(\
-;; elsif \\|\
-;; else\\|\
-;; exception\\)"))
 
 (defun seed7-line-is-block-end (n &optional dont-skip-comment-start)
   "Return t if line N is a block end, nil otherwise.
@@ -2443,20 +2427,20 @@ Does not move point, does not modify search match data."
       ;; Other lines are indented
       seed7-indent-width))
    ((string= header "begin")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end func;")
+    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end func;?")
         ;; The end func; lines up with begin
         0
       ;; Other lines are indented
       seed7-indent-width))
 
-   ;;-- if - elsif - else - end if;
+   ;;-- if - elsif - else - end if
    ((member header '("if "
                      "elsif "
                      "else"))
     (if (or
          (seed7--at-pos-looking-at-p line-n-indent-pos "elsif")
          (seed7--at-pos-looking-at-p line-n-indent-pos "else")
-         (seed7--at-pos-looking-at-p line-n-indent-pos "end if;"))
+         (seed7--at-pos-looking-at-p line-n-indent-pos "end if;?"))
         ;; The elsif/else/end if keywords line up with the if keyword
         0
       ;; Other lines are indented
@@ -2490,9 +2474,9 @@ Does not move point, does not modify search match data."
       ;; Other lines are indented
       seed7-indent-width))
 
-   ;;-- for - end for;
+   ;;-- for - end for
    ((string= header "for ")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end for;")
+    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end for;?")
         ;; until lines up with for
         0
       ;; Other lines are indented
@@ -2500,7 +2484,7 @@ Does not move point, does not modify search match data."
 
    ;;-- while - end while - elsif - end while
    ((string= header "while ")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end while;")
+    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end while;?")
         ;; until lines up with for
         0
       ;; Other lines are indented
@@ -2508,7 +2492,7 @@ Does not move point, does not modify search match data."
 
    ;;-- case - end case;
    ((string= header "case ")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end case;")
+    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end case;?")
         ;; until lines up with for
         0
       ;; Other lines are indented
@@ -2539,8 +2523,8 @@ Does not move point, does not modify search match data."
     seed7-indent-width)
 
    ((string= header "const type: ")
-    (if (or (seed7--at-pos-looking-at-p line-n-indent-pos "end struct;")
-            (seed7--at-pos-looking-at-p line-n-indent-pos "end enum;"))
+    (if (or (seed7--at-pos-looking-at-p line-n-indent-pos "end struct;?")
+            (seed7--at-pos-looking-at-p line-n-indent-pos "end enum;?"))
         ;; end struct/enum is indented once relative to the const type
         seed7-indent-width
       ;; the definitions are indented twice.
@@ -2575,64 +2559,42 @@ If it finds something it returns a list that holds the following information:
                 (keep-searching t))
             (while (and keep-searching
                         (not (bobp)))
-              (if (and (looking-at-p "elsif") ; elsif followed by end while without semi-colon
-                       (seed7--set (seed7-line-starts-with :previous-non-empty
-                                                           "end while[[:blank:]]*?[^;]")
-                                   block-start-indent-column))
-                  ;; line N is a elsif following an end-while
-                  ;; indent like the end while above
-                  ;; [:todo 2025-05-29, by Pierre Rouleau: temporary (?) hack
-                  ;; attempting to circumvent a weakness in Seed7.
-                  ;;
-                  ;;   The Seed7 language does definition is weak here:
-                  ;;   there's no specific end to the 'end while-elsif'
-                  ;;   block. Hopefully the language can be fixed or my
-                  ;;   understanding is invalid. ]
-                  (progn
-                    (setq line-n-indent-offset 0)
-                    (setq match-text "end while-elsif")
-                    (setq block-start-pos current-pos)
-                    (setq block-end-pos (save-excursion
-                                          (forward-line 2) ; dummy end of block
-                                          (point)))
-                    (setq keep-searching nil))
-                ;; otherwise, check the normal cases
-                (when (seed7-re-search-backward seed7-block-line-start-regexp)
-                  (setq match-text (match-string 1))
-                  (skip-chars-forward " \t")
-                  (setq block-start-pos (point))
-                  (setq block-start-indent-column (current-column))
-                  (setq block-end-pos (seed7--block-end-pos-for match-text))
-                  (setq block-start-pos2 (seed7-to-block-backward nil :dont-push-mark))
+              (when (seed7-re-search-backward seed7-block-line-start-regexp)
+                (setq match-text (match-string 1))
+                (skip-chars-forward " \t")
+                (setq block-start-pos (point))
+                (setq block-start-indent-column (current-column))
+                (setq block-end-pos (seed7--block-end-pos-for match-text))
+                (setq block-start-pos2 (seed7-to-block-backward nil :dont-push-mark))
 
-                  (if (and (< block-start-pos current-pos block-end-pos)
-                           ;; check if block start/end is consistent for those
-                           ;; that support it, exclude this check for others.
-                           ;; The check is important for type definition blocks
-                           ;; to deal with short type definitions that are not
-                           ;; blocks.
-                           (or
-                            (member match-text '("local"
-                                                 "begin"
-                                                 "result"
-                                                 "elsif "
-                                                 "else"
-                                                 "catch "
-                                                 "exception"))
-                            (eq block-start-pos block-start-pos2)))
-                      (progn
-                        (setq line-n-indent-offset (seed7--indent-offset-for
-                                                    match-text
-                                                    current-pos))
-                        (setq keep-searching nil))
-                    ;; found something that looks like a block, but either not
-                    ;; a real block or not the block that holds the line need
-                    ;; to search back further for a bigger block.  If
-                    ;; block-start-pos is not a column 0, then keep searching
-                    ;; above for the beginning of a larger block.
-                    (if (eq (current-column) 0)
-                        (setq keep-searching nil)
-                      (goto-char (1- block-start-pos)))))))
+                (if (and (< block-start-pos current-pos block-end-pos)
+                         ;; check if block start/end is consistent for those
+                         ;; that support it, exclude this check for others.
+                         ;; The check is important for type definition blocks
+                         ;; to deal with short type definitions that are not
+                         ;; blocks.
+                         (or
+                          (member match-text '("local"
+                                               "begin"
+                                               "result"
+                                               "elsif "
+                                               "else"
+                                               "catch "
+                                               "exception"))
+                          (eq block-start-pos block-start-pos2)))
+                    (progn
+                      (setq line-n-indent-offset (seed7--indent-offset-for
+                                                  match-text
+                                                  current-pos))
+                      (setq keep-searching nil))
+                  ;; found something that looks like a block, but either not
+                  ;; a real block or not the block that holds the line need
+                  ;; to search back further for a bigger block.  If
+                  ;; block-start-pos is not a column 0, then keep searching
+                  ;; above for the beginning of a larger block.
+                  (if (eq (current-column) 0)
+                      (setq keep-searching nil)
+                    (goto-char (1- block-start-pos))))))
             (when block-start-indent-column
               (list (+ block-start-indent-column
                        line-n-indent-offset)
@@ -3175,13 +3137,13 @@ N is: - :previous-non-empty for the previous non empty line,
     (let ((column nil))
       (if (or
            (seed7--set
-            (seed7-line-starts-with n "end func;"   dont-skip-comment-start)
+            (seed7-line-starts-with n "end func;?"   dont-skip-comment-start)
             column)
            (seed7--set
-            (seed7-line-starts-with n "end struct;" dont-skip-comment-start)
+            (seed7-line-starts-with n "end struct;?" dont-skip-comment-start)
             column)
            (seed7--set
-            (seed7-line-starts-with n "end enum;"   dont-skip-comment-start)
+            (seed7-line-starts-with n "end enum;?"   dont-skip-comment-start)
             column))
           ;; [:todo 2025-05-29, by Pierre Rouleau?: a more secure would move back
           ;; to the beginning of the block, take the indent there, move back to
