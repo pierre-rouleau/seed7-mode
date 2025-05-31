@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-30 17:01:52 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-05-31 16:51:08 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -31,24 +31,100 @@
 ;;  Use `outline-minor-mode' to hide all text except the section headings to
 ;;  get a quick overview of the structure of this code.
 
-;; Feature wish-list:
+;; Feature wish-list and status.
 ;;
-;; - Syntax and semantics support for Seed7 - done.
-;;   - keyword colorization - done.
-;; - Support comment:
-;;   - comment syntax: colorization, creation, deletion - done.
-;;   - hiding/showing comments: working but for 1 comment style only.
-;; - Indentation control: first implementation done.
-;;     - Supports automatic indentation of most code.
-;;     - In some cases no rule is available but should: an error
-;;       is raised and the code is not indented.
-;;       These will be fixed later.
-;; - Launch help on keywords, perhaps implement statement help
+;; =========================================== ===============================
+;; Feature                                     Status
+;; =========================================== ===============================
+;; FONTIFICATION
+;;
+;; Syntax and semantics support for Seed7      Mostly done.
+;; with fontification of Seed7 keywords and    Remaining problems listed below.
+;; syntactic elements.
+;;
+;; COMMENTS
+;;
+;; Comment support: rendering, commenting      Done.
+;; un-commenting code with `comment-dwim'.
+;;
+;; Selection of block or line-end comments:    Done. `seed7-toggle-comment-style'
+;; by customization and by dynamic command.    Toggles between the 2 types of
+;;                                             comments.
+;;
+;; Selection of comment types: box, aligned,   Done.
+;; multi-line, etc... as controlled by the
+;; `comment-style' customizable user-option
+;; variable.
+;;
+;; Hide/show comment toggle with the           Done.
+;; hide-cmnt.el package.
+;;
+;; NAVIGATION
+;; - Move point to the end of next function    Done: `seed7-end-of-defun'
+;;   or procedure.
+;; - Move point to the beginning of previous   Done: `seed7-beg-of-defun'
+;;   function or procedure.
+;; - Move point to the beginning of next       Done: `seed7-beg-of-next-defun'
+;;   function or procedure.
+;; - Move point to end of previous function    Not yet implemented here.
+;;   or procedure.                             Available in PEL.
+;; - Support of `beginning-of-defun' and       Done.  Silent and non-marking
+;;   `end-of-defun' conventional protocol      version of the functions are
+;;   to support other Emacs operations based   used.
+;;   on this ability.
+;; - Move to end/beginning of block.           Done. For most code blocks
+;;                                             inside functions and
+;;                                             procedures.  Can also handle
+;;                                             struct and enums. Will also
+;;                                             move to the multiple clauses of
+;;                                             if/elsif/else,
+;;                                             case/when/otherwise blocks.
+;;
+;; MARKING
+;; - C-M-h function/procedure mark.            Done. Use `seed7-mark-defun'
+;; - iedit-mode support, allowing              Done.  Very useful for code
+;;   selection of names in all buffer          refactoring.
+;;   or restricted to a single function        Install iedit-mode package
+;;   or procedure and modifications of all     for that.
+;;   of them.
+;;
+;; AUTO-INDENT
+;; - Automatic indentation of code and         Done. Please report any problem.
+;;   block comments with leading start         Auto indentation of function and
+;;   characters with auto-fill mode support.   /procedure code and argument
+;;                                             blocks, logic blocks and code
+;;                                             inside parens of the 4
+;;                                             shapes (), [], {} and <> is
+;;                                             supported and currently
+;;                                             imposed.
+;;                                             A potential improvement would
+;;                                             be to add customization for
+;;                                             this.
+;;                                             The `seed7-indent-width'
+;;                                             user-option, which defaults to
+;;                                             2, controls the indentation
+;;                                             width.
+;;
+;; Static checking/compilation                 Done. `seed7-compile' performs
+;;                                             the operation identified in the
+;;                                             `seed7-checker' and
+;;                                             `seed7-compiler' customizable
+;;                                             user options.
+;;
+;; seed7-mode key map.                         Done.
+;; Top Menu.                                   Done.
+;; imenu support                               Done.
+;; Speedbar support.                           Done.
+;;
+;; =========================================== ===============================
 
+
+;; Future:
+;; - Launch help on keywords, perhaps implement statement help
 ;; - Keyword Completion help.
-;; - Navigation help - underway.
+;; - Navigation help - works from functions to functions, through most blocks.
 ;; - Template help for code creation
-;; - Commands to compile with error reporting - done.
+
 ;;
 ;; [:todo 2025-04-06, by Pierre Rouleau: Fix following problems:
 ;;  Known problems:
@@ -73,17 +149,17 @@
 ;;        an operator just at right of it.
 ;;  # 05  A sequence of 3 consecutive single quote is not handled by the
 ;;        syntax highlighting.
-;;  # 06  Several code sequences are still not handled properly by the tab
-;;        indentation control.  If this bothers you, disable it by setting
-;;        `seed7-auto-indent' to nil.
+;;  # 06  Some code sequences are still not handled properly by the tab
+;;        indentation control. It's almost complete but the logic expects
+;;        if/endif, do/repeat, while/endif, for/end-for, case/when statements
+;;        to end with a semicolon, but the semicolon is optional in Seed7.
+;;        You can disable auto-indent by setting `seed7-auto-indent' to nil.
 ;;  # 07  The `seed7-to-block-backward' and `seed7-to-block-forward' can
 ;;        detect the other end when point is on the beginning or end line,
 ;;        but they fail when point is inside the block.
 ;;        I will fix that once I get the auto indentation working properly
 ;;        for all code.  I will then have to decide if that's considered a
 ;;        defun to allow marking the block just like procedure and functions.
-;; # 08  Indentation inside arrays needs improvement: the nesting inside
-;;       parens is not done yet.
 ;; ]
 ;;
 ;;
@@ -1521,11 +1597,10 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
         (dotimes (_ n)
           (setq found-pos nil)
           (when (seed7-re-search-backward seed7-procfunc-regexp)
-            (setq found-pos (point))
-            (setq item-type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group)))
-            (setq item-name (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group)
-                                                         "?")))
-            (setq tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group))))))
+            (setq found-pos (point)
+                  item-type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                  item-name (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                  tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group))))))
       (if found-pos
           (seed7--move-and-mark
            original-pos
@@ -1563,12 +1638,10 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
           (setq found-pos nil) ; only last one is important
           (forward-char)
           (if (seed7-re-search-forward seed7-procfunc-regexp)
-              (progn
-                (setq found-pos (point))
-                (setq item-type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group)))
-                (setq item-name (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group)
-                                                        "?")))
-                (setq tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group))))
+              (setq found-pos (point)
+                    item-type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                    item-name (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                    tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
             (user-error (seed7--no-defun-found-msg-for n 'forward))))
         (when found-pos
           ;; When found, point is somewhere past the very beginning of the
@@ -1593,14 +1666,14 @@ Move inside the current if inside one, to the next if outside one.
   only when that many function or procedures are found.
   A value of zero means no action. A negative value is not allowed and raises
   a user error.
-- Unless SILENT, the function prints a message showing the name of the new
+- Unless SILENT, the function prints a message showing the item-name of the new
   found function or procedure.
 - When a new function or procedure is found the function pushes the mark
   unless DONT-PUSH-MARK is non-nil.  Pushing the mark allows future pop to
   go back to the original position with \\[universal-argument] \\[set-mark-command].
 - Supports shift selection."
   (interactive "^P")
-  ;; First identify the type of declaration by searching for the beginning
+  ;; First identify the item-type of declaration by searching for the beginning
   ;; of function or proc using the `seed7-procfunc-regexp' regexp
   ;; which has 6 groups
   (let* ((n (prefix-numeric-value n))
@@ -1608,11 +1681,11 @@ Move inside the current if inside one, to the next if outside one.
          (found-candidate nil)
          (final-pos nil)
          (found-pos nil)
-         (name nil)
-         (type nil)
+         (item-name nil)
+         (item-type nil)
          (tail-type nil)
-         (name2 nil)
-         (type2 nil)
+         (item-name2 nil)
+         (item-type2 nil)
          (tail-type2 nil))
     (when (< n 0)
       (user-error "Negative N (%d) not allowed!" n))
@@ -1629,10 +1702,9 @@ Move inside the current if inside one, to the next if outside one.
                  (setq final-pos
                        (seed7-re-search-forward seed7-procfunc-end-regexp))
                  (when (seed7-re-search-backward seed7-procfunc-regexp)
-                   (setq type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group)))
-                   (setq name (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group)
-                                                           "?")))
-                   (setq tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
+                   (setq item-type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                         item-name (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                         tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                    t)
                  (seed7-re-search-forward  seed7-procfunc-end-regexp)
                  (eq (point) final-pos))
@@ -1641,20 +1713,20 @@ Move inside the current if inside one, to the next if outside one.
           (save-excursion
             (when
                 (and
-                 (setq found-pos (seed7-re-search-forward seed7-short-func-end-regexp))
+                 (setq found-pos
+                       (seed7-re-search-forward seed7-short-func-end-regexp))
                  (when (seed7-re-search-backward seed7-procfunc-regexp)
-                   (setq type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group)))
-                   (setq name2 (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group)
-                                                            "?")))
-                   (setq tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
+                   (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                         item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                         tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                    t)
                  (seed7-re-search-forward seed7-short-func-end-regexp)
                  (eq (point) found-pos)
                  (< found-pos final-pos))
               (setq final-pos found-pos)
               (setq found-candidate t)
-              (setq name name2)
-              (setq type type2)
+              (setq item-name item-name2)
+              (setq item-type item-type2)
               (setq tail-type tail-type2)))
           ;; Search for next forward declaration
           (save-excursion
@@ -1663,38 +1735,36 @@ Move inside the current if inside one, to the next if outside one.
                  (setq found-pos
                        (seed7-re-search-forward seed7-forward-declaration-end-regexp))
                  (when (seed7-re-search-backward seed7-procfunc-regexp)
-                   (setq type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group)))
-                   (setq name2 (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group)
-                                                            "?")))
-                   (setq tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
+                   (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                         item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                         tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                    t)
                  (seed7-re-search-forward seed7-forward-declaration-end-regexp)
                  (eq (point) found-pos)
                  (< found-pos final-pos))
               (setq final-pos found-pos)
               (setq found-candidate t)
-              (setq name name2)
-              (setq type type2)
+              (setq item-name item-name2)
+              (setq item-type item-type2)
               (setq tail-type tail-type2)))
           ;; Search for next action handle function
           (save-excursion
             (when
                 (and
-                 (setq found-pos (seed7-re-search-forward
-                                  seed7-action-function-end-regexp))
+                 (setq found-pos
+                       (seed7-re-search-forward seed7-action-function-end-regexp))
                  (when (seed7-re-search-backward seed7-procfunc-regexp)
-                   (setq type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group)))
-                   (setq name2 (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group)
-                                                            "?")))
-                   (setq tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
+                   (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                         item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                         tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                    t)
                  (seed7-re-search-forward seed7-action-function-end-regexp)
                  (eq (point) found-pos)
                  (< found-pos final-pos))
               (setq final-pos found-pos)
               (setq found-candidate t)
-              (setq name name2)
-              (setq type type2)
+              (setq item-name item-name2)
+              (setq item-type item-type2)
               (setq tail-type tail-type2)))
 
           (if found-candidate
@@ -1707,7 +1777,7 @@ Move inside the current if inside one, to the next if outside one.
        final-pos
        dont-push-mark
        (unless silent
-         (seed7--show-info 'at-end-of name type tail-type))))))
+         (seed7--show-info 'at-end-of item-name item-type tail-type))))))
 
 ;;*** Seed7 Procedure/Function Navigation Mode Functions
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2109,18 +2179,27 @@ Return nil if nothing found, but do not move point."
 
 (defun seed7-move-to-line (n &optional dont-skip-comment-start)
   "Move point to the beginning of text of line N.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :dont-move : do not move point
+      - :previous-non-empty for the previous non empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
 Return nil if no appropriate line found.
 Return the column number of point if appropriate line found."
-  (if (eq n :previous-non-empty)
-      (seed7-to-previous-non-empty-line dont-skip-comment-start)
+  (cond
+   ((eq n :previous-non-empty)
+    (seed7-to-previous-non-empty-line dont-skip-comment-start))
+
+   ((integerp n)
     (when (eq (forward-line n) 0)
       (skip-chars-forward " \t")
-      (current-column))))
+      (current-column)))
+
+   ((eq n :dont-move)
+    (current-column))
+
+   (t (error "Invalid N: %S" n))))
 
 ;;*** Seed7 Indentation Base Indent-step Value Helper
 
@@ -2557,7 +2636,9 @@ If it finds something it returns a list that holds the following information:
             (when block-start-indent-column
               (list (+ block-start-indent-column
                        line-n-indent-offset)
-                    match-text block-start-pos block-end-pos))))
+                    (substring-no-properties match-text)
+                    block-start-pos
+                    block-end-pos))))
       (error nil))))
 
 (defun seed7-line-inside-until-logic-expression (n &optional
@@ -2703,13 +2784,18 @@ If it detects that it is outside, it returns nil."
 (defun seed7-line-inside-array-definition-block (n &optional
                                                    dont-skip-comment-start)
   "Check if line N is inside an array definition block.
-Return the indentation column of the array definition block statement
-if line N is inside an array block, nil otherwise.
 N is: - :previous-non-empty for the previous non empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
-      - A negative number for previous lines: -1 previous, -2 line before..."
+      - A negative number for previous lines: -1 previous, -2 line before...
+If nothing found it returns nil.
+If line N is inside an array block, it returns a list with the following
+information:
+- 0: indent column : indentation column the line N should use,
+- 1: string: \"array\"
+- 2: block start position,
+- 3: block end position."
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
       (let ((original-pos (point))
@@ -2727,7 +2813,10 @@ N is: - :previous-non-empty for the previous non empty line,
             (forward-sexp)
             ;; point is at block end
             (when (< block-start-pos original-pos (point))
-              block-indent-column)))))))
+              (list block-indent-column
+                    "array"
+                    block-start-pos
+                    (point)))))))))
 
 
 (defun seed7-line-at-endof-array-definition-block (n &optional
@@ -2764,13 +2853,18 @@ N is: - :previous-non-empty for the previous non empty line,
 (defun seed7-line-inside-set-definition-block (n &optional
                                                  dont-skip-comment-start)
   "Check if line N is inside a set definition block.
-Return the indentation column of the set definition block statement
-if line N is inside an array block, nil otherwise.
 N is: - :previous-non-empty for the previous non empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
         is non-nil,
       - 0 for the current line,
-      - A negative number for previous lines: -1 previous, -2 line before..."
+      - A negative number for previous lines: -1 previous, -2 line before...
+If nothing found it returns nil.
+If line N is inside a set set definition block, it returns a list with the
+following information:
+- 0: indent column : indentation column the line N should use,
+- 1: string: \"set\"
+- 2: block start position,
+- 3: block end position."
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
       (let ((original-pos (point))
@@ -2788,7 +2882,10 @@ N is: - :previous-non-empty for the previous non empty line,
             (forward-sexp)
             ;; point should be at block end
             (when (< block-start-pos original-pos (point))
-              block-indent-column)))))))
+              (list block-indent-column
+                    "set"
+                    block-start-pos
+                    (point)))))))))
 
 
 (defun seed7-line-inside-logic-check-expression (n &optional
@@ -2892,16 +2989,22 @@ N is: - :previous-non-empty for the previous non empty line,
                                         scope-end-pos
                                         dont-skip-comment-start)
   "Check if line N is inside a parens pair.
-Return the indentation column of the character after the opening parens
-if line N is between a parens pair, nil otherwise.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :dont-move to keep point at current position
+      - :previous-non-empty for the previous non empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
 If SCOPE-BEGIN-POS is non-nil specified, SCOPE-BEGIN-POS and
 SCOPE-END-POS are boundary positions identifying the beginning and end
-of scope where to search."
+of scope where to search.
+
+If nothing is found it returns nil.
+If the appropriate parens pair is found it returns a list of 4 elements:
+- 0: indentation column of the character after the opening parens
+- 1: string: parens pair found.
+- 2: position of the opening paren
+- 3: position of the end paren."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
     (error "Invalid boundaries: begin=%S, end=%S"
@@ -2951,7 +3054,95 @@ of scope where to search."
           ;; The inner block is in the first element of the candidate-list
           ;; Return the column position right after its opening paren.
           (goto-char (nth 1 (nth 0 candidate-list)))
-          (1+ (current-column)))))))
+          (list (1+ (current-column))
+                (nth 0 (nth 0 candidate-list))
+                (nth 1 (nth 0 candidate-list))
+                (nth 2 (nth 0 candidate-list))))))))
+
+
+(defun seed7-line-inside-parens-pair-column (n &optional
+                                               scope-begin-pos
+                                               scope-end-pos
+                                               dont-skip-comment-start)
+  "Check if line N is inside a parens pair.
+N is: - :dont-move to keep point at current position
+      - :previous-non-empty for the previous non empty line,
+        skipping lines with starting comments unless DONT-SKIP-COMMENT-START
+         is non-nil,
+      - 0 for the current line,
+      - A negative number for previous lines: -1 previous, -2 line before...
+If SCOPE-BEGIN-POS is non-nil specified, SCOPE-BEGIN-POS and
+SCOPE-END-POS are boundary positions identifying the beginning and end
+of scope where to search.
+
+If nothing is found it returns nil.
+If the appropriate parens pair is found it returns the indentation column
+of the character after the opening parens."
+  (car-safe (seed7-line-inside-parens-pair n
+                                           scope-begin-pos
+                                           scope-end-pos
+                                           dont-skip-comment-start)))
+
+(defun seed7-line-inside-nested-parens-pairs (n nested-depth
+                                                &optional
+                                                scope-begin-pos
+                                                scope-end-pos
+                                                dont-skip-comment-start)
+  "Check if line N is inside NESTED-DEPTH levels of parens pairs.
+N is: - :dont-move to keep point at current position
+      - :previous-non-empty for the previous non empty line,
+        skipping lines with starting comments unless DONT-SKIP-COMMENT-START
+         is non-nil,
+      - 0 for the current line,
+      - A negative number for previous lines: -1 previous, -2 line before...
+If nothing is found it returns nil.
+If the appropriate parens pair is found it returns a list of 4 elements:
+- 0: indentation column of the character after the opening parens of
+     the inner-most nesting.
+- 1: string: parens pair found.
+- 2: position of the opening paren of the inner-most nesting.
+- 3: position of the end paren of the the inner-most nesting.
+"
+  (save-excursion
+    (let ((inner-most-nesting-spec-list nil)
+          (spec-list nil))
+      (while (and (> nested-depth 0)
+                  (seed7--set
+                   (seed7-line-inside-parens-pair n
+                                                  scope-begin-pos
+                                                  scope-end-pos
+                                                  dont-skip-comment-start)
+                   spec-list))
+        (setq nested-depth (1- nested-depth)
+              ;; on next iteration don't move from the new position
+              n :dont-move)
+        ;; the new position is the start paren just found
+        (goto-char (nth 2 spec-list))
+        ;; remember information of the inner-most nesting
+        (unless inner-most-nesting-spec-list
+          (setq inner-most-nesting-spec-list spec-list)))
+      (when (eq nested-depth 0)
+            inner-most-nesting-spec-list))))
+
+(defun seed7-line-inside-nested-parens-pairs-column (n nested-depth
+                                                       &optional
+                                                       scope-begin-pos
+                                                       scope-end-pos
+                                                       dont-skip-comment-start)
+  "Check if line N is inside NESTED-DEPTH levels of parens pairs.
+N is: - :dont-move to keep point at current position
+      - :previous-non-empty for the previous non empty line,
+        skipping lines with starting comments unless DONT-SKIP-COMMENT-START
+         is non-nil,
+      - 0 for the current line,
+      - A negative number for previous lines: -1 previous, -2 line before...
+If nothing is found it returns nil.
+If the appropriate parens pair is found it return the indentation column of
+the character after the opening parens of the the inner-most nesting."
+  (car-safe (seed7-line-inside-nested-parens-pairs n nested-depth
+                                                   scope-begin-pos
+                                                   scope-end-pos
+                                                   dont-skip-comment-start)))
 
 ;; [:todo 2025-05-30, by Pierre Rouleau: test the following with/without comments]
 (defun seed7-indentation-of-previous-non-string-line ()
@@ -3038,10 +3229,8 @@ N is: - :previous-non-empty for the previous non empty line,
             ;; same level as the when keyword
             (if (and (seed7-line-starts-with :previous-non-empty
                                              "when[[:blank:]]")
-                     (seed7--set (seed7-line-inside-a-block 0)
-                                 spec-list)
-                     (string= (substring-no-properties (nth 1 spec-list))
-                              "case "))
+                     (seed7--set (seed7-line-inside-a-block 0) spec-list)
+                     (string= (nth 1 spec-list) "case "))
                 (- (nth 0 spec-list) seed7-indent-width)
               ;; if there are (other) statements above, line up the comment
               ;; according to the nature of the previous line as if the
@@ -3052,8 +3241,8 @@ N is: - :previous-non-empty for the previous non empty line,
                   (seed7-calc-indent
                    :treat-comment-line-as-code
                    (1+ recurse-count))
-                ;; If no rule was found for the code, force the indentation to 0
-                ;; as if there was no statements above.
+                ;; If no rule was found for the code, force the indentation to
+                ;; 0 as if there was no statements above.
                 (error 0))))
         ;; If there are no statements above indent a column 0.
         0))
@@ -3087,6 +3276,7 @@ of a string."
         (indent-step (seed7-line-indent-step :previous-non-empty))
         (first-word-on-line      (seed7--current-line-nth-word 1))
         (indent-column nil)
+        (indent-column2 nil)
         (spec-list nil))
     (cond
      ((> recurse-count 1)
@@ -3096,17 +3286,27 @@ of a string."
            (not treat-comment-line-as-code))
       (setq indent-column (seed7-comment-column recurse-count)))
 
+     ;; In a array or set definition, indent 1 level unless the line is
+     ;; inside 2 nested parens.  In that case align with the inside of
+     ;; the inner-most parens.
      ((or (seed7--set (seed7-line-inside-array-definition-block 0)
-                      indent-column)
+                      spec-list)
           (seed7--set (seed7-line-inside-set-definition-block 0)
-                      indent-column))
-      (setq indent-column (+ indent-column
-                             (* 2 seed7-indent-width))))
+                      spec-list))
+      (if (seed7--set (seed7-line-inside-nested-parens-pairs-column
+                       0 2
+                       (nth 2 spec-list)
+                       (nth 3 spec-list))
+                      indent-column2)
+          (setq indent-column indent-column2)
+        (setq indent-column (+ (nth 0 spec-list)
+                               seed7-indent-width))))
+
      ((seed7-line-isa-string 0)
       (save-excursion
         ;; if previous line starts with a string, align the string to it.
         (cond
-         ((seed7--set (seed7-line-inside-parens-pair 0)
+         ((seed7--set (seed7-line-inside-parens-pair-column 0)
                       indent-column))
          ((seed7-line-isa-string :previous-non-empty)
           (forward-line -1)
@@ -3149,11 +3349,7 @@ of a string."
         (setq indent-step 1))
        (t (setq indent-step 0))))
 
-     ;; ((seed7-line-isa-string :previous-non-empty)
-     ;;  (setq indent-column (seed7-indentation-of-previous-non-string-line)))
-
-     ((seed7--set (seed7-line-inside-a-block 0)
-                  spec-list)
+     ((seed7--set (seed7-line-inside-a-block 0) spec-list)
       ;; Inside a block.  Check if inside any special zones first.
       ;; For all of those extra checks limit the zone to the scope of the
       ;; current block to improve efficiency.
@@ -3175,7 +3371,9 @@ of a string."
                         (forward-line 2)
                         (point)))
         (cond
-         ((seed7--set (seed7-line-inside-parens-pair 0 begin-pos end-pos)
+         ((seed7--set (seed7-line-inside-parens-pair-column 0
+                                                            begin-pos
+                                                            end-pos)
                       indent-column))
 
          ((seed7--set (seed7-line-inside-logic-check-expression 0
@@ -3206,10 +3404,6 @@ of a string."
          (t (setq indent-column (nth 0 spec-list))))))
      ;; ---------------------------------------------------------------------------
 
-
-
-
-
      ((or (seed7--set (seed7-line-at-endof-array-definition-block
                        :previous-non-empty)
                       indent-column)
@@ -3221,7 +3415,7 @@ of a string."
      ;; When inside a paren block, adjust indent to the column
      ;; following the open paren; any of: ( { [ <
 
-     ((seed7--set (seed7-line-inside-parens-pair 0)
+     ((seed7--set (seed7-line-inside-parens-pair-column 0)
                   indent-column))
      ((and (string= first-word-on-line "end")
            (string= (seed7--current-line-nth-word 2) "block"))
