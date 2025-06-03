@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-03 11:28:00 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-03 14:51:42 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1591,6 +1591,21 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
       (push-mark original-pos))
     (goto-char end-pos)))
 
+
+(defun seed7--skip-block-comment-forward ()
+  "skip comment block utility.
+Only used by `seed7-skip-comment-forward'."
+  (search-forward "*)" nil :noerror)
+  (when (seed7-at-end-of-line-p)
+    (forward-line 1)
+    (seed7-to-indent)))
+
+(defun seed7--skip-line-end-comment ()
+  "skip line end comment utility.
+Only used by `seed7-skip-comment-forward'."
+  (forward-line 1)
+  (seed7-to-indent))
+
 (defun seed7-skip-comment-forward (&optional dont-push-mark)
   "Move point forward after comments and consecutive comment blocks."
   (let ((keep-searching t)
@@ -1607,43 +1622,40 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
           (cond
            ;; if inside line-end comment
            ((seed7-inside-line-end-comment-p)
-            (forward-line 1))
-           ;; if at the beginning of a block comment
-           ((looking-at-p "(\\*")
-            (search-forward "*)" nil :noerror))
+            (seed7--skip-line-end-comment))
            ;; if just before beginning of a block comment
            ((save-excursion
               (forward-char)
               (looking-at-p "(\\*"))
-            (search-forward "*)" nil :noerror))
+            (seed7--skip-block-comment-forward))
            ;; at the last character of block comment
            ((save-excursion
               (backward-char)
               (looking-at-p "\\*)"))
             (forward-char))
            ;; if inside a block comment
-           (t (search-forward "*)" nil :noerror))))
+           (t (seed7--skip-block-comment-forward))))
          ;;
-         ;; if before beginning of line end or block comment
-         ((save-excursion
-            (unless (seed7-at-end-of-line-p)
-              (seed7-to-indent)
-              (seed7-inside-comment-p)))
+         ;; if in trailing whitespace before line-end comment
+         ((seed7-inside-line-trailing-whitespace-before-line-end-comment-p)
+          (seed7--skip-line-end-comment))
+         ;;
+         ;; if in indent before a line or block comment
+         ((seed7-inside-line-indent-before-comment-p)
+          (seed7-to-indent)
           (cond
-           ((save-excursion
-              (seed7-to-indent)
-              (looking-at-p "#"))
-            (forward-line 1))
-           ((save-excursion
-              (seed7-to-indent)
-              (looking-at-p "(\\*"))
-            (search-forward "*)" nil :noerror))))
+           ((looking-at-p "#")
+            (seed7--skip-line-end-comment))
+           ((looking-at-p "(\\*")
+            (seed7--skip-block-comment-forward))))
          ;;
-         ;; if right before beginning of block comment
-         ((save-excursion
-            (forward-char)
-            (looking-at-p "(\\*"))
-          (search-forward "*)" nil :noerror)))
+         ;; if before beginning of line end comment
+         ((looking-at-p "#")
+          (seed7--skip-line-end-comment))
+         ;;
+         ;; if before beginning of block comment
+         ((looking-at-p "(\\*")
+          (seed7--skip-block-comment-forward)))
         ;;
         ;; Stop iterating if now outside of comment
         ;; and not before the beginning of another comment block
@@ -2091,13 +2103,10 @@ Return found position or nil if nothing found."
   (interactive "^")
   (let ((found-position nil))
     (save-excursion
-      (if (or (seed7-inside-comment-p)
-              (save-excursion
-                (forward-char)
-                (seed7-inside-comment-p))
-              (save-excursion
-                (skip-chars-forward " \t")
-                (seed7-inside-comment-p)))
+      (if (or
+           (seed7-inside-comment-p)
+           (seed7-inside-line-indent-before-comment-p)
+           (seed7-inside-line-trailing-whitespace-before-line-end-comment-p))
           ;; inside comment, skip comment
           (setq found-position
                 (seed7-skip-comment-forward dont-push-mark))
@@ -2372,6 +2381,16 @@ comment or not inside comment."
       (when (or (eq line-start-pos current-pos)
                 (< line-start-pos current-pos (point)))
         (seed7-inside-comment-p)))))
+
+(defun seed7-inside-line-trailing-whitespace-before-line-end-comment-p ()
+  "Return non-nil if point is in whitespace before line-end comment.
+Return nil otherwise."
+  (save-excursion
+    (unless (or (seed7-inside-comment-p)
+                (seed7-inside-line-indent-before-comment-p))
+      (skip-chars-forward " \t")
+      (and (looking-at-p "#")
+           (seed7-inside-comment-p)))))
 
 ;;*** Seed7 Indentation Code Character Search Utilities
 
