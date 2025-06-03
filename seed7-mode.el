@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-03 10:49:33 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-03 10:59:12 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -2158,10 +2158,9 @@ NO match at point %d, line %d for: %S"
 (defun seed7-to-block-backward (&optional at-beginning-of-line dont-push-mark)
   "Move backward from block end to its beginning.
 
-Move point to the beginning of the block keyword, unless
-AT-BEGINNING-OF-LINE optional argument is set; in that case move point to the
-beginning of the line.
-
+Move point to the beginning of the block keyword or comment.
+ If point moves to the indenting area as a result, and AT-BEGINNING-OF-LINE
+ optional argument is set, move point to the beginning of the line.
 Push mark unless DONT-PUSH-MARK is non-nil.  Supports shift-marking.
 Return found position if found, nil if nothing found."
   (interactive "^P")
@@ -2190,31 +2189,34 @@ Return found position if found, nil if nothing found."
                 (while searching
                   (if (seed7-re-search-backward regexp)
                       (cond
-                       ;; Found another block start text: exiting a nested level.
+                       ;; Found another block start text: exiting a nested
+                       ;; level.
                        ((match-string 1)
                         (if (eq nesting 0)
                             (progn
                               (setq searching nil)
                               (setq found-position (point)))
                           (setq nesting (1- nesting))))
-                       ;; Found a block end text: entering a deeper nesting level.
+                       ;; Found a block end text: entering a deeper nesting
+                       ;; level.
                        ((match-string 2)
                         (setq nesting (1+ nesting)))
-                       ;; Found a peer level clause: stop if at nesting level 0
+                       ;; Found peer level clause: stop if at nesting level 0
                        ((match-string 3)
                         (when (eq nesting 0)
                           (setq searching nil)
                           (setq found-position (point))))
                        ;; found nothing
                        (t (user-error
-                           "seed7-to-block-backward: No string match at %d for: %S"
+                           "seed7-to-block-backward: No match at %d for: %S"
                            (point)
                            regexp)))
                     (user-error
                      "seed7-to-block-backward: NO match at %d for: %S"
                      (point)
                      regexp))))
-            ;; Not inside a block. search for beginning of function or procedure.
+            ;; Not inside a block. search for beginning of function or
+            ;; procedure.
             ;; - Not pushing mark is also an indication to operate silently.
             (seed7-beg-of-defun nil dont-push-mark dont-push-mark)
             (setq found-position (point))))))
@@ -2222,7 +2224,8 @@ Return found position if found, nil if nothing found."
       (unless dont-push-mark (push-mark))
       (goto-char found-position)
       (unless at-beginning-of-line
-        (seed7-to-indent))
+        (when (seed7-inside-line-indent-before-comment-p)
+          (seed7-to-indent)))
       (point))))
 
 ;; ---------------------------------------------------------------------------
