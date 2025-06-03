@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-03 09:24:20 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-03 09:42:27 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -3440,7 +3440,7 @@ N is: - :previous-non-empty for the previous non empty line,
                (not (seed7-inside-comment-p (- (point) 1))))
            (or  (looking-at-p "#")
                 (looking-at-p "(\\*")))
-      (if (seed7-backward-char-pos  ";")
+      (if (seed7-line-code-ends-with :previous-non-empty ";")
           (let ((spec-list nil))
             ;; if just below a closed when case, leave the comment at the
             ;; same level as the when keyword
