@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-03 08:16:11 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-03 09:24:20 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -2546,10 +2546,9 @@ otherwise return nil."
           (setq limit 0)))
       found-column)))
 
-;; [:todo 2025-05-28, by Pierre Rouleau: Is this handling comments properly?]
-(defun seed7-line-ends-with (n regexp &optional dont-skip-comment-start)
-  "Return non-nil when line N non-white space ends with REGEXP.
-
+(defun seed7-line-code-ends-with (n regexp &optional dont-skip-comment-start)
+  "Return non-nil when line N non-white space code ends with REGEXP.
+When found it returns the position of the string found.
 Return nil otherwise.
 N is: - :previous-non-empty for the previous non empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
@@ -2558,11 +2557,22 @@ N is: - :previous-non-empty for the previous non empty line,
       - A negative number for previous lines: -1 previous, -2 line before..."
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
-      (end-of-line nil)
-      (re-search-backward regexp (save-excursion
-                                   (forward-line 0)
-                                   (point))
-                          :noerror))))
+      (let ((line-start-pos (save-excursion
+                              (forward-line 0)
+                              (point)))
+            (line-code-end-pos nil)
+            (found-pos nil))
+        ;; First move to the end of the line code, skipping comments.
+        (end-of-line nil)
+        (when (seed7-re-search-backward "[^ \t]" line-start-pos)
+          (forward-char)
+          (setq line-code-end-pos (point))
+          (when (seed7--set (seed7-re-search-backward regexp line-start-pos)
+                          found-pos)
+          (when (eq (+ found-pos
+                       (length (substring-no-properties (match-string 0))))
+                    line-code-end-pos)
+            found-pos)))))))
 
 ;;** Seed7 Indentation Line Type Checking Functions
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2874,7 +2884,7 @@ Invalid boundaries: begin=%S, end=%S"
           (if (seed7-re-search-backward "^[[:blank:]]+until " scope-begin-pos)
               (progn
                 (setq keep-searching nil)
-                (unless (seed7-line-ends-with 0 ";")
+                (unless (seed7-line-code-ends-with 0 ";")
                   ;; found an incomplete until statement remember position
                   (setq block-start-pos (point))
                   ;; Now search the end, which ends on a ';'.
