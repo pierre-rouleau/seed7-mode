@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-03 10:29:06 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-03 10:49:33 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -2369,7 +2369,8 @@ comment or not inside comment."
           (line-start-pos (save-excursion (forward-line 0)
                                           (point))))
       (seed7-to-indent)
-      (when (< line-start-pos current-pos (point))
+      (when (or (eq line-start-pos current-pos)
+                (< line-start-pos current-pos (point)))
         (seed7-inside-comment-p)))))
 
 ;;*** Seed7 Indentation Code Character Search Utilities
