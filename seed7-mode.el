@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-05-31 19:51:01 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-03 08:16:11 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -79,6 +79,11 @@
 ;;                                             move to the multiple clauses of
 ;;                                             if/elsif/else,
 ;;                                             case/when/otherwise blocks.
+;;                                             Also moves across comments:
+;;                                             from the beginning to end of
+;;                                             comment and vice-versa. Treats
+;;                                             consecutive lines of comments
+;;                                             as a single comment.
 ;;
 ;; MARKING
 ;; - C-M-h function/procedure mark.            Done. Use `seed7-mark-defun'
@@ -155,6 +160,7 @@
 ;;        I will fix that once I get the auto indentation working properly
 ;;        for all code.  I will then have to decide if that's considered a
 ;;        defun to allow marking the block just like procedure and functions.
+;;  # 07  Indentation control of comment between 2 when clauses sometime fail.
 ;; ]
 ;;
 ;;
@@ -258,7 +264,7 @@ Use line comments otherwise."
   :type 'boolean
   :safe #'booleanp)
 
-;;**Seed7 Code Navigation
+;;** Seed7 Code Navigation
 (defcustom seed7-verbose-navigation t
   "Seed7 navigation command print message on success when t.
 If you do not want these navigation success message printed set this to
@@ -1418,8 +1424,8 @@ Move point."
               ;; found in comment or string.  Skip and keep searching
               (forward-char (length (substring-no-properties (match-string 0))))
             ;; Found in code!
-            (setq found-pos (point))
-            (setq keep-searching nil))
+            (setq found-pos (point)
+                  keep-searching nil))
         ;; Not found. stop.
         (setq keep-searching nil)))
     found-pos))
@@ -1485,7 +1491,7 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
 (defconst seed7-procfunc-regexp-tail-type-group 4)
 
 (defconst seed7-procfunc-end-regexp
-  "end[[:blank:]]+func;?"
+  "end[[:blank:]]+func;"
   "Regexp to detect end of procedure or long function. No group.")
 
 (defconst seed7-short-func-end-regexp
@@ -1504,6 +1510,157 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
           seed7--whitespace-re
           seed7--whitespace-re)
   "Regexp to detect end of action handle function. No group.")
+
+;;** Seed7 Skipping Comments
+;;   -----------------------
+
+(defun seed7-skip-comment-backward (&optional dont-push-mark)
+  "Move point backward before comments and consecutive comment blocks.
+Push mark before moving unless DONT-PUSH-MARK is non-nil."
+  (let ((keep-searching t)
+        (original-pos (point))
+        (end-pos (point))
+        (pos nil))
+    (save-excursion
+      (while (and keep-searching
+                  (not (bobp)))
+        (cond
+         ;; if at the end of a comment block or line comment,
+         ;; or inside a block comment:
+         ((seed7-inside-comment-p)
+          (cond
+           ;; if at end of block comment
+           ((save-excursion
+              (backward-char)
+              (looking-at-p "\\*)"))
+            (search-backward "(*" nil :noerror)
+            (backward-char))
+           ;; if inside a line-end comment
+           ((seed7--set (seed7-inside-line-end-comment-p) pos)
+            (goto-char (1- pos)))
+           ;; if inside a block comment
+           (t (search-backward "(*" nil :noerror)
+              (backward-char))))
+         ;;
+         ;; If right after the block comment end
+         ((save-excursion
+            (backward-char 2)
+            (looking-at-p "\\*)"))
+          (search-backward "(*" nil :noerror)
+          (backward-char))
+         ;;
+         ;; If inside the trailing whitespace of a line
+         ;; following the end of a comment block
+         ((save-excursion
+            (seed7-to-line-last-non-whitespace)
+            (seed7-inside-comment-p))
+          (search-backward "(*" nil :noerror)
+          (backward-char)))
+        ;;
+        ;; Stop iterating if now outside of comment
+        ;; and not at indentation before a comment or,
+        ;;     at end of line inside a comment or after a comment
+        (cond
+         ;; in comment - keep searching
+         ((seed7-inside-comment-p))
+         ;; at line indent before comment - keep searching from end of
+         ;; previous line
+         ((save-excursion
+            (seed7-inside-line-indent-before-comment-p))
+          (forward-line 0)
+          (backward-char))
+         ;; at line end after block comment
+         ((save-excursion
+            (and (seed7-at-end-of-line-p)
+                 (progn
+                   (skip-chars-backward " \t")
+                   (backward-char (min (current-column) 2))
+                   (looking-at-p "\\*)"))))
+          (seed7-to-line-last-non-whitespace))
+         ;; otherwise stop
+         (t (setq end-pos (point)
+                  keep-searching nil)))))
+    ;; Push mark if required and return position.
+    (unless (or dont-push-mark
+                (eq original-pos end-pos))
+      (push-mark original-pos))
+    (goto-char end-pos)))
+
+(defun seed7-skip-comment-forward (&optional dont-push-mark)
+  "Move point forward after comments and consecutive comment blocks."
+  (let ((keep-searching t)
+        (original-pos (point))
+        (end-pos (point)))
+    (save-excursion
+      (while (and keep-searching
+                  (not (eobp)))
+        (cond
+         ;; if inside line-end comment,
+         ;; or beginning or block comment,
+         ;; or inside a block comment:
+         ((seed7-inside-comment-p)
+          (cond
+           ;; if inside line-end comment
+           ((seed7-inside-line-end-comment-p)
+            (forward-line 1))
+           ;; if at the beginning of a block comment
+           ((looking-at-p "(\\*")
+            (search-forward "*)" nil :noerror))
+           ;; if just before beginning of a block comment
+           ((save-excursion
+              (forward-char)
+              (looking-at-p "(\\*"))
+            (search-forward "*)" nil :noerror))
+           ;; at the last character of block comment
+           ((save-excursion
+              (backward-char)
+              (looking-at-p "\\*)"))
+            (forward-char))
+           ;; if inside a block comment
+           (t (search-forward "*)" nil :noerror))))
+         ;;
+         ;; if before beginning of line end or block comment
+         ((save-excursion
+            (unless (seed7-at-end-of-line-p)
+              (seed7-to-indent)
+              (seed7-inside-comment-p)))
+          (cond
+           ((save-excursion
+              (seed7-to-indent)
+              (looking-at-p "#"))
+            (forward-line 1))
+           ((save-excursion
+              (seed7-to-indent)
+              (looking-at-p "(\\*"))
+            (search-forward "*)" nil :noerror))))
+         ;;
+         ;; if right before beginning of block comment
+         ((save-excursion
+            (forward-char)
+            (looking-at-p "(\\*"))
+          (search-forward "*)" nil :noerror)))
+        ;;
+        ;; Stop iterating if now outside of comment
+        ;; and not before the beginning of another comment block
+        (cond
+         ((seed7-inside-comment-p))
+         ((and (seed7-at-end-of-line-p)
+               (save-excursion
+                 (forward-line 1)
+                 (seed7-to-indent)
+                 (seed7-inside-comment-p)))
+          (forward-char))
+         ((save-excursion
+            (unless (seed7-at-end-of-line-p)
+              (seed7-to-indent)
+              (seed7-inside-comment-p))))
+         (t (setq end-pos (point)
+                  keep-searching nil)))))
+    ;; Push mark if required and return position.
+    (unless (or dont-push-mark
+                (eq original-pos end-pos))
+      (push-mark original-pos))
+    (goto-char end-pos)))
 
 ;;** Seed7 Navigation by Procedure/Function
 ;;   --------------------------------------
@@ -1644,7 +1801,8 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
           ;; That search should always succeed.
           (if (seed7-re-search-backward seed7-procfunc-regexp)
               (setq found-pos (point))
-            (error "Logic error! Check regexp used: %s"
+            (error "seed7-beg-of-next-defun: logic error at %d. Check regexp used: %s"
+                   (point)
                    (symbol-name 'seed7-procfunc-regexp)))))
       (seed7--move-and-mark
            original-pos
@@ -1880,7 +2038,7 @@ The regexp has 2 or 3 groups:
      (t nil)))
    ;; then deal with general case: block, case, for, while.
    ((member word1 seed7--block-start-keywords)
-    (format "^[[:space:]]+\\(%s \\)\\|\\(end %s;?\\)" word1 word1))
+    (format "^[[:space:]]+\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word1 word1))
    (t nil)))
 
 
@@ -1911,7 +2069,7 @@ The regexp has 2 or 3 groups:
                       "for"
                       "if"
                       "while"))
-      (format"^[[:space:]]+?\\(%s \\)\\|\\(end %s;?\\)" word2 word2))
+      (format"^[[:space:]]+?\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word2 word2))
      ((member word2 '("enum"
                       "struct"))
       (seed7--type-regexp word2))
@@ -1926,44 +2084,67 @@ Handle function and forward declarations blocks.
 Push mark unless DONT-PUSH-MARK is non-nil.  Supports shift-marking.
 Return found position or nil if nothing found."
   (interactive "^")
-  (let* ((first-word  (seed7--current-line-nth-word 1))
-         (second-word (seed7--current-line-nth-word 2))
-         (last-word   (seed7--current-line-nth-word -1))
-         (regexp      (seed7--end-regxp-for first-word second-word last-word))
-         (found-position nil))
+  (let ((found-position nil))
     (save-excursion
-      (if regexp
-          (let ((nesting 0)
-                (searching t))
-            (while searching
-              ;; skip current line: move to end of line to search forward
-              (forward-line 1)
-              (if (seed7-re-search-forward regexp)
-                  (cond
-                   ;; found another block start text: nesting deeper.
-                   ((match-string 1)
-                    (setq nesting (1+ nesting)))
-
-                   ;; found block end text: exiting one nesting level.
-                   ((match-string 2)
-                    (if (eq nesting 0)
-                        (progn
+      (if (or (seed7-inside-comment-p)
+              (save-excursion
+                (forward-char)
+                (seed7-inside-comment-p))
+              (save-excursion
+                (skip-chars-forward " \t")
+                (seed7-inside-comment-p)))
+          ;; inside comment, skip comment
+          (setq found-position
+                (seed7-skip-comment-forward dont-push-mark))
+        ;; outside comment handle blocks, functions and procedures
+        (let* ((first-word  (seed7--current-line-nth-word 1))
+               (second-word (seed7--current-line-nth-word 2))
+               (last-word   (seed7--current-line-nth-word -1))
+               (regexp      (seed7--end-regxp-for first-word second-word last-word)))
+          (if regexp
+              ;; Inside a block: search with nesting handling.
+              (let ((nesting 0)
+                    (searching t))
+                ;; For the very first search, skip the current keyword by
+                ;; moving point to end of line.
+                ;; That skipping won't be necessary in the loop because each
+                ;; search moves the point after the match.
+                (end-of-line)
+                ;; The perform search, handing potential nesting.
+                (while searching
+                  (if (seed7-re-search-forward regexp)
+                      (cond
+                       ;; found another block start text: nesting deeper.
+                       ((match-string 1)
+                        (setq nesting (1+ nesting)))
+                       ;; found block end text: exiting one nesting level.
+                       ((match-string 2)
+                        (if (eq nesting 0)
+                            (progn
+                              (setq searching nil)
+                              (setq found-position (point)))
+                          (setq nesting (1- nesting))))
+                       ;; Found a peer level clause: stop if at nesting level 0
+                       ((match-string 3)
+                        (when (eq nesting 0)
                           (setq searching nil)
-                          (setq found-position (point)))
-                      (setq nesting (1- nesting))))
-
-                   ;; Found a peer level clause: stop if at nesting level 0
-                   ((match-string 3)
-                    (when (eq nesting 0)
-                      (setq searching nil)
-                      (setq found-position (point))))
-
-                   ;; found nothing
-                   (t (user-error "No match!")))
-                (user-error "NO match!"))))
-        ;; not pushing mark is also an indication to operate silently
-        (seed7-end-of-defun nil dont-push-mark dont-push-mark)
-        (setq found-position (point))))
+                          (setq found-position (point))))
+                       ;; found nothing
+                       (t (user-error
+                           "seed7-to-block-forward: \
+No match string at point %d, line %d for: %S"
+                           (point)
+                           (seed7-current-line-number)
+                           regexp)))
+                    (user-error "seed7-to-block-forward: \
+NO match at point %d, line %d for: %S"
+                                (point)
+                                (seed7-current-line-number)
+                                regexp))))
+            ;; Not inside a block: search for end of function or procedure.
+            ;; - Not pushing mark is also an indication to operate silently.
+            (seed7-end-of-defun nil dont-push-mark dont-push-mark)
+            (setq found-position (point))))))
     (when found-position
       (unless dont-push-mark (push-mark))
       (goto-char found-position))))
@@ -1979,49 +2160,64 @@ beginning of the line.
 Push mark unless DONT-PUSH-MARK is non-nil.  Supports shift-marking.
 Return found position if found, nil if nothing found."
   (interactive "^P")
-  (let* ((first-word (seed7--current-line-nth-word 1))
-         (second-word (seed7--current-line-nth-word 2))
-         (regexp      (seed7--start-regxp-for first-word second-word))
-         (found-position nil))
-    (save-excursion
-      (if regexp
-          (let ((nesting 0)
-                (searching t))
-            (while searching
-              ;; skip current line: move to beginning of current line
-              (forward-line 0)
-              (if (seed7-re-search-backward regexp)
-                  (cond
-                   ;; Found another block start text: exiting a nested level.
-                   ((match-string 1)
-                    (if (eq nesting 0)
-                        (progn
+
+  (let ((found-position nil))
+    (if (or (seed7-inside-comment-p)
+            (save-excursion
+              (skip-chars-backward " \t")
+              (backward-char)
+              (seed7-inside-comment-p)))
+        (setq found-position
+              (seed7-skip-comment-backward dont-push-mark))
+      (save-excursion
+        (let* ((first-word (seed7--current-line-nth-word 1))
+               (second-word (seed7--current-line-nth-word 2))
+               (regexp      (seed7--start-regxp-for first-word second-word)))
+          (if regexp
+              ;; Inside a block: search with nesting handling.
+              (let ((nesting 0)
+                    (searching t))
+                ;; For the very first search, skip the current keyword by
+                ;; moving point to beginning of line.
+                ;; That skipping won't be necessary in the loop because each
+                ;; search moves the point after the match.
+                (forward-line 0)
+                (while searching
+                  (if (seed7-re-search-backward regexp)
+                      (cond
+                       ;; Found another block start text: exiting a nested level.
+                       ((match-string 1)
+                        (if (eq nesting 0)
+                            (progn
+                              (setq searching nil)
+                              (setq found-position (point)))
+                          (setq nesting (1- nesting))))
+                       ;; Found a block end text: entering a deeper nesting level.
+                       ((match-string 2)
+                        (setq nesting (1+ nesting)))
+                       ;; Found a peer level clause: stop if at nesting level 0
+                       ((match-string 3)
+                        (when (eq nesting 0)
                           (setq searching nil)
-                          (setq found-position (point)))
-                      (setq nesting (1- nesting))))
-
-                   ;; Found a block end text: entering a deeper nesting level.
-                   ((match-string 2)
-                    (setq nesting (1+ nesting)))
-
-                   ;; Found a peer level clause: stop if at nesting level 0
-                   ((match-string 3)
-                    (when (eq nesting 0)
-                      (setq searching nil)
-                      (setq found-position (point))))
-
-                   ;; found nothing
-                   (t (user-error "No match!")))
-                (user-error "NO match!"))))
-        ;; not pushing mark is also an indication to operate silently
-        (seed7-beg-of-defun nil dont-push-mark dont-push-mark)
-        (setq found-position (point))))
+                          (setq found-position (point))))
+                       ;; found nothing
+                       (t (user-error
+                           "seed7-to-block-backward: No string match at %d for: %S"
+                           (point)
+                           regexp)))
+                    (user-error
+                     "seed7-to-block-backward: NO match at %d for: %S"
+                     (point)
+                     regexp))))
+            ;; Not inside a block. search for beginning of function or procedure.
+            ;; - Not pushing mark is also an indication to operate silently.
+            (seed7-beg-of-defun nil dont-push-mark dont-push-mark)
+            (setq found-position (point))))))
     (when found-position
       (unless dont-push-mark (push-mark))
       (goto-char found-position)
       (unless at-beginning-of-line
-        (forward-word)
-        (backward-word))
+        (seed7-to-indent))
       (point))))
 
 ;; ---------------------------------------------------------------------------
@@ -2119,7 +2315,53 @@ Use inside a `cond' clause to emphasize the check."
   (forward-line 0)
   (skip-chars-forward " \t"))
 
+(defun seed7-to-line-last-non-whitespace ()
+  "Move point to the last non-whitespace character of the line.
+Return it's position if found, nil if the line is empty."
+  (end-of-line)
+  ;; move back to the last non-white, but stay on the same line.
+  (re-search-backward "[^ \t\r\n]" (save-excursion
+                                     (forward-line 0)
+                                     (point))
+                      :noerror))
 
+(defun seed7-at-end-of-line-p ()
+  "Return non-nil if point is at end of line or whitespace before end of line.
+Return nil otherwise."
+  (save-excursion
+    (skip-chars-forward " \t")
+    (looking-at-p "\n")))
+
+
+(defun seed7-inside-line-end-comment-p ()
+  "Return non-nil if point is inside a line-end comment, nil otherwise.
+Specifically, it returns the position of the # character that starts the line
+comment if point is inside a block comment or nil if point is inside a block
+comment or not inside comment."
+  (when (seed7-inside-comment-p)
+    (save-excursion
+      (let ((end-pos (1+ (point)))
+            (keep-searching t)
+            (line-comment-start-pos nil))
+        (forward-line 0)
+        (while keep-searching
+          (if (search-forward "#" end-pos :noerror)
+              (when (and (seed7-inside-comment-p)
+                         (or (eq (current-column) 1)
+                             (save-excursion
+                               (backward-char 2)
+                               (not (seed7-inside-comment-p)))))
+                (setq line-comment-start-pos (1- (point))
+                      keep-searching nil))
+            (setq keep-searching nil)))
+        line-comment-start-pos))))
+
+
+(defun seed7-inside-line-indent-before-comment-p ()
+  "Return non-nil if point is between beginning of line and a comment."
+  (save-excursion
+    (seed7-to-indent)
+    (seed7-inside-comment-p)))
 
 ;;*** Seed7 Indentation Code Character Search Utilities
 
@@ -2402,7 +2644,7 @@ Move point."
     (seed7-to-next-line-starts-with "end block")
     (point))
 
-   (t (error "Block header unknown: %s" header))))
+   (t (error "Unsupported block header: %s" header))))
 
 (defun seed7--at-pos-looking-at-p (pos regexp)
   "Return non-nil if text at POS matches REGEXP, nil otherwise.
@@ -2427,7 +2669,7 @@ Does not move point, does not modify search match data."
       ;; Other lines are indented
       seed7-indent-width))
    ((string= header "begin")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end func;?")
+    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end func;")
         ;; The end func; lines up with begin
         0
       ;; Other lines are indented
@@ -2523,8 +2765,8 @@ Does not move point, does not modify search match data."
     seed7-indent-width)
 
    ((string= header "const type: ")
-    (if (or (seed7--at-pos-looking-at-p line-n-indent-pos "end struct;?")
-            (seed7--at-pos-looking-at-p line-n-indent-pos "end enum;?"))
+    (if (or (seed7--at-pos-looking-at-p line-n-indent-pos "end struct;")
+            (seed7--at-pos-looking-at-p line-n-indent-pos "end enum;"))
         ;; end struct/enum is indented once relative to the const type
         seed7-indent-width
       ;; the definitions are indented twice.
@@ -2547,61 +2789,59 @@ If it finds something it returns a list that holds the following information:
 - 2: block start position,
 - 3: block end position."
   (save-excursion
-    (condition-case nil
-        (when (seed7-move-to-line n dont-skip-comment-start)
-          (let ((current-pos (point))
-                (block-start-pos nil)
-                (block-start-pos2 nil)
-                (block-end-pos nil)
-                (match-text nil)
-                (block-start-indent-column nil)
-                (line-n-indent-offset nil)
-                (keep-searching t))
-            (while (and keep-searching
-                        (not (bobp)))
-              (when (seed7-re-search-backward seed7-block-line-start-regexp)
-                (setq match-text (match-string 1))
-                (skip-chars-forward " \t")
-                (setq block-start-pos (point))
-                (setq block-start-indent-column (current-column))
-                (setq block-end-pos (seed7--block-end-pos-for match-text))
-                (setq block-start-pos2 (seed7-to-block-backward nil :dont-push-mark))
+    (when (seed7-move-to-line n dont-skip-comment-start)
+      (let ((current-pos (point))
+            (block-start-pos nil)
+            (block-start-pos2 nil)
+            (block-end-pos nil)
+            (match-text nil)
+            (block-start-indent-column nil)
+            (line-n-indent-offset nil)
+            (keep-searching t))
+        (while (and keep-searching
+                    (not (bobp)))
+          (when (seed7-re-search-backward seed7-block-line-start-regexp)
+            (setq match-text (match-string 1))
+            (skip-chars-forward " \t")
+            (setq block-start-pos (point))
+            (setq block-start-indent-column (current-column))
+            (setq block-end-pos (seed7--block-end-pos-for match-text))
+            (setq block-start-pos2 (seed7-to-block-backward nil :dont-push-mark))
 
-                (if (and (< block-start-pos current-pos block-end-pos)
-                         ;; check if block start/end is consistent for those
-                         ;; that support it, exclude this check for others.
-                         ;; The check is important for type definition blocks
-                         ;; to deal with short type definitions that are not
-                         ;; blocks.
-                         (or
-                          (member match-text '("local"
-                                               "begin"
-                                               "result"
-                                               "elsif "
-                                               "else"
-                                               "catch "
-                                               "exception"))
-                          (eq block-start-pos block-start-pos2)))
-                    (progn
-                      (setq line-n-indent-offset (seed7--indent-offset-for
-                                                  match-text
-                                                  current-pos))
-                      (setq keep-searching nil))
-                  ;; found something that looks like a block, but either not
-                  ;; a real block or not the block that holds the line need
-                  ;; to search back further for a bigger block.  If
-                  ;; block-start-pos is not a column 0, then keep searching
-                  ;; above for the beginning of a larger block.
-                  (if (eq (current-column) 0)
-                      (setq keep-searching nil)
-                    (goto-char (1- block-start-pos))))))
-            (when block-start-indent-column
-              (list (+ block-start-indent-column
-                       line-n-indent-offset)
-                    (substring-no-properties match-text)
-                    block-start-pos
-                    block-end-pos))))
-      (error nil))))
+            (if (and (< block-start-pos current-pos block-end-pos)
+                     ;; check if block start/end is consistent for those
+                     ;; that support it, exclude this check for others.
+                     ;; The check is important for type definition blocks
+                     ;; to deal with short type definitions that are not
+                     ;; blocks.
+                     (or
+                      (member match-text '("local"
+                                           "begin"
+                                           "result"
+                                           "elsif "
+                                           "else"
+                                           "catch "
+                                           "exception"))
+                      (eq block-start-pos block-start-pos2)))
+                (progn
+                  (setq line-n-indent-offset (seed7--indent-offset-for
+                                              match-text
+                                              current-pos))
+                  (setq keep-searching nil))
+              ;; found something that looks like a block, but either not
+              ;; a real block or not the block that holds the line need
+              ;; to search back further for a bigger block.  If
+              ;; block-start-pos is not a column 0, then keep searching
+              ;; above for the beginning of a larger block.
+              (if (eq (current-column) 0)
+                  (setq keep-searching nil)
+                (goto-char (1- block-start-pos))))))
+        (when block-start-indent-column
+          (list (+ block-start-indent-column
+                   (or line-n-indent-offset 0))
+                (substring-no-properties match-text)
+                block-start-pos
+                block-end-pos))))))
 
 (defun seed7-line-inside-until-logic-expression (n &optional
                                                    scope-begin-pos
@@ -2619,7 +2859,8 @@ end or the until word.
 If it detects that it is outside, it returns nil."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
-    (error "Invalid boundaries: begin=%S, end=%S"
+    (error "seed7-line-inside-until-logic-expression: \
+Invalid boundaries: begin=%S, end=%S"
            scope-begin-pos scope-end-pos))
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
@@ -2665,7 +2906,8 @@ returns the indentation column of the return keyword.
 If it detects that it is outside, it returns nil."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
-    (error "Invalid boundaries: begin=%S, end=%S"
+    (error "seed7-line-inside-func-return-statement\
+Invalid boundaries: begin=%S, end=%S"
            scope-begin-pos scope-end-pos))
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
@@ -2709,7 +2951,8 @@ returns the indentation column of the procedure.
 If it detects that it is outside, it returns nil."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
-    (error "Invalid boundaries: begin=%S, end=%S"
+    (error "seed7-line-inside-proc-argument-list-section: \
+Invalid boundaries: begin=%S, end=%S"
            scope-begin-pos scope-end-pos))
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
@@ -2793,8 +3036,10 @@ N is: - :previous-non-empty for the previous non empty line,
       - A negative number for previous lines: -1 previous, -2 line before..."
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
-      (let* ((block-indent-column nil)
-             (line-start-pos (point))
+      (let* ((line-start-pos (point))
+             (block-indent-column (progn
+                                    (skip-chars-forward " \t")
+                                    (current-column)))
              (line-end-pos (progn
                              (end-of-line)
                              (point)))
@@ -2807,7 +3052,6 @@ N is: - :previous-non-empty for the previous non empty line,
           (seed7-to-indent)
           (when (looking-at-p "\\(?:const\\|var\\) +?array +?.+?:.+?(")
             (setq block-start-pos (point))
-            (setq block-indent-column (current-column))
             (when (< block-start-pos line-start-pos block-end-pos line-end-pos)
               block-indent-column)))))))
 
@@ -2866,7 +3110,8 @@ SCOPE-END-POS are boundary positions identifying the beginning and end
 of scope where to search."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
-    (error "Invalid boundaries: begin=%S, end=%S"
+    (error "seed7-line-inside-logic-check-expression: \
+Invalid boundaries: begin=%S, end=%S"
            scope-begin-pos scope-end-pos))
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
@@ -2926,8 +3171,10 @@ N is: - :previous-non-empty for the previous non empty line,
       - A negative number for previous lines: -1 previous, -2 line before..."
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
-      (let* ((block-indent-column nil)
-             (line-start-pos (point))
+      (let* ((line-start-pos (point))
+             (block-indent-column (progn
+                                    (skip-chars-forward " \t")
+                                    (current-column)))
              (line-end-pos (progn
                              (end-of-line)
                              (point)))
@@ -2940,7 +3187,6 @@ N is: - :previous-non-empty for the previous non empty line,
           (seed7-to-indent)
           (when (looking-at-p "\\(?:const\\|var\\) +?set +?.+?:.+?{")
             (setq block-start-pos (point))
-            (setq block-indent-column (current-column))
             (when (< block-start-pos line-start-pos block-end-pos line-end-pos)
               block-indent-column)))))))
 
@@ -2967,7 +3213,8 @@ If the appropriate parens pair is found it returns a list of 4 elements:
 - 3: position of the end paren."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
-    (error "Invalid boundaries: begin=%S, end=%S"
+    (error "seed7-line-inside-parens-pair: \
+Invalid boundaries: begin=%S, end=%S"
            scope-begin-pos scope-end-pos))
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
@@ -3135,13 +3382,13 @@ N is: - :previous-non-empty for the previous non empty line,
     (let ((column nil))
       (if (or
            (seed7--set
-            (seed7-line-starts-with n "end func;?"   dont-skip-comment-start)
+            (seed7-line-starts-with n "end func;"   dont-skip-comment-start)
             column)
            (seed7--set
-            (seed7-line-starts-with n "end struct;?" dont-skip-comment-start)
+            (seed7-line-starts-with n "end struct;" dont-skip-comment-start)
             column)
            (seed7--set
-            (seed7-line-starts-with n "end enum;?"   dont-skip-comment-start)
+            (seed7-line-starts-with n "end enum;"   dont-skip-comment-start)
             column))
           ;; [:todo 2025-05-29, by Pierre Rouleau?: a more secure would move back
           ;; to the beginning of the block, take the indent there, move back to
@@ -3189,9 +3436,9 @@ N is: - :previous-non-empty for the previous non empty line,
             ;; same level as the when keyword
             (if (and (seed7-line-starts-with :previous-non-empty
                                              "when[[:blank:]]")
-                     (seed7--set (seed7-line-inside-a-block 0) spec-list)
+                     (seed7--set (seed7-line-inside-a-block :previous-non-empty) spec-list)
                      (string= (nth 1 spec-list) "case "))
-                (- (nth 0 spec-list) seed7-indent-width)
+                (nth 0 spec-list)
               ;; if there are (other) statements above, line up the comment
               ;; according to the nature of the previous line as if the
               ;; current line was not a comment: re-use the logic of
@@ -3272,7 +3519,10 @@ of a string."
           (forward-line -1)
           (search-forward "\"")
           (setq indent-column (1- (current-column))))
-         (t (message "String line syntax not yet supported.")))))
+         (t
+          (message
+           "At line %d: string line syntax not yet supported! Please report."
+           (seed7-current-line-number))))))
 
      ;; Special rule: if a line starts with a Seed7 assignment operator,
      ;; consider that line manually indented and keep it where it is.
@@ -3286,9 +3536,8 @@ of a string."
      ((seed7--set (seed7-line-inside-assign-statement-continuation-p 0)
                   indent-column))
 
-     ;; ---------------------------------------------------------------------------
      ;; Handle special cases before checking if line is inside a block
-
+     ;; --------------------------------------------------------------
      ;; Check if below end of func before checking if inside a block because
      ;; testing if a top level function is inside a block will take a long
      ;; time at the end of a long file but testing if it's just below a end
@@ -3362,8 +3611,8 @@ of a string."
          ;; Not inside any special zones.
          ;; Use indentation identified by `seed7-line-inside-a-block'.
          (t (setq indent-column (nth 0 spec-list))))))
-     ;; ---------------------------------------------------------------------------
 
+     ;; Outside of block.
      ((or (seed7--set (seed7-line-at-endof-array-definition-block
                        :previous-non-empty)
                       indent-column)
@@ -3372,9 +3621,9 @@ of a string."
                       indent-column))
       (setq indent-column (- indent-column
                              (* 2 seed7-indent-width))))
+
      ;; When inside a paren block, adjust indent to the column
      ;; following the open paren; any of: ( { [ <
-
      ((seed7--set (seed7-line-inside-parens-pair-column 0)
                   indent-column))
      ((and (string= first-word-on-line "end")
