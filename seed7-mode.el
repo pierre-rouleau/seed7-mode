@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-03 09:42:27 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-03 10:29:06 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1542,6 +1542,11 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
            (t (search-backward "(*" nil :noerror)
               (backward-char))))
          ;;
+         ;; if at indent before the start of a comment
+         ((seed7-inside-line-indent-before-comment-p)
+          (forward-line 0)
+          (backward-char))
+         ;;
          ;; If right after the block comment end
          ((save-excursion
             (backward-char 2)
@@ -2360,8 +2365,12 @@ comment or not inside comment."
 (defun seed7-inside-line-indent-before-comment-p ()
   "Return non-nil if point is between beginning of line and a comment."
   (save-excursion
-    (seed7-to-indent)
-    (seed7-inside-comment-p)))
+    (let ((current-pos (point))
+          (line-start-pos (save-excursion (forward-line 0)
+                                          (point))))
+      (seed7-to-indent)
+      (when (< line-start-pos current-pos (point))
+        (seed7-inside-comment-p)))))
 
 ;;*** Seed7 Indentation Code Character Search Utilities
 
