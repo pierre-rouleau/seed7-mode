@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-03 14:51:42 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-03 15:48:32 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -244,6 +244,15 @@
 
 ;; Seed7 Syntax Information:
 ;; - https://thomasmertes.github.io/Seed7Home/faq.htm#add_syntax_highlighting
+
+;; ---------------------------------------------------------------------------
+;;* Low-level Macros
+;;  ================
+
+(defmacro seed7--set (fct var)
+  "Set VAR with result of FCT call and return it.
+Use inside a `cond' clause to emphasize the check."
+  `(setq ,var ,fct))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Customization
@@ -566,7 +575,7 @@ Has only one capturing group.")
 ;; are at the beginning of a line (with or without leading white space),
 ;; identified in `seed7--lead-in-statement-keywords' and some that can also
 ;; be in the middle or end of line, which are identified by
-;;`seed--in-statement-keywords'.
+;; `seed7--in-statement-keywords'.
 
 (defconst seed7--lead-in-statement-keywords
   '(
@@ -2051,11 +2060,11 @@ The regexp has 2 or 3 groups:
                             "struct"))
         (seed7--type-regexp last-word))
        (t nil)))
-     ((string= word2 "array") "^\\(?:[[:space:]]*?\\(const[[:space:]]+?array[[:space:]]+?.+?:\\)\\|[[:space:]]+?\\();\\)\\)")
+     ((string= word2 "array") "^\\(?:[[:blank:]]*?\\(const[[:blank:]]+?array[[:blank:]]+?.+?:\\)\\|[[:blank:]]+?\\();\\)\\)")
      (t nil)))
    ;; then deal with general case: block, case, for, while.
    ((member word1 seed7--block-start-keywords)
-    (format "^[[:space:]]+\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word1 word1))
+    (format "^[[:blank:]]+?\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word1 word1))
    (t nil)))
 
 
@@ -2295,16 +2304,9 @@ If point is before or between 2 functions or procedure, mark the next one."
 ;;** Seed7 Indentation Utility Macros
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(defmacro seed7--set (fct var)
-  "Set VAR with result of FCT call and return it.
-Use inside a `cond' clause to emphasize the check."
-  `(setq ,var ,fct))
-
 (defmacro seed7--inside-block-p (syntax)
   "Return non-nil if point is inside matching pair block according to SYNTAX."
   `(> (nth 0 ,syntax) 0))
-
-
 
 ;;** Seed7 Indentation Utility Functions
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3475,7 +3477,9 @@ N is: - :previous-non-empty for the previous non empty line,
             ;; same level as the when keyword
             (if (and (seed7-line-starts-with :previous-non-empty
                                              "when[[:blank:]]")
-                     (seed7--set (seed7-line-inside-a-block :previous-non-empty) spec-list)
+                     (seed7--set
+                      (seed7-line-inside-a-block :previous-non-empty)
+                      spec-list)
                      (string= (nth 1 spec-list) "case "))
                 (nth 0 spec-list)
               ;; if there are (other) statements above, line up the comment
