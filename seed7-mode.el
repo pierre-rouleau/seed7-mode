@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-03 10:59:12 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-03 11:28:00 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -2167,10 +2167,7 @@ Return found position if found, nil if nothing found."
 
   (let ((found-position nil))
     (if (or (seed7-inside-comment-p)
-            (save-excursion
-              (skip-chars-backward " \t")
-              (backward-char)
-              (seed7-inside-comment-p)))
+            (seed7-inside-line-indent-before-comment-p))
         (setq found-position
               (seed7-skip-comment-backward dont-push-mark))
       (save-excursion
