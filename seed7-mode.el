@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-04 15:26:41 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-04 18:17:08 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -116,6 +116,14 @@
 ;;                                             `seed7-compiler' customizable
 ;;                                             user options.
 ;;
+;; AUTO-INSERT CODE                            Under-way.  Early version of
+;;                                             the commands allow creation of
+;;                                             boiler plate using dedicated
+;;                                             commands also available in the
+;;                                             top menu.  There's currently
+;;                                             no key mappings for those yet.
+
+;;
 ;; seed7-mode key map.                         Done.
 ;; Top Menu.                                   Done.
 ;; imenu support                               Done.
@@ -127,7 +135,6 @@
 ;; Future:
 ;; - Launch help on keywords, perhaps implement statement help
 ;; - Keyword Completion help.
-;; - Navigation help - works from functions to functions, through most blocks.
 ;; - Template help for code creation
 
 ;;
@@ -160,7 +167,10 @@
 ;;        I will fix that once I get the auto indentation working properly
 ;;        for all code.  I will then have to decide if that's considered a
 ;;        defun to allow marking the block just like procedure and functions.
-;;  # 07  Indentation control of comment between 2 when clauses sometime fail.
+;;  # 07  Indentation of code following a line comment sometimes fails.
+;;        There's no problem for a block comment that fills the entire
+;;        previous line.
+;;
 ;; ]
 ;;
 ;;
@@ -3736,10 +3746,151 @@ of a string."
             (indent-to indent)))))))
 
 ;; ---------------------------------------------------------------------------
+;;* Seed7 Auto-completion
+;;  =====================
+
+;; The following code is early experimental while I'm experimenting with
+;; the various possibilities of inserting the boilerplate code of Seed7
+;; statements.
+;; The possibilities will most probably include Emacs tempo skeletons, but I
+;; want to ensure that it's easy and intuitive to use.  So at first
+;; I'm trying to add various simple commands which will then all be collapsed
+;; into a single one, taking the hint from what has just been typed in the
+;; buffer.  For now I'm implementing simple stand-alone functions.
+;; The small stand-alone functions will probably also remain (in some form)
+;; as I'll add them to the top menu.
+
+(defun seed7-insert-proc ()
+  ""
+  (interactive "*")
+  ;; insert a template with a temporary name N to allow auto-indent to work.
+  (insert "const proc: N ( ) is func\n local\n \n begin\n\n end func;")
+  (forward-line -5)
+  (forward-char 12)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 1)
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command))
+  (delete-char 1))
+
+(defun seed7-insert-func ()
+  ""
+  (interactive "*")
+  ;; Insert template with N & T markers for name and type to allow auto-indent
+  ;; to work, then remove them and leave point at the function name.
+  (insert "const func T: N ( ) is func\n result\n \n local\n \n begin\n\n end func;")
+  (forward-line -7)
+  (forward-char 11)
+  (save-excursion
+    (indent-for-tab-command)            ; func
+    (forward-line 1)
+    (indent-for-tab-command)            ; result
+    (forward-line 2)
+    (indent-for-tab-command)            ; local
+    (forward-line 2)
+    (indent-for-tab-command)            ; begin
+    (forward-line 2)
+    (indent-for-tab-command))           ; end func;
+  (save-excursion
+    (delete-char 1)                     ; N
+    (forward-char 2)
+    (delete-char 1)))                   ; T
+
+(defun seed7-insert-short-function ()
+  ""
+  (interactive "*")
+  (insert "const func T: N ( ) is\n return R;")
+  (forward-line -1)
+  (forward-char 11)
+  (save-excursion
+    (indent-for-tab-command)            ; func
+    (forward-line 1)
+    (indent-for-tab-command))           ; return
+  (save-excursion
+    (delete-char 1)                     ; N
+    (forward-char 2)
+    (delete-char 1)                     ; T
+    (forward-line 1)
+    (forward-char 9)
+    (delete-char 1))                    ; R
+  )
+
+(defun seed7-insert-if ()
+  ""
+  (interactive "*")
+  (insert "if  then\n \n end if;")
+  (forward-line -2)
+  (forward-char 3)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command)))
+
+(defun seed7-insert-case ()
+  ""
+  (interactive "*")
+  (insert "case V of\n when C:\n \n end case;")
+  (forward-line -3)
+  (forward-char 5)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 1)
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command))
+  (save-excursion
+    (delete-char 1)                     ; V
+    (forward-line 1)
+    (seed7-to-indent)
+    (forward-char 5)
+    (delete-char 1)))                   ; C
+
+(defun seed7-insert-for ()
+  ""
+  (interactive "*")
+  (insert "for  do\n \n end for;")
+  (forward-line -2)
+  (forward-char 4)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command)))
+
+(defun seed7-insert-repeat ()
+  ""
+  (interactive "*")
+  (insert "repeat\n \n until C;")
+  (forward-line 0)
+  (forward-char 7)
+  (save-excursion
+    (forward-line -2)
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command))
+  (save-excursion
+    (delete-char 1)))
+
+(defun seed7-insert-while ()
+  ""
+  (interactive "*")
+  (insert "while  do\n \n end while;")
+  (forward-line -2)
+  (forward-char 6)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command)))
+
+
+
+;; ---------------------------------------------------------------------------
 ;;* Seed7 Compilation
 ;;  =================
 ;;
-
 
 ;; (defun seed7--filter-compiler-output ()
 ;;   "Filter function to format s7c compiler output."
@@ -3783,7 +3934,18 @@ If optional COMPILE argument set, compile the file to executable instead."
   "Menu for Seed7 Mode."
   '("Seed7"
     ["Toggle outline-minor-mode" outline-minor-mode
-      :help "Control hiding/showing content of blocks"]
+     :help "Control hiding/showing content of blocks"]
+    ("Insert"
+     ["Procedure" seed7-insert-proc]
+     ["Function"  seed7-insert-func]
+     ["Function Short"  seed7-insert-short-function]
+     ["Case"      seed7-insert-case]
+     ["For"       seed7-insert-for]
+     ["If"        seed7-insert-if]
+     ["Repeat"    seed7-insert-repeat]
+     ["While"     seed7-insert-while]
+     )
+
     ("Navigation"
      ["Forward func/proc" seed7-end-of-defun
       :help "Go forward to end of function or procedure"]
