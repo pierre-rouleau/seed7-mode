@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-04 11:21:19 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-04 13:29:36 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1472,9 +1472,9 @@ Move point."
 
 (defconst seed7-procfunc-regexp
   (format
-   "^[[:space:]]*const%s+\\(func \\|proc\\)%s?%s?:\\(?:%s+?\\(?:(%s?+)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s?+)\\)?%s*?is%s+\\(func\\|return\\|forward;\\|action%s\".+\";\\)"
-   ;;                 %    G1              G2 %        %         %           %   G3%    %         %  %        %     %    G4                                %
-   ;;                 1                    %2 3        4         5           6     7    8         9  10       11    12                                     13
+   "^[[:blank:]]*?const%s+\\(func \\|proc\\)%s??%s??:\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?is%s+\\(func\\|return\\|forward;\\|action%s\".+?\";\\)"
+   ;;                  %    G1              G2  %         %         %           %   G3%    %         %  %        %     %    G4                                %
+   ;;                  1                    %2  3         4         5           6     7    8         9  10       11    12                                     13
 
    seed7--whitespace-re                       ; 1
    seed7-type-identifier-re                   ; 2
