@@ -21,14 +21,22 @@ Currently Implemented Features
   - Seed7 structures,
   - Seed7 enums.
 
-- Automatic indentation in progress 🚧 but not complete.
-  There are still several code scenarios that are not handled
-  properly but a large majority of them are. The indentation is
-  done automatically when the TAB key is pressed (from anywhere on the line)
-  and when auto-fill is active.
-  Set ``seed7-auto-indent`` to nil, then disable and re-enable ``seed7-mode``
-  to disable it.   You can also disable it permanently by customizing it.
-  I am currently working on the remaining cases.
+- Automatic indentation.
+  The indentation is done automatically when the TAB key is pressed
+  (from anywhere on the line). It's also done when the RETURN key is pressed.
+  It support the ``auto-fill` mode.
+
+  - To disable auto-indentation, set ``seed7-auto-indent`` to nil, then
+    disable and re-enable ``seed7-mode``.
+    You can also disable it permanently by customizing it.
+  - The auto-indent logic expects blocks to be complete, as it checks
+    them for completion and nesting. That mechanism may change in the future,
+    providing a less strict support.  However, during development, it allows
+    me to detect more errors.
+  - I will implement a mechanism to auto-fill the statements next which should
+    alleviate any problem using the strict indentation rule when writing new code.
+  - As this code is still under development please report any problem you
+    may encounter.
 
 See the following example screenshots:
 
