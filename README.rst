@@ -24,7 +24,7 @@ Currently Implemented Features
 - Automatic indentation.
   The indentation is done automatically when the TAB key is pressed
   (from anywhere on the line). It's also done when the RETURN key is pressed.
-  It support the ``auto-fill` mode.
+  It support the ``auto-fill`` mode.
 
   - To disable auto-indentation, set ``seed7-auto-indent`` to nil, then
     disable and re-enable ``seed7-mode``.
