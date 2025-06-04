@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-04 10:35:50 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-04 11:21:19 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -3510,7 +3510,13 @@ N is: - :previous-non-empty for the previous non empty line,
                 ;; 0 as if there was no statements above.
                 (error 0))))
         ;; If there are no statements above indent a column 0.
-        0))
+        (condition-case nil
+            (seed7-calc-indent
+             :treat-comment-line-as-code
+             (1+ recurse-count))
+          ;; If no rule was found for the code, force the indentation to
+          ;; 0 as if there was no statements above.
+          (error 0))))
 
      ;; Inside a block comment continuation line.
      ;; Align it only if:
