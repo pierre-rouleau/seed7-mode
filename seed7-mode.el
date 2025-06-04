@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-03 15:48:32 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-04 10:35:50 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1402,9 +1402,10 @@ Inside a comment, the returned value is:
 (defun seed7-inside-string-p (&optional pos)
   "Return non-nil if POS or point is inside a string, nil otherwise.
 Note that the leading quote character does not register as inside a string."
-  (let* ((pos (or pos (point)))
-         (syntax (syntax-ppss pos)))
-    (seed7--inside-string-p syntax)))
+  (save-match-data
+    (let* ((pos (or pos (point)))
+           (syntax (syntax-ppss pos)))
+      (seed7--inside-string-p syntax))))
 
 (defun seed7-current-line-start-inside-comment-p ()
   "Return non-nil if the current line start inside a comment."
@@ -1431,7 +1432,8 @@ Move point."
           (if (or (seed7-inside-comment-p)
                   (seed7-inside-string-p))
               ;; found in comment or string.  Skip and keep searching
-              (forward-char (length (substring-no-properties (match-string 0))))
+              (forward-char (length
+                             (substring-no-properties (match-string 0))))
             ;; Found in code!
             (setq found-pos (point)
                   keep-searching nil))
@@ -1455,7 +1457,8 @@ Move point."
           (if (or (seed7-inside-comment-p)
                   (seed7-inside-string-p))
               ;; found in comment or string.  Skip and keep searching
-              (backward-char (length (substring-no-properties (match-string 0))))
+              (backward-char (length
+                              (substring-no-properties (match-string 0))))
             ;; Found in code!
             (setq found-pos (point))
             (setq keep-searching nil))
@@ -2155,13 +2158,15 @@ Return found position or nil if nothing found."
                        ;; found nothing
                        (t (user-error
                            "seed7-to-block-forward: \
-No match string at point %d, line %d for: %S"
+No match. At point %d, nesting=%d, line %d for: %S"
                            (point)
+                           nesting
                            (seed7-current-line-number)
                            regexp)))
                     (user-error "seed7-to-block-forward: \
-NO match at point %d, line %d for: %S"
+NO match. At point %d, nesting=%d, line %d for: %S"
                                 (point)
+                                nesting
                                 (seed7-current-line-number)
                                 regexp))))
             ;; Not inside a block: search for end of function or procedure.
@@ -2632,10 +2637,10 @@ block\\|\
 else\\|\
 exception\\|\
 result\\)"
-  "Regexp for the beginning of a Seed7 block. Match in group 0.")
+  "Regexp for the beginning of a Seed7 block. Has 1 group.")
 
 (defconst seed7-block-line-start-regexp (concat
-                                         "^[[:blank:]]*"
+                                         "^[[:blank:]]*?"
                                          seed7-block-start-regexp)
   "Regexp to find location of blocks.")
 
@@ -2694,6 +2699,10 @@ Does not move point, does not modify search match data."
     (goto-char pos)
     (looking-at-p regexp)))
 
+;; [:todo 2025-06-04, by Pierre Rouleau: optimize #1? Add first-word argument
+;;                    and passed from seed7-line-inside-a-block call.
+;;                    Would eliminate the need to search
+;;                    (or add redundancy check) ]
 (defun seed7--indent-offset-for (header line-n-indent-pos)
   "Return indentation offset (in columns) for the inside of a block.
 
@@ -2816,6 +2825,8 @@ Does not move point, does not modify search match data."
    ;; (error "Unsupported header %s" header)
    (t 0)))
 
+;; [:todo 2025-06-04, by Pierre Rouleau: optimize #1? Add first-word argument
+;;                    and pass it to seed7--indent-offset-for ]
 (defun seed7-line-inside-a-block (n &optional dont-skip-comment-start)
   "Check if line N is inside a Seed7 block.
 N is: - :previous-non-empty for the previous non empty line,
@@ -2827,7 +2838,7 @@ If nothing found it returns nil.
 If it finds something it returns a list that holds the following information:
 - 0: indent column : indentation column the line N should use,
 - 1: match-string  : the found string describing the type of block,
-- 2: block start position,
+- 2: block start position, (the beginning of the start keyword line),
 - 3: block end position."
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
@@ -2842,12 +2853,16 @@ If it finds something it returns a list that holds the following information:
         (while (and keep-searching
                     (not (bobp)))
           (when (seed7-re-search-backward seed7-block-line-start-regexp)
-            (setq match-text (match-string 1))
+            (setq match-text (substring-no-properties (match-string 1)))
+            (setq block-start-pos (point)) ; start point: line start.
             (skip-chars-forward " \t")
-            (setq block-start-pos (point))
             (setq block-start-indent-column (current-column))
-            (setq block-end-pos (seed7--block-end-pos-for match-text))
-            (setq block-start-pos2 (seed7-to-block-backward nil :dont-push-mark))
+            (save-excursion
+              ;; move point to the end of the block and get its position.
+              (setq block-end-pos (seed7--block-end-pos-for match-text))
+              ;; Check if we can go back to the original beginning
+              (setq block-start-pos2
+                    (seed7-to-block-backward nil :dont-push-mark)))
 
             (if (and (< block-start-pos current-pos block-end-pos)
                      ;; check if block start/end is consistent for those
@@ -2862,6 +2877,7 @@ If it finds something it returns a list that holds the following information:
                                            "elsif "
                                            "else"
                                            "catch "
+                                           "case "
                                            "exception"))
                       (eq block-start-pos block-start-pos2)))
                 (progn
@@ -2878,9 +2894,8 @@ If it finds something it returns a list that holds the following information:
                   (setq keep-searching nil)
                 (goto-char (1- block-start-pos))))))
         (when block-start-indent-column
-          (list (+ block-start-indent-column
-                   (or line-n-indent-offset 0))
-                (substring-no-properties match-text)
+          (list (+ block-start-indent-column (or line-n-indent-offset 0))
+                match-text
                 block-start-pos
                 block-end-pos))))))
 
@@ -3604,24 +3619,10 @@ of a string."
      ((seed7--set (seed7-line-inside-a-block 0) spec-list)
       ;; Inside a block.  Check if inside any special zones first.
       ;; For all of those extra checks limit the zone to the scope of the
-      ;; current block to improve efficiency.
-      (let ((begin-pos (nth 2 spec-list))
-            (end-pos   (nth 3 spec-list)))
-        ;; Adjust the begin boundary (which is the indented position of the
-        ;; entry keyword) to the beginning of the previous line.
-        ;; Also adjust the end boundary to the position at the beginning of 2
-        ;; lines below.
-        ;; line.
-        ;; This is done to allow successful bound searches in the cond
-        ;; statement.
-        (setq begin-pos (save-excursion
-                          (goto-char begin-pos)
-                          (forward-line -1)
-                          (point)))
-        (setq end-pos (save-excursion
-                        (goto-char end-pos)
-                        (forward-line 2)
-                        (point)))
+      ;; current block to improve efficiency. Extend the boundary by 1
+      ;; character to allow searches to succeed if they match at the edges.
+      (let ((begin-pos (1- (nth 2 spec-list)))
+            (end-pos   (1+  (nth 3 spec-list))))
         (cond
          ((seed7--set (seed7-line-inside-parens-pair-column 0
                                                             begin-pos
