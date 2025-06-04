@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-04 13:29:36 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-04 15:26:41 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1454,8 +1454,20 @@ Move point."
     (while (and keep-searching
                 (not (bobp)))
       (if (re-search-backward regexp bound :noerror)
-          (if (or (seed7-inside-comment-p)
-                  (seed7-inside-string-p))
+          (if (save-excursion
+                (forward-char) ; Protection. Prevent code following line-end comment as comment.
+                ;;             ; This should not be necessary because the first char
+                ;;             ; of a line will not be a comment or string, but it seems
+                ;;             ; that the check invalidly reports code as comment when
+                ;;             ; code is executed inside a keyboard macro that first inserts
+                ;;             ; a space before a indented keyword that follows a line-end comment.
+                ;;             ; The problem does not seem to happen under normal typing.
+                ;;             ; This is very strange.  Perhaps I don't understand what is
+                ;;             ; really happening here but tracing through this indicated that the
+                ;;             ; forward-char solves the issue when it occurs.
+                ;; [:todo 2025-06-04, by Pierre Rouleau: investigate: a bug in Emacs? Or in my code? ]
+                (or (seed7-inside-comment-p)
+                    (seed7-inside-string-p)))
               ;; found in comment or string.  Skip and keep searching
               (backward-char (length
                               (substring-no-properties (match-string 0))))
@@ -2187,8 +2199,8 @@ Move point to the beginning of the block keyword or comment.
 Push mark unless DONT-PUSH-MARK is non-nil.  Supports shift-marking.
 Return found position if found, nil if nothing found."
   (interactive "^P")
-
-  (let ((found-position nil))
+  (let ((start-pos (point))
+        (found-position nil))
     (if (or (seed7-inside-comment-p)
             (seed7-inside-line-indent-before-comment-p))
         (setq found-position
@@ -2228,12 +2240,20 @@ Return found position if found, nil if nothing found."
                           (setq found-position (point))))
                        ;; found nothing
                        (t (user-error
-                           "seed7-to-block-backward: No match at %d for: %S"
+                           "seed7-to-block-backward: \
+No match. From %d, at point %d, nesting=%d, line %d for: %S"
+                           start-pos
                            (point)
+                           nesting
+                           (seed7-current-line-number)
                            regexp)))
                     (user-error
-                     "seed7-to-block-backward: NO match at %d for: %S"
+                     "seed7-to-block-backward: \
+NO match. From %d, at point %d, nesting=%d, line %d  for: %S"
+                     start-pos
                      (point)
+                     nesting
+                     (seed7-current-line-number)
                      regexp))))
             ;; Not inside a block. search for beginning of function or
             ;; procedure.
