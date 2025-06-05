@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-04 18:17:08 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-05 08:36:22 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -177,7 +177,11 @@
 ;;* Table of Content
 ;;  ----------------
 ;;
-;; Code Organization Layout (use these as markers to locate related code)
+;; Code Organization Layout (use these as markers to locate related code; both
+;; in the titles and inside other code locations).
+;; With `lispy-mode' active, you can also use the `outline-minor-mode'
+;; commands to navigate across section titles as well as hide/show the content
+;; of sections.
 ;;
 ;; - Seed7 Customization
 ;; - Seed7 Mode Syntax Control
@@ -219,17 +223,39 @@
 ;; - Seed7 iMenu Support
 ;; - Seed7 Speedbar Support
 ;; - Seed7 Code Navigation
-;;   * `seed7-beg-of-defun'
-;;   * `seed7-beg-of-next-defun'
-;;   * `seed7-end-of-defun'
-;;     + `seed7--move-and-mark'
-;;     + `seed7--pos-msg'
-;;   - Seed7 Navigation by Block
-;;   * `seed7-to-block-forward'
-;;   * `seed7-to-block-backward'
-;;     - `seed7--current-line-nth-word'
+;;  - Seed7 Comment and String Identification Macros and Functions
+;;  - Seed7 Code Search Functions
+;;  - Seed7 Procedure/Function Regular Expressions
+;;  - Seed7 Skipping Comments
+;;  - Seed7 Navigation by Procedure/Function
+;;    - Seed7 Procedure/Function Search Utility functions
+;;    - Seed7 Procedure/Function Navigation Commands
+;;      * `seed7-beg-of-defun'
+;;      * `seed7-beg-of-next-defun'
+;;      * `seed7-end-of-defun'
+;;        + `seed7--move-and-mark'
+;;        + `seed7--pos-msg'
+;;   - Seed7 Procedure/Function Navigation Mode Functions
+;;     * `seed7-to-block-forward'
+;;     * `seed7-to-block-backward'
+;;       + `seed7--current-line-nth-word'
 ;; - Seed7 Code Marking
 ;;   * `seed7-mark-defun'
+;; - Seed7 Indentation
+;;   - Seed7 Indentation Customization
+;;   - Seed7 Indentation Utility Macros
+;;   - Seed7 Indentation Utility Functions
+;;     - Seed7 Indentation Base utilities
+;;     - Seed7 Indentation Code Character Search Utilities
+;;     - Seed7 Indentation Base Position Detection Utilities
+;;     - Seed7 Indentation Base Line Navigation
+;;     - Seed7 Indentation Base Indent-step Value Helper
+;;   - Seed7 Indentation Line Checking Base Functions
+;;   - Seed7 Indentation Line Type Checking Functions
+;;   - Seed7 Indentation Comment Checking Function
+;;   - Seed7 Indentation Calculator Function
+;;   - Seed7 Indent on Return
+;; - Seed7 Auto-completion
 ;; - Seed7 Compilation
 ;;   * `seed7-compile'
 ;; - Seed7 Key Map
@@ -2408,6 +2434,17 @@ comment or not inside comment."
         line-comment-start-pos))))
 
 
+(defun seed7-inside-line-indent-p ()
+  "Return non-nil if point is inside line indentation or first char of text."
+  (save-excursion
+    (let ((current-pos (point))
+          (line-start-pos (save-excursion (forward-line 0)
+                                          (point))))
+      (seed7-to-indent)
+      (or (eq line-start-pos current-pos)
+          (< line-start-pos current-pos (point))
+          (eq current-pos (point))))))
+
 (defun seed7-inside-line-indent-before-comment-p ()
   "Return non-nil if point is between beginning of line and a comment."
   (save-excursion
@@ -3734,16 +3771,18 @@ of a string."
 (defun seed7-indent-line ()
   "Indent the current Seed7 line of code."
   (interactive "*")
-  (save-excursion
-    (seed7-to-indent)
-    (let ((current-indent (current-column))
-          (indent (seed7-calc-indent)))
-      (when (not (= indent current-indent))
-        (progn
+  (let ((move-point (seed7-inside-line-indent-p)))
+    (save-excursion
+      (seed7-to-indent)
+      (let ((current-indent (current-column))
+            (indent (seed7-calc-indent)))
+        (when (not (= indent current-indent))
           (forward-line 0)
-          (delete-horizontal-space)
-          (unless (eq indent 0)
-            (indent-to indent)))))))
+            (delete-horizontal-space)
+            (unless (eq indent 0)
+              (indent-to indent)))))
+    (when move-point
+      (seed7-to-indent))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Auto-completion
