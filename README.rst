@@ -42,6 +42,9 @@ Currently Implemented Features
   key after the following keywords appearing at the beginning of a line:
 
   - **case**, **for**, **if**, **repeat**, **while**.
+  - **proc** and **func** expand to the boiler plate code for procedure and
+    function.
+  - **sfunc** expands to the boiler plate code for short function.
 
 
 See the following example screenshots:
