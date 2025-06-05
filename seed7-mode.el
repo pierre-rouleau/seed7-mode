@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-05 10:03:32 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-05 11:09:25 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -3799,6 +3799,25 @@ of a string."
 ;; The small stand-alone functions will probably also remain (in some form)
 ;; as I'll add them to the top menu.
 
+(defun seed7--delete-char-at-column (indented-column)
+  "Delete 1 char at specified INDENTED-COLUMN number."
+  (seed7-to-indent)
+  (when (> indented-column 0)
+    (forward-char indented-column))
+  (delete-char 1))
+
+(defun seed7--delete-char-at (indented-column)
+  "Delete 1 char at specified INDENTED-COLUMN number or each one in the list."
+  (if (listp indented-column)
+      (dolist (col indented-column)
+        (seed7--delete-char-at-column col))
+    (seed7--delete-char-at-column indented-column)))
+
+(defun seed7--delete-backward (n)
+  "Delete N characters before point."
+  (backward-char n)
+  (delete-char n))
+
 (defun seed7-insert-proc ()
   ""
   (interactive "*")
@@ -3928,10 +3947,61 @@ of a string."
     (forward-line 2)
     (indent-for-tab-command)))
 
-(defun seed7--delete-backward (n)
-  "Delete N characters before point."
-  (backward-char n)
-  (delete-char n))
+(defun seed7-insert-include ()
+  ""
+  (interactive "*")
+  (insert "include \".s7i\"")
+  (seed7-to-indent)
+  (forward-char 10)
+  (save-excursion
+    (indent-for-tab-command)))
+
+(defun seed7-insert-enum ()
+  ""
+  (interactive "*")
+  (insert "const type: T is new enum\n V,\n end enum;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 12)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 1)
+    (indent-for-tab-command)
+    (forward-line 1)
+    (indent-for-tab-command)
+    (forward-line -1)
+    (seed7--delete-char-at 0)
+    (forward-line -1)
+    (seed7--delete-char-at 12)))
+
+(defun seed7-insert-new-struct ()
+  ""
+  (interactive "*")
+  (insert "const type: T is new struct\n var V: N is v;\n end struct;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 12)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 1)
+    (indent-for-tab-command)
+    (forward-line 1)
+    (indent-for-tab-command)
+    (forward-line -1)
+    (seed7--delete-char-at '(12 7 4))
+    (forward-line -1)
+    (seed7--delete-char-at 12)))
+
+(defun seed7-insert-var ()
+  ""
+  (interactive "*")
+  (insert "var T: N is V;")
+  (seed7-to-indent)
+  (forward-char 4)
+  (save-excursion
+    (indent-for-tab-command)
+    (seed7--delete-char-at '(12 7 4))))
+
 
 (defun seed7-complete-statement-or-indent ()
   ""
@@ -3944,15 +4014,23 @@ of a string."
     (if (and keyword
              (not (seed7-inside-comment-p))
              (not (seed7-inside-string-p))
-             (member keyword '("if"
+             (member keyword '("var"
+                               "if"
                                "case"
                                "for"
                                "repeat"
                                "while"
                                "proc"
-                               "sfunc"
-                               "func")))
+                               "funcs"
+                               "func"
+                               "inc"
+                               "enum"
+                               "struct")))
         (cond
+         ((string= keyword "var")
+          (seed7--delete-backward 3)
+          (seed7-insert-var))
+
          ((string= keyword "if")
           (seed7--delete-backward 2)
           (seed7-insert-if))
@@ -3975,9 +4053,19 @@ of a string."
          ((string= keyword "func")
           (seed7--delete-backward 4)
           (seed7-insert-func))
-         ((string= keyword "sfunc")
+         ((string= keyword "funcs")
           (seed7--delete-backward 5)
-          (seed7-insert-short-function)))
+          (seed7-insert-short-function))
+         ((string= keyword "inc")
+          (seed7--delete-backward 3)
+          (seed7-insert-include))
+         ((string= keyword "enum")
+          (seed7--delete-backward 4)
+          (seed7-insert-enum))
+         ((string= keyword "struct")
+          (seed7--delete-backward 6)
+          (seed7-insert-new-struct)))
+
       ;; not on keyword; just indent
       (seed7-indent-line))))
 

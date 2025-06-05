@@ -33,18 +33,25 @@ Currently Implemented Features
     them for completion and nesting. That mechanism may change in the future,
     providing a less strict support.  However, during development, it allows
     me to detect more errors.
-  - I will implement a mechanism to auto-fill the statements next which should
-    alleviate any problem using the strict indentation rule when writing new code.
+  - One aspect of the auto indentation logic is that it checks (and extracts)
+    the name of procedure and functions and the return type of the function.
+    The auto-indentation will only work properly once these are identified.
+    This acts as a reminder to fill in the missing parts.
   - As this code is still under development please report any problem you
     may encounter.
 
 - Automatic completion of the following statement when typing the ``<TAB>``
-  key after the following keywords appearing at the beginning of a line:
+  key after the following keywords appearing at the beginning of a line
+  inside Seed7 code:
 
   - **case**, **for**, **if**, **repeat**, **while**.
   - **proc** and **func** expand to the boiler plate code for procedure and
     function.
-  - **sfunc** expands to the boiler plate code for short function.
+  - **funcs** expands to the boiler plate code for short function.
+  - **inc** expands to a partly filled include statement.
+  - **enum** expands to a enum declaration.
+  - **struct** expands to a structure declaration statement.
+  - **var** expands to a variable declaration.
 
 
 See the following example screenshots:
