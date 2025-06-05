@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-05 15:08:09 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-05 15:49:40 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -4267,15 +4267,28 @@ If optional COMPILE argument set, compile the file to executable instead."
     ["Toggle outline-minor-mode" outline-minor-mode
      :help "Control hiding/showing content of blocks"]
     ("Insert"
-     ["Procedure" seed7-insert-proc]
-     ["Function"  seed7-insert-func]
-     ["Function Short"  seed7-insert-short-function]
-     ["Case"      seed7-insert-case]
-     ["For"       seed7-insert-for]
-     ["If"        seed7-insert-if]
-     ["Repeat"    seed7-insert-repeat]
-     ["While"     seed7-insert-while]
-     )
+     ["Include"            seed7-insert-include]
+     "---"
+     ["Procedure"          seed7-insert-proc]
+     ["Function"           seed7-insert-func]
+     ["Function Short"     seed7-insert-short-function]
+     "---"
+     ["Case"               seed7-insert-case]
+     ["For"                seed7-insert-for]
+     ["For until"          seed7-insert-for-until]
+     ["For step"           seed7-insert-for-step]
+     ["For each"           seed7-insert-for-each]
+     ["For each until"     seed7-insert-for-each-until]
+     ["For each key"       seed7-insert-for-each-key]
+     ["For each key until" seed7-insert-for-each-key-until]
+     ["For key"            seed7-insert-for-key]
+     ["For key until"      seed7-insert-for-key-until]
+     ["If"                 seed7-insert-if]
+     ["Repeat"             seed7-insert-repeat]
+     ["While"              seed7-insert-while]
+     "---"
+     ["Enum"               seed7-insert-enum]
+     ["Struct"             seed7-insert-struct])
 
     ("Navigation"
      ["Forward func/proc" seed7-end-of-defun
