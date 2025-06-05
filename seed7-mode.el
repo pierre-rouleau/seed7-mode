@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-05 09:25:03 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-05 10:03:32 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -3942,11 +3942,16 @@ of a string."
       (when (seed7-inside-line-indent-p)
         (setq keyword (thing-at-point 'word :no-properties))))
     (if (and keyword
+             (not (seed7-inside-comment-p))
+             (not (seed7-inside-string-p))
              (member keyword '("if"
                                "case"
                                "for"
                                "repeat"
-                               "while")))
+                               "while"
+                               "proc"
+                               "sfunc"
+                               "func")))
         (cond
          ((string= keyword "if")
           (seed7--delete-backward 2)
@@ -3962,7 +3967,17 @@ of a string."
           (seed7-insert-repeat))
          ((string= keyword "while")
           (seed7--delete-backward 5)
-          (seed7-insert-while)))
+          (seed7-insert-while))
+
+         ((string= keyword "proc")
+          (seed7--delete-backward 4)
+          (seed7-insert-proc))
+         ((string= keyword "func")
+          (seed7--delete-backward 4)
+          (seed7-insert-func))
+         ((string= keyword "sfunc")
+          (seed7--delete-backward 5)
+          (seed7-insert-short-function)))
       ;; not on keyword; just indent
       (seed7-indent-line))))
 
@@ -3998,6 +4013,7 @@ If optional COMPILE argument set, compile the file to executable instead."
 
 (defvar seed7-mode-map
   (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "TAB") 'seed7-complete-statement-or-indent)
     (define-key map "\M-\C-a"  'seed7-beg-of-defun)
     (define-key map "\M-\C-e"  'seed7-end-of-defun)
     (define-key map "\M-\C-h"  'seed7-mark-defun)
