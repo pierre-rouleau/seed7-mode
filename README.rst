@@ -3,7 +3,9 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 =============================================================
 
 
-⚠️  Early, **work-in-progress** version of seed7-mode  🚧 .
+⚠️  This is a, **work-in-progress** version of seed7-mode  🚧 .
+A lot of features are implemented but there's still some
+areas that need improvements and fixes.
 
 Currently Implemented Features
 ==============================
@@ -204,7 +206,9 @@ Compatibility
 
 The seed7-mode is compatible with:
 
-- Emacs comment-dwim.  The recommended key binding for it is ``M-;``
+- Emacs `comment-dwim`_ command.  The recommended key binding for it is ``M-;``
+- Emacs `which-function-mode`_, when active shows the name of the current Seed7 function or procedure in the
+  mode line. It also works with Seed7 actions and forward declarations.
 - The `iedit`_ package that allows selecting variables inside a specific block, function or procedure.
 - The `expand-region`_ package to quickly select the current word, block, function/procedure.
 - Drew Adam's `hide-comnt`_  package which  provides
@@ -394,7 +398,6 @@ Any help, questions, suggestions are welcome!
 .. _Terminal menu 1:          screenshots/terminal-menu-01.png
 .. _Terminal menu 2:          screenshots/terminal-menu-02.png
 .. _Terminal Ivy prompt:      screenshots/terminal-imenu-gh-01.png
-
 .. _Emacs imenu mode:                           https://www.gnu.org/software/emacs/manual/html_node/elisp/Imenu.html
 .. _Emacs Speedbar:                             https://www.gnu.org/software/emacs/manual/html_node/speedbar/
 .. _while statement:                            https://seed7.sourceforge.net/manual/stats.htm#while-statement
@@ -425,6 +428,8 @@ Any help, questions, suggestions are welcome!
 .. _PEL Index PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/-index.pdf
 .. _PEL Speedbar PDF:                           https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/speedbar.pdf
 .. _Emacs outline minor mode:                   https://www.gnu.org/software/emacs/manual/html_node/emacs/Outline-Minor-Mode.html
+.. _comment-dwim:                               https://www.gnu.org/software/emacs/manual/html_node/emacs/Comment-Commands.html
+.. _which-function-mode:                        https://www.gnu.org/software/emacs/manual/html_node/emacs/Which-Function.html
 
 
 .. ---------------------------------------------------------------------------
