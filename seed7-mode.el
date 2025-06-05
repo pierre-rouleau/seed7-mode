@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-05 12:00:26 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-05 15:06:37 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -4116,7 +4116,6 @@ of a string."
     (indent-for-tab-command)
     (seed7--delete-char-at '(12 7 4))))
 
-
 (defun seed7-complete-statement-or-indent ()
   ""
   (interactive "*")
@@ -4152,7 +4151,6 @@ of a string."
          ((string= keyword "var")
           (seed7--delete-backward 3)
           (seed7-insert-var))
-
          ((string= keyword "if")
           (seed7--delete-backward 2)
           (seed7-insert-if))
@@ -4248,6 +4246,9 @@ If optional COMPILE argument set, compile the file to executable instead."
 (defvar seed7-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "TAB") 'seed7-complete-statement-or-indent)
+    (define-key map (kbd "C-c C-a") 'seed7-to-block-backward)
+    (define-key map (kbd "C-c C-e") 'seed7-to-block-forward)
+    (define-key map (kbd "C-c C-n") 'seed7-beg-of-next-defun)
     (define-key map "\M-\C-a"  'seed7-beg-of-defun)
     (define-key map "\M-\C-e"  'seed7-end-of-defun)
     (define-key map "\M-\C-h"  'seed7-mark-defun)

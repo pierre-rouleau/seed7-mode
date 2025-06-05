@@ -113,49 +113,49 @@ Code Navigation Commands
 Some of the commands have a built-in key binding in the seed7-key-map but not
 all of them.  The `PEL Seed7 support`_ provides more key bindings using function keys.
 
-= ============================ =========== =============================================================
-. Function                     Key Binding Description
-= ============================ =========== =============================================================
-. seed7-beg-of-defun           ``C-M-a``   Move point backward to beginning of function or procedure.
-                                           With optional repeat argument.
-. seed7-end-of-defun           ``C-M-e``   Move point backward to beginning of function or procedure.
-                                           With optional repeat argument.
-. seed7-beg-of-next-defun                  Move point forward to beginning of next function or procedure.
-                                           With optional repeat argument.
-. seed7-to-block-forward                   Move point forward to the end line of the matching statement:
+= ============================ ============ =============================================================
+. Function                     Key Binding  Description
+= ============================ ============ =============================================================
+. seed7-beg-of-defun           ``C-M-a``    Move point backward to beginning of function or procedure.
+                                            With optional repeat argument.
+. seed7-end-of-defun           ``C-M-e``    Move point backward to beginning of function or procedure.
+                                            With optional repeat argument.
+. seed7-beg-of-next-defun      ``C-c C-n``  Move point forward to beginning of next function or procedure.
+                                            With optional repeat argument.
+. seed7-to-block-forward       ``C-c C-e``  Move point forward to the end line of the matching statement:
 
-                                           - array declaration (from begin to end)
-                                           - ``block``,
-                                           - `case statement`_:
+                                            - array declaration (from begin to end)
+                                            - ``block``,
+                                            - `case statement`_:
 
-                                             - Move from ``case`` to ``end case``
-                                               but also across the ``when`` sections.
+                                              - Move from ``case`` to ``end case``
+                                                but also across the ``when`` sections.
 
-                                           - ``enum block``
-                                           - any of the for statements:
+                                            - ``enum block``
+                                            - any of the for statements:
 
-                                             - `for`_
-                                             - `for-each`_
-                                             - `for-each-key`_
-                                             - `for-key`_
-                                             - `for-step`_
-                                             - `for-until`_
+                                              - `for`_
+                                              - `for-each`_
+                                              - `for-each-key`_
+                                              - `for-key`_
+                                              - `for-step`_
+                                              - `for-until`_
 
-                                           - `if statement`_:
+                                            - `if statement`_:
 
-                                             - Move from ``if`` to ``end if``,
-                                               but also when at ``else`` or
-                                               ``elsif`` move to the next portion.
+                                              - Move from ``if`` to ``end if``,
+                                                but also when at ``else`` or
+                                                ``elsif`` move to the next portion.
 
-                                           - `repeat - until statement`_
-                                           - ``struct`` or
-                                           - `while statement`_.
+                                            - `repeat - until statement`_
+                                            - ``struct`` or
+                                            - `while statement`_.
 
-                                           If none is found move to the end of the function or procedure.
+                                            If none is found move to the end of the function or procedure.
 
-. seed7-to-block-backward                  Move point backward to the beginning line of the matching
-                                           block or statement (listed above).
-= ============================ =========== =============================================================
+. seed7-to-block-backward      ``C-c C-a``  Move point backward to the beginning line of the matching
+                                            block or statement (listed above).
+= ============================ ============ =============================================================
 
 Code Marking Commands
 ~~~~~~~~~~~~~~~~~~~~~
