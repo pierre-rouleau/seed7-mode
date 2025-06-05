@@ -44,7 +44,19 @@ Currently Implemented Features
   key after the following keywords appearing at the beginning of a line
   inside Seed7 code:
 
-  - **case**, **for**, **if**, **repeat**, **while**.
+  - **case**, **if**, **repeat**, **while**,
+  - The 9 variations of for loops:
+
+    - **for** expands to the `for statement`_,
+    - **foru** expands to the `for-until statement`_,
+    - **fors** expands to the `for-step statement`_,
+    - **fore** expands to the `for-each statement`_,
+    - **foreu** expands to the `for-each statement`_ combined with an until condition,
+    - **forek** expands to the `for-each-key statement`_,
+    - **foreku** expands to the `for-each-key statement`_ combined with an until condition,
+    - **fork** expands to the `for-key statement`_,
+    - **forku** expands to the `for-key statement`_ combined with an until condition,
+
   - **proc** and **func** expand to the boiler plate code for procedure and
     function.
   - **funcs** expands to the boiler plate code for short function.
@@ -388,11 +400,17 @@ Any help, questions, suggestions are welcome!
 .. _while statement:                            https://seed7.sourceforge.net/manual/stats.htm#while-statement
 .. _repeat - until statement:                   https://seed7.sourceforge.net/manual/stats.htm#repeat-statement
 .. _if statement:                               https://seed7.sourceforge.net/manual/stats.htm#if-statement
+.. _for statement:
 .. _for:                                        https://seed7.sourceforge.net/manual/stats.htm#for-statement
+.. _for-each statement:
 .. _for-each:                                   https://seed7.sourceforge.net/manual/stats.htm#for-each-statement
+.. _for-each-key statement:
 .. _for-each-key:                               https://seed7.sourceforge.net/manual/stats.htm#for-each-key-statement
+.. _for-key statement:
 .. _for-key:                                    https://seed7.sourceforge.net/manual/stats.htm#for-key-statement
+.. _for-step statement:
 .. _for-step:                                   https://seed7.sourceforge.net/manual/stats.htm#for-step-statement
+.. _for-until statement:
 .. _for-until:                                  https://seed7.sourceforge.net/manual/stats.htm#for-until-statement
 .. _case statement:                             https://seed7.sourceforge.net/manual/stats.htm#case-statement
 .. _s7check.sd7:                                https://github.com/pierre-rouleau/seed7/blob/master/prg/s7check.sd7

@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-05 11:09:25 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-05 12:00:26 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -3912,14 +3912,128 @@ of a string."
 (defun seed7-insert-for ()
   ""
   (interactive "*")
-  (insert "for  do\n \n end for;")
+  (insert "for I range N to M do\n \n end for;")
   (forward-line -2)
   (seed7-to-indent)
   (forward-char 4)
   (save-excursion
     (indent-for-tab-command)
     (forward-line 2)
-    (indent-for-tab-command)))
+    (indent-for-tab-command)
+    (forward-line -2)
+    (seed7--delete-char-at '(17 12 4))))
+
+(defun seed7-insert-for-until ()
+  ""
+  (interactive "*")
+  (insert "for V range N to N until C do\n \n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 4)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command)
+    (forward-line -2)
+    (seed7--delete-char-at '(25 17 12 4))))
+
+(defun seed7-insert-for-step ()
+  ""
+  (interactive "*")
+  (insert "for V range N to N step N do\n \n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 4)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command)
+    (forward-line -2)
+    (seed7--delete-char-at '(24 17 12 4))))
+
+(defun seed7-insert-for-each ()
+  ""
+  (interactive "*")
+  (insert "for V range L do\n \n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 4)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command)
+    (forward-line -2)
+    (seed7--delete-char-at '(12 4))))
+
+(defun seed7-insert-for-each-until ()
+  ""
+  (interactive "*")
+  (insert "for V range L until C do\n \n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 4)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command)
+    (forward-line -2)
+    (seed7--delete-char-at '(20 12 4))))
+
+(defun seed7-insert-for-each-key ()
+  ""
+  (interactive "*")
+  (insert "for V key I range L do\n \n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 4)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command)
+    (forward-line -2)
+    (seed7--delete-char-at '(18 10 4))))
+
+(defun seed7-insert-for-each-key-until ()
+  ""
+  (interactive "*")
+  (insert "for V key I range L until C do\n \n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 4)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command)
+    (forward-line -2)
+    (seed7--delete-char-at '(26 18 10 4))))
+
+(defun seed7-insert-for-key ()
+  ""
+  (interactive "*")
+  (insert "for key I range L do\n \n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 8)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command)
+    (forward-line -2)
+    (seed7--delete-char-at '(16 8))))
+
+(defun seed7-insert-for-key-until ()
+  ""
+  (interactive "*")
+  (insert "for key I range L until C do\n \n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 8)
+  (save-excursion
+    (indent-for-tab-command)
+    (forward-line 2)
+    (indent-for-tab-command)
+    (forward-line -2)
+    (seed7--delete-char-at '(24 16 8))))
 
 (defun seed7-insert-repeat ()
   ""
@@ -4018,6 +4132,14 @@ of a string."
                                "if"
                                "case"
                                "for"
+                               "foru"
+                               "fors"
+                               "fore"
+                               "foreu"
+                               "forek"
+                               "foreku"
+                               "fork"
+                               "forku"
                                "repeat"
                                "while"
                                "proc"
@@ -4040,6 +4162,30 @@ of a string."
          ((string= keyword "for")
           (seed7--delete-backward 3)
           (seed7-insert-for))
+         ((string= keyword "foru")
+          (seed7--delete-backward 4)
+          (seed7-insert-for-until))
+         ((string= keyword "fors")
+          (seed7--delete-backward 4)
+          (seed7-insert-for-step))
+         ((string= keyword "fore")
+          (seed7--delete-backward 4)
+          (seed7-insert-for-each))
+         ((string= keyword "foreu")
+          (seed7--delete-backward 5)
+          (seed7-insert-for-each-until))
+         ((string= keyword "forek")
+          (seed7--delete-backward 5)
+          (seed7-insert-for-each-key))
+         ((string= keyword "foreku")
+          (seed7--delete-backward 6)
+          (seed7-insert-for-each-key-until))
+         ((string= keyword "fork")
+          (seed7--delete-backward 4)
+          (seed7-insert-for-key))
+         ((string= keyword "forku")
+          (seed7--delete-backward 5)
+          (seed7-insert-for-key-until))
          ((string= keyword "repeat")
           (seed7--delete-backward 6)
           (seed7-insert-repeat))
