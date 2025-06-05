@@ -38,6 +38,12 @@ Currently Implemented Features
   - As this code is still under development please report any problem you
     may encounter.
 
+- Automatic completion of the following statement when typing the ``<TAB>``
+  key after the following keywords appearing at the beginning of a line:
+
+  - **case**, **for**, **if**, **repeat**, **while**.
+
+
 See the following example screenshots:
 
 =========================== ================================================

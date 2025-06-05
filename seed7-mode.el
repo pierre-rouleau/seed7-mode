@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-05 08:36:22 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-05 09:25:03 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -3863,6 +3863,7 @@ of a string."
   (interactive "*")
   (insert "if  then\n \n end if;")
   (forward-line -2)
+  (seed7-to-indent)
   (forward-char 3)
   (save-excursion
     (indent-for-tab-command)
@@ -3874,6 +3875,7 @@ of a string."
   (interactive "*")
   (insert "case V of\n when C:\n \n end case;")
   (forward-line -3)
+  (seed7-to-indent)
   (forward-char 5)
   (save-excursion
     (indent-for-tab-command)
@@ -3893,6 +3895,7 @@ of a string."
   (interactive "*")
   (insert "for  do\n \n end for;")
   (forward-line -2)
+  (seed7-to-indent)
   (forward-char 4)
   (save-excursion
     (indent-for-tab-command)
@@ -3903,8 +3906,8 @@ of a string."
   ""
   (interactive "*")
   (insert "repeat\n \n until C;")
-  (forward-line 0)
-  (forward-char 7)
+  (seed7-to-indent)
+  (forward-char 6)
   (save-excursion
     (forward-line -2)
     (indent-for-tab-command)
@@ -3918,13 +3921,50 @@ of a string."
   (interactive "*")
   (insert "while  do\n \n end while;")
   (forward-line -2)
+  (seed7-to-indent)
   (forward-char 6)
   (save-excursion
     (indent-for-tab-command)
     (forward-line 2)
     (indent-for-tab-command)))
 
+(defun seed7--delete-backward (n)
+  "Delete N characters before point."
+  (backward-char n)
+  (delete-char n))
 
+(defun seed7-complete-statement-or-indent ()
+  ""
+  (interactive "*")
+  (let ((keyword nil))
+    (save-excursion
+      (backward-word)
+      (when (seed7-inside-line-indent-p)
+        (setq keyword (thing-at-point 'word :no-properties))))
+    (if (and keyword
+             (member keyword '("if"
+                               "case"
+                               "for"
+                               "repeat"
+                               "while")))
+        (cond
+         ((string= keyword "if")
+          (seed7--delete-backward 2)
+          (seed7-insert-if))
+         ((string= keyword "case")
+          (seed7--delete-backward 4)
+          (seed7-insert-case))
+         ((string= keyword "for")
+          (seed7--delete-backward 3)
+          (seed7-insert-for))
+         ((string= keyword "repeat")
+          (seed7--delete-backward 6)
+          (seed7-insert-repeat))
+         ((string= keyword "while")
+          (seed7--delete-backward 5)
+          (seed7-insert-while)))
+      ;; not on keyword; just indent
+      (seed7-indent-line))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Compilation
