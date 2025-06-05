@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-05 15:06:37 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-05 15:08:09 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -2245,7 +2245,8 @@ Return found position if found, nil if nothing found."
         (let* ((first-word (seed7--current-line-nth-word 1))
                (second-word (seed7--current-line-nth-word 2))
                (regexp      (seed7--start-regxp-for first-word second-word)))
-          (if regexp
+          (if (and regexp
+                   first-word)
               ;; Inside a block: search with nesting handling.
               (let ((nesting 0)
                     (searching t))
