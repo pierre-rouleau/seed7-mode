@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-05 15:49:40 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-06 11:24:04 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -271,6 +271,7 @@
 (require 'speedbar)       ; use `speedbar-add-supported-extension'
 (require 'subr-x)         ; use: `string-trim'
 (require 'easymenu)       ; use: `easy-menu-define'
+(require 'tempo)          ; use: `tempo-forward-mark', `tempo-backward-mark'
 ;;; --------------------------------------------------------------------------
 ;;; Code:
 ;;
@@ -457,6 +458,13 @@ The name of the source code file is appended to the end of that line."
 (defconst seed7-name-identifier-re
   (format "\\(%s\\)" seed7--non-capturing-name-identifier-re)
   "A complete, valid name identifier. One capturing group.")
+
+(defconst seed7--non-capturing-type-identifier-re
+  (format "\\(?:%s\\(?:[[:blank:]]+?%s\\)??\\)"
+          seed7--non-capturing-name-identifier-re
+          seed7--non-capturing-name-identifier-re)
+  "A complete, valid type identifier name with one or 2 identifiers.
+Has no capturing group.")
 
 (defconst seed7-type-identifier-re
   (format "\\(%s\\(?:[[:blank:]]+?%s\\)??\\)"
@@ -1385,7 +1393,17 @@ Note: the default style for all Seed7 buffers is controlled by the
   "const type: \\([[:alpha:]][[:alnum:]_]+\\) is new interface")
 
 (defconst seed7-struct-regexp
-  "const type: \\([[:alpha:]][[:alnum:]_]+\\) is new struct")
+  (format
+   "const type: %s%s+?is%s+?\\(?:sub%s+?%s\\|new\\)%sstruct"
+   ;;           G1
+   ;;           % %     %           %   %          %
+   ;;           1 2     3           4   5          6
+   seed7-name-identifier-re    ; 1
+   seed7--whitespace-re        ; 2
+   seed7--whitespace-re        ; 3
+   seed7--whitespace-re        ; 4
+   seed7-name-identifier-re    ; 5
+   seed7--whitespace-re))      ; 6
 
 ;;* Seed7 Speedbar Support
 ;;  ======================
@@ -3800,270 +3818,41 @@ of a string."
 ;; The small stand-alone functions will probably also remain (in some form)
 ;; as I'll add them to the top menu.
 
-(defun seed7--delete-char-at-column (indented-column)
-  "Delete 1 char at specified INDENTED-COLUMN number."
+(defun seed7--delete-char-and-mark ()
+  "Delete 1 character and put a tempo market at it's position."
+  (delete-char 1)
+  (tempo-insert-mark (point-marker)))
+
+(defun seed7--delete-char-and-mark-at-column (indented-column)
+  "Delete 1 char at specified INDENTED-COLUMN number.
+Also add a tempo marker at that location."
   (seed7-to-indent)
   (when (> indented-column 0)
     (forward-char indented-column))
-  (delete-char 1))
+  (seed7--delete-char-and-mark))
 
-(defun seed7--delete-char-at (indented-column)
-  "Delete 1 char at specified INDENTED-COLUMN number or each one in the list."
+(defun seed7--delete-char-and-mark-at (indented-column)
+  "Delete 1 char at specified INDENTED-COLUMN number or each one in the list.
+Also add tempo marker at each of these locations."
   (if (listp indented-column)
       (dolist (col indented-column)
-        (seed7--delete-char-at-column col))
-    (seed7--delete-char-at-column indented-column)))
+        (seed7--delete-char-and-mark-at-column col))
+    (seed7--delete-char-and-mark-at-column indented-column)))
 
 (defun seed7--delete-backward (n)
   "Delete N characters before point."
   (backward-char n)
   (delete-char n))
 
-(defun seed7-insert-proc ()
-  ""
-  (interactive "*")
-  ;; insert a template with a temporary name N to allow auto-indent to work.
-  (insert "const proc: N ( ) is func\n local\n \n begin\n\n end func;")
-  (forward-line -5)
-  (forward-char 12)
+(defun seed7--indent-lines (n)
+  "Indent N lines starting from the current one. Do not move point."
   (save-excursion
-    (indent-for-tab-command)
-    (forward-line 1)
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command))
-  (delete-char 1))
-
-(defun seed7-insert-func ()
-  ""
-  (interactive "*")
-  ;; Insert template with N & T markers for name and type to allow auto-indent
-  ;; to work, then remove them and leave point at the function name.
-  (insert "const func T: N ( ) is func\n result\n \n local\n \n begin\n\n end func;")
-  (forward-line -7)
-  (forward-char 11)
-  (save-excursion
-    (indent-for-tab-command)            ; func
-    (forward-line 1)
-    (indent-for-tab-command)            ; result
-    (forward-line 2)
-    (indent-for-tab-command)            ; local
-    (forward-line 2)
-    (indent-for-tab-command)            ; begin
-    (forward-line 2)
-    (indent-for-tab-command))           ; end func;
-  (save-excursion
-    (delete-char 1)                     ; N
-    (forward-char 2)
-    (delete-char 1)))                   ; T
-
-(defun seed7-insert-short-function ()
-  ""
-  (interactive "*")
-  (insert "const func T: N ( ) is\n return R;")
-  (forward-line -1)
-  (forward-char 11)
-  (save-excursion
-    (indent-for-tab-command)            ; func
-    (forward-line 1)
-    (indent-for-tab-command))           ; return
-  (save-excursion
-    (delete-char 1)                     ; N
-    (forward-char 2)
-    (delete-char 1)                     ; T
-    (forward-line 1)
-    (forward-char 9)
-    (delete-char 1))                    ; R
-  )
-
-(defun seed7-insert-if ()
-  ""
-  (interactive "*")
-  (insert "if  then\n \n end if;")
-  (forward-line -2)
-  (seed7-to-indent)
-  (forward-char 3)
-  (save-excursion
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command)))
-
-(defun seed7-insert-case ()
-  ""
-  (interactive "*")
-  (insert "case V of\n when C:\n \n end case;")
-  (forward-line -3)
-  (seed7-to-indent)
-  (forward-char 5)
-  (save-excursion
-    (indent-for-tab-command)
-    (forward-line 1)
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command))
-  (save-excursion
-    (delete-char 1)                     ; V
-    (forward-line 1)
-    (seed7-to-indent)
-    (forward-char 5)
-    (delete-char 1)))                   ; C
-
-(defun seed7-insert-for ()
-  ""
-  (interactive "*")
-  (insert "for I range N to M do\n \n end for;")
-  (forward-line -2)
-  (seed7-to-indent)
-  (forward-char 4)
-  (save-excursion
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command)
-    (forward-line -2)
-    (seed7--delete-char-at '(17 12 4))))
-
-(defun seed7-insert-for-until ()
-  ""
-  (interactive "*")
-  (insert "for V range N to N until C do\n \n end for;")
-  (forward-line -2)
-  (seed7-to-indent)
-  (forward-char 4)
-  (save-excursion
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command)
-    (forward-line -2)
-    (seed7--delete-char-at '(25 17 12 4))))
-
-(defun seed7-insert-for-step ()
-  ""
-  (interactive "*")
-  (insert "for V range N to N step N do\n \n end for;")
-  (forward-line -2)
-  (seed7-to-indent)
-  (forward-char 4)
-  (save-excursion
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command)
-    (forward-line -2)
-    (seed7--delete-char-at '(24 17 12 4))))
-
-(defun seed7-insert-for-each ()
-  ""
-  (interactive "*")
-  (insert "for V range L do\n \n end for;")
-  (forward-line -2)
-  (seed7-to-indent)
-  (forward-char 4)
-  (save-excursion
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command)
-    (forward-line -2)
-    (seed7--delete-char-at '(12 4))))
-
-(defun seed7-insert-for-each-until ()
-  ""
-  (interactive "*")
-  (insert "for V range L until C do\n \n end for;")
-  (forward-line -2)
-  (seed7-to-indent)
-  (forward-char 4)
-  (save-excursion
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command)
-    (forward-line -2)
-    (seed7--delete-char-at '(20 12 4))))
-
-(defun seed7-insert-for-each-key ()
-  ""
-  (interactive "*")
-  (insert "for V key I range L do\n \n end for;")
-  (forward-line -2)
-  (seed7-to-indent)
-  (forward-char 4)
-  (save-excursion
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command)
-    (forward-line -2)
-    (seed7--delete-char-at '(18 10 4))))
-
-(defun seed7-insert-for-each-key-until ()
-  ""
-  (interactive "*")
-  (insert "for V key I range L until C do\n \n end for;")
-  (forward-line -2)
-  (seed7-to-indent)
-  (forward-char 4)
-  (save-excursion
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command)
-    (forward-line -2)
-    (seed7--delete-char-at '(26 18 10 4))))
-
-(defun seed7-insert-for-key ()
-  ""
-  (interactive "*")
-  (insert "for key I range L do\n \n end for;")
-  (forward-line -2)
-  (seed7-to-indent)
-  (forward-char 8)
-  (save-excursion
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command)
-    (forward-line -2)
-    (seed7--delete-char-at '(16 8))))
-
-(defun seed7-insert-for-key-until ()
-  ""
-  (interactive "*")
-  (insert "for key I range L until C do\n \n end for;")
-  (forward-line -2)
-  (seed7-to-indent)
-  (forward-char 8)
-  (save-excursion
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command)
-    (forward-line -2)
-    (seed7--delete-char-at '(24 16 8))))
-
-(defun seed7-insert-repeat ()
-  ""
-  (interactive "*")
-  (insert "repeat\n \n until C;")
-  (seed7-to-indent)
-  (forward-char 6)
-  (save-excursion
-    (forward-line -2)
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command))
-  (save-excursion
-    (delete-char 1)))
-
-(defun seed7-insert-while ()
-  ""
-  (interactive "*")
-  (insert "while  do\n \n end while;")
-  (forward-line -2)
-  (seed7-to-indent)
-  (forward-char 6)
-  (save-excursion
-    (indent-for-tab-command)
-    (forward-line 2)
-    (indent-for-tab-command)))
+    (dotimes (_ n)
+      (indent-for-tab-command)
+      (forward-line 1))))
 
 (defun seed7-insert-include ()
-  ""
+  "Insert the file include."
   (interactive "*")
   (insert "include \".s7i\"")
   (seed7-to-indent)
@@ -4071,93 +3860,571 @@ of a string."
   (save-excursion
     (indent-for-tab-command)))
 
-(defun seed7-insert-enum ()
-  ""
+(defun seed7-insert-procedure-declaration ()
+  "Insert the code template for a procedure declaration.
+Leave point at first position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  ;; insert a template with a temporary name N to allow auto-indent to work.
+  (insert "const proc: N (A) is func\n local\n V\n begin\n C\n end func;")
+  (forward-line -5)
+  (forward-char 12)
+  (seed7--indent-lines 6)
+  (save-excursion
+    (seed7--delete-char-and-mark-at '(15 12))
+    (dotimes (_ 2)
+      (forward-line 2)
+      (seed7--delete-char-and-mark-at 0))))
+
+(defun seed7-insert-func-declaration ()
+  "Insert the code template for a function declaration.
+Leave point at first position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  ;; Insert template with N & T markers for name and type to allow auto-indent
+  ;; to work, then remove them and leave point at the function name.
+  (insert "const func T: N (A) is func\n result\n V \n local\n V\n begin\n C\n end func;")
+  (forward-line -7)
+  (forward-char 11)
+  (seed7--indent-lines 8)
+  (save-excursion
+    (seed7--delete-char-and-mark-at '(17 14 11)) ; T N A
+    (dotimes (_ 3)
+      (forward-line 2)
+      (seed7--delete-char-and-mark-at 0))))
+
+(defun seed7-insert-short-function-declaration ()
+  "Insert the code template for a short function declaration.
+Leave point at first position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "const func T: N (A) is\n return R;")
+  (forward-line -1)
+  (forward-char 11)
+  (seed7--indent-lines 2)
+  (save-excursion
+    (seed7--delete-char-and-mark-at '(17 14 11)) ; T N A
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 7)))
+
+(defun seed7-insert-enumeration-type-declaration ()
+  "Insert the code template for a enumeration declaration.
+Leave point at first position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
   (interactive "*")
   (insert "const type: T is new enum\n V,\n end enum;")
   (forward-line -2)
   (seed7-to-indent)
   (forward-char 12)
+  (seed7--indent-lines 3)
   (save-excursion
-    (indent-for-tab-command)
+    (seed7--delete-char-and-mark-at 12)
     (forward-line 1)
-    (indent-for-tab-command)
-    (forward-line 1)
-    (indent-for-tab-command)
-    (forward-line -1)
-    (seed7--delete-char-at 0)
-    (forward-line -1)
-    (seed7--delete-char-at 12)))
+    (seed7--delete-char-and-mark-at 0)))
 
-(defun seed7-insert-new-struct ()
-  ""
+(defun seed7-insert-struct-type-declaration ()
+  "Insert the code template for a structure declaration.
+Leave point at first position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
   (interactive "*")
   (insert "const type: T is new struct\n var V: N is v;\n end struct;")
   (forward-line -2)
   (seed7-to-indent)
   (forward-char 12)
+  (seed7--indent-lines 3)
   (save-excursion
-    (indent-for-tab-command)
+    (seed7--delete-char-and-mark-at 12)
     (forward-line 1)
-    (indent-for-tab-command)
-    (forward-line 1)
-    (indent-for-tab-command)
-    (forward-line -1)
-    (seed7--delete-char-at '(12 7 4))
-    (forward-line -1)
-    (seed7--delete-char-at 12)))
+    (seed7--delete-char-and-mark-at '(12 7 4))))
 
-(defun seed7-insert-var ()
-  ""
+(defun seed7-insert-if-statement ()
+  "Insert a if statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "if C then\n A\n end if;" )
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 3)
+  (seed7--indent-lines 3)
+  (save-excursion
+    (seed7--delete-char-and-mark-at 3)
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)))
+
+(defun seed7-insert-if-else-statement ()
+  "Insert a if statement with an else clause.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "if C then\n A\n else\n B\n end if;" )
+  (forward-line -4)
+  (seed7-to-indent)
+  (forward-char 3)
+  (seed7--indent-lines 5)
+  (save-excursion
+    (seed7--delete-char-and-mark-at 3)
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)
+    (forward-line 2)
+    (seed7--delete-char-and-mark-at 0)))
+
+(defun seed7-insert-if-elsif-statement ()
+  "Insert a if statement with an elsif clause.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "if C then\n A\n elsif C then\n B\n end if;" )
+  (forward-line -4)
+  (seed7-to-indent)
+  (forward-char 3)
+  (seed7--indent-lines 5)
+  (save-excursion
+    (seed7--delete-char-and-mark-at 3)
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 6)
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)))
+
+(defun seed7-insert-if-elsif-else-statement ()
+  "Insert a if statement with an elsif and an else clause.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "if C then\n A\n elsif C then\n B\n else\n C\n end if;")
+  (forward-line -6)
+  (seed7-to-indent)
+  (forward-char 3)
+  (seed7--indent-lines 7)
+  (save-excursion
+    (seed7--delete-char-and-mark-at 3)
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 6)
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)
+    (forward-line 2)
+    (seed7--delete-char-and-mark-at 0)))
+
+(defun seed7-insert-case-statement ()
+  "Insert a case statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "case V of\n when C:\n E\n end case;")
+  (forward-line -3)
+  (seed7-to-indent)
+  (forward-char 5)
+  (seed7--indent-lines 4)
+  (save-excursion
+    (seed7--delete-char-and-mark-at 5)
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 5)
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)))
+
+(defun seed7-insert-for ()
+  "Insert a for statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "for I range N to M do\n E\n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 4)
+  (seed7--indent-lines 3)
+  (save-excursion
+    (seed7--delete-char-and-mark-at '(17 12 4))
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)))
+
+(defun seed7-insert-for-until ()
+  "Insert a for-until statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "for V range N to N until C do\n E\n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 4)
+  (seed7--indent-lines 3)
+  (save-excursion
+    (seed7--delete-char-and-mark-at '(25 17 12 4))
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)))
+
+(defun seed7-insert-for-step ()
+  "Insert a for-step statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "for V range N to N step N do\n E\n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 4)
+  (seed7--indent-lines 3)
+  (save-excursion
+    (seed7--delete-char-and-mark-at '(24 17 12 4))
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)))
+
+(defun seed7-insert-for-each ()
+  "Insert a for-each statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "for V range L do\n E\n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 4)
+  (seed7--indent-lines 3)
+  (save-excursion
+    (seed7--delete-char-and-mark-at '(12 4))
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)))
+
+(defun seed7-insert-for-each-until ()
+  "Insert a for-each-until statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "for V range L until C do\n E\n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 4)
+  (seed7--indent-lines 3)
+  (save-excursion
+    (seed7--delete-char-and-mark-at '(20 12 4))
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)))
+
+(defun seed7-insert-for-each-key ()
+  "Insert a for-each-key statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "for V key I range L do\n E\n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 4)
+  (seed7--indent-lines 3)
+  (save-excursion
+    (seed7--delete-char-and-mark-at '(18 10 4))
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)))
+
+(defun seed7-insert-for-each-key-until ()
+  "Insert a for-each-key-until statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "for V key I range L until C do\n E\n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 4)
+  (seed7--indent-lines 3)
+  (save-excursion
+    (seed7--delete-char-and-mark-at '(26 18 10 4))
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)))
+
+(defun seed7-insert-for-key ()
+  "Insert a for-key statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "for key I range L do\n E\n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 8)
+  (seed7--indent-lines 3)
+  (save-excursion
+    (seed7--delete-char-and-mark-at '(16 8))
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)))
+
+(defun seed7-insert-for-key-until ()
+  "Insert a for-key-until statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "for key I range L until C do\n \n end for;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 8)
+  (seed7--indent-lines 3)
+  (save-excursion
+    (seed7--delete-char-and-mark-at '(24 16 8))
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)))
+
+(defun seed7-insert-repeat ()
+  "Insert a repeat statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "repeat\n E\n until C;")
+  (seed7-to-indent)
+  (forward-char 6)
+  (save-excursion
+    (forward-line -2)
+    (seed7--indent-lines 3)
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 6)))
+
+(defun seed7-insert-while ()
+  "Insert a while statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "while C do\n E\n end while;")
+  (forward-line -2)
+  (seed7-to-indent)
+  (forward-char 6)
+  (seed7--indent-lines 3)
+  (save-excursion
+    (seed7--delete-char-and-mark-at 6)
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0)))
+
+
+(defun seed7-insert-var-declaration ()
+  "Insert a variable declaration.
+Leave point at first position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
   (interactive "*")
   (insert "var T: N is V;")
   (seed7-to-indent)
   (forward-char 4)
   (save-excursion
     (indent-for-tab-command)
-    (seed7--delete-char-at '(12 7 4))))
+    (seed7--delete-char-and-mark-at '(12 7 4))))
+
+(defun seed7-insert-const-declaration ()
+  "Insert a constant declaration.
+Leave point at first position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "const T: N is V;")
+  (seed7-to-indent)
+  (forward-char 6)
+  (save-excursion
+    (indent-for-tab-command)
+    (seed7--delete-char-and-mark-at '(14 9 6))))
+
+(defun seed7-insert-in-parameter ()
+  "Insert declaration of in parameter.
+Leave point at first position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "in T: N")
+  (backward-char 1)
+  (seed7--delete-char-and-mark)
+  (backward-char 3)
+  (seed7--delete-char-and-mark))
+
+(defun seed7-insert-invar-parameter ()
+  "Insert declaration of invar parameter.
+Leave point at first position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "in var T: N")
+  (backward-char 1)
+  (seed7--delete-char-and-mark)
+  (backward-char 3)
+  (seed7--delete-char-and-mark))
+
+(defun seed7-insert-inout-parameter ()
+  "Insert declaration of inout parameter.
+Leave point at first position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "inout T: N")
+  (backward-char 1)
+  (seed7--delete-char-and-mark)
+  (backward-char 3)
+  (seed7--delete-char-and-mark))
+
+(defun seed7-insert-out-parameter ()
+  "Insert declaration of out parameter.
+Leave point at first position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "out T: N")
+  (backward-char 1)
+  (seed7--delete-char-and-mark)
+  (backward-char 3)
+  (seed7--delete-char-and-mark))
+
+(defun seed7-insert-reference-parameter ()
+  "Insert declaration of ref parameter.
+Leave point at first position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "ref T: N")
+  (backward-char 1)
+  (seed7--delete-char-and-mark)
+  (backward-char 3)
+  (seed7--delete-char-and-mark))
+
+(defun seed7-insert-value-parameter ()
+  "Insert declaration of value parameter.
+Leave point at first position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "val T: N")
+  (backward-char 1)
+  (seed7--delete-char-and-mark)
+  (backward-char 3)
+  (seed7--delete-char-and-mark))
+
+(defun seed7-insert-call-by-name-parameter ()
+  "Insert declaration of call by name parameter.
+Leave point at first position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "in func T: N")
+  (backward-char 1)
+  (seed7--delete-char-and-mark)
+  (backward-char 3)
+  (seed7--delete-char-and-mark))
 
 (defun seed7-complete-statement-or-indent ()
-  ""
+  "Adjust indentation of current line or block.
+Expand statement if point follows specific keyword located at the beginning of
+a code line.  The supported keywords are:
+
+============ =========================================================
+Keyword      Expansion
+============ =========================================================
+inc          include statement
+proc         procedure definition
+func         function definition
+funcs        short function definition
+
+const        constant declaration statement
+var          variable declaration  statement
+
+in
+invar
+inout
+out
+ref
+val
+callbn
+
+case         case statement
+if           if statement
+ife          if-else statement
+ifei         if-elsif statement
+ifeie        if-elsif-else statement
+repeat       repeat statement
+while        while statement
+for          for statement
+foru         for-until statement
+fors         for-step statement
+fore         for-each statement
+foreu        for-each statement combined with an until condition,
+forek        for-each-key statement
+foreku       for-each-key statement combined with an until condition,
+fork         for-key statement
+forku        for-key statement combined with an until condition
+
+enum         enum type definition
+struct       struct type definition
+============ ========================================================="
   (interactive "*")
-  (let ((keyword nil))
+  (let ((keyword nil)
+        (col-at-keyword-beg nil)
+        (in-indent nil))
     (save-excursion
       (backward-word)
-      (when (seed7-inside-line-indent-p)
-        (setq keyword (thing-at-point 'word :no-properties))))
-    (if (and keyword
+      (setq col-at-keyword-beg (current-column)
+            in-indent (seed7-inside-line-indent-p)
+            keyword (thing-at-point 'word :no-properties)))
+    ;; expand only if there's 1 word at the beginning of a line of code,
+    ;; with nothing after and only for specified pre-defined keywords
+    ;; or inside parens, just before the closing parens
+    (if
+        (and keyword
              (not (seed7-inside-comment-p))
              (not (seed7-inside-string-p))
-             (member keyword '("var"
-                               "if"
-                               "case"
-                               "for"
-                               "foru"
-                               "fors"
-                               "fore"
-                               "foreu"
-                               "forek"
-                               "foreku"
-                               "fork"
-                               "forku"
-                               "repeat"
-                               "while"
-                               "proc"
-                               "funcs"
-                               "func"
-                               "inc"
-                               "enum"
-                               "struct")))
+             (or (and (or in-indent
+                          (eq col-at-keyword-beg 0))
+                      (looking-at-p "\n")
+                      (member keyword '("inc"
+                                        "const" "var"
+                                        "enum" "struct"
+                                        "proc"
+                                        "func" "funcs"
+                                        "if" "ife" "ifei" "ifeie"
+                                        "case"
+                                        "for"   "foru"
+                                        "fors"
+                                        "fore"  "foreu"
+                                        "forek" "foreku"
+                                        "fork"  "forku"
+                                        "repeat"
+                                        "while")))
+                 (and (looking-at-p " ?)")
+                      (member keyword '("in"
+                                        "invar"
+                                        "inout"
+                                        "out"
+                                        "ref"
+                                        "val"
+                                        "callbn")))))
         (cond
-         ((string= keyword "var")
-          (seed7--delete-backward 3)
-          (seed7-insert-var))
          ((string= keyword "if")
           (seed7--delete-backward 2)
-          (seed7-insert-if))
+          (seed7-insert-if-statement))
+         ((string= keyword "ife")
+          (seed7--delete-backward 3)
+          (seed7-insert-if-else-statement))
+         ((string= keyword "ifei")
+          (seed7--delete-backward 4)
+          (seed7-insert-if-elsif-statement))
+         ((string= keyword "ifeie")
+          (seed7--delete-backward 5)
+          (seed7-insert-if-elsif-else-statement))
          ((string= keyword "case")
           (seed7--delete-backward 4)
-          (seed7-insert-case))
+          (seed7-insert-case-statement))
          ((string= keyword "for")
           (seed7--delete-backward 3)
           (seed7-insert-for))
@@ -4194,22 +4461,51 @@ of a string."
 
          ((string= keyword "proc")
           (seed7--delete-backward 4)
-          (seed7-insert-proc))
+          (seed7-insert-procedure-declaration))
          ((string= keyword "func")
           (seed7--delete-backward 4)
-          (seed7-insert-func))
+          (seed7-insert-func-declaration))
          ((string= keyword "funcs")
           (seed7--delete-backward 5)
-          (seed7-insert-short-function))
+          (seed7-insert-short-function-declaration))
+
+         ((string= keyword "var")
+          (seed7--delete-backward 3)
+          (seed7-insert-var-declaration))
+         ((string= keyword "const")
+          (seed7--delete-backward 5)
+          (seed7-insert-const-declaration))
+         ((string= keyword "in")
+          (seed7--delete-backward 2)
+          (seed7-insert-in-parameter))
+         ((string= keyword "invar")
+          (seed7--delete-backward 5)
+          (seed7-insert-invar-parameter))
+         ((string= keyword "inout")
+          (seed7--delete-backward 5)
+          (seed7-insert-inout-parameter))
+         ((string= keyword "out")
+          (seed7--delete-backward 3)
+          (seed7-insert-out-parameter))
+         ((string= keyword "ref")
+          (seed7--delete-backward 3)
+          (seed7-insert-reference-parameter))
+         ((string= keyword "val")
+          (seed7--delete-backward 3)
+          (seed7-insert-value-parameter))
+         ((string= keyword "callbn")
+          (seed7--delete-backward 6)
+          (seed7-insert-call-by-name-parameter))
+
          ((string= keyword "inc")
           (seed7--delete-backward 3)
           (seed7-insert-include))
          ((string= keyword "enum")
           (seed7--delete-backward 4)
-          (seed7-insert-enum))
+          (seed7-insert-enumeration-type-declaration))
          ((string= keyword "struct")
           (seed7--delete-backward 6)
-          (seed7-insert-new-struct)))
+          (seed7-insert-struct-type-declaration)))
 
       ;; not on keyword; just indent
       (seed7-indent-line))))
@@ -4247,6 +4543,7 @@ If optional COMPILE argument set, compile the file to executable instead."
 (defvar seed7-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "TAB") 'seed7-complete-statement-or-indent)
+    (define-key map (kbd "<backtab>") 'tempo-forward-mark)
     (define-key map (kbd "C-c C-a") 'seed7-to-block-backward)
     (define-key map (kbd "C-c C-e") 'seed7-to-block-forward)
     (define-key map (kbd "C-c C-n") 'seed7-beg-of-next-defun)
@@ -4264,16 +4561,35 @@ If optional COMPILE argument set, compile the file to executable instead."
 (easy-menu-define seed7-mode-menu seed7-mode-map
   "Menu for Seed7 Mode."
   '("Seed7"
-    ["Toggle outline-minor-mode" outline-minor-mode
-     :help "Control hiding/showing content of blocks"]
+    ("Comments"
+     ["Comment/un-comment"     comment-dwim]
+     ["Toggle comment style"   seed7-toggle-comment-style])
+
+    "---"
+    ["Expand keyword/Indent"   seed7-complete-statement-or-indent]
+    ["Move to next marker"     tempo-forward-mark]
+    ["Move to previous marker" tempo-backward-mark]
     ("Insert"
      ["Include"            seed7-insert-include]
      "---"
-     ["Procedure"          seed7-insert-proc]
-     ["Function"           seed7-insert-func]
-     ["Function Short"     seed7-insert-short-function]
+     ["Procedure"          seed7-insert-procedure-declaration]
+     ["Function"           seed7-insert-func-declaration]
+     ["Function Short"     seed7-insert-short-function-declaration]
+     ["Enum"               seed7-insert-enumeration-type-declaration]
+     ["Struct"             seed7-insert-struct-type-declaration]
      "---"
-     ["Case"               seed7-insert-case]
+     ["var"                seed7-insert-var-declaration]
+     ["const"              seed7-insert-const-declaration]
+     "---"
+     ["in"                 seed7-insert-in-parameter]
+     ["invar"              seed7-insert-invar-parameter]
+     ["inout"              seed7-insert-inout-parameter]
+     ["out"                seed7-insert-out-parameter]
+     ["ref"                seed7-insert-reference-parameter]
+     ["val"                seed7-insert-value-parameter]
+     ["callbn"             seed7-insert-call-by-name-parameter]
+     "---"
+     ["Case"               seed7-insert-case-statement]
      ["For"                seed7-insert-for]
      ["For until"          seed7-insert-for-until]
      ["For step"           seed7-insert-for-step]
@@ -4283,12 +4599,15 @@ If optional COMPILE argument set, compile the file to executable instead."
      ["For each key until" seed7-insert-for-each-key-until]
      ["For key"            seed7-insert-for-key]
      ["For key until"      seed7-insert-for-key-until]
-     ["If"                 seed7-insert-if]
+     ["If"                 seed7-insert-if-statement]
      ["Repeat"             seed7-insert-repeat]
-     ["While"              seed7-insert-while]
-     "---"
-     ["Enum"               seed7-insert-enum]
-     ["Struct"             seed7-insert-struct])
+     ["While"              seed7-insert-while])
+
+    ("Mark"
+     ["Mark Function/Procedure" seed7-mark-defun ])
+    "---"
+    ["Toggle outline-minor-mode" outline-minor-mode
+     :help "Control hiding/showing content of blocks"]
 
     ("Navigation"
      ["Forward func/proc" seed7-end-of-defun
