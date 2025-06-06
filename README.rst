@@ -23,51 +23,6 @@ Currently Implemented Features
   - Seed7 structures,
   - Seed7 enums.
 
-- Automatic indentation.
-  The indentation is done automatically when the TAB key is pressed
-  (from anywhere on the line). It's also done when the RETURN key is pressed.
-  It support the ``auto-fill`` mode.
-
-  - To disable auto-indentation, set ``seed7-auto-indent`` to nil, then
-    disable and re-enable ``seed7-mode``.
-    You can also disable it permanently by customizing it.
-  - The auto-indent logic expects blocks to be complete, as it checks
-    them for completion and nesting. That mechanism may change in the future,
-    providing a less strict support.  However, during development, it allows
-    me to detect more errors.
-  - One aspect of the auto indentation logic is that it checks (and extracts)
-    the name of procedure and functions and the return type of the function.
-    The auto-indentation will only work properly once these are identified.
-    This acts as a reminder to fill in the missing parts.
-  - As this code is still under development please report any problem you
-    may encounter.
-
-- Automatic completion of the following statement when typing the ``<TAB>``
-  key after the following keywords appearing at the beginning of a line
-  inside Seed7 code:
-
-  - **case**, **if**, **repeat**, **while**,
-  - The 9 variations of for loops:
-
-    - **for** expands to the `for statement`_,
-    - **foru** expands to the `for-until statement`_,
-    - **fors** expands to the `for-step statement`_,
-    - **fore** expands to the `for-each statement`_,
-    - **foreu** expands to the `for-each statement`_ combined with an until condition,
-    - **forek** expands to the `for-each-key statement`_,
-    - **foreku** expands to the `for-each-key statement`_ combined with an until condition,
-    - **fork** expands to the `for-key statement`_,
-    - **forku** expands to the `for-key statement`_ combined with an until condition,
-
-  - **proc** and **func** expand to the boiler plate code for procedure and
-    function.
-  - **funcs** expands to the boiler plate code for short function.
-  - **inc** expands to a partly filled include statement.
-  - **enum** expands to a enum declaration.
-  - **struct** expands to a structure declaration statement.
-  - **var** expands to a variable declaration.
-
-
 See the following example screenshots:
 
 =========================== ================================================
@@ -106,11 +61,143 @@ Screenshot                  Description
                             Shown inside a terminal Emacs.
 =========================== ================================================
 
-Implemented Commands
---------------------
+
+Indentation Control / Automatic Indentation
+-------------------------------------------
+
+Code indentation is done automatically when the ``<tab>`` key is pressed
+from anywhere on the line, except when used to expand a callable parameter in most cases.
+Automatic code indentation is also done when the ``<return>`` key is pressed.
+
+The ``auto-fill`` mode is supported.
+
+The following customizable user-option variables control Seed7 code indentation.
+
+= ======================= =================================================
+. Variable                Purpose
+= ======================= =================================================
+. **seed7-auto-indent**   Control whether auto-indentation of Seed7 code is active.
+
+                          - It is on by default.
+                          - To disable auto-indentation, set ``seed7-auto-indent`` to nil,
+                            then disable (by activating ``fundamental-mode``)
+                            and re-enable ``seed7-mode``.
+
+. **seed7-indent-width**  Number of columns used for each indentation level of Seed7 code.
+                          Defaults to 2.
+
+. **indent-tabs-mode**    Control whether Emacs inserts ASCII hard TAB characters
+                          when indenting.  If set to nil Emacs will only use
+                          ASCII SPACE characters.  If active (set to T or any non-nil
+                          value) Emacs will insert ASCII hard TAB character to fill
+                          indentation according to the number of columns of
+                          indentation required and the number of columns
+                          used to render a hard tab (as specified by **tab-width**).
+
+                          For Seed7 code, the convention is to avoid hard TAB
+                          characters in the code, therefore the **indent-tab-mode**
+                          should be turned off to prevent seed7-mode auto-indentation
+                          to insert hard TAB characters.
+
+                          Use the **untabify** command to replace all hard TAB characters
+                          in the buffer by the equivalent number of SPACE characters.
+
+. **tab-width**           Controls the the column width of a hard TAB on display.
+= ======================= =================================================
+
+
+Notes:
+
+- One aspect of the auto indentation logic is that it checks (and extracts)
+  the name of procedure and functions and the return type of the function.
+  The auto-indentation will only work properly once these are identified.
+  This acts as a reminder to fill in the missing parts.
+- As this code is still under development please report any problem you
+  may encounter.
+
+
+Code Template Insertion
+-----------------------
+
+Seed7 code templates are inserted at point when the ``<tab>`` key is pressed
+after one of the supported code identifier keywords under specific
+constraints:
+
+- When point is following one of the keywords from the first group and that is
+  the only word on the current line, or
+- when point is following one of the keywords of the second group and is
+  located just before a ``)`` character (with or without a space between point
+  and the closing parenthesis.   The second group holds keywords for argument
+  declarations.
+
+After successfully expanding the Seed7 code template, point is located at the
+first location that must be filled.  This location, and the following
+locations that must be filled, are internally identified
+by `Emacs tempo markers`_. You can use the ``tempo-forward-mark`` and
+``tempo-backward-mark`` to move point to these markers.  The ``seed7-mode``
+keyboard map binds the ``<backtab>`` key to  the ``tempo-forward-mark``
+command.  So after expanding a code template, fill the first field and then
+press ``<backtab>`` to move point to the next field.
+
+As mentioned above there are two groups of keywords, listed in the following
+tables.
+
+**First Group -- Statements:**
+
+Expand the following keywords when point is located just after any of these
+keywords, with the keyword being the only word on the current line.
+
+============ =========================================================
+Keyword      Expansion
+============ =========================================================
+**inc**      include statement
+**const**    `constant declaration`_
+**var**      `variable declaration`_
+.
+**proc**     `procedure declaration`_
+**func**     `function declaration`_
+**funcs**    `short function declaration`_
+.
+**enum**     `enum type declaration`_
+**struct**   `struct type declaration`_
+.
+**case**     `case statement`_
+**if**       `if statement`_
+**ife**      `if statement`_ with an else clause
+**ifei**     `if statement`_ with an elsif clause
+**ifeie**    `if statement`_ with an elsif and an else clause
+**repeat**   `repeat - until statement`_
+**while**    `while statement`_
+**for**      `for statement`_
+**foru**     `for-until statement`_
+**fors**     `for-step statement`_
+**fore**     `for-each statement`_
+**foreu**    `for-each statement`_ combined with an until condition
+**forek**    `for-each-key statement`_
+**foreku**   `for-each-key statement`_ combined with an until condition
+**fork**     `for-key statement`_
+**forku**    `for-key statement`_ combined with an until condition
+============ =========================================================
+
+
+**Second Group -- Argument Declarations**
+
+Expand the following keywords with ``<tab>`` when point is located just after
+any of these keywords and before the closing parenthesis of a parameter list.
+
+============ =========================================================
+Keyword      Expansion
+============ =========================================================
+**in**       Declaration of an `in-parameter`_.
+**inout**    Declaration of an `inout-parameter`_.
+**invar**    Declaration of an `in-var-parameter`_.
+**callbn**   Declaration of a `call-by-name parameter`_.
+**ref**      Declaration of a `reference-parameter`_.
+**val**      Declaration of a `value-parameter`_.
+============ =========================================================
 
 Code Navigation Commands
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 
 Some of the commands have a built-in key binding in the seed7-key-map but not
 all of them.  The `PEL Seed7 support`_ provides more key bindings using function keys.
@@ -160,7 +247,7 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
 = ============================ ============ =============================================================
 
 Code Marking Commands
-~~~~~~~~~~~~~~~~~~~~~
+---------------------
 
 = ============================ =========== =============================================================
 . Function                     Key Binding Description
@@ -170,7 +257,7 @@ Code Marking Commands
 = ============================ =========== =============================================================
 
 Compilation Command
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 = ============================ =========== =============================================================
 . Function                     Key Binding Description
@@ -187,7 +274,7 @@ Compilation Command
   part of seed7 program examples and use the generated executable.
 
 Comment Management Commands
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------
 
 = ============================ =========== =============================================================
 . Function                     Key Binding Description
@@ -430,6 +517,22 @@ Any help, questions, suggestions are welcome!
 .. _Emacs outline minor mode:                   https://www.gnu.org/software/emacs/manual/html_node/emacs/Outline-Minor-Mode.html
 .. _comment-dwim:                               https://www.gnu.org/software/emacs/manual/html_node/emacs/Comment-Commands.html
 .. _which-function-mode:                        https://www.gnu.org/software/emacs/manual/html_node/emacs/Which-Function.html
+.. _Emacs tempo markers:                        https://www.gnu.org/software/emacs/manual/html_node/autotype/Tempo.html
+.. _value-parameter:                            https://seed7.sourceforge.net/manual/params.htm#val_parameter
+.. _reference-parameter:                        https://seed7.sourceforge.net/manual/params.htm#ref_parameter
+.. _in-parameter:                               https://seed7.sourceforge.net/manual/params.htm#in_parameter
+.. _in-var-parameter:                           https://seed7.sourceforge.net/manual/params.htm#in_var_parameter
+.. _inout-parameter:                            https://seed7.sourceforge.net/manual/params.htm#inout_parameter
+.. _call-by-name parameter:                     https://seed7.sourceforge.net/manual/params.htm#call_by_name_parameter
+.. _constant declaration:                       https://seed7.sourceforge.net/manual/decls.htm#Constant_declarations
+.. _variable declaration:                       https://seed7.sourceforge.net/manual/decls.htm#Variable_declarations
+.. _procedure declaration:                      https://seed7.sourceforge.net/manual/decls.htm#Procedure_declarations
+.. _short function declaration:
+.. _function declaration:                       https://seed7.sourceforge.net/manual/decls.htm#Function_declarations
+.. _enum type declaration:                      https://seed7.sourceforge.net/manual/types.htm#enumeration
+.. _struct type declaration:                    https://seed7.sourceforge.net/manual/types.htm#struct
+
+
 
 
 .. ---------------------------------------------------------------------------
