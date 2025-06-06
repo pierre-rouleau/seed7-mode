@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-06 11:24:04 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-06 11:34:03 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -3856,7 +3856,7 @@ Also add tempo marker at each of these locations."
   (interactive "*")
   (insert "include \".s7i\"")
   (seed7-to-indent)
-  (forward-char 10)
+  (forward-char 9)
   (save-excursion
     (indent-for-tab-command)))
 
