@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-06 11:34:03 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-06 15:43:48 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -4276,18 +4276,6 @@ and \\[tempo-forward-mark] to move to previous one."
   (backward-char 3)
   (seed7--delete-char-and-mark))
 
-(defun seed7-insert-out-parameter ()
-  "Insert declaration of out parameter.
-Leave point at first position to fill.
-Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
-  (interactive "*")
-  (insert "out T: N")
-  (backward-char 1)
-  (seed7--delete-char-and-mark)
-  (backward-char 3)
-  (seed7--delete-char-and-mark))
-
 (defun seed7-insert-reference-parameter ()
   "Insert declaration of ref parameter.
 Leave point at first position to fill.
@@ -4333,21 +4321,17 @@ a code line.  The supported keywords are:
 Keyword      Expansion
 ============ =========================================================
 inc          include statement
-proc         procedure definition
-func         function definition
-funcs        short function definition
-
-const        constant declaration statement
-var          variable declaration  statement
-
-in
-invar
-inout
-out
-ref
-val
-callbn
-
+proc         procedure declaration
+func         function declaration
+funcs        short function declaration
+const        constant declaration
+var          variable declaration
+in           declaration of an in parameter
+inout        declaration of an inout parameter
+invar        declaration of an in-var parameter
+callbn       declaration of a call-by-name parameter
+ref          declaration of a reference parameter
+val          declaration of a value parameter
 case         case statement
 if           if statement
 ife          if-else statement
@@ -4405,7 +4389,6 @@ struct       struct type definition
                       (member keyword '("in"
                                         "invar"
                                         "inout"
-                                        "out"
                                         "ref"
                                         "val"
                                         "callbn")))))
@@ -4484,9 +4467,6 @@ struct       struct type definition
          ((string= keyword "inout")
           (seed7--delete-backward 5)
           (seed7-insert-inout-parameter))
-         ((string= keyword "out")
-          (seed7--delete-backward 3)
-          (seed7-insert-out-parameter))
          ((string= keyword "ref")
           (seed7--delete-backward 3)
           (seed7-insert-reference-parameter))
@@ -4584,7 +4564,6 @@ If optional COMPILE argument set, compile the file to executable instead."
      ["in"                 seed7-insert-in-parameter]
      ["invar"              seed7-insert-invar-parameter]
      ["inout"              seed7-insert-inout-parameter]
-     ["out"                seed7-insert-out-parameter]
      ["ref"                seed7-insert-reference-parameter]
      ["val"                seed7-insert-value-parameter]
      ["callbn"             seed7-insert-call-by-name-parameter]
