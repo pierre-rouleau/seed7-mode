@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-06 16:46:19 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-06 17:14:13 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1940,7 +1940,9 @@ Move inside the current if inside one, to the next if outside one.
     (unless (eq n 0)
       (save-excursion
         (dotimes (_ n)
-          (setq found-candidate nil)
+          (setq found-candidate nil
+                final-pos nil
+                found-pos nil)
           ;; Search for all possible function/procedure end.
           ;; - Retain the one that is closest to point.
           ;; Search for next procedure or long function
@@ -1970,7 +1972,8 @@ Move inside the current if inside one, to the next if outside one.
                    t)
                  (seed7-re-search-forward seed7-short-func-end-regexp)
                  (eq (point) found-pos)
-                 (< found-pos final-pos))
+                 (or (not final-pos)
+                     (< found-pos final-pos)))
               (setq final-pos found-pos)
               (setq found-candidate t)
               (setq item-name item-name2)
@@ -1989,7 +1992,8 @@ Move inside the current if inside one, to the next if outside one.
                    t)
                  (seed7-re-search-forward seed7-forward-declaration-end-regexp)
                  (eq (point) found-pos)
-                 (< found-pos final-pos))
+                 (or (not final-pos)
+                     (< found-pos final-pos)))
               (setq final-pos found-pos)
               (setq found-candidate t)
               (setq item-name item-name2)
@@ -2008,7 +2012,8 @@ Move inside the current if inside one, to the next if outside one.
                    t)
                  (seed7-re-search-forward seed7-action-function-end-regexp)
                  (eq (point) found-pos)
-                 (< found-pos final-pos))
+                 (or (not final-pos)
+                     (< found-pos final-pos)))
               (setq final-pos found-pos)
               (setq found-candidate t)
               (setq item-name item-name2)
