@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-06 17:14:13 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-07 12:55:39 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -159,18 +159,12 @@
 ;;        the terminating quote is not supported.
 ;;  # 04  seed7-predefined-constants-regxp is not perfect: it does not allow
 ;;        an operator just at right of it.
-;;  # 05  A sequence of 3 consecutive single quote is not handled by the
-;;        syntax highlighting.
-;;  # 06  The `seed7-to-block-backward' and `seed7-to-block-forward' can
+;;  # 05  The `seed7-to-block-backward' and `seed7-to-block-forward' can
 ;;        detect the other end when point is on the beginning or end line,
 ;;        but they fail when point is inside the block.
 ;;        I will fix that once I get the auto indentation working properly
 ;;        for all code.  I will then have to decide if that's considered a
 ;;        defun to allow marking the block just like procedure and functions.
-;;  # 07  Indentation of code following a line comment sometimes fails.
-;;        There's no problem for a block comment that fills the entire
-;;        previous line.
-;;
 ;; ]
 ;;
 ;;
@@ -392,7 +386,8 @@ The name of the source code file is appended to the end of that line."
     ;;
     ;; string escape
     (modify-syntax-entry ?\\ "\\"  st)
-    (modify-syntax-entry ?\' "\""  st)
+    ;; single quote: Seed7 supports ''' as well as '\''.  Deal with it in seed7-syntax-propertize.
+    (modify-syntax-entry ?\' "." st) ; attribute; see seed7-syntax-propertize for character literal
     st)
   "Syntax table in use in seed7-mode buffers.")
 
@@ -401,15 +396,23 @@ The name of the source code file is appended to the end of that line."
 
 (defun seed7-mode-syntax-propertize (start end)
   "Apply syntax property between START and END to # character in number."
+  ;; (info "(elisp)Syntax Properties")
+  ;;
+  ;; called from `syntax-propertize', inside save-excursion with-silent-modifications
   (goto-char start)
-  (funcall
-   (syntax-propertize-rules
-    ;; Prevent the # in base numbers to be interpreted as comment.
-    ;; Use "_" (word) syntax so `forward-sexp' does not stop at the '#'
-    ;; in numbers with a base.
-    ("[[:digit:]]\\(#\\)[[:alnum:]]" (1 (string-to-syntax "_"))))
-   start end))
+  (while (re-search-forward "\\(?:[[:digit:]]\\(#\\)[[:alnum:]]\\|\\('\\\\?.'\\)\\)" end t)
+    (cond
+     ;; deal with '#'
+     ((match-beginning 1)
+      (let
+          ((mb (match-beginning 1)) (me (match-end 1))
+           (syntax (string-to-syntax "_")))
+        (if syntax (put-text-property mb me 'syntax-table syntax))))
 
+     ;; Deal with single quoted character expression
+     ((match-beginning 2)
+      (put-text-property  (match-beginning 2) (1+ (match-beginning 2)) 'syntax-table '(7 . ?'))
+      (put-text-property  (1- (match-end 2))  (match-end 2)            'syntax-table '(7 . ?'))))))
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;;* Seed7 Keyword Regexp
@@ -4631,11 +4634,11 @@ If optional COMPILE argument set, compile the file to executable instead."
   ;; Seed7 Mode Syntax Propertize Function
   (setq-local syntax-propertize-function #'seed7-mode-syntax-propertize)
 
+  ;; Seed7 iMenu Support  - Seed7 Speedbar Support
   ;; [:todo 2025-05-30, by Pierre Rouleau: Add ability to select whether
   ;;   functions and procedures are listed together or separately.
   ;;   For now, list them together, as it tests the regexp on files.]
 
-  ;; iMenu Support / Speedbar Support
   (setq-local imenu-generic-expression
               (list
                (list "Enum"      seed7-enum-regexp 1)
