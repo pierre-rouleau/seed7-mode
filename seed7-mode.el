@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-07 12:55:39 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-07 14:22:01 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -793,10 +793,10 @@ Has only one capturing group.")
 
 (defconst seed7-predefined-types-regexp
   (format "%s\\(%s\\)%s"
-          "\\_<"
+          ""
           (rx-to-string
            `(: (or ,@seed7--predefined-types)))
-          "\\_>"))
+          ""))
 
 ;;** Seed7 Predefined Constants
 ;;   --------------------------
