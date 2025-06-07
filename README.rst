@@ -1,11 +1,12 @@
-=============================================================
+A=============================================================
 Seed7-mode - Emacs support for the Seed7 Programming Language
 =============================================================
 
 
-⚠️  This is a, **work-in-progress** version of seed7-mode  🚧 .
+This is a, **work-in-progress** version of seed7-mode 🚧 .
 A lot of features are implemented but there's still some
 areas that need improvements and fixes.
+Please create a bug report for  any problem you detect.
 
 Currently Implemented Features
 ==============================
