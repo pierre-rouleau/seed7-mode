@@ -197,6 +197,167 @@ Keyword      Expansion
 **val**      Declaration of a `value-parameter`_.
 ============ =========================================================
 
+Seed7 Specific Abbreviations
+----------------------------
+
+:Ref: `Abbrevs @ Emacs Manual`_
+:Ref: `Abbrev Concepts`_
+
+When the **abbrev-mode** is active in a seed-mode buffer you can expand a set
+of Seed7 keywords by typing their abbreviation followed by a word-separating
+character such as ``<space>``.  All Seed7 abbreviations are short
+mnemonic character sequences that start with ``;``.
+
+You can enable or disable the ``abbrev-mode`` with the ``M-x abbrev-mode``
+command.  List the abbreviations with ``M-x list-abbrev``
+
+The list of default supported abbreviations are shown here.
+
+**pragmas**
+
+=================== ======================
+Abbreviation        Expansion
+=================== ======================
+``;li``             library
+``;msg``            message
+``;in``             info
+``;tr``             trace
+``;de``             decls
+``;na``             names
+``;syn``            syntax
+``;sys``            system
+=================== ======================
+
+**in-statement-keywords**
+
+=================== ======================
+Abbreviation        Expansion
+=================== ======================
+``;fo``             forward
+``;n``              new
+``;no``             noop
+``;ra``             raise
+``;rt``             return
+=================== ======================
+
+
+**in-middle-statement-keywords**
+
+=================== ======================
+Abbreviation        Expansion
+=================== ======================
+``;dt``             downto
+``;exc``            exception
+``;lo``             local
+``;pa``             param
+``;rg``             range
+``;rs``             result
+``;st``             step
+=================== ======================
+
+**block clause keywords**
+
+=================== ======================
+Abbreviation        Expansion
+=================== ======================
+``;w``              when
+``;o``              otherwise
+``;ct``             catch
+``;ei``             elsif
+``;e``              else
+=================== ======================
+
+**predefined-types**
+
+=================== ======================
+Abbreviation        Expansion
+=================== ======================
+``;a``              array
+``;bi``             bigInteger
+``;br``             bigRational
+``;b3``             bin32
+``;b6``             bin64
+``;bt``             bitset
+``;bo``             boolean
+``;bs``             bstring
+``;ca``             category
+``;c``              char
+``;cf``             clib_file
+``;co``             color
+``;cx``             complex
+``;db``             database
+``;du``             duration
+``;en``             enum
+``;ex``             expr
+``;fi``             file
+``;fs``             fileSys
+``;fl``             float
+``;h``              hash
+``;i``              integer
+``;ob``             object
+``;pro``            process
+``;pr``             program
+``;rat``            rational
+``;rf``             reference
+``;rfl``            ref_list
+``;s``              set
+``;sq``             sqlStatement
+``;sti``            string
+``;stu``            struct
+``;tx``             text
+``;ti``             time
+``;ty``             type
+``;v``              void
+``;pw``             PRIMITIVE_WINDOW
+=================== ======================
+
+**predefined-constants**
+
+=================== ======================
+Abbreviation        Expansion
+=================== ======================
+``;f``              FALSE
+``;inf``            Infinity
+``;t``              TRUE
+``;em``             empty
+=================== ======================
+
+**predefined-variables**
+
+=================== ======================
+Abbreviation        Expansion
+=================== ======================
+``;ck``             CONSOLE_KEYBOARD
+``;gk``             GRAPH_KEYBOARD
+``;kb``             KEYBOARD
+``;sc``             STD_CONSOLE
+``;se``             STD_ERR
+``;si``             STD_IN
+``;sn``             STD_NULL
+``;so``             STD_OUT
+=================== ======================
+
+**errinfo-values**
+
+=================== ======================
+Abbreviation        Expansion
+=================== ======================
+``;ok``             OKAY_NO_ERROR
+``;me``             MEMORY_ERROR
+``;ne``             NUMERIC_ERROR
+``;oe``             OVERFLOW_ERROR
+``;re``             RANGE_ERROR
+``;ie``             INDEX_ERROR
+``;fe``             FILE_ERROR
+``;dbe``            DATABASE_ERROR
+``;ge``             GRAPHIC_ERROR
+``;ae``             ACTION_ERROR
+``;cre``            CREATE_ERROR
+``;dse``            DESTROY_ERROR
+``;ce``             COPY_ERROR
+``;ine``            IN_ERROR
+=================== ======================
+
 Code Navigation Commands
 ------------------------
 
@@ -532,6 +693,8 @@ Any help, questions, suggestions are welcome!
 .. _function declaration:                       https://seed7.sourceforge.net/manual/decls.htm#Function_declarations
 .. _enum type declaration:                      https://seed7.sourceforge.net/manual/types.htm#enumeration
 .. _struct type declaration:                    https://seed7.sourceforge.net/manual/types.htm#struct
+.. _Abbrev Concepts:                            https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrev-Concepts.html
+.. _Abbrevs @ Emacs Manual:                     https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrevs.html
 
 
 
