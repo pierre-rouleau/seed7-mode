@@ -204,12 +204,16 @@ Seed7 Specific Abbreviations
 :Ref: `Abbrev Concepts`_
 :Ref: `Examining and Editing Abbrevs`_
 
-When the **abbrev-mode** is active in a seed-mode buffer you can expand a set
+By default, the **seed7-support-abbrev-mode** user-option is on (non-nil).
+This makes **seed7-mode** support Seed7-specific abbreviations that can be automatically
+expanded when the **abbrev-mode** is active.
+
+You can expand a set
 of Seed7 keywords by typing their (*system*) abbreviation followed by a word-separating
 character such as ``<space>``, ``<RET>` or ``;`` and others.
 All Seed7 abbreviations are short mnemonic character sequences that start with ``;``.
 
-You can enable or disable the ``abbrev-mode`` with the ``M-x abbrev-mode``
+Dynamically enable or disable the ``abbrev-mode`` with the ``M-x abbrev-mode``
 command.  List the abbreviations with ``M-x list-abbrevs``.  You can create
 other abbreviations and edit them with ``M-x edit-abbrevs``.  You cannot
 change the pre-defined Seed7 system abbreviations, but you can create your own
@@ -231,6 +235,12 @@ tables:
 - `predefined constants`_
 - `predefined variables`_
 - `errinfo values`_
+
+If you do not want to use Seed7-specific abbreviations, you can change the
+customization of this user-variable with ``M-x customize-option RET
+seed7-support-abbrev-mode`` turning it off, changing the mode to another major
+mode (such as fundamental-mode) and re-enabling the seed7-mode.  If you *Apply
+and Save* the customization, the setting will persist across Emacs sessions.
 
 pragmas
 ~~~~~~~
