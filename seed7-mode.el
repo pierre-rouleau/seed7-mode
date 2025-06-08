@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-07 19:37:49 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-07 22:29:49 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -4665,7 +4665,7 @@ If optional COMPILE argument set, compile the file to executable instead."
       (";e"   . "else")
 
       ;; predefined-types
-      (";ar"  . "array")
+      (";a"   . "array")
       (";bi"  . "bigInteger")
       (";br"  . "bigRational")
       (";b3"  . "bin32")
@@ -4675,8 +4675,8 @@ If optional COMPILE argument set, compile the file to executable instead."
       (";bs"  . "bstring")
       (";ca"  . "category")
       (";c"   . "char")
-      (";clf" . "clib_file")
-      (";col" . "color")
+      (";cf"  . "clib_file")
+      (";co"  . "color")
       (";cx"  . "complex")
       (";db"  . "database")
       (";du"  . "duration")
@@ -4696,7 +4696,7 @@ If optional COMPILE argument set, compile the file to executable instead."
       (";rf"  . "reference")
       (";rfl" . "ref_list")
       (";s"   . "set")
-      (";sql" . "sqlStatement")
+      (";sq"  . "sqlStatement")
       (";sti" . "string")
       (";stu" . "struct")
       (";tx"  . "text")
