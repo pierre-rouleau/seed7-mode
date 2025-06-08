@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-08 11:06:11 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-08 11:32:36 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -300,6 +300,15 @@ Use inside a `cond' clause to emphasize the check."
 (defcustom seed7-uses-block-comment nil
   "When non-nil, use Seed7 \"(*   *)\" block comments.
 Use line comments otherwise."
+  :group 'seed7
+  :type 'boolean
+  :safe #'booleanp)
+
+(defcustom seed7-menu-list-functions-and-procedures-together  t
+  "When on, list function and procedures together, otherwise separately.
+
+This affects the way the callable are displayed in imenu commands,
+in the top menu and inside the Speedbar."
   :group 'seed7
   :type 'boolean
   :safe #'booleanp)
@@ -4814,21 +4823,21 @@ Make sure you have no duplication of keywords if you edit the list."
   ;; Seed7 Mode Syntax Propertize Function
   (setq-local syntax-propertize-function #'seed7-mode-syntax-propertize)
 
-  ;; Seed7 iMenu Support  - Seed7 Speedbar Support
-  ;; [:todo 2025-05-30, by Pierre Rouleau: Add ability to select whether
-  ;;   functions and procedures are listed together or separately.
-  ;;   For now, list them together, as it tests the regexp on files.]
-
-  (setq-local imenu-generic-expression
-              (list
-               (list "Enum"      seed7-enum-regexp 1)
-               (list "Interface" seed7-interface-regexp 1)
-               (list "Struct"    seed7-struct-regexp 1)
-               (list "Callable"  seed7-procfunc-regexp
-                     seed7-procfunc-regexp-item-name-group )
-               ;; (list "Procedure" seed7-procedure-regexp 1)
-               ;; (list "Function"  seed7-function-regexp  2)
-               ))
+  (setq-local
+   imenu-generic-expression
+   (if seed7-menu-list-functions-and-procedures-together
+       (list
+        (list "Enum"      seed7-enum-regexp 1)
+        (list "Interface" seed7-interface-regexp 1)
+        (list "Struct"    seed7-struct-regexp 1)
+        (list "Callable"  seed7-procfunc-regexp
+              seed7-procfunc-regexp-item-name-group))
+     (list
+      (list "Enum"      seed7-enum-regexp 1)
+      (list "Interface" seed7-interface-regexp 1)
+      (list "Struct"    seed7-struct-regexp 1)
+      (list "Procedure" seed7-procedure-regexp 1)
+      (list "Function"  seed7-function-regexp  2))))
 
   ;; Seed7 Comments Control
   (seed7--set-comment-style seed7-uses-block-comment)
