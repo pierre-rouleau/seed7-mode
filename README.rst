@@ -213,9 +213,20 @@ You can enable or disable the ``abbrev-mode`` with the ``M-x abbrev-mode``
 command.  List the abbreviations with ``M-x list-abbrevs`` and edit them
 with ``M-x edit-abbrevs``.
 
-The list of default supported abbreviations are shown here.
+The list of default supported abbreviations are shown inside the 8 following
+tables:
 
-**pragmas**
+- `pragmas`_
+- `in-statement keywords`_
+- `in-middle statement keywords`_
+- `block clause keywords`_
+- `predefined types`_
+- `predefined constants`_
+- `predefined variables`_
+- `errinfo values`_
+
+pragmas
+~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
@@ -230,7 +241,8 @@ Abbreviation        Expansion
 ``;tr``             trace
 =================== ======================
 
-**in-statement-keywords**
+in-statement keywords
+~~~~~~~~~~~~~~~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
@@ -243,7 +255,8 @@ Abbreviation        Expansion
 =================== ======================
 
 
-**in-middle-statement-keywords**
+in-middle statement keywords
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
@@ -257,7 +270,8 @@ Abbreviation        Expansion
 ``;st``             step
 =================== ======================
 
-**block clause keywords**
+block clause keywords
+~~~~~~~~~~~~~~~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
@@ -269,7 +283,8 @@ Abbreviation        Expansion
 ``;w``              when
 =================== ======================
 
-**predefined-types**
+predefined types
+~~~~~~~~~~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
@@ -313,7 +328,8 @@ Abbreviation        Expansion
 ``;pw``             PRIMITIVE_WINDOW
 =================== ======================
 
-**predefined-constants**
+predefined constants
+~~~~~~~~~~~~~~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
@@ -324,7 +340,8 @@ Abbreviation        Expansion
 ``;t``              TRUE
 =================== ======================
 
-**predefined-variables**
+predefined variables
+~~~~~~~~~~~~~~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
@@ -339,7 +356,8 @@ Abbreviation        Expansion
 ``;so``             STD_OUT
 =================== ======================
 
-**errinfo-values**
+errinfo values
+~~~~~~~~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
