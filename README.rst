@@ -202,6 +202,7 @@ Seed7 Specific Abbreviations
 
 :Ref: `Abbrevs @ Emacs Manual`_
 :Ref: `Abbrev Concepts`_
+:Ref: `Examining and Editing Abbrevs`_
 
 When the **abbrev-mode** is active in a seed-mode buffer you can expand a set
 of Seed7 keywords by typing their abbreviation followed by a word-separating
@@ -209,7 +210,8 @@ character such as ``<space>``.  All Seed7 abbreviations are short
 mnemonic character sequences that start with ``;``.
 
 You can enable or disable the ``abbrev-mode`` with the ``M-x abbrev-mode``
-command.  List the abbreviations with ``M-x list-abbrev``
+command.  List the abbreviations with ``M-x list-abbrevs`` and edit them
+with ``M-x edit-abbrevs``.
 
 The list of default supported abbreviations are shown here.
 
@@ -218,14 +220,14 @@ The list of default supported abbreviations are shown here.
 =================== ======================
 Abbreviation        Expansion
 =================== ======================
+``;de``             decls
+``;in``             info
 ``;li``             library
 ``;msg``            message
-``;in``             info
-``;tr``             trace
-``;de``             decls
 ``;na``             names
 ``;syn``            syntax
 ``;sys``            system
+``;tr``             trace
 =================== ======================
 
 **in-statement-keywords**
@@ -260,11 +262,11 @@ Abbreviation        Expansion
 =================== ======================
 Abbreviation        Expansion
 =================== ======================
-``;w``              when
-``;o``              otherwise
 ``;ct``             catch
-``;ei``             elsif
 ``;e``              else
+``;ei``             elsif
+``;o``              otherwise
+``;w``              when
 =================== ======================
 
 **predefined-types**
@@ -316,10 +318,10 @@ Abbreviation        Expansion
 =================== ======================
 Abbreviation        Expansion
 =================== ======================
+``;em``             empty
 ``;f``              FALSE
 ``;inf``            Infinity
 ``;t``              TRUE
-``;em``             empty
 =================== ======================
 
 **predefined-variables**
@@ -695,6 +697,7 @@ Any help, questions, suggestions are welcome!
 .. _struct type declaration:                    https://seed7.sourceforge.net/manual/types.htm#struct
 .. _Abbrev Concepts:                            https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrev-Concepts.html
 .. _Abbrevs @ Emacs Manual:                     https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrevs.html
+.. _Examining and Editing Abbrevs:              https://www.gnu.org/software/emacs/manual/html_node/emacs/Editing-Abbrevs.html#Editing-Abbrevs
 
 
 
