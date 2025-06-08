@@ -216,6 +216,10 @@ change the pre-defined Seed7 system abbreviations, but you can create your own
 abbreviations that expand to the keyword (eliminating the expansion) and
 create other expansions.
 
+While abbrev-mode is active, you can still explicitly prevent expansion of the
+keyword type ``C-q`` after the keyword before any white-space or punctuation
+character.
+
 The list of default supported abbreviations are shown inside the 8 following
 tables:
 
