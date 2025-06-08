@@ -224,7 +224,20 @@ While abbrev-mode is active, you can still explicitly prevent expansion of the
 keyword type ``C-q`` after the keyword before any white-space or punctuation
 character.
 
-The list of default supported abbreviations are shown inside the 8 following
+If you do not want to use Seed7-specific abbreviations, you can change the
+customization of this user-variable with ``M-x customize-option RET
+seed7-support-abbrev-mode`` turning it off, changing the mode to another major
+mode (such as fundamental-mode) and re-enabling the seed7-mode.  If you *Apply
+and Save* the customization, the setting will persist across Emacs sessions.
+
+
+The list of default supported abbreviations is controlled by the
+**seed7-abbreviation** customizable user-option.  You can modify the
+keyword or the expansion of any entry and add or delete entries
+these via customization.   The new values are activated the next time a
+buffer starts the seed7-mode.
+
+The default abbreviations are shown inside the 8 following
 tables:
 
 - `pragmas`_
@@ -236,11 +249,7 @@ tables:
 - `predefined variables`_
 - `errinfo values`_
 
-If you do not want to use Seed7-specific abbreviations, you can change the
-customization of this user-variable with ``M-x customize-option RET
-seed7-support-abbrev-mode`` turning it off, changing the mode to another major
-mode (such as fundamental-mode) and re-enabling the seed7-mode.  If you *Apply
-and Save* the customization, the setting will persist across Emacs sessions.
+
 
 pragmas
 ~~~~~~~

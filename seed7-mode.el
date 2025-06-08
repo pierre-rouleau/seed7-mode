@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-08 10:26:21 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-08 11:06:11 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -4624,154 +4624,172 @@ If optional COMPILE argument set, compile the file to executable instead."
   :type 'boolean
   :safe #'booleanp)
 
+;; All Seed7 system keyword abbreviations are defined in a customizable
+;; list, allowing users to modify them if needed.
+(defcustom seed7-abbreviations '(
+                                 ;; pragmas
+                                 (";msg"  "message")
+                                 (";in"   "info")
+                                 (";tr"   "trace")
+                                 (";de"   "decls")
+                                 (";na"   "names")
+                                 ;; pragmas with optional $
+                                 (";syn"  "syntax")
+                                 (";sys"  "system")
+
+                                 ;; lead-in-statement-keywords
+                                 (";ra"   "raise")
+                                 (";rt"   "return")
+                                 ;; in-statement-keywords
+                                 ;; "is"
+                                 (";no"   "noop")
+                                 ;; is-statement-keywords
+                                 (";fo"   "forward")
+                                 (";n"    "new")
+                                 ;; in-middle-statement-keywords
+                                 ;; "begin"
+                                 ;; "do"
+                                 (";dt"   "downto")
+                                 (";exc"  "exception")
+                                 (";lo"   "local")
+                                 (";pa"   "param")
+                                 (";rg"   "range")
+                                 (";rs"   "result")
+                                 (";st"   "step")
+                                 ;; "then"
+                                 ;; "to"
+                                 ;; block clause keywords
+                                 (";w"    "when")
+                                 (";o"    "otherwise")
+                                 (";ct"   "catch")
+                                 (";ei"   "elsif")
+                                 (";e"    "else")
+
+                                 ;; predefined-types
+                                 (";a"    "array")
+                                 (";bi"   "bigInteger")
+                                 (";br"   "bigRational")
+                                 (";b3"   "bin32")
+                                 (";b6"   "bin64")
+                                 (";bt"   "bitset")
+                                 (";bo"   "boolean")
+                                 (";bs"   "bstring")
+                                 (";ca"   "category")
+                                 (";c"    "char")
+                                 (";cf"   "clib_file")
+                                 (";co"   "color")
+                                 (";cx"   "complex")
+                                 (";db"   "database")
+                                 (";du"   "duration")
+                                 (";en"   "enum")
+                                 (";ex"   "expr")
+                                 (";fi"   "file")
+                                 (";fs"   "fileSys")
+                                 (";fl"   "float")
+                                 ;; "func"
+                                 (";h"    "hash")
+                                 (";i"    "integer")
+                                 (";ob"   "object")
+                                 ;; "proc"
+                                 (";pro"  "process")
+                                 (";pr"   "program")
+                                 (";rat"  "rational")
+                                 (";rf"   "reference")
+                                 (";rfl"  "ref_list")
+                                 (";s"    "set")
+                                 (";sq"   "sqlStatement")
+                                 (";sti"  "string")
+                                 (";stu"  "struct")
+                                 (";tx"   "text")
+                                 (";ti"   "time")
+                                 (";ty"   "type")
+                                 (";v"    "void")
+                                 (";pw"   "PRIMITIVE_WINDOW")
+
+                                 ;; predefined-constants
+                                 ;; "E"
+                                 ;; "EOF"
+                                 (";f"    "FALSE")
+                                 (";inf"  "Infinity")
+                                 ;; "NIL"
+                                 ;; "NaN"
+                                 ;; "PI"
+                                 (";t"    "TRUE")
+                                 (";em"   "empty")
+
+                                 ;; predefined-variables
+                                 (";ck"   "CONSOLE_KEYBOARD")
+                                 (";gk"   "GRAPH_KEYBOARD")
+                                 ;; "IN"
+                                 (";kb"   "KEYBOARD")
+                                 ;; "OUT"
+                                 (";sc"   "STD_CONSOLE")
+                                 (";se"   "STD_ERR")
+                                 (";si"   "STD_IN")
+                                 (";sn"   "STD_NULL")
+                                 (";so"   "STD_OUT")
+
+                                 ;; errinfo-values
+                                 (";ok"   "OKAY_NO_ERROR")
+                                 (";me"   "MEMORY_ERROR")
+                                 (";ne"   "NUMERIC_ERROR")
+                                 (";oe"   "OVERFLOW_ERROR")
+                                 (";re"   "RANGE_ERROR")
+                                 (";ie"   "INDEX_ERROR")
+                                 (";fe"   "FILE_ERROR")
+                                 (";dbe"  "DATABASE_ERROR")
+                                 (";ge"   "GRAPHIC_ERROR")
+                                 (";ae"   "ACTION_ERROR")
+                                 (";cre"  "CREATE_ERROR")
+                                 (";dse"  "DESTROY_ERROR")
+                                 (";ce"   "COPY_ERROR")
+                                 (";ine"  "IN_ERROR")
+
+                                 ;; operator-symbols
+                                 ;; "and"
+                                 ;; "conv"
+                                 ;; "digits"
+                                 ;; "div"
+                                 ;; "exp"
+                                 ;; "in"
+                                 ;; "lapd0"
+                                 ;; "lpad"
+                                 ;; "mdiv"
+                                 ;; "mod"
+                                 ;; "mult"
+                                 ;; "not"
+                                 ;; "or"
+                                 ;; "parse"
+                                 ;; "rem"
+                                 ;; "rpad"
+                                 ;; "sci"
+                                 ;; "times"
+                                 ;; "varConv"
+                                 )
+  "List of Seed7-specific abbreviation to expansion.
+
+These abbreviations are made available to the abbrev-mode when the
+`seed7-support-abbrev-mode' user option is on.
+
+The list included here corresponds to what is documented.
+Each entry shows the `abbrev' and its expanded text.
+You can add, delete or modify any of these.
+Make sure you have no duplication of keywords if you edit the list."
+  :group 'seed7
+  :type '(repeat
+          (list
+           (string :tag "abbrev")
+           (string :tag "expand"))))
+
 (defvar seed7-mode-abbrev-table nil
   "Abbrev table in use in Seed7 mode buffers.")
+
 
 (when seed7-support-abbrev-mode
   (define-abbrev-table 'seed7-mode-abbrev-table
     (mapcar
-     (lambda (e) (list (car e) (cdr e) nil :system t))
-     '(
-       ;; pragmas
-       (";li"  . "library")
-       (";msg" . "message")
-       (";in"  . "info")
-       (";tr"  . "trace")
-       (";de"  . "decls")
-       (";na"  . "names")
-       ;; pragmas with optional $
-       (";syn" . "syntax")
-       (";sys" . "system")
-
-       ;; lead-in-statement-keywords
-       (";ra"  . "raise")
-       (";rt"  . "return")
-       ;; in-statement-keywords
-       ;; "is"
-       (";no"  . "noop")
-       ;; is-statement-keywords
-       (";fo"  . "forward")
-       (";n"   . "new")
-       ;; in-middle-statement-keywords
-       ;; "begin"
-       ;; "do"
-       (";dt"  . "downto")
-       (";exc" . "exception")
-       (";lo"  . "local")
-       (";pa"  . "param")
-       (";rg"  . "range")
-       (";rs"  . "result")
-       (";st"  . "step")
-       ;; "then"
-       ;; "to"
-       ;; block clause keywords
-       (";w"   . "when")
-       (";o"   . "otherwise")
-       (";ct"  . "catch")
-       (";ei"  . "elsif")
-       (";e"   . "else")
-
-       ;; predefined-types
-       (";a"   . "array")
-       (";bi"  . "bigInteger")
-       (";br"  . "bigRational")
-       (";b3"  . "bin32")
-       (";b6"  . "bin64")
-       (";bt"  . "bitset")
-       (";bo"  . "boolean")
-       (";bs"  . "bstring")
-       (";ca"  . "category")
-       (";c"   . "char")
-       (";cf"  . "clib_file")
-       (";co"  . "color")
-       (";cx"  . "complex")
-       (";db"  . "database")
-       (";du"  . "duration")
-       (";en"  . "enum")
-       (";ex"  . "expr")
-       (";fi"  . "file")
-       (";fs"  . "fileSys")
-       (";fl"  . "float")
-       ;; "func"
-       (";h"   . "hash")
-       (";i"   . "integer")
-       (";ob"  . "object")
-       ;; "proc"
-       (";pro" . "process")
-       (";pr"  . "program")
-       (";rat" . "rational")
-       (";rf"  . "reference")
-       (";rfl" . "ref_list")
-       (";s"   . "set")
-       (";sq"  . "sqlStatement")
-       (";sti" . "string")
-       (";stu" . "struct")
-       (";tx"  . "text")
-       (";ti"  . "time")
-       (";ty"  . "type")
-       (";v"   . "void")
-       (";pw"  . "PRIMITIVE_WINDOW")
-
-       ;; predefined-constants
-       ;; "E"
-       ;; "EOF"
-       (";f"   . "FALSE")
-       (";inf" . "Infinity")
-       ;; "NIL"
-       ;; "NaN"
-       ;; "PI"
-       (";t"   . "TRUE")
-       (";em"  . "empty")
-
-       ;; predefined-variables
-       (";ck"  . "CONSOLE_KEYBOARD")
-       (";gk"  . "GRAPH_KEYBOARD")
-       ;; "IN"
-       (";kb"  . "KEYBOARD")
-       ;; "OUT"
-       (";sc"  . "STD_CONSOLE")
-       (";se"  . "STD_ERR")
-       (";si"  . "STD_IN")
-       (";sn"  . "STD_NULL")
-       (";so"  . "STD_OUT")
-
-       ;; errinfo-values
-       (";ok"  . "OKAY_NO_ERROR")
-       (";me"  . "MEMORY_ERROR")
-       (";ne"  . "NUMERIC_ERROR")
-       (";oe"  . "OVERFLOW_ERROR")
-       (";re"  . "RANGE_ERROR")
-       (";ie"  . "INDEX_ERROR")
-       (";fe"  . "FILE_ERROR")
-       (";dbe" . "DATABASE_ERROR")
-       (";ge"  . "GRAPHIC_ERROR")
-       (";ae"  . "ACTION_ERROR")
-       (";cre" . "CREATE_ERROR")
-       (";dse" . "DESTROY_ERROR")
-       (";ce"  . "COPY_ERROR")
-       (";ine" . "IN_ERROR")
-
-       ;; operator-symbols
-       ;; "and"
-       ;; "conv"
-       ;; "digits"
-       ;; "div"
-       ;; "exp"
-       ;; "in"
-       ;; "lapd0"
-       ;; "lpad"
-       ;; "mdiv"
-       ;; "mod"
-       ;; "mult"
-       ;; "not"
-       ;; "or"
-       ;; "parse"
-       ;; "rem"
-       ;; "rpad"
-       ;; "sci"
-       ;; "times"
-       ;; "varConv"
-       ))
+     (lambda (e) (list (car e) (cadr e) nil :system t))
+     seed7-abbreviations)
     "Abbrev table for Seed7 mode."
     ;; Accept ; as the first char of an abbrev.  Also allow _ in abbrevs.
     :regexp "\\(?:[^[:word:]_;]\\|^\\)\\(;?[[:word:]_]+\\)[^[:word:]_]*"))
