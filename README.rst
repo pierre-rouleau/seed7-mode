@@ -205,13 +205,16 @@ Seed7 Specific Abbreviations
 :Ref: `Examining and Editing Abbrevs`_
 
 When the **abbrev-mode** is active in a seed-mode buffer you can expand a set
-of Seed7 keywords by typing their abbreviation followed by a word-separating
-character such as ``<space>``.  All Seed7 abbreviations are short
-mnemonic character sequences that start with ``;``.
+of Seed7 keywords by typing their (*system*) abbreviation followed by a word-separating
+character such as ``<space>``, ``<RET>` or ``;`` and others.
+All Seed7 abbreviations are short mnemonic character sequences that start with ``;``.
 
 You can enable or disable the ``abbrev-mode`` with the ``M-x abbrev-mode``
-command.  List the abbreviations with ``M-x list-abbrevs`` and edit them
-with ``M-x edit-abbrevs``.
+command.  List the abbreviations with ``M-x list-abbrevs``.  You can create
+other abbreviations and edit them with ``M-x edit-abbrevs``.  You cannot
+change the pre-defined Seed7 system abbreviations, but you can create your own
+abbreviations that expand to the keyword (eliminating the expansion) and
+create other expansions.
 
 The list of default supported abbreviations are shown inside the 8 following
 tables:
