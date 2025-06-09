@@ -391,19 +391,19 @@ errinfo values
 Abbreviation        Expansion
 =================== ======================
 ``;ok``             OKAY_NO_ERROR
+``;ae``             ACTION_ERROR
+``;ce``             COPY_ERROR
+``;cre``            CREATE_ERROR
+``;dbe``            DATABASE_ERROR
+``;dse``            DESTROY_ERROR
+``;fe``             FILE_ERROR
+``;ge``             GRAPHIC_ERROR
+``;ie``             INDEX_ERROR
+``;ine``            IN_ERROR
 ``;me``             MEMORY_ERROR
 ``;ne``             NUMERIC_ERROR
 ``;oe``             OVERFLOW_ERROR
 ``;re``             RANGE_ERROR
-``;ie``             INDEX_ERROR
-``;fe``             FILE_ERROR
-``;dbe``            DATABASE_ERROR
-``;ge``             GRAPHIC_ERROR
-``;ae``             ACTION_ERROR
-``;cre``            CREATE_ERROR
-``;dse``            DESTROY_ERROR
-``;ce``             COPY_ERROR
-``;ine``            IN_ERROR
 =================== ======================
 
 Code Navigation Commands
