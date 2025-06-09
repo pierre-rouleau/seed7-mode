@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-08 21:17:38 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-08 21:43:26 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -466,7 +466,7 @@ The name of the source code file is appended to the end of that line."
   "[])(}{[]")
 
 (defconst seed7--non-capturing-name-identifier-re
-  "\\(?:\\_<[[:alpha:]_][[:alnum:]_]*\\_>\\)"
+  "\\(?:[[:alpha:]_][[:alnum:]_]*\\)"
   "A complete, valid name identifier. No capturing group.")
 
 (defconst seed7-name-identifier-re
