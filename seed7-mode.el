@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-09 17:59:40 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-09 18:38:01 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1457,10 +1457,10 @@ Note: the default style for all Seed7 buffers is controlled by the
 
 (defconst seed7-struct-regexp
   (format
-   "const type: %s%s+?is%s+?\\(?:sub%s+?%s\\|new\\)%sstruct"
+   "const type: %s%s+?is%s+?\\(?:sub\\|new\\)%s+?\\(?:%s%s+?\\)??struct"
    ;;           G1
-   ;;           % %     %           %   %          %
-   ;;           1 2     3           4   5          6
+   ;;           % %     %                    %        % %
+   ;;           1 2     3                    4        5 6
    seed7-name-identifier-re    ; 1
    seed7--whitespace-re        ; 2
    seed7--whitespace-re        ; 3
