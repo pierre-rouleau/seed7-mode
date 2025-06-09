@@ -218,7 +218,7 @@ command.  List the abbreviations with ``M-x list-abbrevs``.  You can create
 other abbreviations and edit them with ``M-x edit-abbrevs``.  You cannot
 change the pre-defined Seed7 system abbreviations via the abbrev commands.
 However you can change all Seed7 system abbreviations since the list is
-customizable and defined by the **seed7-abbreviation** customizable user-option..
+customizable and defined by the **seed7-abbreviations** customizable user-option.
 Of course you can also create your own abbreviations via the abbrev mode
 commands to complement what is provided by seed7-mode.
 
