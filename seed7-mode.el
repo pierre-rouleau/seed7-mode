@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-09 13:57:08 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-09 16:28:24 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1490,17 +1490,20 @@ Inside a comment, the returned value is:
   ;; not reliable enough when looking at some edge cases: the open block
   ;; comment characters are not recognized as comment syntax.
   (let ((pos (or pos (point))))
-    ;; if there's no overlay the face show up at the top
-    (or (car-safe (memq  (get-char-property pos 'face)
-                         '(font-lock-comment-face
-                           font-lock-comment-delimiter-face)))
-        ;; where there is one or several overlay, we need to
-        ;; look into the text properties to see the face.
-        (let ((text-prop (text-properties-at pos)))
-          (and (eq (nth 0 text-prop) 'face)
-               (or (eq (nth 1 text-prop) 'font-lock-comment-face)
-                   (eq (nth 1 text-prop)
-                       'font-lock-comment-delimiter-face)))))))
+    ;; deal with comment-dwim that passes 0 to pos when trying to write a line
+    ;; comment when issued at the beginning of an empty line.
+    (unless (eq pos 0)
+      ;; if there's no overlay the face show up at the top
+      (or (car-safe (memq  (get-char-property pos 'face)
+                           '(font-lock-comment-face
+                             font-lock-comment-delimiter-face)))
+          ;; where there is one or several overlay, we need to
+          ;; look into the text properties to see the face.
+          (let ((text-prop (text-properties-at pos)))
+            (and (eq (nth 0 text-prop) 'face)
+                 (or (eq (nth 1 text-prop) 'font-lock-comment-face)
+                     (eq (nth 1 text-prop)
+                         'font-lock-comment-delimiter-face))))))))
 
 (defun seed7-inside-string-p (&optional pos)
   "Return non-nil if POS or point is inside a string, nil otherwise.
