@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-09 17:20:03 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-09 17:46:18 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -817,13 +817,15 @@ Has only one capturing group.")
     "void"
     "PRIMITIVE_WINDOW"))
 
-;; Note: the _< _> are important to prevent detection of symbols inside other words.
+;; Note: the < > are important to prevent detection of words inside other
+;; words.  The pre-defined types are not set to have symbol syntax, therefore
+;; they must be treated as words and use word boundary.
 (defconst seed7-predefined-types-regexp
   (format "%s\\(%s\\)%s"
-          "\\_<"
+          "\\<"
           (rx-to-string
            `(: (or ,@seed7--predefined-types)))
-          "\\_>"))
+          "\\>"))
 
 ;;** Seed7 Predefined Constants
 ;;   --------------------------
