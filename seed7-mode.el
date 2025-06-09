@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-09 08:55:04 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-09 11:30:54 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -480,6 +480,11 @@ The name of the source code file is appended to the end of that line."
   "A complete, valid type identifier name with one or 2 identifiers.
 Has no capturing group.")
 
+
+;; (defconst seed7--syntax-spec-identifier-re
+;;   "\\(\\.\\(?:[[:alpha:]][[:alnum:]]*\\)\\|\\(?:[[:alpha:]][[:alnum:]]*\\)\\.\\)"
+;;   "Seed7 syntax spec keyword (surrounded by period). In group 1")
+
 (defconst seed7-type-identifier-re
   (format "\\(%s\\(?:[[:blank:]]+?%s\\)??\\)"
           seed7--non-capturing-name-identifier-re
@@ -510,10 +515,10 @@ Has only one capturing group.")
 ;;*** Seed7 Float Literals
 
 (defconst seed7-float-number-invalid1-re
-  "[^[:digit:]]\\(\\.[[:digit:]]+\\)"
+  "[^[:alnum:]]\\(\\.[[:digit:]]+\\)"
   "Invalid Seed7 float number in group 1.")
 (defconst seed7-float-number-invalid2-re
-  "\\([[:digit:]]+\\.\\)[^[:digit:]]"
+  "[^[:alnum:]]\\([[:digit:]]+\\.\\)[^[:alnum:]]"
   "Invalid Seed7 float number in group 1.")
 
 (defconst seed7-float-number-re
@@ -1262,6 +1267,22 @@ Allows selecting similar colours for various systems."
   "Font Lock mode face that highlights errinfo values."
   :group 'seed7-faces)
 
+;; (defface seed7-spec-name-identifier-face
+;;   `((((class grayscale) (background light))
+;;      (:background "Gray90" :weight bold))
+;;     (((class grayscale) (background dark))
+;;      (:foreground "Gray80" :weight bold))
+;;
+;;     (((class color) (background light))
+;;      (:foreground "blue3"  :weight bold))
+;;     (((class color) (background dark))
+;;      (:foreground "blue3" :background ,seed7-dark-background
+;;                   :weight bold))
+;;
+;;     (t (:weight bold)))
+;;   "Font Lock mode face that highlights errinfo values."
+;;   :group 'seed7-faces)
+
 ;;* Seed7 Font Locking Control
 ;;  ==========================
 ;;
@@ -1277,6 +1298,7 @@ Allows selecting similar colours for various systems."
    (cons seed7-pragma-keywords-regexp                (list 1 ''seed7-pragma-keyword-face))
    ;; include
    (cons seed7-include-regexp                        (list 1 ''seed7-include-face))
+   ;; (cons seed7--syntax-spec-identifier-re            (list 1 ''seed7-spec-name-identifier-face))
    ;; in-statement keywords
    (cons seed7-lead-in-statement-keywords-regexp     (list 1 ''seed7-in-statement-keyword-face1))
    (cons seed7-in-statement-keywords-regexp          (list 1 ''seed7-in-statement-keyword-face2))
