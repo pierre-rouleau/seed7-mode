@@ -234,7 +234,7 @@ and Save* the customization, the setting will persist across Emacs sessions.
 
 
 The list of default supported abbreviations is controlled by the
-**seed7-abbreviation** customizable user-option.  You can modify the
+**seed7-abbreviations** customizable user-option.  You can modify the
 keyword or the expansion of any entry and add or delete entries
 these via customization.   The new values are activated the next time a
 buffer starts the seed7-mode.
