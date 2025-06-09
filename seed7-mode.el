@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-09 17:46:18 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-09 17:59:40 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -617,13 +617,13 @@ Has only one capturing group.")
     "system"
     ))
 
-;; Note: the _< _> are important to prevent detection of symbols inside other words.
+;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7-pragma-keywords-regexp
   (format "^%s\\(\\$ +%s\\)%s"
-          "\\_<"
+          "\\<"
           (rx-to-string
            `(: (or ,@seed7--pragma-keywords)))
-          "\\_>"))
+          "\\>"))
 
 ;;** Seed7 include
 ;;   -------------
@@ -650,26 +650,26 @@ Has only one capturing group.")
     "return"
     ))
 
-;; Note: the _< _> are important to prevent detection of symbols inside other words.
+;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7-lead-in-statement-keywords-regexp
   (format "^ *%s\\(%s\\)%s"        ; these are all the first keyword on a line
-          "\\_<"
+          "\\<"
           (rx-to-string
            `(: (or ,@seed7--lead-in-statement-keywords)))
-          "\\_>"))
+          "\\>"))
 
 (defconst seed7--in-statement-keywords
   '("is"
     "noop" ; not mentioned in operators but not an identifier, probably a special case
     ))
 
-;; Note: the _< _> are important to prevent detection of symbols inside other words.
+;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7-in-statement-keywords-regexp
   (format ". %s\\(%s\\)%s"        ; these are all the first keyword on a line
-          "\\_<"
+          "\\<"
           (rx-to-string
            `(: (or ,@seed7--in-statement-keywords)))
-          "\\_>"))
+          "\\>"))
 
 
 ;;** Seed7 is-statemement keywords
@@ -683,9 +683,9 @@ Has only one capturing group.")
     "new"
     ))
 
-;; Note: the _< _> are important to prevent detection of symbols inside other words.
+;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7--is-statement-keywords-regexp
-  (format " is%s+\\_<\\(%s\\)\\_>"
+  (format " is%s+\\<\\(%s\\)\\>"
           seed7--whitespace-re
           (rx-to-string
            `(: (or ,@seed7-is-statement-keywords)))))
@@ -707,13 +707,13 @@ Has only one capturing group.")
     "to"
     ))
 
-;; Note: the _< _> are important to prevent detection of symbols inside other words.
+;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7-in-middle-statement-keywords-regexp
   (format "%s\\(%s\\)%s"
-          "[[:space:]]\\_<"
+          "[[:space:]]\\<"
           (rx-to-string
            `(: (or ,@seed7--in-middle-statement-keywords)))
-          "\\_>"))
+          "\\>"))
 
 
 ;;** Seed7 statement enclosing keywords
@@ -745,13 +745,13 @@ Has only one capturing group.")
     "struct"      "end struct"
     "while"       "end while"))
 
-;; Note: the _< _> are important to prevent detection of symbols inside other words.
+;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7-statement-enclosing-keywords-regexp
   (format "%s\\(%s\\)%s"
-          "\\_<"
+          "\\<"
           (rx-to-string
            `(: (or ,@seed7--statement-enclosing-keywords)))
-          "\\_>"))
+          "\\>"))
 
 ;;** Seed7 declaration introduction keywords
 ;;   ---------------------------------------
@@ -764,13 +764,13 @@ Has only one capturing group.")
     "val"
     "var"))
 
-;; Note: the _< _> are important to prevent detection of symbols inside other words.
+;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7-declaration-intro-keywords-regexp
   (format "%s\\(%s\\)%s"
-          "\\_<"
+          "\\<"
           (rx-to-string
            `(:  (or ,@seed7--declaration-intro-keywords)))
-          "\\_>"))
+          "\\>"))
 
 
 ;;** Seed7 Predefined Types
@@ -841,13 +841,13 @@ Has only one capturing group.")
     "TRUE"
     "empty"))
 
-;; Note: the _< _> are important to prevent detection of symbols inside other words.
+;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7-predefined-constants-regxp
   (format "%s\\(%s\\)%s"
-          "\\_<"
+          "\\<"
           (rx-to-string
            `(: (or ,@seed7--predefined-constants)))
-          "\\_>"))
+          "\\>"))
 
 ;;** Seed7 Predefined Variables
 ;;   --------------------------
@@ -865,13 +865,13 @@ Has only one capturing group.")
     "STD_NULL"
     "STD_OUT"))
 
-;; Note: the _< _> are important to prevent detection of symbols inside other words.
+;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7-predefined-variables-regxp
   (format "%s\\(%s\\)%s"
-          "\\_<"
+          "\\<"
           (rx-to-string
            `(: (or ,@seed7--predefined-variables)))
-          "\\_>"))
+          "\\>"))
 
 ;;** Seed7 Predefined errinfo value
 ;;   ------------------------------
@@ -892,13 +892,13 @@ Has only one capturing group.")
     "COPY_ERROR"
     "IN_ERROR"))
 
-;; Note: the _< _> are important to prevent detection of symbols inside other words.
+;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7-errinfo-values-regxp
   (format "%s\\(%s\\)%s"
-          "\\_<"
+          "\\<"
           (rx-to-string
            `(: (or ,@seed7--errinfo-values)))
-          "\\_>"))
+          "\\>"))
 
 ;;** Seed7 Operator Symbols
 ;;   ----------------------
@@ -927,13 +927,13 @@ Has only one capturing group.")
     "times"
     "varConv"))
 
-;; Note: the _< _> are important to prevent detection of symbols inside other words.
+;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7-operator-symbols-regexp
   (format "%s\\(%s\\)%s"
-          "\\_<"
+          "\\<"
           (rx-to-string
            `(:  (or ,@seed7--operator-symbols)))
-          "\\_>"))
+          "\\>"))
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;;** Seed7 Predefined Assignment Operators
