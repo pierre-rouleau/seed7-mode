@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-08 20:46:38 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-08 21:17:38 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -499,13 +499,7 @@ Has only one capturing group.")
   (format "\\(%s\\)" seed7--non-capturing-special-identifier-re)
   "A complete, valid Seed7 special identifier. One capturing group.")
 
-(defconst seed7--number-separator-re
-  "[]!$%&*+,\\./:;<=>?@\\^`|~ )(}{ -[]")
-
-(defconst seed7-integer-re (format
-                            "%s\\(-?[[:digit:]]+\\)%s"
-                            seed7--number-separator-re
-                            seed7--number-separator-re)
+(defconst seed7-integer-re "\\([[:digit:]]+\\)"
   "Seed7 integer in group 1.")
 
 
@@ -527,17 +521,13 @@ Has only one capturing group.")
 ;;
 ;; Ref: https://seed7.sourceforge.net/manual/tokens.htm#BigInteger_literals
 ;;
-(defconst seed7--big-number-re-format
-  "%s\\(\\(?:\\(?:\\([2-9]\\|1[0-9]\\|2[0-9]\\|3[0-6]\\)#\\)?[0-9]+_\\)\\)%s"
-  ;;   1            2
+(defconst seed7-big-number-re
+  "\\(\\(?:\\(?:\\([2-9]\\|1[0-9]\\|2[0-9]\\|3[0-6]\\)#\\)?[0-9]+_\\)\\)"
+  ;; 1            2
   ;; Group 1: Complete Big Number with or without base. "1_" or "1234322_" or "2#0001_", etc...
   ;; Group 2: base: "2" to "36".  nil if no base.
   "Big number with/without base.  Group 1: number, group 2: base or nil.")
 
-(defconst seed7-big-number-re (format
-                               seed7--big-number-re-format
-                               seed7--number-separator-re
-                               "\\_>"))
 
 ;;*** Seed7 Integer Literals
 ;;
