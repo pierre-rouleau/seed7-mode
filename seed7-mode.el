@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-08 11:32:36 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-08 20:46:38 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -890,14 +890,16 @@ Has only one capturing group.")
     "div"
     "exp"
     "in"
-    "lapd0"
     "lpad"
+    "lpad0"
     "mdiv"
     "mod"
     "mult"
     "not"
     "or"
     "parse"
+    "radix"
+    "RADIX"
     "rem"
     "rpad"
     "sci"
