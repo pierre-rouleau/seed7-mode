@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-09 16:28:24 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-09 17:20:03 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -617,6 +617,7 @@ Has only one capturing group.")
     "system"
     ))
 
+;; Note: the _< _> are important to prevent detection of symbols inside other words.
 (defconst seed7-pragma-keywords-regexp
   (format "^%s\\(\\$ +%s\\)%s"
           "\\_<"
@@ -649,6 +650,7 @@ Has only one capturing group.")
     "return"
     ))
 
+;; Note: the _< _> are important to prevent detection of symbols inside other words.
 (defconst seed7-lead-in-statement-keywords-regexp
   (format "^ *%s\\(%s\\)%s"        ; these are all the first keyword on a line
           "\\_<"
@@ -661,6 +663,7 @@ Has only one capturing group.")
     "noop" ; not mentioned in operators but not an identifier, probably a special case
     ))
 
+;; Note: the _< _> are important to prevent detection of symbols inside other words.
 (defconst seed7-in-statement-keywords-regexp
   (format ". %s\\(%s\\)%s"        ; these are all the first keyword on a line
           "\\_<"
@@ -680,8 +683,9 @@ Has only one capturing group.")
     "new"
     ))
 
+;; Note: the _< _> are important to prevent detection of symbols inside other words.
 (defconst seed7--is-statement-keywords-regexp
-  (format " is%s+\\(%s\\)\\_>"
+  (format " is%s+\\_<\\(%s\\)\\_>"
           seed7--whitespace-re
           (rx-to-string
            `(: (or ,@seed7-is-statement-keywords)))))
@@ -703,9 +707,10 @@ Has only one capturing group.")
     "to"
     ))
 
+;; Note: the _< _> are important to prevent detection of symbols inside other words.
 (defconst seed7-in-middle-statement-keywords-regexp
   (format "%s\\(%s\\)%s"
-          "[[:space:]]"
+          "[[:space:]]\\_<"
           (rx-to-string
            `(: (or ,@seed7--in-middle-statement-keywords)))
           "\\_>"))
@@ -740,6 +745,7 @@ Has only one capturing group.")
     "struct"      "end struct"
     "while"       "end while"))
 
+;; Note: the _< _> are important to prevent detection of symbols inside other words.
 (defconst seed7-statement-enclosing-keywords-regexp
   (format "%s\\(%s\\)%s"
           "\\_<"
@@ -758,6 +764,7 @@ Has only one capturing group.")
     "val"
     "var"))
 
+;; Note: the _< _> are important to prevent detection of symbols inside other words.
 (defconst seed7-declaration-intro-keywords-regexp
   (format "%s\\(%s\\)%s"
           "\\_<"
@@ -810,12 +817,13 @@ Has only one capturing group.")
     "void"
     "PRIMITIVE_WINDOW"))
 
+;; Note: the _< _> are important to prevent detection of symbols inside other words.
 (defconst seed7-predefined-types-regexp
   (format "%s\\(%s\\)%s"
-          ""
+          "\\_<"
           (rx-to-string
            `(: (or ,@seed7--predefined-types)))
-          ""))
+          "\\_>"))
 
 ;;** Seed7 Predefined Constants
 ;;   --------------------------
@@ -831,6 +839,7 @@ Has only one capturing group.")
     "TRUE"
     "empty"))
 
+;; Note: the _< _> are important to prevent detection of symbols inside other words.
 (defconst seed7-predefined-constants-regxp
   (format "%s\\(%s\\)%s"
           "\\_<"
@@ -854,6 +863,7 @@ Has only one capturing group.")
     "STD_NULL"
     "STD_OUT"))
 
+;; Note: the _< _> are important to prevent detection of symbols inside other words.
 (defconst seed7-predefined-variables-regxp
   (format "%s\\(%s\\)%s"
           "\\_<"
@@ -880,6 +890,7 @@ Has only one capturing group.")
     "COPY_ERROR"
     "IN_ERROR"))
 
+;; Note: the _< _> are important to prevent detection of symbols inside other words.
 (defconst seed7-errinfo-values-regxp
   (format "%s\\(%s\\)%s"
           "\\_<"
@@ -914,6 +925,7 @@ Has only one capturing group.")
     "times"
     "varConv"))
 
+;; Note: the _< _> are important to prevent detection of symbols inside other words.
 (defconst seed7-operator-symbols-regexp
   (format "%s\\(%s\\)%s"
           "\\_<"
