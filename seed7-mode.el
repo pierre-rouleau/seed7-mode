@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-08 21:43:26 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-09 08:55:04 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -499,11 +499,22 @@ Has only one capturing group.")
   (format "\\(%s\\)" seed7--non-capturing-special-identifier-re)
   "A complete, valid Seed7 special identifier. One capturing group.")
 
+
+(defconst seed7-integer-invalid-0x-re "\\(0x[[:digit:]]+\\)"
+  "Seed7 integer in group 1.")
+
 (defconst seed7-integer-re "\\([[:digit:]]+\\)"
   "Seed7 integer in group 1.")
 
 
 ;;*** Seed7 Float Literals
+
+(defconst seed7-float-number-invalid1-re
+  "[^[:digit:]]\\(\\.[[:digit:]]+\\)"
+  "Invalid Seed7 float number in group 1.")
+(defconst seed7-float-number-invalid2-re
+  "\\([[:digit:]]+\\.\\)[^[:digit:]]"
+  "Invalid Seed7 float number in group 1.")
 
 (defconst seed7-float-number-re
   "[0-9]+\\.[0-9]+\\(?:\\(?:[eE][+-]?\\)?[0-9]+\\)?"
@@ -512,10 +523,13 @@ Has only one capturing group.")
 
 ;;*** Seed7 Numbers with Exponents
 
-(defconst seed7-number-with-exponent-re
-  "[0-9]+[eE][+-]?[0-9]+"
-  "Literal number with exponent.  Does not reject integer with negative exponent.")
+(defconst seed7-number-with-negative-exponent-re
+  "[0-9]+[eE]-[0-9]+"
+  "Literal number with negative exponent. Invalid in Seed7.")
 
+(defconst seed7-number-with-exponent-re
+  "[0-9]+[eE]\\+?[0-9]+"
+  "Literal number with exponent.")
 
 ;;*** Seed7 BigInteger Literals
 ;;
@@ -1275,7 +1289,15 @@ Allows selecting similar colours for various systems."
    (cons seed7-declaration-intro-keywords-regexp     (list 1 ''seed7-intro-statement-keyword-face))
    ;; predefined types
    (cons seed7-predefined-types-regexp               (list 1 ''font-lock-type-face))
-   ;; predefined constants
+   ;; float and integers with exponents numbers (have a 'E' or 'e' embedded.
+   ;; They must be rendered before predefined-constants.
+   (cons seed7-float-number-invalid1-re              (list 1 ''font-lock-warning-face))
+   (cons seed7-float-number-invalid2-re              (list 1 ''font-lock-warning-face))
+   (cons seed7-float-number-re                       (list 0 ''seed7-float-face))
+   (cons seed7-number-with-negative-exponent-re      (list 0 ''font-lock-warning-face))
+   (cons seed7-number-with-exponent-re               (list 0 ''seed7-integer-face))
+   (cons seed7-integer-invalid-0x-re                 (list 1 ''font-lock-warning-face))
+   ;; predefined constants (includes 'E'). Must be rendered after float numbers.
    (cons seed7-predefined-constants-regxp            (list 1 ''font-lock-constant-face))
    ;; predefined variables
    (cons seed7-predefined-variables-regxp            (list 1 ''seed7-predefined-variables-face))
@@ -1298,8 +1320,6 @@ Allows selecting similar colours for various systems."
    ;; identifiers
    (cons seed7-name-identifier-re                    (list 1 ''seed7-name-identifier-face))
    ;; other numbers
-   (cons seed7-float-number-re                       (list 0 ''seed7-float-face))
-   (cons seed7-number-with-exponent-re               (list 0 ''seed7-integer-face))
    (cons seed7-big-number-re                         (list 1 ''seed7-number-face))
    (cons seed7-integer-re                            (list 1 ''seed7-integer-face))
    ;; low priority rendering of arithmetic + and -
