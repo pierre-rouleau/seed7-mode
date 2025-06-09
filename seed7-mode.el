@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-09 11:30:54 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-09 13:57:08 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -503,7 +503,6 @@ Has only one capturing group.")
 (defconst seed7-special-identifier-re
   (format "\\(%s\\)" seed7--non-capturing-special-identifier-re)
   "A complete, valid Seed7 special identifier. One capturing group.")
-
 
 (defconst seed7-integer-invalid-0x-re "\\(0x[[:digit:]]+\\)"
   "Seed7 integer in group 1.")
@@ -1311,11 +1310,16 @@ Allows selecting similar colours for various systems."
    (cons seed7-declaration-intro-keywords-regexp     (list 1 ''seed7-intro-statement-keyword-face))
    ;; predefined types
    (cons seed7-predefined-types-regexp               (list 1 ''font-lock-type-face))
+   ;; Numbers: order is significant
    ;; float and integers with exponents numbers (have a 'E' or 'e' embedded.
    ;; They must be rendered before predefined-constants.
    (cons seed7-float-number-invalid1-re              (list 1 ''font-lock-warning-face))
    (cons seed7-float-number-invalid2-re              (list 1 ''font-lock-warning-face))
    (cons seed7-float-number-re                       (list 0 ''seed7-float-face))
+   ;; numbers: order is significant : base-x numbers use '#' and can have a 'e'
+   ;; therefore , those must be checked before numbers with exponent (that can also use a 'e')
+   (cons seed7-base-x-big-number-re                  (list 1 ''seed7-number-face))
+   (cons seed7-base-x-integer-re                     (list 1 ''seed7-integer-face))
    (cons seed7-number-with-negative-exponent-re      (list 0 ''font-lock-warning-face))
    (cons seed7-number-with-exponent-re               (list 0 ''seed7-integer-face))
    (cons seed7-integer-invalid-0x-re                 (list 1 ''font-lock-warning-face))
@@ -1336,9 +1340,7 @@ Allows selecting similar colours for various systems."
    ;; logic operator
    (cons "[[:alnum:] _)\\\"]\\(&\\)[[:alnum:] _(\\\"]" (list 1 ''font-lock-keyword-face)) ; &
    (cons "[[:alnum:] _)\\\"]\\(|\\)[[:alnum:] _(\\\"]" (list 1 ''font-lock-keyword-face)) ; |
-   ;; numbers: order is significant
-   (cons seed7-base-x-big-number-re                  (list 1 ''seed7-number-face))
-   (cons seed7-base-x-integer-re                     (list 1 ''seed7-integer-face))
+
    ;; identifiers
    (cons seed7-name-identifier-re                    (list 1 ''seed7-name-identifier-face))
    ;; other numbers
