@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-10 10:52:27 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-10 11:39:21 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -94,7 +94,7 @@
 ;;   of them.
 ;;
 ;; AUTO-INDENT
-;; - Automatic indentation of code and         Done. Please report any problem.
+;; - Automatic indentation of code and         Done.
 ;;   block comments with leading start         Auto indentation of function and
 ;;   characters with auto-fill mode support.   /procedure code and argument
 ;;                                             blocks, logic blocks and code
@@ -116,12 +116,29 @@
 ;;                                             `seed7-compiler' customizable
 ;;                                             user options.
 ;;
-;; AUTO-INSERT CODE                            Under-way.  Early version of
-;;                                             the commands allow creation of
-;;                                             boiler plate using dedicated
-;;                                             commands also available in the
-;;                                             top menu.  There's currently
-;;                                             no key mappings for those yet.
+;; CODE INSERTION HELP
+;; - Keyword template expansion                Done. Code expands specific
+;;                                             keywords alone on line or
+;;                                             before a closing parenthesis
+;;                                             with boiler plate code with
+;;                                             tempo markers at locations that
+;;                                             must be filled.  The expansion
+;;                                             is done with the <tab> key and
+;;                                             the <backtab> moves to the next
+;;                                             tempo marker.
+;;
+;; - Seed7-specific abbreviations              Done. Support short
+;;                                             Seed7-specific abbreviations
+;;                                             that are expanded automatically
+;;                                             when a word-separator key (such
+;;                                             as <space>) is typed.  All
+;;                                             abbreviations are customizable
+;;                                             and start with a semi-colon so
+;;                                             they do not clash with possible
+;;                                             code symbols of
+;;                                             identifiers.  This uses the
+;;                                             abbrev-mode. It is also allowed
+;;                                             by customization.
 
 ;;
 ;; seed7-mode key map.                         Done.
@@ -131,11 +148,13 @@
 ;;
 ;; =========================================== ===============================
 
+;; Please any problem you may notice by creating a bug report in the Github
+;; project: https://github.com/pierre-rouleau/seed7-mode
+
 
 ;; Future:
 ;; - Launch help on keywords, perhaps implement statement help
 ;; - Keyword Completion help.
-;; - Template help for code creation
 
 ;;
 ;; [:todo 2025-04-06, by Pierre Rouleau: Fix following problems:
@@ -157,9 +176,7 @@
 ;;  # 03  Escaped single and double quote in strings are now recognized.
 ;;        However a string continuation that ends with a backslash just before
 ;;        the terminating quote is not supported.
-;;  # 04  seed7-predefined-constants-regxp is not perfect: it does not allow
-;;        an operator just at right of it.
-;;  # 05  The `seed7-to-block-backward' and `seed7-to-block-forward' can
+;;  # 04  The `seed7-to-block-backward' and `seed7-to-block-forward' can
 ;;        detect the other end when point is on the beginning or end line,
 ;;        but they fail when point is inside the block.
 ;;        I will fix that once I get the auto indentation working properly
@@ -177,6 +194,7 @@
 ;; commands to navigate across section titles as well as hide/show the content
 ;; of sections.
 ;;
+;; - Low-level Macros
 ;; - Seed7 Customization
 ;; - Seed7 Mode Syntax Control
 ;;   - Seed7 Mode Syntax Table
@@ -254,6 +272,8 @@
 ;;   * `seed7-compile'
 ;; - Seed7 Key Map
 ;; - Seed7 Menu
+;; - Seed7 Abbreviation Support
+;; - Seed7 Completion Support
 ;; - Seed7 Major Mode
 ;;   * `seed7-mode'
 
@@ -360,7 +380,6 @@ The name of the source code file is appended to the end of that line."
   "Fontification colors."
   :link '(custom-group-link :tag "Font Lock Faces group" font-lock-faces)
   :group 'seed7)
-
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;;* Seed7 Mode Syntax Control
