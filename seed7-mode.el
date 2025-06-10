@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-10 11:59:20 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-10 12:24:06 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -421,7 +421,7 @@ The name of the source code file is appended to the end of that line."
     ;; single quote: Seed7 supports ''' as well as '\''.  Deal with it in seed7-syntax-propertize.
     (modify-syntax-entry ?\' "." st) ; attribute; see seed7-syntax-propertize for character literal
     st)
-  "Syntax table in use in seed7-mode buffers.")
+  "Syntax table in use in `seed7-mode' buffers.")
 
 ;;** Seed7 Mode Syntax Propertize Function
 ;;   -------------------------------------
@@ -1897,7 +1897,7 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
 (defun seed7--show-info (position name type tail-type)
   "Return formatted message for start/end of function/procedure at POSITION.
 - NAME: name of function/procedure.  Extracted from group2 of
-  seed7-procfunc-regexp.
+  `seed7-procfunc-regexp'.
 - TYPE: \"func \" or \"proc\". Extracted from group 2 of seed7-procfunc-regexp.
 - TAIL-TYPE: string describing the type of function. Extracted from group 6 of
    seed7-procfunc-regexp."
@@ -2005,7 +2005,7 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
           ;; That search should always succeed.
           (if (seed7-re-search-backward seed7-procfunc-regexp)
               (setq found-pos (point))
-            (error "Logic error in:seed7-beg-of-next-defun at %d. Check regexp used: %s"
+            (error "Logic error in:seed7-beg-of-next-defun at %d.  Check regexp used: %s"
                    (point)
                    (symbol-name 'seed7-procfunc-regexp)))))
       (seed7--move-and-mark
@@ -4658,7 +4658,7 @@ If optional COMPILE argument set, compile the file to executable instead."
     (define-key map "\M-\C-h"  'seed7-mark-defun)
     (define-key map (kbd "C-c ;")  'seed7-toggle-comment-style)
     map)
-  "Keymap used in seed7-mode.")
+  "Keymap used in `seed7-mode'.")
 
 ;; ---------------------------------------------------------------------------
 ;; Seed7 Menu
