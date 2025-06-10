@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-10 09:17:59 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-10 10:36:45 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -933,7 +933,8 @@ Has only one capturing group.")
           "\\<"
           (rx-to-string
            `(:  (or ,@seed7--operator-symbols)))
-          "\\>"))
+          "\\>")
+  "Seed7 word operator symbols. Captured in group 1.")
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;;** Seed7 Predefined Assignment Operators
@@ -944,20 +945,36 @@ Has only one capturing group.")
 ;; Predefined assignment operators are: := +:= -:= *:= /:= <<:= >>:= &:= |:= ><:= @:=
 ;;
 ;;    :=
-;;   +:=        https://seed7.sourceforge.net/libraries/integer.htm#(inout_integer)+:=(in_integer)
-;;   -:=        https://seed7.sourceforge.net/libraries/bigint.htm#(inout_bigInteger)-:=(in_bigInteger)
-;;   *:=        https://seed7.sourceforge.net/libraries/bigint.htm#(inout_bigInteger)*:=(in_bigInteger)
-;;   /:=        https://seed7.sourceforge.net/libraries/bigrat.htm#(inout_bigRational)/:=(in_bigRational)
-;;  <<:=        https://seed7.sourceforge.net/libraries/bigint.htm#(inout_bigInteger)%3C%3C:=(in_integer)
-;;  >>:=        https://seed7.sourceforge.net/libraries/bigint.htm#(inout_bigInteger)%3E%3E:=(in_integer)
-;;   &:=        https://seed7.sourceforge.net/libraries/array.htm#(inout_arrayType)&:=(in_arrayType)
-;;   |:=        https://seed7.sourceforge.net/libraries/bin32.htm#(inout_bin32)|:=(in_bin32)
-;;  ><:=        https://seed7.sourceforge.net/libraries/bin32.htm#(inout_bin32)%3E%3C:=(in_bin32)
-;;   @:=        https://seed7.sourceforge.net/libraries/bitset.htm#(inout_bitset)@:=_[(in_integer)](in_boolean)
+;;   +:=   https://seed7.sourceforge.net/libraries/integer.htm#(inout_integer)+:=(in_integer)
+;;   -:=   https://seed7.sourceforge.net/libraries/bigint.htm#(inout_bigInteger)-:=(in_bigInteger)
+;;   *:=   https://seed7.sourceforge.net/libraries/bigint.htm#(inout_bigInteger)*:=(in_bigInteger)
+;;   /:=   https://seed7.sourceforge.net/libraries/bigrat.htm#(inout_bigRational)/:=(in_bigRational)
+;;  <<:=   https://seed7.sourceforge.net/libraries/bigint.htm#(inout_bigInteger)%3C%3C:=(in_integer)
+;;  >>:=   https://seed7.sourceforge.net/libraries/bigint.htm#(inout_bigInteger)%3E%3E:=(in_integer)
+;;   &:=   https://seed7.sourceforge.net/libraries/array.htm#(inout_arrayType)&:=(in_arrayType)
+;;   |:=   https://seed7.sourceforge.net/libraries/bin32.htm#(inout_bin32)|:=(in_bin32)
+;;  ><:=   https://seed7.sourceforge.net/libraries/bin32.htm#(inout_bin32)%3E%3C:=(in_bin32)
+;;   @:=   https://seed7.sourceforge.net/libraries/bitset.htm#(inout_bitset)@:=_[(in_integer)](in_boolean)
+
+(defconst seed7--assignment-operator-symbols
+  '(
+    ":="
+    "+:="
+    "-:="
+    "*:="
+    "/:="
+    "<<:="
+    ">>:="
+    "&:="
+    "|:="
+    "><:="
+    "@:="))
 
 (defconst seed7-predef-assignment-operator-regxp
-  "\\(?:\\(?:[+*/&|@-]\\)\\|\\(?:<<\\|>>\\|><\\)\\)?:="
-  "Symbol is in group 0.")
+  (rx-to-string
+   `(:  (or ,@seed7--assignment-operator-symbols)))
+  "Seed7 assignment operator symbols.  Captured in Group 0.")
+
 
 ;;** Seed7 Predefined Comparison Operators
 ;;   -------------------------------------
