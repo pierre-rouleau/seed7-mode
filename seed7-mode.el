@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-09 18:38:01 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-10 09:17:59 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -497,7 +497,7 @@ Has only one capturing group.")
   "Any one of the special characters.")
 
 (defconst seed7--non-capturing-special-identifier-re
-  (format "\\(?:\\_<%s+?\\_>\\)" seed7--special-char-re)
+  (format "\\(?:%s+?\\)" seed7--special-char-re)
   "A complete, valid Seed7 special identifier. Non capturing.")
 
 (defconst seed7-special-identifier-re
