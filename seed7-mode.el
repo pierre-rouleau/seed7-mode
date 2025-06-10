@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-10 11:39:21 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-10 11:59:20 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -47,9 +47,11 @@
 ;; Comment support: rendering, commenting      Done.
 ;; un-commenting code with `comment-dwim'.
 ;;
-;; Selection of block or line-end comments:    Done. `seed7-toggle-comment-style'
-;; by customization and by dynamic command.    Toggles between the 2 types of
+;; Selection of block or line-end comments:    Done.
+;; by customization and by dynamic command.    `seed7-toggle-comment-style'
+;;                                             toggles between the 2 types of
 ;;                                             comments.
+
 ;;
 ;; Selection of comment types: box, aligned,   Done.
 ;; multi-line, etc... as controlled by the
@@ -72,21 +74,21 @@
 ;;   `end-of-defun' conventional protocol      version of the functions are
 ;;   to support other Emacs operations based   used.
 ;;   on this ability.
-;; - Move to end/beginning of block.           Done. For most code blocks
+;; - Move to end/beginning of block.           Done.  For most code blocks
 ;;                                             inside functions and
 ;;                                             procedures.  Can also handle
-;;                                             struct and enums. Will also
+;;                                             struct and enums.  Will also
 ;;                                             move to the multiple clauses of
 ;;                                             if/elsif/else,
 ;;                                             case/when/otherwise blocks.
 ;;                                             Also moves across comments:
 ;;                                             from the beginning to end of
-;;                                             comment and vice-versa. Treats
+;;                                             comment and vice-versa.  Treats
 ;;                                             consecutive lines of comments
 ;;                                             as a single comment.
 ;;
 ;; MARKING
-;; - C-M-h function/procedure mark.            Done. Use `seed7-mark-defun'
+;; - C-M-h function/procedure mark.            Done.  Use `seed7-mark-defun'
 ;; - iedit-mode support, allowing              Done.  Very useful for code
 ;;   selection of names in all buffer          refactoring.
 ;;   or restricted to a single function        Install iedit-mode package
@@ -110,14 +112,14 @@
 ;;                                             2, controls the indentation
 ;;                                             width.
 ;;
-;; Static checking/compilation                 Done. `seed7-compile' performs
+;; Static checking/compilation                 Done.  `seed7-compile' performs
 ;;                                             the operation identified in the
 ;;                                             `seed7-checker' and
 ;;                                             `seed7-compiler' customizable
 ;;                                             user options.
 ;;
 ;; CODE INSERTION HELP
-;; - Keyword template expansion                Done. Code expands specific
+;; - Keyword template expansion                Done.  Code expands specific
 ;;                                             keywords alone on line or
 ;;                                             before a closing parenthesis
 ;;                                             with boiler plate code with
@@ -127,7 +129,7 @@
 ;;                                             the <backtab> moves to the next
 ;;                                             tempo marker.
 ;;
-;; - Seed7-specific abbreviations              Done. Support short
+;; - Seed7-specific abbreviations              Done.  Support short
 ;;                                             Seed7-specific abbreviations
 ;;                                             that are expanded automatically
 ;;                                             when a word-separator key (such
@@ -137,7 +139,7 @@
 ;;                                             they do not clash with possible
 ;;                                             code symbols of
 ;;                                             identifiers.  This uses the
-;;                                             abbrev-mode. It is also allowed
+;;                                             abbrev-mode.  It is also allowed
 ;;                                             by customization.
 
 ;;
@@ -488,11 +490,11 @@ The name of the source code file is appended to the end of that line."
 
 (defconst seed7--non-capturing-name-identifier-re
   "\\(?:[[:alpha:]_][[:alnum:]_]*\\)"
-  "A complete, valid name identifier. No capturing group.")
+  "A complete, valid name identifier.  No capturing group.")
 
 (defconst seed7-name-identifier-re
   (format "\\(%s\\)" seed7--non-capturing-name-identifier-re)
-  "A complete, valid name identifier. One capturing group.")
+  "A complete, valid name identifier.  One capturing group.")
 
 (defconst seed7--non-capturing-type-identifier-re
   (format "\\(?:%s\\(?:[[:blank:]]+?%s\\)??\\)"
@@ -519,11 +521,11 @@ Has only one capturing group.")
 
 (defconst seed7--non-capturing-special-identifier-re
   (format "\\(?:%s+?\\)" seed7--special-char-re)
-  "A complete, valid Seed7 special identifier. Non capturing.")
+  "A complete, valid Seed7 special identifier.  Non capturing.")
 
 (defconst seed7-special-identifier-re
   (format "\\(%s\\)" seed7--non-capturing-special-identifier-re)
-  "A complete, valid Seed7 special identifier. One capturing group.")
+  "A complete, valid Seed7 special identifier.  One capturing group.")
 
 (defconst seed7-integer-invalid-0x-re "\\(0x[[:digit:]]+\\)"
   "Seed7 integer in group 1.")
@@ -550,7 +552,7 @@ Has only one capturing group.")
 
 (defconst seed7-number-with-negative-exponent-re
   "[0-9]+[eE]-[0-9]+"
-  "Literal number with negative exponent. Invalid in Seed7.")
+  "Literal number with negative exponent.  Invalid in Seed7.")
 
 (defconst seed7-number-with-exponent-re
   "[0-9]+[eE]\\+?[0-9]+"
@@ -955,7 +957,7 @@ Has only one capturing group.")
           (rx-to-string
            `(:  (or ,@seed7--operator-symbols)))
           "\\>")
-  "Seed7 word operator symbols. Captured in group 1.")
+  "Seed7 word operator symbols.  Captured in group 1.")
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;;** Seed7 Predefined Assignment Operators
@@ -1536,8 +1538,8 @@ The SYNTAX argument holds the value returned by `syntax-ppss' for point."
 (defun seed7-inside-comment-p (&optional pos)
   "Return face of comment if POS or point is inside comment, nil otherwise.
 Inside a comment, the returned value is:
-- font-lock-comment-face           : inside comment block or en-line comment
-- font-lock-comment-delimiter-face : at the # for line-end comment."
+- `font-lock-comment-face'           : inside comment block or en-line comment
+- `font-lock-comment-delimiter-face' : at the # for line-end comment."
   ;; Using the face instead of the syntax, as I found the syntax
   ;; not reliable enough when looking at some edge cases: the open block
   ;; comment characters are not recognized as comment syntax.
@@ -1575,7 +1577,7 @@ Note that the leading quote character does not register as inside a string."
 ;;   ---------------------------
 
 (defun seed7-re-search-forward (regexp &optional bound)
-  "Search for REGEXP inside code. Skip comment and strings.
+  "Search for REGEXP inside code.  Skip comment and strings.
 The optional second argument BOUND is a buffer position that bounds
   the search.  The match found must not end after that position.  A
   value of nil means search to the end of the accessible portion of
@@ -1600,7 +1602,7 @@ Move point."
     found-pos))
 
 (defun seed7-re-search-backward (regexp &optional bound)
-  "Search for REGEXP inside code. Skip comment and strings.
+  "Search for REGEXP inside code.  Skip comment and strings.
 The optional second argument BOUND is a buffer position that bounds
   the search.  The match found must not end after that position.  A
   value of nil means search to the end of the accessible portion of
@@ -1674,7 +1676,7 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
 
 (defconst seed7-procfunc-end-regexp
   "end[[:blank:]]+func;"
-  "Regexp to detect end of procedure or long function. No group.")
+  "Regexp to detect end of procedure or long function.  No group.")
 
 (defconst seed7-short-func-end-regexp
   (format "^[[:blank:]]+?return\\(?:%s+?.+?\\)+?;"
@@ -1684,14 +1686,14 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
 
 (defconst seed7-forward-declaration-end-regexp
   ")[[:blank:]]*?is[[:blank:]]+?forward;"
-  "Regexp to detect end of forward declaration. No group.")
+  "Regexp to detect end of forward declaration.  No group.")
 
 (defconst seed7-action-function-end-regexp
   (format "%s+?is%s+?action%s+?\".+?\";"
           seed7--whitespace-re
           seed7--whitespace-re
           seed7--whitespace-re)
-  "Regexp to detect end of action handle function. No group.")
+  "Regexp to detect end of action handle function.  No group.")
 
 ;;** Seed7 Skipping Comments
 ;;   -----------------------
@@ -1775,7 +1777,7 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
 
 
 (defun seed7--skip-block-comment-forward ()
-  "skip comment block utility.
+  "Skip comment block utility.
 Only used by `seed7-skip-comment-forward'."
   (search-forward "*)" nil :noerror)
   (when (seed7-at-end-of-line-p)
@@ -1783,13 +1785,14 @@ Only used by `seed7-skip-comment-forward'."
     (seed7-to-indent)))
 
 (defun seed7--skip-line-end-comment ()
-  "skip line end comment utility.
+  "Skip line end comment utility.
 Only used by `seed7-skip-comment-forward'."
   (forward-line 1)
   (seed7-to-indent))
 
 (defun seed7-skip-comment-forward (&optional dont-push-mark)
-  "Move point forward after comments and consecutive comment blocks."
+  "Move point forward after comments and consecutive comment blocks.
+Push mark before moving unless DONT-PUSH-MARK is non-nil."
   (let ((keep-searching t)
         (original-pos (point))
         (end-pos (point)))
@@ -1893,10 +1896,10 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
 
 (defun seed7--show-info (position name type tail-type)
   "Return formatted message for start/end of function/procedure at POSITION.
-- NAME: name of function/procedure. Extracted from group2 of
+- NAME: name of function/procedure.  Extracted from group2 of
   seed7-procfunc-regexp.
 - TYPE: \"func \" or \"proc\". Extracted from group 2 of seed7-procfunc-regexp.
-- TYPE-TAIL: string describing the type of function. Extracted from group 6 of
+- TAIL-TYPE: string describing the type of function. Extracted from group 6 of
    seed7-procfunc-regexp."
   (seed7--pos-msg
    position
@@ -1928,8 +1931,10 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
 
 - With optional argument N, repeat the search that many times and succeed
   only when that many function or procedures are found.
-  A value of zero means no action. A negative value is not allowed and raises
+  A value of zero means no action.  A negative value is not allowed and raises
   a user error.
+- Unless SILENT, the function prints a message showing the name of the
+  found function or procedure.
 - When a new function or procedure is found the function pushes the mark
   unless DONT-PUSH-MARK is non-nil.  Pushing the mark allows future pop to
   go back to the original position with \\[universal-argument] \\[set-mark-command].
@@ -1966,7 +1971,7 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
 
 - With optional argument N, repeat the search that many times and succeed
   only when that many function or procedures are found.
-  A value of zero means no action. A negative value is not allowed and raises
+  A value of zero means no action.  A negative value is not allowed and raises
   a user error.
 - Unless SILENT, the function prints a message showing the name of the
   found function or procedure.
@@ -2000,7 +2005,7 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
           ;; That search should always succeed.
           (if (seed7-re-search-backward seed7-procfunc-regexp)
               (setq found-pos (point))
-            (error "seed7-beg-of-next-defun: logic error at %d. Check regexp used: %s"
+            (error "Logic error in:seed7-beg-of-next-defun at %d. Check regexp used: %s"
                    (point)
                    (symbol-name 'seed7-procfunc-regexp)))))
       (seed7--move-and-mark
@@ -2016,7 +2021,7 @@ Move inside the current if inside one, to the next if outside one.
 
 - With optional argument N, repeat the search that many times and succeed
   only when that many function or procedures are found.
-  A value of zero means no action. A negative value is not allowed and raises
+  A value of zero means no action.  A negative value is not allowed and raises
   a user error.
 - Unless SILENT, the function prints a message showing the item-name of the new
   found function or procedure.
@@ -2333,13 +2338,13 @@ Return found position or nil if nothing found."
                        ;; found nothing
                        (t (user-error
                            "seed7-to-block-forward: \
-No match. At point %d, nesting=%d, line %d for: %S"
+No match.  At point %d, nesting=%d, line %d for: %S"
                            (point)
                            nesting
                            (seed7-current-line-number)
                            regexp)))
                     (user-error "seed7-to-block-forward: \
-NO match. At point %d, nesting=%d, line %d for: %S"
+NO match.  At point %d, nesting=%d, line %d for: %S"
                                 (point)
                                 nesting
                                 (seed7-current-line-number)
@@ -2405,7 +2410,7 @@ Return found position if found, nil if nothing found."
                        ;; found nothing
                        (t (user-error
                            "seed7-to-block-backward: \
-No match. From %d, at point %d, nesting=%d, line %d for: %S"
+No match.  From %d, at point %d, nesting=%d, line %d for: %S"
                            start-pos
                            (point)
                            nesting
@@ -2413,7 +2418,7 @@ No match. From %d, at point %d, nesting=%d, line %d for: %S"
                            regexp)))
                     (user-error
                      "seed7-to-block-backward: \
-NO match. From %d, at point %d, nesting=%d, line %d  for: %S"
+NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
                      start-pos
                      (point)
                      nesting
@@ -2641,8 +2646,8 @@ Do not move point."
 
 (defun seed7-to-previous-non-empty-line (&optional dont-skip-comment-start)
   "Move point to the beginning of the previous non-empty line.
-Skip lines starting with new comment unless DONT-SKIP-COMMENT-START is non
-nil. Always skip lines that are *inside* a comment.
+Skip lines starting with new comment unless DONT-SKIP-COMMENT-START is
+non-nil.  Always skip lines that are *inside* a comment.
 Return indentation column of that line, if the line is found.
 Return nil if nothing found, but do not move point."
   (let ((found-pos nil))
@@ -2715,10 +2720,14 @@ the `seed7-indent-width' user-option."
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (defun seed7-to-previous-line-starts-with (regexp &optional bound)
-  "Move to previous code line that starts with text specified by the REGEXP.
+  "Move to previous code line starting with text specified by the REGEXP.
 Return position of the text found if found, nil otherwise.
 When something is found, leave point at the found position, if nothing
-found do not move point."
+  found do not move point.
+The optional second argument BOUND is a buffer position that bounds
+  the search.  The match found must not end after that position.  A
+  value of nil means search to the end of the accessible portion of
+  the buffer."
   (let ((regexp (concat "^[[:blank:]]*?" regexp))
         (found-pos nil))
     (save-excursion
@@ -2729,10 +2738,10 @@ found do not move point."
       (goto-char found-pos))))
 
 (defun seed7-to-next-line-starts-with (regexp)
-  "Move to next line that starts with text specified by the REGEXP.
+  "Move to next line starting with text specified by the REGEXP.
 Return position of the (indented) text found if found, nil otherwise.
 When something is found, leave point at the found position, if nothing
-found do not move point."
+  found do not move point."
   (let ((regexp (concat "^[[:blank:]]*?" regexp))
         (found-pos nil))
     (save-excursion
@@ -2832,7 +2841,7 @@ block\\|\
 else\\|\
 exception\\|\
 result\\)"
-  "Regexp for the beginning of a Seed7 block. Has 1 group.")
+  "Regexp for the beginning of a Seed7 block.  One capture group.")
 
 (defconst seed7-block-line-start-regexp (concat
                                          "^[[:blank:]]*?"
@@ -2844,7 +2853,7 @@ result\\)"
 \\(?:\\(?:\\(?:enum\\|for\\|func\\|if\\|struct\\|while\\|case\\);\\)\
 \\|block\\)\\)\
 \\|\\(?:until \\)"
-  "regexp for generic end of block.")
+  "Regexp for generic end of block.")
 
 
 (defun seed7-line-is-block-end (n &optional dont-skip-comment-start)
@@ -3032,7 +3041,7 @@ N is: - :previous-non-empty for the previous non empty line,
 If nothing found it returns nil.
 If it finds something it returns a list that holds the following information:
 - 0: indent column : indentation column the line N should use,
-- 1: match-string  : the found string describing the type of block,
+- 1: match string  : the found string describing the type of block,
 - 2: block start position, (the beginning of the start keyword line),
 - 3: block end position."
   (save-excursion
@@ -3104,6 +3113,7 @@ N is: - :previous-non-empty for the previous non empty line,
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
+SCOPE-BEGIN-POS and SCOPE-END-POS are the search begin and end boundaries.
 If it finds that the line is inside the until logic expression, it
 returns the indentation column, corresponding to one column right of the
 end or the until word.
@@ -3152,13 +3162,14 @@ N is: - :previous-non-empty for the previous non empty line,
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
+SCOPE-BEGIN-POS and SCOPE-END-POS are the search begin and end boundaries.
 If it finds that the line is inside the func return statement, it
 returns the indentation column of the return keyword.
 If it detects that it is outside, it returns nil."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
-    (error "seed7-line-inside-func-return-statement\
-Invalid boundaries: begin=%S, end=%S"
+    (error "Invalid boundaries in: seed7-line-inside-func-return-statement:\
+ begin=%S, end=%S"
            scope-begin-pos scope-end-pos))
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
@@ -3197,6 +3208,7 @@ N is: - :previous-non-empty for the previous non empty line,
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
+SCOPE-BEGIN-POS and SCOPE-END-POS are the search begin and end boundaries.
 If it finds that the line is inside the procedure list section it
 returns the indentation column of the procedure.
 If it detects that it is outside, it returns nil."
@@ -3553,14 +3565,14 @@ N is: - :dont-move to keep point at current position
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
+SCOPE-BEGIN-POS and SCOPE-END-POS are the search begin and end boundaries.
 If nothing is found it returns nil.
 If the appropriate parens pair is found it returns a list of 4 elements:
 - 0: indentation column of the character after the opening parens of
      the inner-most nesting.
 - 1: string: parens pair found.
 - 2: position of the opening paren of the inner-most nesting.
-- 3: position of the end paren of the the inner-most nesting.
-"
+- 3: position of the end paren of the the inner-most nesting."
   (save-excursion
     (let ((inner-most-nesting-spec-list nil)
           (spec-list nil))
@@ -3594,6 +3606,7 @@ N is: - :dont-move to keep point at current position
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
+SCOPE-BEGIN-POS and SCOPE-END-POS are the search begin and end boundaries.
 If nothing is found it returns nil.
 If the appropriate parens pair is found it return the indentation column of
 the character after the opening parens of the the inner-most nesting."
@@ -3670,7 +3683,9 @@ N is: - :previous-non-empty for the previous non empty line,
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (defun seed7-comment-column (recurse-count)
-  "Return the column number for comment start or continuation."
+  "Return the column number for comment start or continuation.
+The RECURSE-COUNT argument should be 0 on first call, incremented by 1 on each
+recursive call."
   (save-excursion
     ;; What type of comment is this line ?
     (seed7-to-indent)
@@ -3736,8 +3751,10 @@ N is: - :previous-non-empty for the previous non empty line,
 
 (defun seed7-calc-indent (&optional treat-comment-line-as-code recurse-count)
   "Calculate and return indentation (in columns) of current line of code.
-When SKIP-STRING is non-nil do not base the indentation on the position
-of a string."
+When TREAT-COMMENT-LINE-AS-CODE is non-nil a comment line is processed as if
+  it was a code line, allowing the indentation logic to handle comments.
+The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
+  call.  Only one recursion is allowed."
   (let ((recurse-count (or recurse-count 0))
         (indent-step (seed7-line-indent-step :previous-non-empty))
         (first-word-on-line      (seed7--current-line-nth-word 1))
@@ -3954,7 +3971,7 @@ Also add tempo marker at each of these locations."
   (delete-char n))
 
 (defun seed7--indent-lines (n)
-  "Indent N lines starting from the current one. Do not move point."
+  "Indent N lines starting from the current one.  Do not move point."
   (save-excursion
     (dotimes (_ n)
       (indent-for-tab-command)
@@ -4868,7 +4885,7 @@ If optional COMPILE argument set, compile the file to executable instead."
                                  )
   "List of Seed7-specific abbreviation to expansion.
 
-These abbreviations are made available to the abbrev-mode when the
+These abbreviations are made available to the `abbrev-mode' when the
 `seed7-support-abbrev-mode' user option is on.
 
 The list included here corresponds to what is documented.
