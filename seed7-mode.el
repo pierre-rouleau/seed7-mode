@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-10 12:24:06 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-10 17:27:39 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -4972,6 +4972,9 @@ Make sure you have no duplication of keywords if you edit the list."
   (when seed7-support-abbrev-mode
     ;; Seed7 Abbreviation Support
     (setq-local local-abbrev-table seed7-mode-abbrev-table)))
+
+(defconst seed7-mode-version-timestamp "2025-06-10T21:27:39+0000 W24-2"
+  "Version timestamp of the seed7-mode file.")
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.s\\(d7\\|7i\\)\\'" . seed7-mode))
