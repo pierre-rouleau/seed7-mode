@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-11 08:57:23 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-11 10:13:18 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -196,6 +196,7 @@
 ;; commands to navigate across section titles as well as hide/show the content
 ;; of sections.
 ;;
+;; - Version Info
 ;; - Low-level Macros
 ;; - Seed7 Customization
 ;; - Seed7 Keyword Regexp
@@ -272,10 +273,10 @@
 ;; - Seed7 Auto-completion
 ;; - Seed7 Compilation
 ;;   * `seed7-compile'
-;; - Seed7 Key Map
-;; - Seed7 Menu
 ;; - Seed7 Abbreviation Support
 ;; - Seed7 Completion Support
+;; - Seed7 Key Map
+;; - Seed7 Menu
 ;; - Seed7 Major Mode
 ;;   * `seed7-mode'
 
@@ -297,6 +298,20 @@
 
 ;; Seed7 Syntax Information:
 ;; - https://thomasmertes.github.io/Seed7Home/faq.htm#add_syntax_highlighting
+
+;; ---------------------------------------------------------------------------
+;;* Version Info
+;;  ============
+
+(defconst seed7-mode-version-timestamp "2025-06-11T14:13:18+0000 W24-3"
+  "Version UTC timestamp of the seed7-mode file.
+Automatically updated when saved during development.
+Please do not modify.")
+
+(defun seed7-mode-version ()
+  "Print `seed7-mode' version UTC time stamp."
+  (interactive)
+  (message "seed7-mode version UT timestamp: %s" seed7-mode-version-timestamp))
 
 ;; ---------------------------------------------------------------------------
 ;;* Low-level Macros
@@ -4671,96 +4686,6 @@ If optional COMPILE argument set, compile the file to executable instead."
                    (shell-quote-argument (buffer-file-name)))))
 
 ;; ---------------------------------------------------------------------------
-;;* Seed7 Key Map
-;;  =============
-;;
-
-(defvar seed7-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "TAB") 'seed7-complete-statement-or-indent)
-    (define-key map (kbd "<backtab>") 'tempo-forward-mark)
-    (define-key map (kbd "C-c C-a") 'seed7-to-block-backward)
-    (define-key map (kbd "C-c C-e") 'seed7-to-block-forward)
-    (define-key map (kbd "C-c C-n") 'seed7-beg-of-next-defun)
-    (define-key map "\M-\C-a"  'seed7-beg-of-defun)
-    (define-key map "\M-\C-e"  'seed7-end-of-defun)
-    (define-key map "\M-\C-h"  'seed7-mark-defun)
-    (define-key map (kbd "C-c ;")  'seed7-toggle-comment-style)
-    map)
-  "Keymap used in `seed7-mode'.")
-
-;; ---------------------------------------------------------------------------
-;; Seed7 Menu
-;; ==========
-
-(easy-menu-define seed7-mode-menu seed7-mode-map
-  "Menu for Seed7 Mode."
-  '("Seed7"
-    ("Comments"
-     ["Comment/un-comment"     comment-dwim]
-     ["Toggle comment style"   seed7-toggle-comment-style])
-
-    "---"
-    ["Expand keyword/Indent"   seed7-complete-statement-or-indent]
-    ["Move to next marker"     tempo-forward-mark]
-    ["Move to previous marker" tempo-backward-mark]
-    ("Insert"
-     ["Include"            seed7-insert-include]
-     "---"
-     ["Procedure"          seed7-insert-procedure-declaration]
-     ["Function"           seed7-insert-func-declaration]
-     ["Function Short"     seed7-insert-short-function-declaration]
-     ["Enum"               seed7-insert-enumeration-type-declaration]
-     ["Struct"             seed7-insert-struct-type-declaration]
-     "---"
-     ["var"                seed7-insert-var-declaration]
-     ["const"              seed7-insert-const-declaration]
-     "---"
-     ["in"                 seed7-insert-in-parameter]
-     ["invar"              seed7-insert-invar-parameter]
-     ["inout"              seed7-insert-inout-parameter]
-     ["ref"                seed7-insert-reference-parameter]
-     ["val"                seed7-insert-value-parameter]
-     ["callbn"             seed7-insert-call-by-name-parameter]
-     "---"
-     ["Case"               seed7-insert-case-statement]
-     ["For"                seed7-insert-for]
-     ["For until"          seed7-insert-for-until]
-     ["For step"           seed7-insert-for-step]
-     ["For each"           seed7-insert-for-each]
-     ["For each until"     seed7-insert-for-each-until]
-     ["For each key"       seed7-insert-for-each-key]
-     ["For each key until" seed7-insert-for-each-key-until]
-     ["For key"            seed7-insert-for-key]
-     ["For key until"      seed7-insert-for-key-until]
-     ["If"                 seed7-insert-if-statement]
-     ["Repeat"             seed7-insert-repeat]
-     ["While"              seed7-insert-while])
-
-    ("Mark"
-     ["Mark Function/Procedure" seed7-mark-defun ])
-    "---"
-    ["Toggle outline-minor-mode" outline-minor-mode
-     :help "Control hiding/showing content of blocks"]
-
-    ("Navigation"
-     ["Forward func/proc" seed7-end-of-defun
-      :help "Go forward to end of function or procedure"]
-     ["Backward to func/proc" seed7-beg-of-defun
-      :help "Go backward to the beginning of function or procedure"]
-     ["Forward to next func/proc" seed7-beg-of-next-defun
-      :help "Go forward to the beginning of next function or procedure"]
-     ["Block end" seed7-to-block-forward
-      :help "Go forward to end of block"]
-     ["Block start" seed7-to-block-backward
-      :help "Go backward to start of block"])
-    "---"
-    ["Static check"  seed7-compile t]
-    ["Compile"       (seed7-compile t) t]
-    "---"
-    ["Customize Mode" (customize-group 'seed7) t]))
-
-;; ---------------------------------------------------------------------------
 ;;* Seed7 Abbreviation Support
 ;;  ==========================
 
@@ -4945,8 +4870,100 @@ Make sure you have no duplication of keywords if you edit the list."
 ;;  ========================
 ;; [:todo 2025-06-07, by Pierre Rouleau: add completion support]
 ;; (defun seed7-completions-at-point)
-;; ---------------------------------------------------------------------------
 
+;; ---------------------------------------------------------------------------
+;;* Seed7 Key Map
+;;  =============
+;;
+
+(defvar seed7-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "TAB") 'seed7-complete-statement-or-indent)
+    (define-key map (kbd "<backtab>") 'tempo-forward-mark)
+    (define-key map (kbd "C-c C-a") 'seed7-to-block-backward)
+    (define-key map (kbd "C-c C-e") 'seed7-to-block-forward)
+    (define-key map (kbd "C-c C-n") 'seed7-beg-of-next-defun)
+    (define-key map "\M-\C-a"  'seed7-beg-of-defun)
+    (define-key map "\M-\C-e"  'seed7-end-of-defun)
+    (define-key map "\M-\C-h"  'seed7-mark-defun)
+    (define-key map (kbd "C-c ;")  'seed7-toggle-comment-style)
+    (define-key map (kbd "C-c v")  'seed7-mode-version)
+    map)
+  "Keymap used in `seed7-mode'.")
+
+;; ---------------------------------------------------------------------------
+;; Seed7 Menu
+;; ==========
+
+(easy-menu-define seed7-mode-menu seed7-mode-map
+  "Menu for Seed7 Mode."
+  '("Seed7"
+    ["Version"              seed7-mode-version]
+    ("Comments"
+     ["Comment/un-comment"     comment-dwim]
+     ["Toggle comment style"   seed7-toggle-comment-style])
+
+    "---"
+    ["Expand keyword/Indent"   seed7-complete-statement-or-indent]
+    ["Move to next marker"     tempo-forward-mark]
+    ["Move to previous marker" tempo-backward-mark]
+    ("Insert"
+     ["Include"            seed7-insert-include]
+     "---"
+     ["Procedure"          seed7-insert-procedure-declaration]
+     ["Function"           seed7-insert-func-declaration]
+     ["Function Short"     seed7-insert-short-function-declaration]
+     ["Enum"               seed7-insert-enumeration-type-declaration]
+     ["Struct"             seed7-insert-struct-type-declaration]
+     "---"
+     ["var"                seed7-insert-var-declaration]
+     ["const"              seed7-insert-const-declaration]
+     "---"
+     ["in"                 seed7-insert-in-parameter]
+     ["invar"              seed7-insert-invar-parameter]
+     ["inout"              seed7-insert-inout-parameter]
+     ["ref"                seed7-insert-reference-parameter]
+     ["val"                seed7-insert-value-parameter]
+     ["callbn"             seed7-insert-call-by-name-parameter]
+     "---"
+     ["Case"               seed7-insert-case-statement]
+     ["For"                seed7-insert-for]
+     ["For until"          seed7-insert-for-until]
+     ["For step"           seed7-insert-for-step]
+     ["For each"           seed7-insert-for-each]
+     ["For each until"     seed7-insert-for-each-until]
+     ["For each key"       seed7-insert-for-each-key]
+     ["For each key until" seed7-insert-for-each-key-until]
+     ["For key"            seed7-insert-for-key]
+     ["For key until"      seed7-insert-for-key-until]
+     ["If"                 seed7-insert-if-statement]
+     ["Repeat"             seed7-insert-repeat]
+     ["While"              seed7-insert-while])
+
+    ("Mark"
+     ["Mark Function/Procedure" seed7-mark-defun ])
+    "---"
+    ["Toggle outline-minor-mode" outline-minor-mode
+     :help "Control hiding/showing content of blocks"]
+
+    ("Navigation"
+     ["Forward func/proc" seed7-end-of-defun
+      :help "Go forward to end of function or procedure"]
+     ["Backward to func/proc" seed7-beg-of-defun
+      :help "Go backward to the beginning of function or procedure"]
+     ["Forward to next func/proc" seed7-beg-of-next-defun
+      :help "Go forward to the beginning of next function or procedure"]
+     ["Block end" seed7-to-block-forward
+      :help "Go forward to end of block"]
+     ["Block start" seed7-to-block-backward
+      :help "Go backward to start of block"])
+    "---"
+    ["Static check"  seed7-compile t]
+    ["Compile"       (seed7-compile t) t]
+    "---"
+    ["Customize Mode" (customize-group 'seed7) t]))
+
+;; ---------------------------------------------------------------------------
 ;;* Seed7 Major Mode
 ;;  ================
 
@@ -5001,9 +5018,6 @@ Make sure you have no duplication of keywords if you edit the list."
   (when seed7-support-abbrev-mode
     ;; Seed7 Abbreviation Support
     (setq-local local-abbrev-table seed7-mode-abbrev-table)))
-
-(defconst seed7-mode-version-timestamp "2025-06-11T12:57:23+0000 W24-3"
-  "Version timestamp of the seed7-mode file.")
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.s\\(d7\\|7i\\)\\'" . seed7-mode))
