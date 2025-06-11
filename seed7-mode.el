@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-11 07:28:59 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-11 08:57:23 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -184,9 +184,6 @@
 ;;        I will fix that once I get the auto indentation working properly
 ;;        for all code.  I will then have to decide if that's considered a
 ;;        defun to allow marking the block just like procedure and functions.
-;;  # 05  Not all valid single quote character literals are supported and invalid
-;;        highlighted with warning face.
-;;        The valid ones like '\0;' and '\16#ff;' are not yet supported.
 ;; ]
 ;;
 ;;
@@ -560,6 +557,13 @@ Has only one capturing group.")
 (defconst seed7-base-x-integer-re (format seed7--base-x-integer-re-format
                                           "("
                                           "[^#0-9a-zA-z]"))
+
+(defconst seed7-any-valid-char-integer-semicolon-re
+  (format "'\\\\%s;'\\)\\|\\(?:'\\\\[[:digit:]]+;'"
+          (format seed7--base-x-integer-re-format
+                  "(?:"
+                  "")
+          ))
 
 (defconst seed7-base-x-big-number-re (format seed7--base-x-integer-re-format
                                              "(\\(?:"
@@ -1026,12 +1030,13 @@ Has only one capturing group.")
 ;;   -------------------------------------
 
 (defconst seed7-char-literal-re
-  "\\(?:[[:digit:]]\\(#\\)[[:alnum:]]\\|\\(\\(?:'\\\\''\\)\\|\\(?:'.'\\)\\|\\(?:'\\\\[abefnrtv\"A-Z\\\\]'\\)\\)\\)"
-  ;; (-----------------------------------------------------------------------------------------------------------)
-  ;;                 (---)                (-------------------------------------------------------------------)
-  ;;                                         (----------)      (-------)     (-----------------------------)
-  ;;                 G1                   G2
-  )
+  (format
+   "\\(?:\\(?:[[:digit:]]\\(#\\)[[:alnum:]]\\)\\|\\(\\(?:'\\\\''\\)\\|\\(?:'.'\\)\\|\\(?:'\\\\[abefnrtv\"A-Z\\\\]'\\)\\|\\(?:%s\\)\\)\\)"
+   ;; (----(----------------------------------)----(--------------------------------------------------------------------------------)--)
+   ;;                      (---)                   (-----------------------------------------------------------------------------------)
+   ;;                                                 (-----------)     (-------)     (-----------------------------)     (------)
+   ;;                      G1                      G2                                                                        %1
+   seed7-any-valid-char-integer-semicolon-re))
 
 (defun seed7-mode-syntax-propertize (start end)
   "Apply syntax property between START and END to # character in number."
@@ -4997,7 +5002,7 @@ Make sure you have no duplication of keywords if you edit the list."
     ;; Seed7 Abbreviation Support
     (setq-local local-abbrev-table seed7-mode-abbrev-table)))
 
-(defconst seed7-mode-version-timestamp "2025-06-11T11:28:59+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2025-06-11T12:57:23+0000 W24-3"
   "Version timestamp of the seed7-mode file.")
 
 ;;;###autoload
