@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-11 11:11:34 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-11 13:44:54 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -222,7 +222,6 @@
 ;;    - Seed7 Predefined Assignment Operators
 ;;    - Seed7 Predefined Comparison Operators
 ;;    - Seed7 Other Predefined Operators
-;;    - Seed7 Other Predefined Operators
 ;;    - Seed7 Arithmetic Operators
 ;; - Seed7 Mode Syntax Control
 ;;   - Seed7 Mode Syntax Table
@@ -303,7 +302,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-11T15:11:34+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2025-06-11T17:44:54+0000 W24-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -810,7 +809,7 @@ Has only one capturing group.")
     "PRIMITIVE_WINDOW"))
 
 ;; Note: the < > are important to prevent detection of words inside other
-;; words.  The pre-defined types are not set to have symbol syntax, therefore
+;; words.  The predefined types are not set to have symbol syntax, therefore
 ;; they must be treated as words and use word boundary.
 (defconst seed7-predefined-types-regexp
   (format "%s\\(%s\\)%s"
@@ -951,6 +950,7 @@ Has only one capturing group.")
 (defconst seed7--assignment-operator-symbols
   '(
     ":="
+    "::="      ; see https://github.com/ThomasMertes/seed7/issues/64
     "+:="
     "-:="
     "*:="
@@ -4537,7 +4537,7 @@ struct       struct type definition
             in-indent (seed7-inside-line-indent-p)
             keyword (thing-at-point 'word :no-properties)))
     ;; expand only if there's 1 word at the beginning of a line of code,
-    ;; with nothing after and only for specified pre-defined keywords
+    ;; with nothing after and only for specified predefined keywords
     ;; or inside parens, just before the closing parens
     (if
         (and keyword
