@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-11 10:58:30 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-11 11:11:34 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -303,7 +303,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-11T14:58:30+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2025-06-11T15:11:34+0000 W24-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4894,6 +4894,7 @@ Make sure you have no duplication of keywords if you edit the list."
     (define-key map (kbd "C-c ;")  'seed7-toggle-comment-style)
     (define-key map (kbd "C-c v")  'seed7-mode-version)
     (define-key map (kbd "C-c C")  'seed7-mode-customize)
+    (define-key map (kbd "C-c C-c") 'seed7-compile)
     map)
   "Keymap used in `seed7-mode'.")
 
