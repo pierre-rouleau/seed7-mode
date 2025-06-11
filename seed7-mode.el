@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-10 22:46:17 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-11 06:54:25 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -1414,10 +1414,12 @@ Allows selecting similar colours for various systems."
    ;; invalid single quote char literals
    (cons seed7--invalid-char-literal-re              (list 1 ''font-lock-warning-face))
 
-   ;; identifiers
+   ;; big numbers: have an underscore : must be done before seed7-name-identifier-re
+   (cons seed7-big-number-re                         (list 1 ''seed7-number-face))
+
+   ;; identifiers: include the underscore
    (cons seed7-name-identifier-re                    (list 1 ''seed7-name-identifier-face))
    ;; other numbers
-   (cons seed7-big-number-re                         (list 1 ''seed7-number-face))
    (cons seed7-integer-re                            (list 1 ''seed7-integer-face))
    ;; low priority rendering of arithmetic + and -
    (cons seed7-minus-operator-regexp                 (list 1 ''font-lock-keyword-face))
@@ -4994,7 +4996,7 @@ Make sure you have no duplication of keywords if you edit the list."
     ;; Seed7 Abbreviation Support
     (setq-local local-abbrev-table seed7-mode-abbrev-table)))
 
-(defconst seed7-mode-version-timestamp "2025-06-11T02:46:17+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2025-06-11T10:54:25+0000 W24-3"
   "Version timestamp of the seed7-mode file.")
 
 ;;;###autoload
