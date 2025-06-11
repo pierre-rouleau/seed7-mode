@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-11 13:44:54 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-11 14:19:45 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -302,7 +302,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-11T17:44:54+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2025-06-11T18:19:45+0000 W24-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -481,7 +481,7 @@ Has only one capturing group.")
   "Any one of the special characters.")
 
 (defconst seed7--non-capturing-special-identifier-re
-  (format "\\(?:%s+?\\)" seed7--special-char-re)
+  (format "\\(?:%s+\\)" seed7--special-char-re)
   "A complete, valid Seed7 special identifier.  Non capturing.")
 
 (defconst seed7-special-identifier-re
@@ -1520,7 +1520,7 @@ Note: the default style for all Seed7 buffers is controlled by the
 ;;  ===================
 (defconst seed7-procedure-regexp
   (format
-   "^[[:space:]]*const%s+proc:%s\\([[:alpha:]][[:alnum:]_]+\\)%s*?is func"
+   "^[[:blank:]]*const%s+proc:%s\\([[:alpha:]][[:alnum:]_]+\\)%s*?is func"
    ;;                             G1
    seed7--whitespace-re
    seed7--whitespace-re
@@ -1529,14 +1529,32 @@ Note: the default style for all Seed7 buffers is controlled by the
 
 (defconst seed7-function-regexp
   (format
-   "^[[:space:]]*const%s+func \\([[:alpha:]][[:alnum:]_]+\\)%s?:%s*\\([[:alpha:]][[:alnum:]_]+\\)%s*?is%s+\\(func\\|return\\)"
-  ;;                  %         G1                          %   %  G2
-   seed7--whitespace-re
-   seed7--whitespace-re
-   seed7--whitespace-re
-   seed7--anychar-re
-   seed7--whitespace-re)
-  "Match function name in group 2, returned type in group 1.")
+   "^[[:blank:]]*?const%s+func %s??%s??:\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?is%s+\\(func\\|return\\|forward;\\|action%s\".+?\";\\)"
+   ;;                  %       G1  %         %         %           %   G2%    %         %  %        %     %    G3                                %
+   ;;                  1       %2  3         4         5           6     7    8         9  10       11    12                                     13
+
+   seed7--whitespace-re                       ; 1
+   seed7-type-identifier-re                   ; 2
+   seed7--whitespace-re                       ; 3
+   seed7--whitespace-re                       ; 4
+   seed7--anychar-re                          ; 5
+   seed7--whitespace-re                       ; 6
+   seed7--non-capturing-name-identifier-re    ; 7
+   seed7--non-capturing-special-identifier-re ; 8
+   seed7--whitespace-re                       ; 9
+   seed7--anychar-re                          ; 10
+   seed7--anychar-re                          ; 11
+   seed7--whitespace-re                       ; 12
+   seed7--whitespace-re)                      ; 13
+  "Regexp identifying beginning of procedures and functions.
+Group 1: The func return type.  May be empty.
+Group 2: The func or proc name.
+Group 3: - \"func\" for proc or function that ends with \"end func\".
+         - \"return\" for a func that only has a return statement.
+         - \"forward\" for a forward declaration.
+         - \"action ACTION\" for an action function." )
+
+
 
 (defconst seed7-enum-regexp
   "const type: \\([[:alpha:]][[:alnum:]_]+\\) is new enum")
