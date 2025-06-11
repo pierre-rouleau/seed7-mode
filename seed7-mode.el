@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-11 10:13:18 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-11 10:58:30 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -303,7 +303,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-11T14:13:18+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2025-06-11T14:58:30+0000 W24-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -325,6 +325,11 @@ Use inside a `cond' clause to emphasize the check."
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Customization
 ;;  ===================
+
+(defun seed7-mode-customize ()
+  "Open the `seed7-mode' customization buffer."
+  (interactive)
+  (customize-group "seed7"))
 
 (defgroup seed7 nil
   "Seed7 Programming Language support configuration."
@@ -4888,6 +4893,7 @@ Make sure you have no duplication of keywords if you edit the list."
     (define-key map "\M-\C-h"  'seed7-mark-defun)
     (define-key map (kbd "C-c ;")  'seed7-toggle-comment-style)
     (define-key map (kbd "C-c v")  'seed7-mode-version)
+    (define-key map (kbd "C-c C")  'seed7-mode-customize)
     map)
   "Keymap used in `seed7-mode'.")
 
@@ -4902,7 +4908,7 @@ Make sure you have no duplication of keywords if you edit the list."
     ("Comments"
      ["Comment/un-comment"     comment-dwim]
      ["Toggle comment style"   seed7-toggle-comment-style])
-
+    ["Customize seed7-mode" seed7-mode-customize]
     "---"
     ["Expand keyword/Indent"   seed7-complete-statement-or-indent]
     ["Move to next marker"     tempo-forward-mark]
