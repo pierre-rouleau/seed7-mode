@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-11 07:08:09 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-11 07:28:59 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -416,7 +416,7 @@ The name of the source code file is appended to the end of that line."
 ;;*** Invalid String Literals
 
 (defconst seed7--invalid-char-literal-re
-  "[^'\\]\\(\\(?:''\\)\\|\\(?:'[^\\].+'\\)\\|\\('\\\\[[:digit:]]+'\\)\\)[^']"
+  "[^'\\]\\(\\(?:''\\)\\|\\(?:'[^\\].+?'\\)\\|\\('\\\\[[:digit:]]+'\\)\\)[^']"
   "Match invalid single quote char literal.  In group 1." )
 
 ;;*** Seed7 Basic Element Regexp
@@ -4997,7 +4997,7 @@ Make sure you have no duplication of keywords if you edit the list."
     ;; Seed7 Abbreviation Support
     (setq-local local-abbrev-table seed7-mode-abbrev-table)))
 
-(defconst seed7-mode-version-timestamp "2025-06-11T11:08:09+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2025-06-11T11:28:59+0000 W24-3"
   "Version timestamp of the seed7-mode file.")
 
 ;;;###autoload
