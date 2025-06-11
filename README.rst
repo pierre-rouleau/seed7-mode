@@ -11,11 +11,121 @@ Please create a bug report for  any problem you detect.
 Currently Implemented Features
 ==============================
 
-- Syntax highlighting with user-customizable faces.
-- Supports `Emacs outline minor mode`_: collapse and expansion of blocks,
-  where heading is the first line of a declaration block. This allows
-  navigation and code manipulation by headings (blocks).
-- Provides a Seed7 top level menu entry.
+
+Display seed-mode version information
+-------------------------------------
+
+The ``seed7-mode-version`` command, bound to ``C-c v`` in seed7-mode buffers,
+display the version UTC time stamp of the file in the message area, at bottom
+of the screen.  Use this to verify the version of the seed7-mode.el code you
+are using.
+
+Please include this information in bug reports.
+
+Customize seed7-mode
+--------------------
+
+Several features of the ``seed7-mode`` are customizable.
+Use the ``seed7-mode-customize`` command, bound to ``C-c C`` to quickly open the
+``seed7-mode`` customization buffer.
+
+The command is also accessible from the top menu as can be see
+`here <screenshots/menu-customize.png>`_. Once issued it opens the
+`seed7-mode customization buffer <screenshots/seed7-customize.png>`_.
+
+Use the customization buffer to view or change one or several customizable
+user-option variables.
+
+Since these control the behaviour of the ``seed7-mode`` the changes will only
+apply to buffers that are then opened in ``seed7-mode``.  If you already have
+a buffer using the mode, change to ``fundamental-mode`` and then back to
+``seed7-mode`` for the changes to take effect..
+
+
+Syntax highlighting with user-customizable faces.
+-------------------------------------------------
+
+Font lock syntax highlighting for Seed7 supports different faces for different
+Seed7 syntactic elements, including various faces for different types of
+numbers and warning font to identify some syntactic errors in the code, but
+not all.
+
+See the following example screenshots:
+
+=========================== ================================================
+Screenshot                  Description
+=========================== ================================================
+`Terminal-mode Emacs`_      Shows the default highlighting of Seed7 code on
+                            Emacs running in a macOS Terminal.
+
+`Graphical Emacs`_          Shows the default highlighting of Seed7 code on
+                            a basic GUI Emacs running in a macOS with the
+                            default scheme.
+=========================== ================================================
+
+Emacs outline minor mode support
+--------------------------------
+
+The seed7-mode supports the `Emacs outline minor mode`_: collapse and
+expansion of blocks, where heading is the first line of a declaration
+block. This allows navigation and code manipulation by headings (blocks).
+
+===================================== ================================================
+Screenshot                            Description
+===================================== ================================================
+`bas.sd7 outline all collapsed`_      The ``prg/bas.sd7`` file shown with ``outline-minor-mode``
+                                      active after executing ``outline-hide-sublevels``
+`bas.sd7 outline with 2 expanded`_    The same ``prg/bas.sd7`` file shown with ``outline-minor-mode``
+                                      active after expanding 2 outlines with ``outline-show-entry``
+                                      at lines 154 and 369.
+===================================== ================================================
+
+
+Emacs top-level menu support
+----------------------------
+
+Provides a Seed7 top level menu entry which provides access to the commands.
+Here's some examples:
+
+===================================== ================================================
+Screenshot                            Description
+===================================== ================================================
+`Terminal menu 1`_                    Using the top menu to access Seed7 code browsing
+                                      inside a terminal Emacs.
+
+`Terminal menu 2`_                    The selecting the Seed7 item as a second step
+                                      in the menu using a terminal Emacs.
+
+`GUI Emacs menu`_                     Using macOS GUI Emacs with iMenu to list the
+                                      functions is the Seed7 file.  Unlike Windows
+                                      and most Linux desktops,
+                                      the Emacs menu shows up inside the macOS
+                                      top screen menu by default but it's also
+                                      possible to make it show inside the
+                                      Emacs frame as the next screen captures
+                                      show.
+
+`Navigation to structure menu`_       The menu can be opened inside the frame
+                                      explicitly with the ``menu-bar-open``
+                                      command.  Here it is showing the
+                                      navigation listing the structures
+                                      declared inside ``prg/bas.sd7``
+
+`Comments menu`_                      The comments-specific commands.
+
+`Template insertion menu`_            The template insertion commands.
+                                      These can be expanded easily with
+                                      ``<TAB>``
+                                      as described in the
+                                      `Code Template Insertion`_
+                                      section.
+===================================== ================================================
+
+
+
+Support for imenu mode and Speedbar
+-----------------------------------
+
 - Support `Emacs imenu mode`_ and `Emacs Speedbar`_ for:
 
   - Seed7 procedures,
@@ -29,13 +139,6 @@ See the following example screenshots:
 =========================== ================================================
 Screenshot                  Description
 =========================== ================================================
-`Terminal-mode Emacs`_      Shows the default highlighting of Seed7 code on
-                            Emacs running in a macOS Terminal.
-
-`Graphical Emacs`_          Shows the default highlighting of Seed7 code on
-                            a basic GUI Emacs running in a macOS with the
-                            default scheme.
-
 `Terminal Emacs Speedbar`_  Using Emacs Speedbar to navigate the Seed7/pgm
                             directory, listing function, procedures,
                             structures, etc...
@@ -687,14 +790,19 @@ Any help, questions, suggestions are welcome!
 .. links
 
 
-.. _Terminal-mode Emacs:      screenshots/terminal-example-01.png
-.. _Graphical Emacs:          screenshots/graphic-light-example-01.png
-.. _Terminal Emacs Speedbar:  screenshots/terminal-seed7-speedbar-01.png
-.. _GUI Emacs Speedbar:       screenshots/macOS-gui-speedbar-frame.png
-.. _GUI Emacs menu:           screenshots/macOS-gui-menu-01.png
-.. _Terminal menu 1:          screenshots/terminal-menu-01.png
-.. _Terminal menu 2:          screenshots/terminal-menu-02.png
-.. _Terminal Ivy prompt:      screenshots/terminal-imenu-gh-01.png
+.. _Terminal-mode Emacs:             screenshots/terminal-example-01.png
+.. _Graphical Emacs:                 screenshots/graphic-light-example-01.png
+.. _Terminal Emacs Speedbar:         screenshots/terminal-seed7-speedbar-01.png
+.. _GUI Emacs Speedbar:              screenshots/macOS-gui-speedbar-frame.png
+.. _GUI Emacs menu:                  screenshots/macOS-gui-menu-01.png
+.. _Terminal menu 1:                 screenshots/terminal-menu-01.png
+.. _Terminal menu 2:                 screenshots/terminal-menu-02.png
+.. _Terminal Ivy prompt:             screenshots/terminal-imenu-gh-01.png
+.. _bas.sd7 outline all collapsed:   screenshots/terminal-outline-minor-mode.png
+.. _bas.sd7 outline with 2 expanded: screenshots/terminal-outline-minor-mode-01.png
+.. _Navigation to structure menu:    screenshots/menu-defs-struct.png
+.. _Comments menu:                   screenshots/menu-comments.png
+.. _Template insertion menu:         screenshots/menu-insert.png
 .. _Emacs imenu mode:                           https://www.gnu.org/software/emacs/manual/html_node/elisp/Imenu.html
 .. _Emacs Speedbar:                             https://www.gnu.org/software/emacs/manual/html_node/speedbar/
 .. _while statement:                            https://seed7.sourceforge.net/manual/stats.htm#while-statement
@@ -744,9 +852,6 @@ Any help, questions, suggestions are welcome!
 .. _Abbrev Concepts:                            https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrev-Concepts.html
 .. _Abbrevs @ Emacs Manual:                     https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrevs.html
 .. _Examining and Editing Abbrevs:              https://www.gnu.org/software/emacs/manual/html_node/emacs/Editing-Abbrevs.html#Editing-Abbrevs
-
-
-
 
 .. ---------------------------------------------------------------------------
 
