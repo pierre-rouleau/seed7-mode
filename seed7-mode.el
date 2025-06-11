@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-11 06:54:25 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-11 07:08:09 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -201,10 +201,6 @@
 ;;
 ;; - Low-level Macros
 ;; - Seed7 Customization
-;; - Seed7 Mode Syntax Control
-;;   - Seed7 Mode Syntax Table
-;;   - Seed7 Mode Syntax Propertize Function
-;;     - `seed7-mode-syntax-propertize'
 ;; - Seed7 Keyword Regexp
 ;;    - Seed7 Tokens
 ;;      - Seed7 Comments Control
@@ -230,6 +226,10 @@
 ;;    - Seed7 Other Predefined Operators
 ;;    - Seed7 Other Predefined Operators
 ;;    - Seed7 Arithmetic Operators
+;; - Seed7 Mode Syntax Control
+;;   - Seed7 Mode Syntax Table
+;;   - Seed7 Mode Syntax Propertize Function
+;;     - `seed7-mode-syntax-propertize'
 ;; - Seed7 Faces
 ;;   - `seed7-choose-color'
 ;; - Seed7 Font Locking Control
@@ -385,77 +385,6 @@ The name of the source code file is appended to the end of that line."
   "Fontification colors."
   :link '(custom-group-link :tag "Font Lock Faces group" font-lock-faces)
   :group 'seed7)
-
-;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;;* Seed7 Mode Syntax Control
-;;  =========================
-;;
-;;** Seed7 Mode Syntax Table
-;;   -----------------------
-;;
-;; Ref: Comments:      https://seed7.sourceforge.net/manual/tokens.htm#Comments
-;; Ref: Line comments: https://seed7.sourceforge.net/manual/tokens.htm#Line_comments
-;;
-;; Comments: (* This is a comment *)
-;;           (* This is a
-;;              multi-line comment *)
-;;           # this is a line comment
-;;
-;;  Note that '#' is also used as a number base separator.
-;;  For the moment the mode requires '##' as the line comment starter.
-;;  So it's not always a comment.  For now require a space after '#' to consider it a comment.
-
-(defvar seed7-mode-syntax-table
-  (let ((st (make-syntax-table)))
-    (modify-syntax-entry ?_ "w"   st)   ; underscores are allowed in
-                                        ; identifiers, which have word syntax.
-    (modify-syntax-entry ?\\ "."   st)
-    ;;
-    (modify-syntax-entry ?\( "()1n" st) ; The comment "(*" can be nested ...
-    (modify-syntax-entry ?\) ")(4n" st) ; ...  and end with the matching "*)"
-    (modify-syntax-entry ?* ". 23" st) ; '*' as second of "(*" and previous of; "*)"
-    ;;
-    ;; Seed7 Comments Control : line-end comment.
-    (modify-syntax-entry ?# "<"  st)
-    (modify-syntax-entry ?\n ">" st)
-    ;;
-    ;; string escape
-    (modify-syntax-entry ?\\ "\\"  st)
-    ;; single quote: Seed7 supports ''' as well as '\''.  Deal with it in seed7-syntax-propertize.
-    (modify-syntax-entry ?\' "." st) ; attribute; see seed7-syntax-propertize for character literal
-    st)
-  "Syntax table in use in `seed7-mode' buffers.")
-
-;;** Seed7 Mode Syntax Propertize Function
-;;   -------------------------------------
-
-(defconst seed7-char-literal-re
-  "\\(?:[[:digit:]]\\(#\\)[[:alnum:]]\\|\\(\\(?:'\\\\''\\)\\|\\(?:'.'\\)\\|\\(?:'\\\\[abefnrtv\"A-Z\\\\]'\\)\\)\\)"
-  ;; (-----------------------------------------------------------------------------------------------------------)
-  ;;                 (---)                (-------------------------------------------------------------------)
-  ;;                                         (----------)      (-------)     (-----------------------------)
-  ;;                 G1                   G2
-  )
-
-(defun seed7-mode-syntax-propertize (start end)
-  "Apply syntax property between START and END to # character in number."
-  ;; (info "(elisp)Syntax Properties")
-  ;;
-  ;; called from `syntax-propertize', inside save-excursion with-silent-modifications
-  (goto-char start)
-  (while (re-search-forward seed7-char-literal-re end t)
-    (cond
-     ;; deal with '#'
-     ((match-beginning 1)
-      (let
-          ((mb (match-beginning 1)) (me (match-end 1))
-           (syntax (string-to-syntax "_")))
-        (if syntax (put-text-property mb me 'syntax-table syntax))))
-
-     ;; Deal with single quoted character expression
-     ((match-beginning 2)
-      (put-text-property  (match-beginning 2) (1+ (match-beginning 2)) 'syntax-table '(7 . ?'))
-      (put-text-property  (1- (match-end 2))  (match-end 2)            'syntax-table '(7 . ?'))))))
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;;* Seed7 Keyword Regexp
@@ -1051,6 +980,78 @@ Has only one capturing group.")
 (defconst seed7-minus-operator-regexp
   "[^+-]\\([+-]\\)[^+-]"
   "Arithmetic minus operator in group 1.")
+
+;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;* Seed7 Mode Syntax Control
+;;  =========================
+;;
+
+;;** Seed7 Mode Syntax Table
+;;   -----------------------
+;;
+;; Ref: Comments:      https://seed7.sourceforge.net/manual/tokens.htm#Comments
+;; Ref: Line comments: https://seed7.sourceforge.net/manual/tokens.htm#Line_comments
+;;
+;; Comments: (* This is a comment *)
+;;           (* This is a
+;;              multi-line comment *)
+;;           # this is a line comment
+;;
+;;  Note that '#' is also used as a number base separator.
+;;  For the moment the mode requires '##' as the line comment starter.
+;;  So it's not always a comment.  For now require a space after '#' to consider it a comment.
+
+(defvar seed7-mode-syntax-table
+  (let ((st (make-syntax-table)))
+    (modify-syntax-entry ?_ "w"   st)   ; underscores are allowed in
+                                        ; identifiers, which have word syntax.
+    (modify-syntax-entry ?\\ "."   st)
+    ;;
+    (modify-syntax-entry ?\( "()1n" st) ; The comment "(*" can be nested ...
+    (modify-syntax-entry ?\) ")(4n" st) ; ...  and end with the matching "*)"
+    (modify-syntax-entry ?* ". 23" st) ; '*' as second of "(*" and previous of; "*)"
+    ;;
+    ;; Seed7 Comments Control : line-end comment.
+    (modify-syntax-entry ?# "<"  st)
+    (modify-syntax-entry ?\n ">" st)
+    ;;
+    ;; string escape
+    (modify-syntax-entry ?\\ "\\"  st)
+    ;; single quote: Seed7 supports ''' as well as '\''.  Deal with it in seed7-syntax-propertize.
+    (modify-syntax-entry ?\' "." st) ; attribute; see seed7-syntax-propertize for character literal
+    st)
+  "Syntax table in use in `seed7-mode' buffers.")
+
+;;** Seed7 Mode Syntax Propertize Function
+;;   -------------------------------------
+
+(defconst seed7-char-literal-re
+  "\\(?:[[:digit:]]\\(#\\)[[:alnum:]]\\|\\(\\(?:'\\\\''\\)\\|\\(?:'.'\\)\\|\\(?:'\\\\[abefnrtv\"A-Z\\\\]'\\)\\)\\)"
+  ;; (-----------------------------------------------------------------------------------------------------------)
+  ;;                 (---)                (-------------------------------------------------------------------)
+  ;;                                         (----------)      (-------)     (-----------------------------)
+  ;;                 G1                   G2
+  )
+
+(defun seed7-mode-syntax-propertize (start end)
+  "Apply syntax property between START and END to # character in number."
+  ;; (info "(elisp)Syntax Properties")
+  ;;
+  ;; called from `syntax-propertize', inside save-excursion with-silent-modifications
+  (goto-char start)
+  (while (re-search-forward seed7-char-literal-re end t)
+    (cond
+     ;; deal with '#'
+     ((match-beginning 1)
+      (let
+          ((mb (match-beginning 1)) (me (match-end 1))
+           (syntax (string-to-syntax "_")))
+        (if syntax (put-text-property mb me 'syntax-table syntax))))
+
+     ;; Deal with single quoted character expression
+     ((match-beginning 2)
+      (put-text-property  (match-beginning 2) (1+ (match-beginning 2)) 'syntax-table '(7 . ?'))
+      (put-text-property  (1- (match-end 2))  (match-end 2)            'syntax-table '(7 . ?'))))))
 
 
 ;; ---------------------------------------------------------------------------
@@ -4996,7 +4997,7 @@ Make sure you have no duplication of keywords if you edit the list."
     ;; Seed7 Abbreviation Support
     (setq-local local-abbrev-table seed7-mode-abbrev-table)))
 
-(defconst seed7-mode-version-timestamp "2025-06-11T10:54:25+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2025-06-11T11:08:09+0000 W24-3"
   "Version timestamp of the seed7-mode file.")
 
 ;;;###autoload
