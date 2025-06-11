@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-11 15:17:47 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-11 17:08:31 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -302,7 +302,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-11T19:17:47+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2025-06-11T21:08:31+0000 W24-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -421,8 +421,6 @@ The name of the source code file is appended to the end of that line."
 ;;
 ;; Ref: https://seed7.sourceforge.net/manual/tokens.htm
 
-;; [:todo 2025-04-09, by Pierre Rouleau: Complete the syntax for floating point numbers.]
-
 ;;*** Seed7 Comments Control
 
 (defconst seed7--line-comment-re
@@ -494,6 +492,14 @@ Has only one capturing group.")
 (defconst seed7-integer-re "\\([[:digit:]]+\\)"
   "Seed7 integer in group 1.")
 
+(defconst seed7--opt-square-brace-start-re
+  (format "\\(?:%s+?\\[\\)"
+          seed7--whitespace-re))
+
+(defconst seed7--opt-square-brace-end-re
+  (format "\\(?:%s+?]%s+?\\)"
+          seed7--whitespace-re
+          seed7--whitespace-re))
 
 ;;*** Seed7 Float Literals
 
@@ -1527,28 +1533,33 @@ Note: the default style for all Seed7 buffers is controlled by the
    seed7--anychar-re)
   "Match procedure name in group 1.")
 
+
 (defconst seed7-function-regexp
   (format
-   "^[[:blank:]]*?const%s+func %s%s??:\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?is%s+\\(func\\|return\\|forward;\\|action%s\".+?\";\\)"
-   ;;                  %       G1%         %         %           %   G2%    %         %  %        %     %    G3                                %
-   ;;                  1       %23         4         5           6     7    8         9  10       11    12                                     13
-
+   ;;             const   func T       :                                                                     is      func
+   ;;                              w    w[      w                                                      .   w]w w
+   "^[[:blank:]]*?const%s+func %s??%s??:%s?\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?%s?is%s+\\(func\\|return\\|forward;\\|action%s\".+?\";\\)"
+   ;;                  %       G2  %    %        %         %           %   G3%    %         %  %       %   %    %    G4                                %
+   ;;                  1       %2  3    4        5         6           7     8    9         10 11      12  13   14                                     15
+   ;;
    seed7--whitespace-re                       ; 1
    seed7-type-identifier-re                   ; 2
    seed7--whitespace-re                       ; 3
-   seed7--whitespace-re                       ; 4
-   seed7--anychar-re                          ; 5
-   seed7--whitespace-re                       ; 6
-   seed7--non-capturing-name-identifier-re    ; 7
-   seed7--non-capturing-special-identifier-re ; 8
-   seed7--whitespace-re                       ; 9
-   seed7--anychar-re                          ; 10
+   seed7--opt-square-brace-start-re           ; 4 w[
+   seed7--whitespace-re                       ; 5
+   seed7--anychar-re                          ; 6
+   seed7--whitespace-re                       ; 7
+   seed7--non-capturing-name-identifier-re    ; 8
+   seed7--non-capturing-special-identifier-re ; 9
+   seed7--whitespace-re                       ; 10
    seed7--anychar-re                          ; 11
-   seed7--whitespace-re                       ; 12
-   seed7--whitespace-re)                      ; 13
+   seed7--anychar-re                          ; 12
+   seed7--opt-square-brace-end-re             ; 13 w]w
+   seed7--whitespace-re                       ; 14
+   seed7--whitespace-re)                      ; 15
   "Regexp identifying beginning of procedures and functions.
-Group 1: The func return type.
-Group 2: The func or proc name.
+Group 1: The function return type.
+Group 2: The function name.
 Group 3: - \"func\" for proc or function that ends with \"end func\".
          - \"return\" for a func that only has a return statement.
          - \"forward\" for a forward declaration.
@@ -1709,25 +1720,30 @@ Move point."
 ;;** Seed7 Procedure/Function Regular Expressions
 ;;   --------------------------------------------
 
+
 (defconst seed7-procfunc-regexp
   (format
-   "^[[:blank:]]*?const%s+\\(func \\|proc\\)%s??%s??:\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?is%s+\\(func\\|return\\|forward;\\|action%s\".+?\";\\)"
-   ;;                  %    G1              G2  %         %         %           %   G3%    %         %  %        %     %    G4                                %
-   ;;                  1                    %2  3         4         5           6     7    8         9  10       11    12                                     13
-
+   ;;             const      func           T       :                                                                     is      func
+   ;;                                           w    w[      w                                                      .   w]w w
+   "^[[:blank:]]*?const%s+\\(func \\|proc\\)%s??%s??:%s?\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?%s?is%s+\\(func\\|return\\|forward;\\|action%s\".+?\";\\)"
+   ;;                  %    G1              G2  %    %        %         %           %   G3%    %         %  %       %   %    %    G4                                %
+   ;;                  1                    %2  3    4        5         6           7     8    9         10 11      12  13   14                                     15
+   ;;
    seed7--whitespace-re                       ; 1
    seed7-type-identifier-re                   ; 2
    seed7--whitespace-re                       ; 3
-   seed7--whitespace-re                       ; 4
-   seed7--anychar-re                          ; 5
-   seed7--whitespace-re                       ; 6
-   seed7--non-capturing-name-identifier-re    ; 7
-   seed7--non-capturing-special-identifier-re ; 8
-   seed7--whitespace-re                       ; 9
-   seed7--anychar-re                          ; 10
+   seed7--opt-square-brace-start-re           ; 4 w[
+   seed7--whitespace-re                       ; 5
+   seed7--anychar-re                          ; 6
+   seed7--whitespace-re                       ; 7
+   seed7--non-capturing-name-identifier-re    ; 8
+   seed7--non-capturing-special-identifier-re ; 9
+   seed7--whitespace-re                       ; 10
    seed7--anychar-re                          ; 11
-   seed7--whitespace-re                       ; 12
-   seed7--whitespace-re)                      ; 13
+   seed7--anychar-re                          ; 12
+   seed7--opt-square-brace-end-re             ; 13 w]w
+   seed7--whitespace-re                       ; 14
+   seed7--whitespace-re)                      ; 15
   "Regexp identifying beginning of procedures and functions.
 Group 1: \"proc\" or \"func \"
 Group 2: The func return type.  May be empty.
