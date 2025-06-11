@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-11 14:41:57 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-11 15:04:38 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -302,7 +302,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-11T18:41:57+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2025-06-11T19:04:38+0000 W24-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4984,9 +4984,12 @@ Make sure you have no duplication of keywords if you edit the list."
       :help "Go backward to start of block"])
     "---"
     ["Static check"  seed7-compile t]
-    ["Compile"       (seed7-compile t) t]
+    ["Compile"       (seed7-compile t)
+     :help "Perform static code analysis of code in visited file.\
+  With optional argument (C-u C-c C-c): compile it."]
     "---"
-    ["Customize Mode" (customize-group 'seed7) t]))
+    ["Customize Mode" (customize-group 'seed7)
+     :help "Open the seed7 customization buffer"]))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Major Mode
