@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-11 15:04:38 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-11 15:17:47 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -302,7 +302,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-11T19:04:38+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2025-06-11T19:17:47+0000 W24-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4929,9 +4929,13 @@ Make sure you have no duplication of keywords if you edit the list."
      ["Toggle comment style"   seed7-toggle-comment-style])
     ["Customize seed7-mode" seed7-mode-customize]
     "---"
-    ["Expand keyword/Indent"   seed7-complete-statement-or-indent]
-    ["Move to next marker"     tempo-forward-mark]
-    ["Move to previous marker" tempo-backward-mark]
+    ["Expand keyword/Indent"   seed7-complete-statement-or-indent
+     :help "Hit <tab> after any keyword to expand it to code."  ]
+    ["Move to next marker"     tempo-forward-mark
+     :help "Move to next tempo marker identifying are to fill in code template."
+     ]
+    ["Move to previous marker" tempo-backward-mark
+     :help "Move to previous tempo marker."]
     ("Insert"
      ["Include"            seed7-insert-include]
      "---"
@@ -4983,10 +4987,10 @@ Make sure you have no duplication of keywords if you edit the list."
      ["Block start" seed7-to-block-backward
       :help "Go backward to start of block"])
     "---"
-    ["Static check"  seed7-compile t]
+    ["Static check"  seed7-compile
+     :help "Perform static analysis of Seed7 code in visited file."]
     ["Compile"       (seed7-compile t)
-     :help "Perform static code analysis of code in visited file.\
-  With optional argument (C-u C-c C-c): compile it."]
+     :help "Compile Seed7 visited file. Key binding is: C-u C-c C-c"]
     "---"
     ["Customize Mode" (customize-group 'seed7)
      :help "Open the seed7 customization buffer"]))
