@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-12 15:36:05 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-12 18:59:56 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -223,6 +223,7 @@
 ;;    - Seed7 Predefined Comparison Operators
 ;;    - Seed7 Other Predefined Operators
 ;;    - Seed7 Arithmetic Operators
+;;    - Seed7 Block Processing Regular Expressions
 ;; - Seed7 Mode Syntax Control
 ;;   - Seed7 Mode Syntax Table
 ;;   - Seed7 Mode Syntax Propertize Function
@@ -270,9 +271,10 @@
 ;;   - Seed7 Indentation Comment Checking Function
 ;;   - Seed7 Indentation Calculator Function
 ;;   - Seed7 Indent on Return
-;; - Seed7 Auto-completion
+;; - Seed7 Code Template Expansion
 ;; - Seed7 Compilation
 ;;   * `seed7-compile'
+;; - Seed7 Cross Reference
 ;; - Seed7 Abbreviation Support
 ;; - Seed7 Completion Support
 ;; - Seed7 Key Map
@@ -303,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-12T19:36:05+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2025-06-12T22:59:56+0000 W24-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -355,7 +357,23 @@ in the top menu and inside the Speedbar."
   :type 'boolean
   :safe #'booleanp)
 
+;;** Seed7 Code Template Expansion
+
+(defcustom seed7-template-expansion-disables-overwrite-mode t
+  "When on, `overwrite-mode' is forced off when code template is expanded.
+
+When `seed7-complete-statement-or-indent' performs code expansion and
+`seed7-template-expansion-disables-overwrite-mode' is on, it forces
+`overwrite-mode' off in the current buffer to prevent writing over the
+expanded code.
+
+To disable this behaviour turn this user-option off."
+  :group 'seed7
+  :type 'boolean
+  :safe #'booleanp)
+
 ;;** Seed7 Code Navigation
+
 (defcustom seed7-verbose-navigation t
   "Seed7 navigation command print message on success when t.
 If you do not want these navigation success message printed set this to
@@ -395,6 +413,22 @@ You may:
 The name of the source code file is appended to the end of that line."
   :group 'seed7
   :type 'string)
+
+;;** Seed7 Cross Reference
+
+;; (defcustom seed7-xref "s7xref"
+;;   "Seed7 cross reference builder command line.
+;;
+;; The command line must identify the Seed7 cross reference builder,
+;; s7xref, by default.
+;;
+;; You may:
+;; - Use the program name without a path if it is in the PATH of your shell.
+;; - The name with an absolute path.
+;;
+;; This program is included in the Seed7 tools."
+;;   :group 'seed7
+;;   :type 'string)
 
 
 ;;** Seed7 Faces
@@ -1015,8 +1049,8 @@ Has only one capturing group.")
   "Arithmetic minus operator in group 1.")
 
 
-;;** Block Processing Regular Expressions
-;;   ------------------------------------
+;;** Seed7 Block Processing Regular Expressions
+;;   ------------------------------------------
 
 (defconst seed7-block-start-regexp "\\(\
 const proc: \\|\
@@ -1624,6 +1658,8 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
    seed7--whitespace-re        ; 4
    seed7-name-identifier-re    ; 5
    seed7--whitespace-re))      ; 6
+
+
 
 ;;* Seed7 Speedbar Support
 ;;  ======================
@@ -4097,19 +4133,8 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
       (seed7-to-indent))))
 
 ;; ---------------------------------------------------------------------------
-;;* Seed7 Auto-completion
+;;* Seed7 Code Template Expansion
 ;;  =====================
-
-;; The following code is early experimental while I'm experimenting with
-;; the various possibilities of inserting the boilerplate code of Seed7
-;; statements.
-;; The possibilities will most probably include Emacs tempo skeletons, but I
-;; want to ensure that it's easy and intuitive to use.  So at first
-;; I'm trying to add various simple commands which will then all be collapsed
-;; into a single one, taking the hint from what has just been typed in the
-;; buffer.  For now I'm implementing simple stand-alone functions.
-;; The small stand-alone functions will probably also remain (in some form)
-;; as I'll add them to the top menu.
 
 (defun seed7--delete-char-and-mark ()
   "Delete 1 character and put a tempo market at it's position."
@@ -4725,106 +4750,109 @@ struct       struct type definition
                                         "ref"
                                         "val"
                                         "callbn")))))
-        (cond
-         ((string= keyword "if")
-          (seed7--delete-backward 2)
-          (seed7-insert-if-statement))
-         ((string= keyword "ife")
-          (seed7--delete-backward 3)
-          (seed7-insert-if-else-statement))
-         ((string= keyword "ifei")
-          (seed7--delete-backward 4)
-          (seed7-insert-if-elsif-statement))
-         ((string= keyword "ifeie")
-          (seed7--delete-backward 5)
-          (seed7-insert-if-elsif-else-statement))
-         ((string= keyword "case")
-          (seed7--delete-backward 4)
-          (seed7-insert-case-statement))
-         ((string= keyword "for")
-          (seed7--delete-backward 3)
-          (seed7-insert-for))
-         ((string= keyword "foru")
-          (seed7--delete-backward 4)
-          (seed7-insert-for-until))
-         ((string= keyword "fors")
-          (seed7--delete-backward 4)
-          (seed7-insert-for-step))
-         ((string= keyword "fore")
-          (seed7--delete-backward 4)
-          (seed7-insert-for-each))
-         ((string= keyword "foreu")
-          (seed7--delete-backward 5)
-          (seed7-insert-for-each-until))
-         ((string= keyword "forek")
-          (seed7--delete-backward 5)
-          (seed7-insert-for-each-key))
-         ((string= keyword "foreku")
-          (seed7--delete-backward 6)
-          (seed7-insert-for-each-key-until))
-         ((string= keyword "fork")
-          (seed7--delete-backward 4)
-          (seed7-insert-for-key))
-         ((string= keyword "forku")
-          (seed7--delete-backward 5)
-          (seed7-insert-for-key-until))
-         ((string= keyword "repeat")
-          (seed7--delete-backward 6)
-          (seed7-insert-repeat))
-         ((string= keyword "while")
-          (seed7--delete-backward 5)
-          (seed7-insert-while))
-         ((string= keyword "bl")
-          (seed7--delete-backward 2)
-          (seed7-insert-block))
-         ((string= keyword "gl")
-          (seed7--delete-backward 2)
-          (seed7-insert-global))
+        (progn
+          (when seed7-template-expansion-disables-overwrite-mode
+            (overwrite-mode 0))
+          (cond
+           ((string= keyword "if")
+            (seed7--delete-backward 2)
+            (seed7-insert-if-statement))
+           ((string= keyword "ife")
+            (seed7--delete-backward 3)
+            (seed7-insert-if-else-statement))
+           ((string= keyword "ifei")
+            (seed7--delete-backward 4)
+            (seed7-insert-if-elsif-statement))
+           ((string= keyword "ifeie")
+            (seed7--delete-backward 5)
+            (seed7-insert-if-elsif-else-statement))
+           ((string= keyword "case")
+            (seed7--delete-backward 4)
+            (seed7-insert-case-statement))
+           ((string= keyword "for")
+            (seed7--delete-backward 3)
+            (seed7-insert-for))
+           ((string= keyword "foru")
+            (seed7--delete-backward 4)
+            (seed7-insert-for-until))
+           ((string= keyword "fors")
+            (seed7--delete-backward 4)
+            (seed7-insert-for-step))
+           ((string= keyword "fore")
+            (seed7--delete-backward 4)
+            (seed7-insert-for-each))
+           ((string= keyword "foreu")
+            (seed7--delete-backward 5)
+            (seed7-insert-for-each-until))
+           ((string= keyword "forek")
+            (seed7--delete-backward 5)
+            (seed7-insert-for-each-key))
+           ((string= keyword "foreku")
+            (seed7--delete-backward 6)
+            (seed7-insert-for-each-key-until))
+           ((string= keyword "fork")
+            (seed7--delete-backward 4)
+            (seed7-insert-for-key))
+           ((string= keyword "forku")
+            (seed7--delete-backward 5)
+            (seed7-insert-for-key-until))
+           ((string= keyword "repeat")
+            (seed7--delete-backward 6)
+            (seed7-insert-repeat))
+           ((string= keyword "while")
+            (seed7--delete-backward 5)
+            (seed7-insert-while))
+           ((string= keyword "bl")
+            (seed7--delete-backward 2)
+            (seed7-insert-block))
+           ((string= keyword "gl")
+            (seed7--delete-backward 2)
+            (seed7-insert-global))
 
-         ((string= keyword "proc")
-          (seed7--delete-backward 4)
-          (seed7-insert-procedure-declaration))
-         ((string= keyword "func")
-          (seed7--delete-backward 4)
-          (seed7-insert-func-declaration))
-         ((string= keyword "funcs")
-          (seed7--delete-backward 5)
-          (seed7-insert-short-function-declaration))
+           ((string= keyword "proc")
+            (seed7--delete-backward 4)
+            (seed7-insert-procedure-declaration))
+           ((string= keyword "func")
+            (seed7--delete-backward 4)
+            (seed7-insert-func-declaration))
+           ((string= keyword "funcs")
+            (seed7--delete-backward 5)
+            (seed7-insert-short-function-declaration))
 
-         ((string= keyword "var")
-          (seed7--delete-backward 3)
-          (seed7-insert-var-declaration))
-         ((string= keyword "const")
-          (seed7--delete-backward 5)
-          (seed7-insert-const-declaration))
-         ((string= keyword "in")
-          (seed7--delete-backward 2)
-          (seed7-insert-in-parameter))
-         ((string= keyword "invar")
-          (seed7--delete-backward 5)
-          (seed7-insert-invar-parameter))
-         ((string= keyword "inout")
-          (seed7--delete-backward 5)
-          (seed7-insert-inout-parameter))
-         ((string= keyword "ref")
-          (seed7--delete-backward 3)
-          (seed7-insert-reference-parameter))
-         ((string= keyword "val")
-          (seed7--delete-backward 3)
-          (seed7-insert-value-parameter))
-         ((string= keyword "callbn")
-          (seed7--delete-backward 6)
-          (seed7-insert-call-by-name-parameter))
+           ((string= keyword "var")
+            (seed7--delete-backward 3)
+            (seed7-insert-var-declaration))
+           ((string= keyword "const")
+            (seed7--delete-backward 5)
+            (seed7-insert-const-declaration))
+           ((string= keyword "in")
+            (seed7--delete-backward 2)
+            (seed7-insert-in-parameter))
+           ((string= keyword "invar")
+            (seed7--delete-backward 5)
+            (seed7-insert-invar-parameter))
+           ((string= keyword "inout")
+            (seed7--delete-backward 5)
+            (seed7-insert-inout-parameter))
+           ((string= keyword "ref")
+            (seed7--delete-backward 3)
+            (seed7-insert-reference-parameter))
+           ((string= keyword "val")
+            (seed7--delete-backward 3)
+            (seed7-insert-value-parameter))
+           ((string= keyword "callbn")
+            (seed7--delete-backward 6)
+            (seed7-insert-call-by-name-parameter))
 
-         ((string= keyword "inc")
-          (seed7--delete-backward 3)
-          (seed7-insert-include))
-         ((string= keyword "enum")
-          (seed7--delete-backward 4)
-          (seed7-insert-enumeration-type-declaration))
-         ((string= keyword "struct")
-          (seed7--delete-backward 6)
-          (seed7-insert-struct-type-declaration)))
+           ((string= keyword "inc")
+            (seed7--delete-backward 3)
+            (seed7-insert-include))
+           ((string= keyword "enum")
+            (seed7--delete-backward 4)
+            (seed7-insert-enumeration-type-declaration))
+           ((string= keyword "struct")
+            (seed7--delete-backward 6)
+            (seed7-insert-struct-type-declaration))))
 
       ;; not on keyword; just indent
       (seed7-indent-line))))
@@ -4853,6 +4881,11 @@ If optional COMPILE argument set, compile the file to executable instead."
   (compile (format "%s %s"
                    (if compile seed7-compiler seed7-checker)
                    (shell-quote-argument (buffer-file-name)))))
+
+;; ---------------------------------------------------------------------------
+;;* Seed7 Cross Reference
+;;  =====================
+
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Abbreviation Support
@@ -5163,6 +5196,7 @@ Make sure you have no duplication of keywords if you edit the list."
   ;; Seed7 Mode Syntax Propertize Function
   (setq-local syntax-propertize-function #'seed7-mode-syntax-propertize)
 
+  ;; Seed7 iMenu Support
   (setq-local
    imenu-generic-expression
    (if seed7-menu-list-functions-and-procedures-together
