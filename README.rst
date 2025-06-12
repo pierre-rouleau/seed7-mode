@@ -616,6 +616,10 @@ The seed7-mode is compatible with:
 - The `expand-region`_ package to quickly select the current word, block, function/procedure.
 - Drew Adam's `hide-comnt`_  package which  provides
   the `hide/show-comments-toggle` command to hide or show all comments.
+- The `smart-dash-mode`_ is quite useful for typing those pesky underscore
+  characters. With this minor mode active just type a dash (easier type than
+  underscore on most keyboards) and it will insert a underscore inside words or
+  symbols and a dash otherwise.
 
 More commands will be implemented.
 
@@ -856,6 +860,7 @@ Any help, questions, suggestions are welcome!
 .. _Abbrev Concepts:                            https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrev-Concepts.html
 .. _Abbrevs @ Emacs Manual:                     https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrevs.html
 .. _Examining and Editing Abbrevs:              https://www.gnu.org/software/emacs/manual/html_node/emacs/Editing-Abbrevs.html#Editing-Abbrevs
+.. _smart-dash-mode:                            https://github.com/malsyned/smart-dash
 
 .. ---------------------------------------------------------------------------
 
