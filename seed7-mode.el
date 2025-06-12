@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-12 07:59:18 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-12 09:09:03 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -302,7 +302,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-12T11:59:18+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2025-06-12T13:09:03+0000 W24-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2286,6 +2286,13 @@ Negative N starts counting from the end of the line: -1 is the last word."
       (when (string= line-number-str (format-mode-line "%l"))
         (thing-at-point 'word :no-properties)))))
 
+(defconst seed7--inner-callables-triplets-re
+  "^[[:blank:]]*?\\(?:\\(const \\(?:func\\|proc\\)[^\\0]+?is\\(?:\\(?: +func\\)?$\\)\\)\\|\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:\\(?:return [^\\0]+?;\\)\\|\\(?:return .+?;\\)\\)\\)\\|\\(const func .+? is .+?\\(?:\\(?:action .+?\\)\\|\\(?:forward\\)\\);\\)\\)"
+  "A regexp with 3 groups:
+- group 1: function/procedure start,
+- group 2: function/procedure end,
+- group 3: action or forward function declaration.")
+
 (defun seed7--type-regexp (keyword)
   "Return a regexp to search for the start/end of KEYWORD type block.
 
@@ -2321,7 +2328,7 @@ The regexp has 2 or 3 groups:
    ((string= word1 "const")
     (cond
      ((string= word2 "func")
-      "^[[:blank:]]*?\\(?:\\(const \\(?:func\\|proc\\)[^\\0]+?is\\(?:\\(?: +func\\)?$\\)\\)\\|\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:\\(?:return [^\\0]+?;\\)\\|\\(?:return .+?;\\)\\)\\)\\|\\(const func .+? is .+?\\(?:\\(?:action .+?\\)\\|\\(?:forward\\)\\);\\)\\)")
+      seed7--inner-callables-triplets-re)
      ((string= word2 "type")
       (cond
        ((member last-word '("enum"
@@ -2335,7 +2342,7 @@ The regexp has 2 or 3 groups:
     (format "^[[:blank:]]+?\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word1 word1))
    (t nil)))
 
-;; [:todo 2025-05-31, by Pierre Rouleau: Add support for hard tab after keyword
+;; [:todo 2025-05-31, by Pierre Rouleau: Add & test support for hard tab after keyword
 (defun seed7--start-regxp-for (word1 word2)
   "Return a regexp to search the starting string block specified by the arguments.
 Used when searching backward.
@@ -2356,7 +2363,7 @@ The regexp has 2 or 3 groups:
    ((member  word1 '("elsif" "else"))     "^[[:blank:]]+?\\(?:\\(if \\)\\|\\(end if;?\\)\\|\\(elsif \\)\\)")
    ((and (string= word1 "end")
          (string= word2 "func"))
-    "^[[:blank:]]*?\\(?:\\(const \\(?:func\\|proc\\)[^\\0]+?is\\(?:\\(?: +func\\)?$\\)\\)\\|\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:\\(?:return [^\\0]+?;\\)\\|\\(?:return .+?;\\)\\)\\)\\|\\(const func .+? is .+?\\(?:\\(?:action .+?\\)\\|\\(?:forward\\)\\);\\)\\)")
+    seed7--inner-callables-triplets-re)
    ((string= word1 "end")
     (cond
      ((string= word2 "block")
