@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-12 14:39:57 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-12 15:36:05 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -303,7 +303,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-12T18:39:57+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2025-06-12T19:36:05+0000 W24-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1013,6 +1013,42 @@ Has only one capturing group.")
 (defconst seed7-minus-operator-regexp
   "[^+-]\\([+-]\\)[^+-]"
   "Arithmetic minus operator in group 1.")
+
+
+;;** Block Processing Regular Expressions
+;;   ------------------------------------
+
+(defconst seed7-block-start-regexp "\\(\
+const proc: \\|\
+const func \\|\
+const type: \\|\
+elsif \\|\
+if \\|\
+while \\|\
+for \\|\
+case \\|\
+catch \\|\
+local\\|\
+repeat\\|\
+global\\|\
+begin\\|\
+block\\|\
+else\\|\
+exception\\|\
+result\\)"
+  "Regexp for the beginning of a Seed7 block.  One capture group.")
+
+(defconst seed7-block-line-start-regexp (concat
+                                         "^[[:blank:]]*?"
+                                         seed7-block-start-regexp)
+  "Regexp to find location of blocks.")
+
+(defconst seed7-block-end-regexp "\
+\\(?:end \
+\\(?:\\(?:\\(?:enum\\|for\\|func\\|if\\|struct\\|while\\|case\\);\\)\
+\\|block\\)\\)\
+\\|\\(?:until \\)"
+  "Regexp for generic end of block.")
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;;* Seed7 Mode Syntax Control
@@ -2974,39 +3010,6 @@ N is: - :previous-non-empty for the previous non empty line,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before..."
   (seed7-line-starts-with n "\""))
-
-(defconst seed7-block-start-regexp "\\(\
-const proc: \\|\
-const func \\|\
-const type: \\|\
-elsif \\|\
-if \\|\
-while \\|\
-for \\|\
-case \\|\
-catch \\|\
-local\\|\
-repeat\\|\
-global\\|\
-begin\\|\
-block\\|\
-else\\|\
-exception\\|\
-result\\)"
-  "Regexp for the beginning of a Seed7 block.  One capture group.")
-
-(defconst seed7-block-line-start-regexp (concat
-                                         "^[[:blank:]]*?"
-                                         seed7-block-start-regexp)
-  "Regexp to find location of blocks.")
-
-(defconst seed7-block-end-regexp "\
-\\(?:end \
-\\(?:\\(?:\\(?:enum\\|for\\|func\\|if\\|struct\\|while\\|case\\);\\)\
-\\|block\\)\\)\
-\\|\\(?:until \\)"
-  "Regexp for generic end of block.")
-
 
 (defun seed7-line-is-block-end (n &optional dont-skip-comment-start)
   "Return t if line N is a block end, nil otherwise.
