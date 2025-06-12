@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-12 14:19:34 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-12 14:39:57 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -303,7 +303,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-12T18:19:34+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2025-06-12T18:39:57+0000 W24-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5076,48 +5076,48 @@ Make sure you have no duplication of keywords if you edit the list."
     ["Toggle abbrev-mode"   abbrev-mode]
     ["List abbreviations"   list-abbrevs]
     "---"
-    ["Expand keyword/Indent"   seed7-complete-statement-or-indent
-     :help "Hit <tab> after any keyword to expand it to code."  ]
-    ["Move to next marker"     tempo-forward-mark
-     :help "Move to next tempo marker identifying are to fill in code template."
-     ]
-    ["Move to previous marker" tempo-backward-mark
-     :help "Move to previous tempo marker."]
-    ("Insert"
-     ["Include"            seed7-insert-include]
-     "---"
-     ["Procedure"          seed7-insert-procedure-declaration]
-     ["Function"           seed7-insert-func-declaration]
-     ["Function Short"     seed7-insert-short-function-declaration]
-     ["Enum"               seed7-insert-enumeration-type-declaration]
-     ["Struct"             seed7-insert-struct-type-declaration]
-     "---"
-     ["var"                seed7-insert-var-declaration]
-     ["const"              seed7-insert-const-declaration]
-     "---"
-     ["in"                 seed7-insert-in-parameter]
-     ["invar"              seed7-insert-invar-parameter]
-     ["inout"              seed7-insert-inout-parameter]
-     ["ref"                seed7-insert-reference-parameter]
-     ["val"                seed7-insert-value-parameter]
-     ["callbn"             seed7-insert-call-by-name-parameter]
-     "---"
-     ["Case"               seed7-insert-case-statement]
-     ["For"                seed7-insert-for]
-     ["For until"          seed7-insert-for-until]
-     ["For step"           seed7-insert-for-step]
-     ["For each"           seed7-insert-for-each]
-     ["For each until"     seed7-insert-for-each-until]
-     ["For each key"       seed7-insert-for-each-key]
-     ["For each key until" seed7-insert-for-each-key-until]
-     ["For key"            seed7-insert-for-key]
-     ["For key until"      seed7-insert-for-key-until]
-     ["If"                 seed7-insert-if-statement]
-     ["Repeat"             seed7-insert-repeat]
-     ["While"              seed7-insert-while]
-     ["Error handler block" seed7-insert-block]
-     ["Global block"       seed7-insert-global])
-
+    ("Code Template"
+     ["Expand keyword/Indent"   seed7-complete-statement-or-indent
+      :help "Hit <tab> after any keyword to expand it to code."  ]
+     ["Move to next marker"     tempo-forward-mark
+      :help "Move to next tempo marker identifying are to fill in code template."
+      ]
+     ["Move to previous marker" tempo-backward-mark
+      :help "Move to previous tempo marker."]
+     ("Insert"
+      ["Include"            seed7-insert-include]
+      "---"
+      ["Procedure"          seed7-insert-procedure-declaration]
+      ["Function"           seed7-insert-func-declaration]
+      ["Function Short"     seed7-insert-short-function-declaration]
+      ["Enum"               seed7-insert-enumeration-type-declaration]
+      ["Struct"             seed7-insert-struct-type-declaration]
+      "---"
+      ["var"                seed7-insert-var-declaration]
+      ["const"              seed7-insert-const-declaration]
+      "---"
+      ["in"                 seed7-insert-in-parameter]
+      ["invar"              seed7-insert-invar-parameter]
+      ["inout"              seed7-insert-inout-parameter]
+      ["ref"                seed7-insert-reference-parameter]
+      ["val"                seed7-insert-value-parameter]
+      ["callbn"             seed7-insert-call-by-name-parameter]
+      "---"
+      ["Case"               seed7-insert-case-statement]
+      ["For"                seed7-insert-for]
+      ["For until"          seed7-insert-for-until]
+      ["For step"           seed7-insert-for-step]
+      ["For each"           seed7-insert-for-each]
+      ["For each until"     seed7-insert-for-each-until]
+      ["For each key"       seed7-insert-for-each-key]
+      ["For each key until" seed7-insert-for-each-key-until]
+      ["For key"            seed7-insert-for-key]
+      ["For key until"      seed7-insert-for-key-until]
+      ["If"                 seed7-insert-if-statement]
+      ["Repeat"             seed7-insert-repeat]
+      ["While"              seed7-insert-while]
+      ["Error handler block" seed7-insert-block]
+      ["Global block"       seed7-insert-global]))
     ("Mark"
      ["Mark Function/Procedure" seed7-mark-defun ])
     "---"
