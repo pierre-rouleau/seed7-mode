@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-12 12:15:02 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-12 13:41:03 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -242,7 +242,7 @@
 ;;  - Seed7 Procedure/Function Regular Expressions
 ;;  - Seed7 Skipping Comments
 ;;  - Seed7 Navigation by Block/Procedure/Function
-;;    - Naviagtion to Outer Block
+;;    - Navigation to Outer Block
 ;;    - Seed7 Procedure/Function Search Utility functions
 ;;    - Seed7 Procedure/Function Navigation Commands
 ;;      * `seed7-beg-of-defun'
@@ -303,7 +303,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-12T16:15:02+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2025-06-12T17:41:03+0000 W24-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -719,12 +719,13 @@ Has only one capturing group.")
 ;;
 
 (defconst seed7--block-start-keywords
-  '("block"      ; "end block"
-    "case"       ; "end case"
+  '("block"                             ; "end block"
+    "case"                              ; "end case"
     "enum"
     "for"
+    "global"
     ;; "func"
-    "if"       ; "elsif"      "end if"
+    "if"                                ; "elsif"      "end if"
     ;; "repeat"      "until"
     "struct"
     "while"))
@@ -737,6 +738,7 @@ Has only one capturing group.")
     "exception"   "catch"               ; otherwise
     "enum"        "end enum"
     "for"         "end for"
+    "global"      "end global"
     "func"        "end func"
     "if"          "else" "elsif" "end if"
     "repeat"      "until"
@@ -1952,7 +1954,7 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
 ;;   --------------------------------------------
 
 
-;;*** Naviagtion to Outer Block
+;;*** Navigation to Outer Block
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (defun seed7--to-top (&optional pos)
@@ -2375,6 +2377,7 @@ The regexp has 2 or 3 groups:
    ;; capturing sections: match 1 is the start of the block, match 2 is the end.
    ((string= word1 "repeat")    "^[[:blank:]]+?\\(?:\\(repeat\\)\\|\\(until\\) \\)" )
    ((string= word1 "block")     "^[[:blank:]]+?\\(?:\\(block\\)\\|\\(end block\\)\\)" )
+   ((string= word1 "global")    "^[[:blank:]]+?\\(?:\\(global\\)\\|\\(end global;\\)\\)" )
    ((string= word1 "when")      "^[[:blank:]]+?\\(?:\\(case \\)\\|\\(end case;?\\)\\|\\(when \\|otherwise\\)\\)")
    ((string= word1 "otherwise") "^[[:blank:]]+?\\(?:\\(case \\)\\|\\(end case;?\\)\\)")
    ((string= word1 "elsif")     "^[[:blank:]]+?\\(?:\\(if \\)\\|\\(end if;?\\)\\|\\((elsif \\|else\\)\\)")
@@ -2488,11 +2491,10 @@ The regexp has 2 or 3 groups:
    ((string= word1 "until")     "^[[:blank:]]+?\\(?:\\(repeat\\)\\|\\(until\\) \\)")
    ((member  word1 '("when" "otherwise")) "^[[:blank:]]+?\\(?:\\(case \\)\\|\\(end case;?\\)\\|\\(when \\)\\)")
    ((member  word1 '("elsif" "else"))     "^[[:blank:]]+?\\(?:\\(if \\)\\|\\(end if;?\\)\\|\\(elsif \\)\\)")
-   ((and (string= word1 "end")
-         (string= word2 "func"))
-    seed7--inner-callables-triplets-re)
    ((string= word1 "end")
     (cond
+     ((string= word2 "func") seed7--inner-callables-triplets-re)
+     ((string= word2 "global") "^[[:blank:]]+?\\(?:\\(global\\)\\|\\(end global;\\)\\)")
      ((string= word2 "block")
       "^[[:space:]]+?\\(block\\(?:[[:space:]]*?#.*?\\)?$\\)\\|\\(end block;\\)")
      ((member word2 '("case"
@@ -2985,6 +2987,7 @@ case \\|\
 catch \\|\
 local\\|\
 repeat\\|\
+global\\|\
 begin\\|\
 block\\|\
 else\\|\
@@ -3025,6 +3028,7 @@ Move point."
                      "repeat"
                      "begin"
                      "block"
+                     "global"
                      "else"
                      "result"
                      "if "
@@ -3115,6 +3119,14 @@ Does not move point, does not modify search match data."
    ((string= header "repeat")
     (if (seed7--at-pos-looking-at-p line-n-indent-pos "until ")
         ;; until lines up with repeat
+        0
+      ;; Other lines are indented
+      seed7-indent-width))
+
+   ;;-- global - end global
+   ((string= header "global")
+    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end global;")
+        ;; until lines up with global
         0
       ;; Other lines are indented
       seed7-indent-width))
@@ -3227,6 +3239,7 @@ If it finds something it returns a list that holds the following information:
                      (or
                       (member match-text '("local"
                                            "begin"
+                                           "global"
                                            "result"
                                            "elsif "
                                            "else"
