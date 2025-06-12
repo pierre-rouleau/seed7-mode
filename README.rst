@@ -824,7 +824,7 @@ Any help, questions, suggestions are welcome!
 .. _for-until statement:
 .. _for-until:                                  https://seed7.sourceforge.net/manual/stats.htm#for-until-statement
 .. _case statement:                             https://seed7.sourceforge.net/manual/stats.htm#case-statement
-.. _Exception handler block:                    https://seed7.net/manual/errors.htm
+.. _Exception handler block:                    https://seed7.net/manual/errors.htm#Handlers
 .. _s7check.sd7:                                https://github.com/pierre-rouleau/seed7/blob/master/prg/s7check.sd7
 .. _iedit:                                      https://github.com/victorhge/iedit
 .. _expand-region:                              https://github.com/magnars/expand-region.el?tab=readme-ov-file#readme
