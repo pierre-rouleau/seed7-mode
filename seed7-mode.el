@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-11 17:08:31 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-12 07:59:18 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -302,7 +302,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-11T21:08:31+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2025-06-12T11:59:18+0000 W24-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2320,6 +2320,8 @@ The regexp has 2 or 3 groups:
    ((string= word1 "else")      "^[[:blank:]]+?\\(?:\\(if \\)\\|\\(end if;?\\)\\)")
    ((string= word1 "const")
     (cond
+     ((string= word2 "func")
+      "^[[:blank:]]*?\\(?:\\(const \\(?:func\\|proc\\)[^\\0]+?is\\(?:\\(?: +func\\)?$\\)\\)\\|\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:\\(?:return [^\\0]+?;\\)\\|\\(?:return .+?;\\)\\)\\)\\|\\(const func .+? is .+?\\(?:\\(?:action .+?\\)\\|\\(?:forward\\)\\);\\)\\)")
      ((string= word2 "type")
       (cond
        ((member last-word '("enum"
@@ -2332,7 +2334,6 @@ The regexp has 2 or 3 groups:
    ((member word1 seed7--block-start-keywords)
     (format "^[[:blank:]]+?\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word1 word1))
    (t nil)))
-
 
 ;; [:todo 2025-05-31, by Pierre Rouleau: Add support for hard tab after keyword
 (defun seed7--start-regxp-for (word1 word2)
@@ -2353,6 +2354,9 @@ The regexp has 2 or 3 groups:
    ((string= word1 "until")     "^[[:blank:]]+?\\(?:\\(repeat\\)\\|\\(until\\) \\)")
    ((member  word1 '("when" "otherwise")) "^[[:blank:]]+?\\(?:\\(case \\)\\|\\(end case;?\\)\\|\\(when \\)\\)")
    ((member  word1 '("elsif" "else"))     "^[[:blank:]]+?\\(?:\\(if \\)\\|\\(end if;?\\)\\|\\(elsif \\)\\)")
+   ((and (string= word1 "end")
+         (string= word2 "func"))
+    "^[[:blank:]]*?\\(?:\\(const \\(?:func\\|proc\\)[^\\0]+?is\\(?:\\(?: +func\\)?$\\)\\)\\|\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:\\(?:return [^\\0]+?;\\)\\|\\(?:return .+?;\\)\\)\\)\\|\\(const func .+? is .+?\\(?:\\(?:action .+?\\)\\|\\(?:forward\\)\\);\\)\\)")
    ((string= word1 "end")
     (cond
      ((string= word2 "block")
@@ -2367,7 +2371,6 @@ The regexp has 2 or 3 groups:
       (seed7--type-regexp word2))
      (t nil)))
    (t nil)))
-
 
 (defun seed7-to-block-forward (&optional dont-push-mark)
   "Move forward from the block beginning to its end.
@@ -2415,7 +2418,8 @@ Return found position or nil if nothing found."
                           (setq nesting (1- nesting))))
                        ;; Found a peer level clause: stop if at nesting level 0
                        ((match-string 3)
-                        (when (eq nesting 0)
+                        (when (and (not (string= second-word "func"))
+                                   (eq nesting 0))
                           (setq searching nil)
                           (setq found-position (point))))
                        ;; found nothing
@@ -2439,6 +2443,7 @@ NO match.  At point %d, nesting=%d, line %d for: %S"
     (when found-position
       (unless dont-push-mark (push-mark))
       (goto-char found-position))))
+
 
 
 (defun seed7-to-block-backward (&optional at-beginning-of-line dont-push-mark)
@@ -2487,7 +2492,8 @@ Return found position if found, nil if nothing found."
                         (setq nesting (1+ nesting)))
                        ;; Found peer level clause: stop if at nesting level 0
                        ((match-string 3)
-                        (when (eq nesting 0)
+                        (when (and (not (string= second-word "func"))
+                               (eq nesting 0))
                           (setq searching nil)
                           (setq found-position (point))))
                        ;; found nothing
