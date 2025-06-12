@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-12 09:13:21 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-12 12:15:02 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -241,7 +241,8 @@
 ;;  - Seed7 Code Search Functions
 ;;  - Seed7 Procedure/Function Regular Expressions
 ;;  - Seed7 Skipping Comments
-;;  - Seed7 Navigation by Procedure/Function
+;;  - Seed7 Navigation by Block/Procedure/Function
+;;    - Naviagtion to Outer Block
 ;;    - Seed7 Procedure/Function Search Utility functions
 ;;    - Seed7 Procedure/Function Navigation Commands
 ;;      * `seed7-beg-of-defun'
@@ -302,7 +303,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-12T13:13:21+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2025-06-12T16:15:02+0000 W24-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1947,8 +1948,43 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
       (push-mark original-pos))
     (goto-char end-pos)))
 
-;;** Seed7 Navigation by Procedure/Function
-;;   --------------------------------------
+;;** Seed7 Navigation by Block/Procedure/Function
+;;   --------------------------------------------
+
+
+;;*** Naviagtion to Outer Block
+;;    ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(defun seed7--to-top (&optional pos)
+  "Move point to beginning of outer block surrounding code at POS or point."
+  (when pos (goto-char pos))
+  (let ((keep-searching t))
+    (while (and keep-searching
+                (not (bobp))
+                (seed7-re-search-backward seed7-block-line-start-regexp))
+      (seed7-to-indent)
+      (when (= (current-column) 0)
+        (setq keep-searching nil)))))
+
+(defun seed7-to-top-of-block ()
+  "Move point to the top of the current block."
+  (interactive)
+  (seed7--to-top))
+
+(defun seed7--block-name (&optional pos)
+  "Return the name of the block declared at POS or point.
+Return nil if name is not found."
+  (save-excursion
+    (when pos (goto-char pos))
+    (when (seed7-re-search-forward seed7-procfunc-regexp)
+      (substring-no-properties (match-string
+                                seed7-procfunc-regexp-item-name-group)))))
+
+(defun seed7-top-block-name (&optional pos)
+  "Return the name of the top block item surrounding code at POS or point."
+  (save-excursion
+    (seed7--to-top pos)
+    (or (seed7--block-name) "?")))
 
 ;;*** Seed7 Procedure/Function Search Utility functions
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2041,12 +2077,16 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
                   item-name (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
                   tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group))))))
       (if found-pos
-          (seed7--move-and-mark
-           original-pos
-           found-pos
-           dont-push-mark
-           (unless silent
-             (seed7--show-info 'at-start-of item-name item-type tail-type)))
+          (let ((top-block-name (seed7-top-block-name)))
+            (when (and top-block-name
+                       (not (string= top-block-name item-name)))
+              (setq item-name (format "%s %s" top-block-name item-name)))
+            (seed7--move-and-mark
+             original-pos
+             found-pos
+             dont-push-mark
+             (unless silent
+               (seed7--show-info 'at-start-of item-name item-type tail-type))))
         (user-error (seed7--no-defun-found-msg-for n 'backward))))))
 
 (defun seed7-beg-of-next-defun (&optional n silent dont-push-mark)
@@ -2074,7 +2114,7 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
     (unless (eq n 0)
       (save-excursion
         (dotimes (_ n)
-          (setq found-pos nil) ; only last one is important
+          (setq found-pos nil)          ; only last one is important
           (forward-char)
           (if (seed7-re-search-forward seed7-procfunc-regexp)
               (setq found-pos (point)
@@ -2091,12 +2131,17 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
             (error "Logic error in:seed7-beg-of-next-defun at %d.  Check regexp used: %s"
                    (point)
                    (symbol-name 'seed7-procfunc-regexp)))))
-      (seed7--move-and-mark
-           original-pos
-           found-pos
-           dont-push-mark
-           (unless silent
-             (seed7--show-info 'at-start-of item-name item-type tail-type))))))
+      ;; Position is found, otherwise an error would have occurred.
+      (let ((top-block-name (seed7-top-block-name)))
+        (when (and top-block-name
+                   (not (string= top-block-name item-name)))
+          (setq item-name (format "%s %s" top-block-name item-name)))
+        (seed7--move-and-mark
+         original-pos
+         found-pos
+         dont-push-mark
+         (unless silent
+           (seed7--show-info 'at-start-of item-name item-type tail-type)))))))
 
 (defun seed7-end-of-defun (&optional n silent dont-push-mark)
   "Move forward to the end of the current or next function or procedure.
@@ -2117,16 +2162,12 @@ Move inside the current if inside one, to the next if outside one.
   ;; of function or proc using the `seed7-procfunc-regexp' regexp
   ;; which has 6 groups
   (let* ((n (prefix-numeric-value n))
-         (original-pos (point))
-         (found-candidate nil)
-         (final-pos nil)
-         (found-pos nil)
-         (item-name nil)
-         (item-type nil)
-         (tail-type nil)
-         (item-name2 nil)
-         (item-type2 nil)
-         (tail-type2 nil))
+         (original-pos (point))  (found-candidate nil)
+         (final-pos nil)         (found-pos nil)
+         (item-name nil)         (item-name2 nil)
+         (item-type nil)         (item-type2 nil)
+         (tail-type nil)         (tail-type2 nil)
+         (top-block-name nil)    (top-block-name2 nil))
     (when (< n 0)
       (user-error "Negative N (%d) not allowed!" n))
     (unless (eq n 0)
@@ -2141,12 +2182,17 @@ Move inside the current if inside one, to the next if outside one.
           (save-excursion
             (when
                 (and
-                 (setq final-pos
-                       (seed7-re-search-forward seed7-procfunc-end-regexp))
+                 (setq final-pos (seed7-re-search-forward seed7-procfunc-end-regexp)
+                       top-block-name2 (seed7-top-block-name))
                  (when (seed7-re-search-backward seed7-procfunc-regexp)
+                   ;; [:todo 2025-06-12, by Pierre Rouleau: when at end of
+                   ;; func that has nested func/proc, the spec extracted below
+                   ;; are the spec of the last nested func/proc NOT the spec
+                   ;; of the top one. Need a way to distinguish the 2...]
                    (setq item-type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
                          item-name (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
-                         tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
+                         tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group))
+                         top-block-name top-block-name2)
                    t)
                  (seed7-re-search-forward  seed7-procfunc-end-regexp)
                  (eq (point) final-pos))
@@ -2155,8 +2201,8 @@ Move inside the current if inside one, to the next if outside one.
           (save-excursion
             (when
                 (and
-                 (setq found-pos
-                       (seed7-re-search-forward seed7-short-func-end-regexp))
+                 (setq found-pos (seed7-re-search-forward seed7-short-func-end-regexp)
+                       top-block-name2 (seed7-top-block-name))
                  (when (seed7-re-search-backward seed7-procfunc-regexp)
                    (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
                          item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
@@ -2166,17 +2212,19 @@ Move inside the current if inside one, to the next if outside one.
                  (eq (point) found-pos)
                  (or (not final-pos)
                      (< found-pos final-pos)))
-              (setq final-pos found-pos)
-              (setq found-candidate t)
-              (setq item-name item-name2)
-              (setq item-type item-type2)
-              (setq tail-type tail-type2)))
+              (setq final-pos found-pos
+                    found-candidate t
+                    item-name item-name2
+                    item-type item-type2
+                    tail-type tail-type2
+                    top-block-name top-block-name2)))
           ;; Search for next forward declaration
           (save-excursion
             (when
                 (and
                  (setq found-pos
-                       (seed7-re-search-forward seed7-forward-declaration-end-regexp))
+                       (seed7-re-search-forward seed7-forward-declaration-end-regexp)
+                       top-block-name2 (seed7-top-block-name))
                  (when (seed7-re-search-backward seed7-procfunc-regexp)
                    (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
                          item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
@@ -2186,17 +2234,19 @@ Move inside the current if inside one, to the next if outside one.
                  (eq (point) found-pos)
                  (or (not final-pos)
                      (< found-pos final-pos)))
-              (setq final-pos found-pos)
-              (setq found-candidate t)
-              (setq item-name item-name2)
-              (setq item-type item-type2)
-              (setq tail-type tail-type2)))
+              (setq final-pos found-pos
+                    found-candidate t
+                    item-name item-name2
+                    item-type item-type2
+                    tail-type tail-type2
+                    top-block-name top-block-name2)))
           ;; Search for next action handle function
           (save-excursion
             (when
                 (and
                  (setq found-pos
-                       (seed7-re-search-forward seed7-action-function-end-regexp))
+                       (seed7-re-search-forward seed7-action-function-end-regexp)
+                       top-block-name2 (seed7-top-block-name))
                  (when (seed7-re-search-backward seed7-procfunc-regexp)
                    (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
                          item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
@@ -2206,17 +2256,21 @@ Move inside the current if inside one, to the next if outside one.
                  (eq (point) found-pos)
                  (or (not final-pos)
                      (< found-pos final-pos)))
-              (setq final-pos found-pos)
-              (setq found-candidate t)
-              (setq item-name item-name2)
-              (setq item-type item-type2)
-              (setq tail-type tail-type2)))
+              (setq final-pos found-pos
+                    found-candidate t
+                    item-name item-name2
+                    item-type item-type2
+                    tail-type tail-type2
+                    top-block-name top-block-name2)))
 
           (if found-candidate
               ;; move to the end of first function to allow next search in loop
               (goto-char final-pos)
             ;; Nothing found in this loop.  Quit searching right away
             (user-error (seed7--no-defun-found-msg-for n 'forward)))))
+      (when (and top-block-name
+                   (not (string= top-block-name item-name)))
+          (setq item-name (format "%s %s" top-block-name item-name)))
       (seed7--move-and-mark
        original-pos
        final-pos
@@ -3138,7 +3192,8 @@ If it finds something it returns a list that holds the following information:
 - 0: indent column : indentation column the line N should use,
 - 1: match string  : the found string describing the type of block,
 - 2: block start position, (the beginning of the start keyword line),
-- 3: block end position."
+- 3: block end position.
+- 4: indent column of the block start."
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
       (let ((current-pos (point))
@@ -3196,7 +3251,8 @@ If it finds something it returns a list that holds the following information:
           (list (+ block-start-indent-column (or line-n-indent-offset 0))
                 match-text
                 block-start-pos
-                block-end-pos))))))
+                block-end-pos
+                block-start-indent-column))))))
 
 (defun seed7-line-inside-until-logic-expression (n &optional
                                                    scope-begin-pos
@@ -4934,6 +4990,7 @@ Make sure you have no duplication of keywords if you edit the list."
     (define-key map (kbd "C-c C-a") 'seed7-to-block-backward)
     (define-key map (kbd "C-c C-e") 'seed7-to-block-forward)
     (define-key map (kbd "C-c C-n") 'seed7-beg-of-next-defun)
+    (define-key map (kbd "C-c C-t") 'seed7-to-top-of-block)
     (define-key map "\M-\C-a"  'seed7-beg-of-defun)
     (define-key map "\M-\C-e"  'seed7-end-of-defun)
     (define-key map "\M-\C-h"  'seed7-mark-defun)
@@ -5013,7 +5070,9 @@ Make sure you have no duplication of keywords if you edit the list."
      ["Block end" seed7-to-block-forward
       :help "Go forward to end of block"]
      ["Block start" seed7-to-block-backward
-      :help "Go backward to start of block"])
+      :help "Go backward to start of block"]
+     ["To top of current block" seed7-to-top-of-block
+      :help "Go to the top of the current block"])
     "---"
     ["Static check"  seed7-compile
      :help "Perform static analysis of Seed7 code in visited file."]
