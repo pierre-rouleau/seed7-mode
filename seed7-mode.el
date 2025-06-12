@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-12 09:09:03 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-12 09:13:21 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -302,7 +302,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-12T13:09:03+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2025-06-12T13:13:21+0000 W24-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2342,43 +2342,6 @@ The regexp has 2 or 3 groups:
     (format "^[[:blank:]]+?\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word1 word1))
    (t nil)))
 
-;; [:todo 2025-05-31, by Pierre Rouleau: Add & test support for hard tab after keyword
-(defun seed7--start-regxp-for (word1 word2)
-  "Return a regexp to search the starting string block specified by the arguments.
-Used when searching backward.
-
-- WORD1 : the first word of the end statement.
-- WORD2 : the second word of the end statement.
-
-Return a regexp that searches for the start or end of the block.
-The regexp has 2 or 3 groups:
-- group 1: block start text,
-- group 2: the block end text,
-- group 3: optional, a peer level clause."
-  (cond
-   ;; deal with special cases first
-   ((not word1) "^\\(?:[[:space:]]*?\\(const[[:space:]]+?array[[:space:]]+?.+?:\\)\\|[[:space:]]+?\\();\\)\\)")
-   ((string= word1 "until")     "^[[:blank:]]+?\\(?:\\(repeat\\)\\|\\(until\\) \\)")
-   ((member  word1 '("when" "otherwise")) "^[[:blank:]]+?\\(?:\\(case \\)\\|\\(end case;?\\)\\|\\(when \\)\\)")
-   ((member  word1 '("elsif" "else"))     "^[[:blank:]]+?\\(?:\\(if \\)\\|\\(end if;?\\)\\|\\(elsif \\)\\)")
-   ((and (string= word1 "end")
-         (string= word2 "func"))
-    seed7--inner-callables-triplets-re)
-   ((string= word1 "end")
-    (cond
-     ((string= word2 "block")
-      "^[[:space:]]+?\\(block\\(?:[[:space:]]*?#.*?\\)?$\\)\\|\\(end block;\\)")
-     ((member word2 '("case"
-                      "for"
-                      "if"
-                      "while"))
-      (format"^[[:space:]]+?\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word2 word2))
-     ((member word2 '("enum"
-                      "struct"))
-      (seed7--type-regexp word2))
-     (t nil)))
-   (t nil)))
-
 (defun seed7-to-block-forward (&optional dont-push-mark)
   "Move forward from the block beginning to its end.
 
@@ -2452,6 +2415,42 @@ NO match.  At point %d, nesting=%d, line %d for: %S"
       (goto-char found-position))))
 
 
+;; [:todo 2025-05-31, by Pierre Rouleau: Add & test support for hard tab after keyword
+(defun seed7--start-regxp-for (word1 word2)
+  "Return a regexp to search the starting string block specified by the arguments.
+Used when searching backward.
+
+- WORD1 : the first word of the end statement.
+- WORD2 : the second word of the end statement.
+
+Return a regexp that searches for the start or end of the block.
+The regexp has 2 or 3 groups:
+- group 1: block start text,
+- group 2: the block end text,
+- group 3: optional, a peer level clause."
+  (cond
+   ;; deal with special cases first
+   ((not word1) "^\\(?:[[:space:]]*?\\(const[[:space:]]+?array[[:space:]]+?.+?:\\)\\|[[:space:]]+?\\();\\)\\)")
+   ((string= word1 "until")     "^[[:blank:]]+?\\(?:\\(repeat\\)\\|\\(until\\) \\)")
+   ((member  word1 '("when" "otherwise")) "^[[:blank:]]+?\\(?:\\(case \\)\\|\\(end case;?\\)\\|\\(when \\)\\)")
+   ((member  word1 '("elsif" "else"))     "^[[:blank:]]+?\\(?:\\(if \\)\\|\\(end if;?\\)\\|\\(elsif \\)\\)")
+   ((and (string= word1 "end")
+         (string= word2 "func"))
+    seed7--inner-callables-triplets-re)
+   ((string= word1 "end")
+    (cond
+     ((string= word2 "block")
+      "^[[:space:]]+?\\(block\\(?:[[:space:]]*?#.*?\\)?$\\)\\|\\(end block;\\)")
+     ((member word2 '("case"
+                      "for"
+                      "if"
+                      "while"))
+      (format"^[[:space:]]+?\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word2 word2))
+     ((member word2 '("enum"
+                      "struct"))
+      (seed7--type-regexp word2))
+     (t nil)))
+   (t nil)))
 
 (defun seed7-to-block-backward (&optional at-beginning-of-line dont-push-mark)
   "Move backward from block end to its beginning.
@@ -2500,7 +2499,7 @@ Return found position if found, nil if nothing found."
                        ;; Found peer level clause: stop if at nesting level 0
                        ((match-string 3)
                         (when (and (not (string= second-word "func"))
-                               (eq nesting 0))
+                                   (eq nesting 0))
                           (setq searching nil)
                           (setq found-position (point))))
                        ;; found nothing
