@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-12 13:41:03 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-12 14:19:34 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -303,7 +303,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-12T17:41:03+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2025-06-12T18:19:34+0000 W24-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4503,6 +4503,42 @@ and \\[tempo-forward-mark] to move to previous one."
     (forward-line 1)
     (seed7--delete-char-and-mark-at 0)))
 
+;; https://seed7.net/manual/errors.htm#Handlers
+(defun seed7-insert-block ()
+  "Insert a block handler statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "block\n E\n exception\n catch X:\n H\n end block;")
+  (forward-line -4)
+  (seed7-to-indent)
+  (save-excursion
+    (forward-line -1)
+    (seed7--indent-lines 6))
+  (save-excursion
+    (seed7--delete-char-and-mark-at 0)
+    (forward-line 2)
+    (seed7--delete-char-and-mark-at 6)
+    (forward-line 1)
+    (seed7--delete-char-and-mark-at 0))
+  (end-of-line))
+
+(defun seed7-insert-global ()
+  "Insert a global block statement.
+Leave point at condition position to fill.
+Use \\[tempo-forward-mark] to move to next position to fill,
+and \\[tempo-forward-mark] to move to previous one."
+  (interactive "*")
+  (insert "global\n E\n end global;")
+  (forward-line -1)
+  (seed7-to-indent)
+  (save-excursion
+    (forward-line -1)
+    (seed7--indent-lines 3))
+  (save-excursion
+    (seed7--delete-char-and-mark-at 0))
+  (end-of-line))
 
 (defun seed7-insert-var-declaration ()
   "Insert a variable declaration.
@@ -4622,6 +4658,8 @@ invar        declaration of an in-var parameter
 callbn       declaration of a call-by-name parameter
 ref          declaration of a reference parameter
 val          declaration of a value parameter
+bl           block (handler statement)
+gl           global block
 case         case statement
 if           if statement
 ife          if-else statement
@@ -4674,7 +4712,9 @@ struct       struct type definition
                                         "forek" "foreku"
                                         "fork"  "forku"
                                         "repeat"
-                                        "while")))
+                                        "while"
+                                        "bl"
+                                        "gl")))
                  (and (looking-at-p " ?)")
                       (member keyword '("in"
                                         "invar"
@@ -4731,6 +4771,12 @@ struct       struct type definition
          ((string= keyword "while")
           (seed7--delete-backward 5)
           (seed7-insert-while))
+         ((string= keyword "bl")
+          (seed7--delete-backward 2)
+          (seed7-insert-block))
+         ((string= keyword "gl")
+          (seed7--delete-backward 2)
+          (seed7-insert-global))
 
          ((string= keyword "proc")
           (seed7--delete-backward 4)
@@ -5027,6 +5073,9 @@ Make sure you have no duplication of keywords if you edit the list."
      ["Toggle comment style"   seed7-toggle-comment-style])
     ["Customize seed7-mode" seed7-mode-customize]
     "---"
+    ["Toggle abbrev-mode"   abbrev-mode]
+    ["List abbreviations"   list-abbrevs]
+    "---"
     ["Expand keyword/Indent"   seed7-complete-statement-or-indent
      :help "Hit <tab> after any keyword to expand it to code."  ]
     ["Move to next marker"     tempo-forward-mark
@@ -5065,7 +5114,9 @@ Make sure you have no duplication of keywords if you edit the list."
      ["For key until"      seed7-insert-for-key-until]
      ["If"                 seed7-insert-if-statement]
      ["Repeat"             seed7-insert-repeat]
-     ["While"              seed7-insert-while])
+     ["While"              seed7-insert-while]
+     ["Error handler block" seed7-insert-block]
+     ["Global block"       seed7-insert-global])
 
     ("Mark"
      ["Mark Function/Procedure" seed7-mark-defun ])
