@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-13 18:33:42 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-13 18:54:49 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-13T22:33:42+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2025-06-13T22:54:49+0000 W24-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4734,7 +4734,8 @@ struct       struct type definition
              (not (seed7-inside-string-p))
              (or (and (or in-indent
                           (eq col-at-keyword-beg 0))
-                      (looking-at-p "\n")
+                      (or (looking-at-p "\n")
+                          (eobp))
                       (member keyword '("inc"
                                         "const" "var"
                                         "enum" "struct"
