@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-12 18:59:56 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-13 15:17:43 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-12T22:59:56+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2025-06-13T19:17:43+0000 W24-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -416,19 +416,27 @@ The name of the source code file is appended to the end of that line."
 
 ;;** Seed7 Cross Reference
 
-;; (defcustom seed7-xref "s7xref"
-;;   "Seed7 cross reference builder command line.
-;;
-;; The command line must identify the Seed7 cross reference builder,
-;; s7xref, by default.
-;;
-;; You may:
-;; - Use the program name without a path if it is in the PATH of your shell.
-;; - The name with an absolute path.
-;;
-;; This program is included in the Seed7 tools."
-;;   :group 'seed7
-;;   :type 'string)
+(defcustom seed7-xref "s7xref"
+  "Seed7 cross reference builder command line.
+
+The command line must identify the Seed7 cross reference builder,
+s7xref, by default.
+
+You may type:
+- the cross reference builder executable program to use, or
+- the s7 interpreter, followed by the Seed7 source file to use.
+
+The name of the cross reference executable or the s7 Seed interpreter program
+must include their absolute path unless these programs can be found through
+the PATH environment variable accessible to Emacs.
+
+The ~ character is expanded.
+
+The seed7 mode repository includes the s7xref.sd7 file inside the tools
+sub-directory. You can either create an executable for it or use the s7
+interpreter to run it without having to compile it."
+  :group 'seed7
+  :type 'string)
 
 
 ;;** Seed7 Faces
@@ -4885,6 +4893,90 @@ If optional COMPILE argument set, compile the file to executable instead."
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Cross Reference
 ;;  =====================
+
+
+(defvar-local seed7---xref-buffer nil
+  "Internal, hidden buffer holding cross-reference info for Seed7 file.")
+
+(defun seed7-build-xref ()
+  "Build a cross reference buffer for the current Seed7 file.
+The buffer holds 1 line per object referenced.
+Each line holds 3 tab-separated elements:
+- object name,
+- name of file where object is defined,
+- line number in file where the object is defined.
+
+This uses the Seed7 cross reference tool identified by the `seed7-xref'
+user-option."
+  (let* ((xref-uo-list (split-string seed7-xref))
+        (xref-executable-name (executable-find (car-safe xref-uo-list))))
+    (if (and xref-executable-name
+             (file-executable-p xref-executable-name))
+      (let* ((sd7-source-fname-with-path
+              (expand-file-name buffer-file-truename))
+             (fbasename (file-name-sans-extension
+                         (file-name-nondirectory
+                          buffer-file-truename)))
+             (outbuf (or seed7---xref-buffer
+                         (setq-local
+                          seed7---xref-buffer
+                          (get-buffer-create
+                           ;; Create a hidden buffer by using a leading
+                           ;; space in its name.
+                           (format " *s7xref-for-%s*" fbasename))))))
+        ;; In case the command was executed before, erase prior content
+        (with-current-buffer outbuf
+          (erase-buffer))
+        (if (eq (length xref-uo-list) 1)
+            ;; seed7-xref is just 1 word, the name of the xref program
+            (call-process xref-executable-name
+                          nil outbuf nil
+                          sd7-source-fname-with-path)
+          ;; seed7-xref has more than 1 word.  The first word is the program,
+          ;; and the following words are its arguments.  For instance the
+          ;; program name could be s7 and the next word a Seed7 source file to
+          ;; interpret.  And there could be other options.  Pass them all to
+          ;; the `call-process' as args.
+          ;; Since we do not use the shell, the file paths *must* be expanded.
+          (let ((args (list sd7-source-fname-with-path)))
+            (if (string= (file-name-nondirectory (car xref-uo-list)) "s7")
+                ;; If Seed7 interpreter is used, ensure that the second element
+                ;; is a fully expanded file name that exists.  If it exists
+                ;; prepend the fully expanded file name to args.
+                (progn
+                  (setq xref-uo-list (cdr xref-uo-list))
+                  (let ((sd7-script-fn
+                         (expand-file-name (car-safe xref-uo-list))))
+                    (if (and sd7-script-fn (file-exists-p sd7-script-fn))
+                        (progn
+                          ;; remove script filename from the list
+                          (setq xref-uo-list (cdr-safe xref-uo-list))
+                          ;; prepend scripts args if any
+                          (when xref-uo-list
+                            (setq args (append xref-uo-list args)))
+                          ;; then prepend script file-name
+                          (setq args (append (list sd7-script-fn) args)))
+                      (user-error
+                       "Invalid seed7-xref: %s\nseed7-xref = %s"
+                       (if sd7-script-fn
+                           (format "Can't find script: %s" sd7-script-fn)
+                         "No Seed7 file identified after s7 interpreter.")
+                       seed7-xref))))
+              ;; The command is not a s7 command but something else.
+              ;; We know the first word is a valid executable, just proceed
+              ;; by setting pre-pending the cdr of seed7-xref list.
+              (when (> (length xref-uo-list) 1)
+                (setq args (append (cdr xref-uo-list) args))))
+            ;; Execute the command with appropriate arguments.
+            (apply #'call-process
+                   xref-executable-name
+                   nil outbuf nil
+                   args))))
+      (user-error "\
+The seed7-xref user-option does not identify an executable file: %s
+Please update!"
+                  seed7-xref))))
+
 
 
 ;; ---------------------------------------------------------------------------
