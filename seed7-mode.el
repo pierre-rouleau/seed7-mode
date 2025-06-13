@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-13 18:54:49 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-13 19:23:35 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-13T22:54:49+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2025-06-13T23:23:35+0000 W24-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2893,9 +2893,8 @@ Return nil if nothing found, but do not move point."
         (save-excursion
           (skip-chars-forward " \t")
           (unless (looking-at-p "\n")
-            (when (and (not (seed7-inside-comment-p (- (point) 1)))
-                       (or dont-skip-comment-start
-                           (not (seed7-inside-comment-p (point)))))
+            (when (or (not (seed7-inside-comment-p (point)))
+                      dont-skip-comment-start)
               (setq found-pos (point)))))))
     ;; found appropriate position: move to it and return its indentation.
     (when found-pos
@@ -4040,8 +4039,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
        ((seed7--set (seed7-line-starts-with
                      :previous-non-empty "include ")
                     indent-column))
-       ((seed7-line-starts-with
-         :previous-non-empty "$ include ")
+       ((seed7-line-starts-with :previous-non-empty "$ include ")
         (setq indent-step 1))
        (t (setq indent-step 0))))
 
