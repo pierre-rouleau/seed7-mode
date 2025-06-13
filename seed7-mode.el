@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-13 17:45:49 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-13 18:33:42 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-13T21:45:49+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2025-06-13T22:33:42+0000 W24-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5029,10 +5029,18 @@ Return a list of 3-element lists, where each 3-element list has:
 
 (defun seed7--candidate-text (candidate)
   "Format the CANDIDATE text."
-  (format "%s: %s @ %d"
+  (format "%s\t%s\t%d"
           (nth 0 candidate)
           (nth 1 candidate)
           (nth 2 candidate)))
+
+(defun seed7--candidate-list (candidate)
+  "Extract the 3-element list from the CANDIDATE string."
+  (let* ((elems (split-string (substring-no-properties candidate)
+                              "\t")))
+    (list (nth 0 elems)
+          (nth 1 elems)
+          (string-to-number (nth 2 elems)))))
 
 (defun seed7-xref-goto ()
   "Move point to definition of symbol at point."
@@ -5051,6 +5059,8 @@ Return a list of 3-element lists, where each 3-element list has:
                          nil            ; require-match: user can quit
                          (car (car candidates))))))
     (when selection
+      (when (stringp selection)
+        (setq selection (seed7--candidate-list selection)))
       (find-file (nth 1 selection))
       (goto-char (point-min))
       (forward-line (1- (nth 2 selection))))))
