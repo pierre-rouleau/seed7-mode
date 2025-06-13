@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-13 16:08:02 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-13 17:45:49 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-13T20:08:02+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2025-06-13T21:45:49+0000 W24-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4978,7 +4978,82 @@ The seed7-xref user-option does not identify an executable file: %s
 Please update!"
                   seed7-xref))))
 
+(defun seed7-xref-get (text)
+  "Get a list of all entries matching TEXT literally.
+Return a list of 3-element lists, where each 3-element list has:
+- The text string
+- The file name where this text entry was found
+- The line number integer.,"
+  ;; build the list if it does not already exist for this Seed7 file.
+  (unless (and seed7---xref-buffer
+               (buffer-live-p seed7---xref-buffer))
+    (seed7-build-xref))
+  (let ((entries nil)
+        (keep-searching t)
+        (text-re (format "^\\(%s\\)\t\\(.+?\\)\t\\(.+?\\)$" (regexp-quote text))))
+    (with-current-buffer seed7---xref-buffer
+      (goto-char (point-min))
+      (while (and keep-searching)
+        (not (eobp))
+        (if (re-search-forward text-re nil :noerror)
+            (push (list (match-string 1)
+                        (match-string 2)
+                        (string-to-number (match-string 3)))
+                  entries)
+          (setq keep-searching nil))))
+    entries))
 
+;; [:todo 2025-06-13, by Pierre Rouleau: Should we also skip parens?.]
+(defun seed7-operator-at-point ()
+  "Return the Seed7 operator at point as a string."
+  (save-excursion
+    (let ((c nil)
+          (start-pos nil))
+      ;; move point to whitespace
+      (while (and (not (eq (setq c (preceding-char)) ?\s))
+                  (not (eq c ?\t))
+                  (not (eq c ?\n)))
+        (backward-char))
+      (setq start-pos (point))
+      ;; move point to next whitespace
+      (while (and (not (eq (setq c (following-char)) ?\s))
+                  (not (eq c ?\t))
+                  (not (eq c ?\n)))
+        (forward-char))
+      (substring-no-properties (buffer-substring start-pos (point))))))
+
+(defun seed7-symbol-at-point ()
+  "Return the element at point as a string."
+  (or (thing-at-point 'symbol t)
+      (seed7-operator-at-point)))
+
+(defun seed7--candidate-text (candidate)
+  "Format the CANDIDATE text."
+  (format "%s: %s @ %d"
+          (nth 0 candidate)
+          (nth 1 candidate)
+          (nth 2 candidate)))
+
+(defun seed7-xref-goto ()
+  "Move point to definition of symbol at point."
+  (interactive)
+  (let ((candidates (seed7-xref-get (seed7-symbol-at-point)))
+        (selection nil))
+    (when candidates
+      (if (eq (length candidates) 1)
+          (setq selection (car candidates))
+        (setq selection (completing-read
+                         "Select: "
+                         (sort          ; collection including aliases
+                          (mapcar (function seed7--candidate-text) candidates)
+                          (function string<))
+                         nil            ; predicate
+                         nil            ; require-match: user can quit
+                         (car (car candidates))))))
+    (when selection
+      (find-file (nth 1 selection))
+      (goto-char (point-min))
+      (forward-line (1- (nth 2 selection))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Abbreviation Support
