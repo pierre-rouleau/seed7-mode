@@ -45,8 +45,8 @@ const proc: main is func
 
       fileName := argv(PROGRAM)[1];
       if endsWith(fileName, ".s7i") then
-        # For a .s7i file parsing the fiel fails; instead create a small
-        # program in a string thaht includes that .s7i file and parse that.
+        # For a .s7i file parsing the file fails; instead create a small
+        # program in a string that includes that .s7i file and parse that.
         pgmCode := "$ include \"seed7_05.s7i\";\n\
                    \  include " <& literal(fileName) <& ";\n";
         aProgram := parseStri(pgmCode);
