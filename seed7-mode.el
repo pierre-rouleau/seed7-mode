@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-13 19:23:35 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-14 08:10:54 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-13T23:23:35+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2025-06-14T12:10:54+0000 W24-6"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1070,14 +1070,14 @@ while \\|\
 for \\|\
 case \\|\
 catch \\|\
-local\\|\
-repeat\\|\
-global\\|\
-begin\\|\
-block\\|\
-else\\|\
-exception\\|\
-result\\)"
+\\<local\\>\\|\
+\\<repeat\\>\\|\
+\\<global\\>\\|\
+\\<begin\\>\\|\
+\\<block\\>\\|\
+\\<else\\>\\|\
+\\<exception\\>\\|\
+\\<result\\>\\)"
   "Regexp for the beginning of a Seed7 block.  One capture group.")
 
 (defconst seed7-block-line-start-regexp (concat
