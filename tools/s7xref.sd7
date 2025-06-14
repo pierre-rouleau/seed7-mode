@@ -27,19 +27,38 @@
 #  Compile this file with s7c to create the s7xref executable,
 #  or use the s7 interpreter to run it from source.
 
+# [:todo 2025-06-14, by Pierre Rouleau: Add command line help and protection checks.]
+
 $ include "seed7_05.s7i";
   include "progs.s7i";
 
 
-
 const proc: main is func
   local
+    var string: fileName is "";
+    var string: pgmCode is "";
     var program: aProgram is program.value;
     var ref_list: globalObjects is ref_list.EMPTY;
     var reference: anObject is NIL;
   begin
     if length(argv(PROGRAM)) >= 1 then
-      aProgram := parseFile(argv(PROGRAM)[1]);
+
+      fileName := argv(PROGRAM)[1];
+      if endsWith(fileName, ".s7i") then
+        # For a .s7i file parsing the fiel fails; instead create a small
+        # program in a string thaht includes that .s7i file and parse that.
+        pgmCode := "$ include \"seed7_05.s7i\";\n\
+                   \  include " <& literal(fileName) <& ";\n";
+        aProgram := parseStri(pgmCode);
+        globalObjects := globalObjects(aProgram);
+      else
+        # For a .sd7 file, parse the file directly
+        aProgram := parseFile(fileName);
+      end if;
+
+      # Extract all objects in both cases: what is defined inside this program
+      # or library *and* what it uses; we want to be able to see where those
+      # are defined.
       globalObjects := globalObjects(aProgram);
       for anObject range globalObjects do
         writeln(str(anObject) <& "\t" <& file(anObject) <& "\t" <& line(anObject));
