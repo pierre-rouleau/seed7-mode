@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-14 08:10:54 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-14 08:13:20 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-14T12:10:54+0000 W24-6"
+(defconst seed7-mode-version-timestamp "2025-06-14T12:13:20+0000 W24-6"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5044,19 +5044,21 @@ Return a list of 3-element lists, where each 3-element list has:
 (defun seed7-xref-goto ()
   "Move point to definition of symbol at point."
   (interactive)
-  (let ((candidates (seed7-xref-get (seed7-symbol-at-point)))
+  (let* ((symbol (seed7-symbol-at-point))
+        (candidates (seed7-xref-get symbol))
         (selection nil))
-    (when candidates
-      (if (eq (length candidates) 1)
-          (setq selection (car candidates))
-        (setq selection (completing-read
-                         "Select: "
-                         (sort          ; collection including aliases
-                          (mapcar (function seed7--candidate-text) candidates)
-                          (function string<))
-                         nil            ; predicate
-                         nil            ; require-match: user can quit
-                         (car (car candidates))))))
+    (if candidates
+        (if (eq (length candidates) 1)
+            (setq selection (car candidates))
+          (setq selection (completing-read
+                           "Select: "
+                           (sort        ; collection including aliases
+                            (mapcar (function seed7--candidate-text) candidates)
+                            (function string<))
+                           nil          ; predicate
+                           nil          ; require-match: user can quit
+                           (car (car candidates)))))
+      (user-error "Using \"%s\", found nothing for: %s" seed7-xref symbol))
     (when selection
       (when (stringp selection)
         (setq selection (seed7--candidate-list selection)))
