@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-14 08:13:20 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-16 18:09:55 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-14T12:13:20+0000 W24-6"
+(defconst seed7-mode-version-timestamp "2025-06-16T22:09:55+0000 W25-1"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4977,27 +4977,61 @@ The seed7-xref user-option does not identify an executable file: %s
 Please update!"
                   seed7-xref))))
 
+;; (defun seed7-xref-get-original (text)
+;;   "Get a list of all entries matching TEXT literally.
+;; Return a list of 3-element lists, where each 3-element list has:
+;; - The text string, an identifier or an operator.
+;; - The file name where this text entry was found.
+;; - The line number integer,
+;; - A description string (currently a dummy one)"
+;;   ;; build the list if it does not already exist for this Seed7 file.
+;;   (unless (and seed7---xref-buffer
+;;                (buffer-live-p seed7---xref-buffer))
+;;     (seed7-build-xref))
+;;   (let ((entries nil)
+;;         (keep-searching t)
+;;         (text-re (format "^\\(%s\\)\t\\(.+?\\)\t\\(.+?\\)$" (regexp-quote text))))
+;;     (with-current-buffer seed7---xref-buffer
+;;       (goto-char (point-min))
+;;       (while (and keep-searching)
+;;         (not (eobp))
+;;         (if (re-search-forward text-re nil :noerror)
+;;             (push (list (match-string 1)
+;;                         (match-string 2)
+;;                         (string-to-number (match-string 3))
+;;                         (format "Documentation for %s is not yet available."
+;;                                 (match-string 1)))
+;;                   entries)
+;;           (setq keep-searching nil))))
+;;     entries))
+
 (defun seed7-xref-get (text)
   "Get a list of all entries matching TEXT literally.
 Return a list of 3-element lists, where each 3-element list has:
-- The text string
-- The file name where this text entry was found
-- The line number integer.,"
+- The file name where this text entry was found.
+- The line number integer,
+- The column number integer
+- A description string (currently a dummy one)"
   ;; build the list if it does not already exist for this Seed7 file.
   (unless (and seed7---xref-buffer
                (buffer-live-p seed7---xref-buffer))
     (seed7-build-xref))
   (let ((entries nil)
         (keep-searching t)
-        (text-re (format "^\\(%s\\)\t\\(.+?\\)\t\\(.+?\\)$" (regexp-quote text))))
+        (text-re (format "^\\(%s\\)\t\\(.+?\\)\t\\(.+?\\)$" (regexp-quote
+                                                             text)))
+        ; prevent case fold searching: Seed7 is case sensitive.
+        (case-fold-search nil))
     (with-current-buffer seed7---xref-buffer
       (goto-char (point-min))
       (while (and keep-searching)
         (not (eobp))
         (if (re-search-forward text-re nil :noerror)
-            (push (list (match-string 1)
-                        (match-string 2)
-                        (string-to-number (match-string 3)))
+            (push (list (match-string 2)
+                        (string-to-number (match-string 3))
+                        0             ; column not identified: set to 0
+                        (format "Documentation for %s is not yet available."
+                                (match-string 1)))
                   entries)
           (setq keep-searching nil))))
     entries))
@@ -5023,48 +5057,98 @@ Return a list of 3-element lists, where each 3-element list has:
 
 (defun seed7-symbol-at-point ()
   "Return the element at point as a string."
-  (or (thing-at-point 'symbol t)
-      (seed7-operator-at-point)))
+  (if  (and  (looking-at seed7--special-char-re)
+             (not (looking-at ";")))
+      (seed7-operator-at-point)
+    (or (thing-at-point 'symbol t)
+        (seed7-operator-at-point))))
 
-(defun seed7--candidate-text (candidate)
-  "Format the CANDIDATE text."
-  (format "%s\t%s\t%d"
-          (nth 0 candidate)
-          (nth 1 candidate)
-          (nth 2 candidate)))
+;; (defun seed7--candidate-text (candidate)
+;;   "Format the CANDIDATE text."
+;;   (format "%s\t%s\t%d"
+;;           (nth 0 candidate)
+;;           (nth 1 candidate)
+;;           (nth 2 candidate)))
 
-(defun seed7--candidate-list (candidate)
-  "Extract the 3-element list from the CANDIDATE string."
-  (let* ((elems (split-string (substring-no-properties candidate)
-                              "\t")))
-    (list (nth 0 elems)
-          (nth 1 elems)
-          (string-to-number (nth 2 elems)))))
+;; (defun seed7--candidate-list (candidate)
+;;   "Extract the 3-element list from the CANDIDATE string."
+;;   (let* ((elems (split-string (substring-no-properties candidate)
+;;                               "\t")))
+;;     (list (nth 0 elems)
+;;           (nth 1 elems)
+;;           (string-to-number (nth 2 elems)))))
 
-(defun seed7-xref-goto ()
-  "Move point to definition of symbol at point."
-  (interactive)
-  (let* ((symbol (seed7-symbol-at-point))
-        (candidates (seed7-xref-get symbol))
-        (selection nil))
-    (if candidates
-        (if (eq (length candidates) 1)
-            (setq selection (car candidates))
-          (setq selection (completing-read
-                           "Select: "
-                           (sort        ; collection including aliases
-                            (mapcar (function seed7--candidate-text) candidates)
-                            (function string<))
-                           nil          ; predicate
-                           nil          ; require-match: user can quit
-                           (car (car candidates)))))
-      (user-error "Using \"%s\", found nothing for: %s" seed7-xref symbol))
-    (when selection
-      (when (stringp selection)
-        (setq selection (seed7--candidate-list selection)))
-      (find-file (nth 1 selection))
-      (goto-char (point-min))
-      (forward-line (1- (nth 2 selection))))))
+;; (defun seed7-xref-goto ()
+;;   "Move point to definition of symbol at point."
+;;   (interactive)
+;;   (let* ((symbol (seed7-symbol-at-point))
+;;         (candidates (seed7-xref-get-original symbol))
+;;         (selection nil))
+;;     (if candidates
+;;         (if (eq (length candidates) 1)
+;;             (setq selection (car candidates))
+;;           (setq selection (completing-read
+;;                            "Select: "
+;;                            (sort        ; collection including aliases
+;;                             (mapcar (function seed7--candidate-text) candidates)
+;;                             (function string<))
+;;                            nil          ; predicate
+;;                            nil          ; require-match: user can quit
+;;                            (car (car candidates)))))
+;;       (user-error "Using \"%s\", found nothing for: %s" seed7-xref symbol))
+;;     (when selection
+;;       (when (stringp selection)
+;;         (setq selection (seed7--candidate-list selection)))
+;;       (find-file (nth 1 selection))
+;;       (goto-char (point-min))
+;;       (forward-line (1- (nth 2 selection))))))
+
+
+
+;;** Seed7 Cross Reference Xref Backend Framework
+
+(defun seed7--xref-backend ()
+    "Use the Seed7 backend for Xref in seed7-mode files."
+  'seed7)
+
+(defun seed7--make-xref-from-file-loc (elems)
+  "Create an xref object pointing to the given file location.
+FILE, LINE, and COLUMN point to the location of the xref,
+DESC describes it."
+  (xref-make (nth 3 elems)               ; desc
+             (xref-make-file-location (nth 0 elems)
+                                      (nth 1 elems)
+                                      (nth 2 elems))))
+
+
+(defun seed7--find-symbol (symbol)
+  "Get list of xref locations objects for Seed7 SYMBOL."
+  ;; First get a list of candidates using the s7xref mechanism.
+  (let ((candidates (seed7-xref-get symbol)))
+    ;; return a list of xref location objects for those candidates.
+    (mapcar (function seed7--make-xref-from-file-loc)
+            candidates)))
+
+(cl-defmethod xref-backend-identifier-at-point ((_backend (eql seed7)))
+  (seed7-symbol-at-point))
+
+
+(cl-defmethod xref-backend-definitions ((_backend (eql seed7)) symbol)
+  (seed7--find-symbol symbol))
+
+;; [:todo 2025-06-16, by Pierre Rouleau: Complete xref support]
+;; (cl-defmethod xref-backend-references ((_backend (eql seed7)) symbol)
+;;   (seed7--find-uses-of symbol symbol))
+;;
+;; (cl-defmethod xref-backend-apropos ((_backend (eql seed7)) symbol)
+;;   (seed7-find-symbol-apropos symbol))
+;;
+;; (cl-defmethod
+;;     xref-backend-identifier-completion-table ((_backend (eql seed7)))
+;;   "Return a list of terms for completions taken from the symbols in the current buffer."
+;;   (seed7--list-of-terms)))
+
+
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Abbreviation Support
@@ -5416,7 +5500,11 @@ Make sure you have no duplication of keywords if you edit the list."
 
   (when seed7-support-abbrev-mode
     ;; Seed7 Abbreviation Support
-    (setq-local local-abbrev-table seed7-mode-abbrev-table)))
+    (setq-local local-abbrev-table seed7-mode-abbrev-table))
+
+  ;; Seed7 Cross Reference
+  ;; - Use the xref framework : implement a backend for Seed7 here. See above.
+  (add-hook 'xref-backend-functions #'seed7--xref-backend nil t))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.s\\(d7\\|7i\\)\\'" . seed7-mode))
