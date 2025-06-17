@@ -562,6 +562,39 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                             block or statement (listed above).
 = ============================ ============ =============================================================
 
+
+Code Navigation Through xref
+----------------------------
+
+The seed7-mode supports Emacs xref framework and implement an xref-backend for
+Seed7 code using the supplied `s7xref.sd7`_ Seed7 program.
+
+The **seed7-xref** user option, which defaults to ``s7xref`` identifies the
+program that should be used to parse the visited Seed7 file and extract
+information about all identifiers and operators used by the Seed7n program or
+library file.  See the **seed7-xref** docstring for more information.
+
+Once this is properly setup, you can use the following xref commands to
+navigate in Seed7 code.
+
+= ============================ =========== =============================================================
+. Function                     Key Binding Description
+= ============================ =========== =============================================================
+. **xref-find-definitions**    ``M-.``     Find the definition of the identifier at point.
+                                           Move point to it if there is only one candidate.
+                                           If there are several candidates, display the list with the
+                                           currently active xref front-end.
+                                           You can then select the appropriate candidate to jump to its code.
+
+. **xref-go-back**             ``M-,``     Go back to the previous position in xref history.
+= ============================ =========== =============================================================
+
+The current implementation does not yet display the signature of the identified candidates.
+This will be done soon.
+
+There are other xref framework commands.  They are not yet implemented to support Seed7.  This will also be done.
+
+
 Code Marking Commands
 ---------------------
 
@@ -861,6 +894,7 @@ Any help, questions, suggestions are welcome!
 .. _Abbrevs @ Emacs Manual:                     https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrevs.html
 .. _Examining and Editing Abbrevs:              https://www.gnu.org/software/emacs/manual/html_node/emacs/Editing-Abbrevs.html#Editing-Abbrevs
 .. _smart-dash-mode:                            https://github.com/malsyned/smart-dash
+.. _s7xref.sd7:                                 https://github.com/pierre-rouleau/seed7-mode/blob/main/tools/s7xref.sd7
 
 .. ---------------------------------------------------------------------------
 
