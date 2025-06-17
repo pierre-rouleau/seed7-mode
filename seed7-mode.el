@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-16 18:09:55 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-17 12:04:44 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -275,8 +275,8 @@
 ;; - Seed7 Compilation
 ;;   * `seed7-compile'
 ;; - Seed7 Cross Reference
-;; - Seed7 Abbreviation Support
 ;; - Seed7 Completion Support
+;; - Seed7 Abbreviation Support
 ;; - Seed7 Key Map
 ;; - Seed7 Menu
 ;; - Seed7 Major Mode
@@ -286,8 +286,8 @@
 ;;; Dependencies:
 ;;
 ;;
-(require 'simple)         ; use `move-beginning-of-line'
-(require 'speedbar)       ; use `speedbar-add-supported-extension'
+(require 'simple)         ; use: `move-beginning-of-line'
+(require 'speedbar)       ; use: `speedbar-add-supported-extension'
 (require 'subr-x)         ; use: `string-trim'
 (require 'easymenu)       ; use: `easy-menu-define'
 (require 'tempo)          ; use: `tempo-forward-mark', `tempo-backward-mark'
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-16T22:09:55+0000 W25-1"
+(defconst seed7-mode-version-timestamp "2025-06-17T16:04:44+0000 W25-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4869,17 +4869,6 @@ struct       struct type definition
 ;;  =================
 ;;
 
-;; (defun seed7--filter-compiler-output ()
-;;   "Filter function to format s7c compiler output."
-;;   (save-excursion
-;;     ))
-;; compilation-filter-hook
-;; (add-hook 'compilation-filter-hook #'grep--heading-filter 80 t)
-;; [:todo 2025-04-07, by Pierre Rouleau: Filter s7c output to comply with
-;;   required compile-mode buffer format.  Remove the "*** " prefix of error
-;;   lines ]
-;;
-
 (defun seed7-compile (&optional compile)
   "Static check current Seed7 file, show errors in `compilation-mode' buffer.
 
@@ -4892,10 +4881,27 @@ If optional COMPILE argument set, compile the file to executable instead."
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Cross Reference
 ;;  =====================
+;;
+;; The `seed7-mode` supports the xref framework introduced in Emacs 25: the
+;; code implements a xref framework compliant back-end using the s7xref Seed7
+;; program that parses Seed7 program and library files to extract all required
+;; information about global variable, functions and procedures which includes
+;; all operators (both word and special operators).
+;;
+;; Therefore to use this feature you must have the Seed7 compiler and
+;; interpreter installed in your system and the s7xref.sd7 file available in
+;; the seed7-mode/tools directory installed.  You can use it as is with the s7
+;; interpreter or compile it with the s7c compiler.  The `seed7-xref' user
+;; option must identify the appropriate information that will allow execution
+;; of the program.
+;;
+;; Once this is done, you will be able yo use the various xref commands with
+;; the xref front-end of your choice, the default being xref own front-end,
+;; but also with the helm, ivy or other xref front-ends.
 
 
 (defvar-local seed7---xref-buffer nil
-  "Internal, hidden buffer holding cross-reference info for Seed7 file.")
+  "Internal/hidden buffer holding cross-reference info for visited Seed7 file.")
 
 (defun seed7-build-xref ()
   "Build a cross reference buffer for the current Seed7 file.
@@ -4977,34 +4983,6 @@ The seed7-xref user-option does not identify an executable file: %s
 Please update!"
                   seed7-xref))))
 
-;; (defun seed7-xref-get-original (text)
-;;   "Get a list of all entries matching TEXT literally.
-;; Return a list of 3-element lists, where each 3-element list has:
-;; - The text string, an identifier or an operator.
-;; - The file name where this text entry was found.
-;; - The line number integer,
-;; - A description string (currently a dummy one)"
-;;   ;; build the list if it does not already exist for this Seed7 file.
-;;   (unless (and seed7---xref-buffer
-;;                (buffer-live-p seed7---xref-buffer))
-;;     (seed7-build-xref))
-;;   (let ((entries nil)
-;;         (keep-searching t)
-;;         (text-re (format "^\\(%s\\)\t\\(.+?\\)\t\\(.+?\\)$" (regexp-quote text))))
-;;     (with-current-buffer seed7---xref-buffer
-;;       (goto-char (point-min))
-;;       (while (and keep-searching)
-;;         (not (eobp))
-;;         (if (re-search-forward text-re nil :noerror)
-;;             (push (list (match-string 1)
-;;                         (match-string 2)
-;;                         (string-to-number (match-string 3))
-;;                         (format "Documentation for %s is not yet available."
-;;                                 (match-string 1)))
-;;                   entries)
-;;           (setq keep-searching nil))))
-;;     entries))
-
 (defun seed7-xref-get (text)
   "Get a list of all entries matching TEXT literally.
 Return a list of 3-element lists, where each 3-element list has:
@@ -5063,48 +5041,6 @@ Return a list of 3-element lists, where each 3-element list has:
     (or (thing-at-point 'symbol t)
         (seed7-operator-at-point))))
 
-;; (defun seed7--candidate-text (candidate)
-;;   "Format the CANDIDATE text."
-;;   (format "%s\t%s\t%d"
-;;           (nth 0 candidate)
-;;           (nth 1 candidate)
-;;           (nth 2 candidate)))
-
-;; (defun seed7--candidate-list (candidate)
-;;   "Extract the 3-element list from the CANDIDATE string."
-;;   (let* ((elems (split-string (substring-no-properties candidate)
-;;                               "\t")))
-;;     (list (nth 0 elems)
-;;           (nth 1 elems)
-;;           (string-to-number (nth 2 elems)))))
-
-;; (defun seed7-xref-goto ()
-;;   "Move point to definition of symbol at point."
-;;   (interactive)
-;;   (let* ((symbol (seed7-symbol-at-point))
-;;         (candidates (seed7-xref-get-original symbol))
-;;         (selection nil))
-;;     (if candidates
-;;         (if (eq (length candidates) 1)
-;;             (setq selection (car candidates))
-;;           (setq selection (completing-read
-;;                            "Select: "
-;;                            (sort        ; collection including aliases
-;;                             (mapcar (function seed7--candidate-text) candidates)
-;;                             (function string<))
-;;                            nil          ; predicate
-;;                            nil          ; require-match: user can quit
-;;                            (car (car candidates)))))
-;;       (user-error "Using \"%s\", found nothing for: %s" seed7-xref symbol))
-;;     (when selection
-;;       (when (stringp selection)
-;;         (setq selection (seed7--candidate-list selection)))
-;;       (find-file (nth 1 selection))
-;;       (goto-char (point-min))
-;;       (forward-line (1- (nth 2 selection))))))
-
-
-
 ;;** Seed7 Cross Reference Xref Backend Framework
 
 (defun seed7--xref-backend ()
@@ -5149,6 +5085,11 @@ DESC describes it."
 ;;   (seed7--list-of-terms)))
 
 
+;; ---------------------------------------------------------------------------
+;;* Seed7 Completion Support
+;;  ========================
+;; [:todo 2025-06-07, by Pierre Rouleau: add completion support]
+;; (defun seed7-completions-at-point)
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Abbreviation Support
@@ -5329,12 +5270,6 @@ Make sure you have no duplication of keywords if you edit the list."
     "Abbrev table for Seed7 mode."
     ;; Accept ; as the first char of an abbrev.  Also allow _ in abbrevs.
     :regexp "\\(?:[^[:word:]_;]\\|^\\)\\(;?[[:word:]_]+\\)[^[:word:]_]*"))
-
-;; ---------------------------------------------------------------------------
-;;* Seed7 Completion Support
-;;  ========================
-;; [:todo 2025-06-07, by Pierre Rouleau: add completion support]
-;; (defun seed7-completions-at-point)
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Key Map
