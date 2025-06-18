@@ -50,7 +50,6 @@ const proc: main is func
         pgmCode := "$ include \"seed7_05.s7i\";\n\
                    \  include " <& literal(fileName) <& ";\n";
         aProgram := parseStri(pgmCode);
-        globalObjects := globalObjects(aProgram);
       else
         # For a .sd7 file, parse the file directly
         aProgram := parseFile(fileName);
