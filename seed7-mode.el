@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-18 08:21:20 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-18 09:56:31 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-18T12:21:20+0000 W25-3"
+(defconst seed7-mode-version-timestamp "2025-06-18T13:56:31+0000 W25-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4993,15 +4993,26 @@ Please update!"
 (defun seed7--signature-at (&optional pos)
   "Return Seed7 element signature for element at point or POS."
   (when pos (goto-char pos))
-  (when (re-search-forward seed7-procfunc-regexp nil :noerror)
-    (substring-no-properties (match-string 0))))
+  (substring-no-properties (buffer-substring (line-beginning-position) (line-end-position)))
+
+  ;; (let ((original-pos (point))
+  ;;       (original-column (current-column)))
+  ;;   (when (re-search-forward seed7-procfunc-regexp nil :noerror)
+  ;;     (forward-line 0)
+  ;;     (forward-char original-column)
+  ;;     (if (eq original-pos (point))
+  ;;         (substring-no-properties (match-string 0))
+  ;;       ;; the search led to something else, don't use it; use the line
+  ;;       (goto-char original-pos)
+  ;;       (buffer-substring (line-beginning-position) (line-end-position)))))
+  )
 
 (defun seed7--signature-from (filename line column)
   "Return Seed7 slement signature for element in FILENAME at LINE, COLUMN."
   (with-temp-buffer
     (insert-file-contents filename)
     (goto-char (point-min))
-    (forward-line line)
+    (forward-line (1- line))
     (forward-char column)
     (seed7--signature-at)))
 
