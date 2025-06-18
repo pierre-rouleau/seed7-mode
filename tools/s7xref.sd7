@@ -66,7 +66,8 @@ const proc: main is func
         obj_str := str(anObject);
         obj_filename := file(anObject);
         obj_lineno := line(anObject);
-        if obj_str <> " *NULL_ENTITY_OBJECT* " then
+        if obj_str <> " *NULL_ENTITY_OBJECT* " and
+           obj_filename <> "?" then
           writeln(obj_str <& "\t" <& obj_filename <& "\t" <& obj_lineno);
         end if;
       end for;
