@@ -378,11 +378,22 @@ Abbreviation        Expansion
 in-statement keywords
 ~~~~~~~~~~~~~~~~~~~~~
 
+Meant to follow the ``is`` keyword (but not imposed):
+
 =================== ======================
 Abbreviation        Expansion
 =================== ======================
 ``;fo``             forward
 ``;n``              new
+``;u``              sub
+=================== ======================
+
+
+Others:
+
+=================== ======================
+Abbreviation        Expansion
+=================== ======================
 ``;no``             noop
 ``;ra``             raise
 ``;rt``             return
