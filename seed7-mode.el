@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-18 10:23:36 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-18 11:35:08 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-18T14:23:36+0000 W25-3"
+(defconst seed7-mode-version-timestamp "2025-06-18T15:35:08+0000 W25-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -712,7 +712,7 @@ Has only one capturing group.")
   '(
     "forward"
     "new"
-    ))
+    "sub"))
 
 ;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7--is-statement-keywords-regexp
@@ -5008,7 +5008,7 @@ Please update!"
   )
 
 (defun seed7--signature-from (filename line column)
-  "Return Seed7 slement signature for element in FILENAME at LINE, COLUMN."
+  "Return Seed7 element signature for element in FILENAME at LINE, COLUMN."
   (with-temp-buffer
     (insert-file-contents filename)
     (goto-char (point-min))
@@ -5173,6 +5173,7 @@ DESC describes it."
                                  ;; is-statement-keywords
                                  (";fo"   "forward")
                                  (";n"    "new")
+                                 (";u"    "sub")
                                  ;; in-middle-statement-keywords
                                  ;; "begin"
                                  ;; "do"
