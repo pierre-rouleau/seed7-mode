@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-18 11:35:08 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-18 15:12:09 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-18T15:35:08+0000 W25-3"
+(defconst seed7-mode-version-timestamp "2025-06-18T19:12:09+0000 W25-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2754,8 +2754,12 @@ If point is before or between 2 functions or procedure, mark the next one."
   (/ column seed7-indent-width))
 
 (defun seed7-current-line-number ()
-  "Return the current line number.  0 for the first line."
-  (string-to-number (format-mode-line "%l")))
+  "Return the current line number.  1 for the first line."
+  (save-restriction
+    (widen)
+    (save-excursion
+      (beginning-of-line)
+      (1+ (count-lines 1 (point))))))
 
 (defun seed7-to-indent ()
   "Move point to the first non-whitespace character of the line."
@@ -5029,13 +5033,34 @@ Please update!"
       (setq entry (car-safe list)))
     found))
 
-(defun seed7-xref-get (text)
-  "Get a list of all entries matching TEXT literally.
+(defun seed7--find-info-about (identifier)
+  "Find information about IDENTIFIER.
+
 Return a list of 3-element lists, where each 3-element list has:
-- The file name where this text entry was found.
+- The file name where this identifier entry was found.
 - The line number integer,
 - The column number integer
-- A description string (currently a dummy one)"
+- A description string (the signature, if found).
+
+This function is used only when the IDENTIFIER is not identified in the output
+of s7xref program."
+  (save-excursion
+    (goto-char (point-min))
+    (when (search-forward identifier nil :noerror)
+      (let ((specs nil))
+        (when (seed7--set (seed7-line-inside-a-block 0) specs)
+          (list (expand-file-name buffer-file-truename)
+                (seed7-current-line-number)
+                (- (current-column) (length identifier))
+                (seed7--signature-at (nth 2 specs))))))))
+
+(defun seed7-xref-get (identifier)
+  "Get a list of all entries matching IDENTIFIER literally.
+Return a list of 4-element lists, where each 4-element list has:
+- The file name where this identifier entry was found.
+- The line number integer,
+- The column number integer
+- A description string (the signature, if found, otherwise a replacement)."
   ;; build the list if it does not already exist for this Seed7 file.
   (unless (and seed7---xref-buffer
                (buffer-live-p seed7---xref-buffer))
@@ -5043,7 +5068,7 @@ Return a list of 3-element lists, where each 3-element list has:
   (let ((entries nil)
         (keep-searching t)
         (text-re (format "^\\(%s\\)\t\\(.+?\\)\t\\(.+?\\)$" (regexp-quote
-                                                             text)))
+                                                             identifier)))
         ;; prevent case fold searching: Seed7 is case sensitive.
         (case-fold-search nil))
     (with-current-buffer seed7---xref-buffer
@@ -5062,6 +5087,11 @@ Return a list of 3-element lists, where each 3-element list has:
                                          (match-string 1))))
                       entries)))
           (setq keep-searching nil))))
+    ;; if found nothing in the xref reference buffer, try to find it manually
+    ;; inside the current code buffer.
+    ;; [:todo 2025-06-18, by Pierre Rouleau: Currently only support ONE definition.]
+    (unless entries
+      (setq entries (list (seed7--find-info-about identifier))))
     entries))
 
 ;; [:todo 2025-06-13, by Pierre Rouleau: Should we also skip parens?.]
