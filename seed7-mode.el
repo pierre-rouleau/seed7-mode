@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-18 15:12:09 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-18 15:38:02 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-18T19:12:09+0000 W25-3"
+(defconst seed7-mode-version-timestamp "2025-06-18T19:38:02+0000 W25-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5033,7 +5033,7 @@ Please update!"
       (setq entry (car-safe list)))
     found))
 
-(defun seed7--find-info-about (identifier)
+(defun seed7--find-info-about (identifier &optional start-pos end-pos)
   "Find information about IDENTIFIER.
 
 Return a list of 3-element lists, where each 3-element list has:
@@ -5045,8 +5045,8 @@ Return a list of 3-element lists, where each 3-element list has:
 This function is used only when the IDENTIFIER is not identified in the output
 of s7xref program."
   (save-excursion
-    (goto-char (point-min))
-    (when (search-forward identifier nil :noerror)
+    (goto-char (or start-pos (point-min)))
+    (when (search-forward identifier end-pos :noerror)
       (let ((specs nil))
         (when (seed7--set (seed7-line-inside-a-block 0) specs)
           (list (expand-file-name buffer-file-truename)
@@ -5091,7 +5091,17 @@ Return a list of 4-element lists, where each 4-element list has:
     ;; inside the current code buffer.
     ;; [:todo 2025-06-18, by Pierre Rouleau: Currently only support ONE definition.]
     (unless entries
-      (setq entries (list (seed7--find-info-about identifier))))
+      (let ((local-block-spec (save-excursion (seed7-to-top-of-block)
+                                              (seed7-line-inside-a-block 0)))
+            (candidate nil))
+        ;; try looking inside current block first
+        (if (seed7--set (seed7--find-info-about identifier
+                                                (nth 2 local-block-spec)
+                                                (nth 3 local-block-spec))
+                        candidate)
+            ;; if nothing found in current block, search at global scope
+            (setq entries (list candidate))
+          (setq entries (list (seed7--find-info-about identifier))))))
     entries))
 
 ;; [:todo 2025-06-13, by Pierre Rouleau: Should we also skip parens?.]
