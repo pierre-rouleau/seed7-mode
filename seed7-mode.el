@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-18 09:56:31 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-18 10:23:36 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-18T13:56:31+0000 W25-3"
+(defconst seed7-mode-version-timestamp "2025-06-18T14:23:36+0000 W25-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5016,6 +5016,19 @@ Please update!"
     (forward-char column)
     (seed7--signature-at)))
 
+(defun seed7--xref-in-list (list filename lineno)
+  "Return t if FILENAME @ LINENO is inside LIST. Return nil otherwise."
+  (let ((found nil)
+        (entry (car-safe list)))
+    (while (and entry
+                (not found))
+      (when (and (string= (nth 0 entry) filename)
+                 (eq (nth 1 entry) lineno))
+        (setq found t))
+      (setq list (cdr-safe list))
+      (setq entry (car-safe list)))
+    found))
+
 (defun seed7-xref-get (text)
   "Get a list of all entries matching TEXT literally.
 Return a list of 3-element lists, where each 3-element list has:
@@ -5040,13 +5053,14 @@ Return a list of 3-element lists, where each 3-element list has:
         (if (re-search-forward text-re nil :noerror)
             (let ((filename (match-string 2))
                   (lineno (string-to-number (match-string 3))))
-              (push (list filename
-                          lineno
-                          0             ; column not identified: set to 0
-                          (or  (seed7--signature-from filename lineno 0)
-                               (format "Documentation for %s is not yet available."
-                                       (match-string 1))))
-                    entries))
+              (unless (seed7--xref-in-list entries filename lineno)
+                (push (list filename
+                            lineno
+                            0           ; column not identified: set to 0
+                            (or  (seed7--signature-from filename lineno 0)
+                                 (format "Documentation for %s is not yet available."
+                                         (match-string 1))))
+                      entries)))
           (setq keep-searching nil))))
     entries))
 
