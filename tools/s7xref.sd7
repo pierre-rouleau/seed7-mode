@@ -40,6 +40,9 @@ const proc: main is func
     var program: aProgram is program.value;
     var ref_list: globalObjects is ref_list.EMPTY;
     var reference: anObject is NIL;
+    var string: obj_str is "";
+    var string: obj_filename is "";
+    var integer: obj_lineno is 0;
   begin
     if length(argv(PROGRAM)) >= 1 then
 
@@ -60,7 +63,12 @@ const proc: main is func
       # are defined.
       globalObjects := globalObjects(aProgram);
       for anObject range globalObjects do
-        writeln(str(anObject) <& "\t" <& file(anObject) <& "\t" <& line(anObject));
+        obj_str := str(anObject);
+        obj_filename := file(anObject);
+        obj_lineno := line(anObject);
+        if obj_str <> " *NULL_ENTITY_OBJECT* " then
+          writeln(obj_str <& "\t" <& obj_filename <& "\t" <& obj_lineno);
+        end if;
       end for;
     end if;
   end func;
