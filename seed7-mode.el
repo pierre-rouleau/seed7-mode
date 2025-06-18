@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-17 12:04:44 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-18 08:21:20 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -197,7 +197,6 @@
 ;; of sections.
 ;;
 ;; - Version Info
-;; - Low-level Macros
 ;; - Seed7 Customization
 ;; - Seed7 Keyword Regexp
 ;;    - Seed7 Tokens
@@ -237,6 +236,7 @@
 ;;     - `seed7--set-comment-style'
 ;; - Seed7 iMenu Support
 ;; - Seed7 Speedbar Support
+;; - Low-level Macros
 ;; - Seed7 Code Navigation
 ;;  - Seed7 Comment and String Identification Macros and Functions
 ;;  - Seed7 Code Search Functions
@@ -305,7 +305,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-17T16:04:44+0000 W25-2"
+(defconst seed7-mode-version-timestamp "2025-06-18T12:21:20+0000 W25-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -314,15 +314,6 @@ Please do not modify.")
   "Print `seed7-mode' version UTC time stamp."
   (interactive)
   (message "seed7-mode version UT timestamp: %s" seed7-mode-version-timestamp))
-
-;; ---------------------------------------------------------------------------
-;;* Low-level Macros
-;;  ================
-
-(defmacro seed7--set (fct var)
-  "Set VAR with result of FCT call and return it.
-Use inside a `cond' clause to emphasize the check."
-  `(setq ,var ,fct))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Customization
@@ -1542,6 +1533,7 @@ Allows selecting similar colours for various systems."
   "Associates regexp to a regexp group and a face to render it.")
 
 
+;; ---------------------------------------------------------------------------
 ;;* Seed7 Comments Control
 ;;  ======================
 ;;
@@ -1667,12 +1659,23 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
    seed7-name-identifier-re    ; 5
    seed7--whitespace-re))      ; 6
 
-
-
+;; ---------------------------------------------------------------------------
 ;;* Seed7 Speedbar Support
 ;;  ======================
+;;
+;; Seed7 files: programs:          `.sd7`
+;;              library/interface: `.s7i`
 
 (speedbar-add-supported-extension "\\.s\\(d7\\|7i\\)\\'")
+
+;; ---------------------------------------------------------------------------
+;;* Low-level Macros
+;;  ================
+
+(defmacro seed7--set (fct var)
+  "Set VAR with result of FCT call and return it.
+Use inside a `cond' clause to emphasize the check."
+  `(setq ,var ,fct))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Code Navigation
@@ -2424,6 +2427,9 @@ Negative N starts counting from the end of the line: -1 is the last word."
 
 (defconst seed7--inner-callables-triplets-re
   "^[[:blank:]]*?\\(?:\\(const \\(?:func\\|proc\\)[^\\0]+?is\\(?:\\(?: +func\\)?$\\)\\)\\|\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:\\(?:return [^\\0]+?;\\)\\|\\(?:return .+?;\\)\\)\\)\\|\\(const func .+? is .+?\\(?:\\(?:action .+?\\)\\|\\(?:forward\\)\\);\\)\\)"
+  ;;                             (----------------)                (----------)          |              (---------------)              (--------------------)     (---------------)        |                               (--------------)     (-----------)
+  ;;                                                          (--------------------)     |     (----------------------------)     (--------------------------------------------------)     |                          (----------------------------------------)
+  ;;                    (-------------------------------------------------------------)  |  (-------------------------------------------------------------------------------------------)  |  (--------------------------------------------------------------------)
   "A regexp with 3 groups:
 - group 1: function/procedure start,
 - group 2: function/procedure end,
@@ -4983,6 +4989,22 @@ The seed7-xref user-option does not identify an executable file: %s
 Please update!"
                   seed7-xref))))
 
+
+(defun seed7--signature-at (&optional pos)
+  "Return Seed7 element signature for element at point or POS."
+  (when pos (goto-char pos))
+  (when (re-search-forward seed7-procfunc-regexp nil :noerror)
+    (substring-no-properties (match-string 0))))
+
+(defun seed7--signature-from (filename line column)
+  "Return Seed7 slement signature for element in FILENAME at LINE, COLUMN."
+  (with-temp-buffer
+    (insert-file-contents filename)
+    (goto-char (point-min))
+    (forward-line line)
+    (forward-char column)
+    (seed7--signature-at)))
+
 (defun seed7-xref-get (text)
   "Get a list of all entries matching TEXT literally.
 Return a list of 3-element lists, where each 3-element list has:
@@ -4998,19 +5020,22 @@ Return a list of 3-element lists, where each 3-element list has:
         (keep-searching t)
         (text-re (format "^\\(%s\\)\t\\(.+?\\)\t\\(.+?\\)$" (regexp-quote
                                                              text)))
-        ; prevent case fold searching: Seed7 is case sensitive.
+        ;; prevent case fold searching: Seed7 is case sensitive.
         (case-fold-search nil))
     (with-current-buffer seed7---xref-buffer
       (goto-char (point-min))
       (while (and keep-searching)
         (not (eobp))
         (if (re-search-forward text-re nil :noerror)
-            (push (list (match-string 2)
-                        (string-to-number (match-string 3))
-                        0             ; column not identified: set to 0
-                        (format "Documentation for %s is not yet available."
-                                (match-string 1)))
-                  entries)
+            (let ((filename (match-string 2))
+                  (lineno (string-to-number (match-string 3))))
+              (push (list filename
+                          lineno
+                          0             ; column not identified: set to 0
+                          (or  (seed7--signature-from filename lineno 0)
+                               (format "Documentation for %s is not yet available."
+                                       (match-string 1))))
+                    entries))
           (setq keep-searching nil))))
     entries))
 
