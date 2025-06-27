@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-27 09:34:37 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-27 10:51:18 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -234,7 +234,7 @@
 ;;   * `seed7-toggle-comment-style'
 ;;     . `seed7--new-state-for'
 ;;     . `seed7--set-comment-style'
-;; - Seed7 iMenu Support
+;; - Seed7 iMenu Support Regexp
 ;; - Seed7 Speedbar Support
 ;; - Seed7 Low-level Macros
 ;;   . `seed7--set'
@@ -286,6 +286,7 @@
 ;;       . `seed7--current-line-nth-word'
 ;;       . `seed7--start-regxp-for'
 ;;         . `seed7--type-regexp'
+;; - Seed7 iMenu Support
 ;; - Seed7 Code Marking
 ;;   * `seed7-mark-defun'
 ;; - Seed7 Indentation
@@ -425,6 +426,7 @@
 (require 'imenu)          ; use: `imenu--menubar-select', `imenu--rescan-item'
 ;;                        ;      `imenu-update-menubar',
 ;;                        ;      `imenu-generic-expression'
+(require 'xref)           ; use: `xref-make', 'xref-make-file-location'
 
 ;;; --------------------------------------------------------------------------
 ;;; Code:
@@ -440,7 +442,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-27T13:34:37+0000 W26-5"
+(defconst seed7-mode-version-timestamp "2025-06-27T14:51:18+0000 W26-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1797,8 +1799,9 @@ Note: the default style for all Seed7 buffers is controlled by the
     (seed7--set-comment-style use-block 'verbose)))
 
 ;; ---------------------------------------------------------------------------
-;;* Seed7 iMenu Support
-;;  ===================
+;;* Seed7 iMenu Support Regexp
+;;  ==========================
+
 (defconst seed7-procedure-regexp
   (format
    "^[[:blank:]]*const%s+proc:%s\\([[:alpha:]][[:alnum:]_]+\\)%s*?is%s+?\\(func\\|forward;\\|DYNAMIC;\\|action%s\".+?\";\\)"
@@ -1872,72 +1875,6 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
    seed7-name-identifier-re    ; 5
    seed7--whitespace-re))      ; 6
 
-(defvar-local seed7--menu-list-functions-and-procedures-together
-  seed7-menu-list-functions-and-procedures-together
-  "When on, list function and procedures together, otherwise separately.
-
-Dynamic value that affects the way the callable are displayed in imenu
-commands, in the top menu and inside the Speedbar.
-Initialized to `seed7-menu-list-functions-and-procedures-together' user-option
-value which can then be dynamically modified by the
-`seed7-toggle-menu-callable-list' command.")
-
-(defun seed7--setup-imenu ()
-  "Configure the way imenu lists its items."
-  (setq-local
-   imenu-generic-expression
-   (if seed7--menu-list-functions-and-procedures-together
-       (list
-        (list "Enum"      seed7-enum-regexp 1)
-        (list "Interface" seed7-interface-regexp 1)
-        (list "Struct"    seed7-struct-regexp 1)
-        (list "Callable"  seed7-procfunc-regexp
-              seed7-procfunc-regexp-item-name-group))
-     (list
-      (list "Enum"      seed7-enum-regexp 1)
-      (list "Interface" seed7-interface-regexp 1)
-      (list "Struct"    seed7-struct-regexp 1)
-      (list "Procedure" seed7-procedure-regexp 1)
-      (list "Function"  seed7-function-regexp  2)))))
-
-
-(defun seed7--refresh-imenu ()
-  "Force re-display of the imenu."
-  (imenu--menubar-select imenu--rescan-item)
-  (imenu-update-menubar))
-
-(defun seed7-toggle-menu-callable-list ()
-  "Change the way callables are listed inside the current buffer menu.
-Toggles listing them together or separately.
-  When listed separately the function and procedures are listed inside
-  their own group, otherwise they are listed together."
-  (interactive)
-  (if seed7--menu-list-functions-and-procedures-together
-      (setq seed7--menu-list-functions-and-procedures-together nil)
-    (setq seed7--menu-list-functions-and-procedures-together t))
-  (message "Now listing function & procedure %s in Seed7 buffers."
-           (if seed7--menu-list-functions-and-procedures-together
-               "together"
-             "separately"))
-  (seed7--setup-imenu)
-  (seed7--refresh-imenu))
-
-(defvar-local seed7--menu-list-functions-sorted seed7-menu-list-functions-sorted
-  "Set to non-nil to list menu entries in sorted order")
-
-(defun seed7-toggle-menu-sorting ()
-  "Toggle displaying menu entries in code order or sorted order."
-  (interactive)
-  (if seed7--menu-list-functions-sorted
-      (setq seed7--menu-list-functions-sorted nil
-            imenu-sort-function nil)
-    (setq seed7--menu-list-functions-sorted t
-          imenu-sort-function 'imenu--sort-by-name))
-  (message "Now listing menu entries in %s order."
-           (if seed7--menu-list-functions-sorted
-               "sorted"
-             "code"))
-  (seed7--refresh-imenu))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Speedbar Support
@@ -3170,6 +3107,77 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
         (when (seed7-inside-line-indent-before-comment-p)
           (seed7-to-indent)))
       (point))))
+
+;; ---------------------------------------------------------------------------
+;;* Seed7 iMenu Support
+;;  ===================
+
+(defvar-local seed7--menu-list-functions-and-procedures-together
+    seed7-menu-list-functions-and-procedures-together
+  "When on, list function and procedures together, otherwise separately.
+
+Dynamic value that affects the way the callable are displayed in imenu
+commands, in the top menu and inside the Speedbar.
+Initialized to `seed7-menu-list-functions-and-procedures-together' user-option
+value which can then be dynamically modified by the
+`seed7-toggle-menu-callable-list' command.")
+
+(defun seed7--setup-imenu ()
+  "Configure the way imenu lists its items."
+  (setq-local
+   imenu-generic-expression
+   (if seed7--menu-list-functions-and-procedures-together
+       (list
+        (list "Enum"      seed7-enum-regexp 1)
+        (list "Interface" seed7-interface-regexp 1)
+        (list "Struct"    seed7-struct-regexp 1)
+        (list "Callable"  seed7-procfunc-regexp
+              seed7-procfunc-regexp-item-name-group))
+     (list
+      (list "Enum"      seed7-enum-regexp 1)
+      (list "Interface" seed7-interface-regexp 1)
+      (list "Struct"    seed7-struct-regexp 1)
+      (list "Procedure" seed7-procedure-regexp 1)
+      (list "Function"  seed7-function-regexp  2)))))
+
+
+(defun seed7--refresh-imenu ()
+  "Force re-display of the imenu."
+  (imenu--menubar-select imenu--rescan-item)
+  (imenu-update-menubar))
+
+(defun seed7-toggle-menu-callable-list ()
+  "Change the way callables are listed inside the current buffer menu.
+Toggles listing them together or separately.
+  When listed separately the function and procedures are listed inside
+  their own group, otherwise they are listed together."
+  (interactive)
+  (if seed7--menu-list-functions-and-procedures-together
+      (setq seed7--menu-list-functions-and-procedures-together nil)
+    (setq seed7--menu-list-functions-and-procedures-together t))
+  (message "Now listing function & procedure %s in Seed7 buffers."
+           (if seed7--menu-list-functions-and-procedures-together
+               "together"
+             "separately"))
+  (seed7--setup-imenu)
+  (seed7--refresh-imenu))
+
+(defvar-local seed7--menu-list-functions-sorted seed7-menu-list-functions-sorted
+  "Set to non-nil to list menu entries in sorted order")
+
+(defun seed7-toggle-menu-sorting ()
+  "Toggle displaying menu entries in code order or sorted order."
+  (interactive)
+  (if seed7--menu-list-functions-sorted
+      (setq seed7--menu-list-functions-sorted nil
+            imenu-sort-function nil)
+    (setq seed7--menu-list-functions-sorted t
+          imenu-sort-function 'imenu--sort-by-name))
+  (message "Now listing menu entries in %s order."
+           (if seed7--menu-list-functions-sorted
+               "sorted"
+             "code"))
+  (seed7--refresh-imenu))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Code Marking
