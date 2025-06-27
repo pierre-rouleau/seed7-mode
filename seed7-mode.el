@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-27 11:27:21 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-27 17:47:48 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -442,7 +442,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-27T15:27:21+0000 W26-5"
+(defconst seed7-mode-version-timestamp "2025-06-27T21:47:48+0000 W26-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -627,6 +627,12 @@ interpreter to run it without having to compile it."
 (defconst seed7--anychar-re
   "[^\\0]"
   "Match any character including new-line.")
+
+(defconst seed7--any-wp-text-re
+  (format "\\(?:%s+?.+?\\)"
+          seed7--whitespace-re)
+  "Any sequence of whitespace followed by non-whitespace.
+Inside a non-capturing group.")
 
 (defconst seed7--bracket-re
   "[])(}{[]")
@@ -2834,11 +2840,37 @@ Negative N starts counting from the end of the line: -1 is the last word."
       (when (string= line-number-str (format-mode-line "%l"))
         (thing-at-point 'word :no-properties)))))
 
+(defconst seed7---inner-callables-1
+   ;;         (----------------)                (----------)
+   ;;                                      (--------------------)
+   ;;(-------------------------------------------------------------)
+  "\\(const \\(?:func\\|proc\\)[^\\0]+?is\\(?:\\(?: +func\\)?$\\)\\)")
+
+(defconst seed7---inner-callables-2
+  ;;              (---------------)
+  ;;     (----------------------------)     (--------------)
+  ;;  (--------------------------------------------------------)
+  (format
+   "\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s+?;\\)\\)"
+   seed7--any-wp-text-re))
+
+(defconst seed7---inner-callables-3
+   ;;                             (--------------)     (-----------)
+   ;;                        (----------------------------------------)
+   ;;(--------------------------------------------------------------------)
+  "\\(const func .+? is .+?\\(?:\\(?:action .+?\\)\\|\\(?:forward\\)\\);\\)")
+
+
+(defconst seed7--callable-return-re
+  (format "return%s+?;"
+          seed7--any-wp-text-re))
+
 (defconst seed7--inner-callables-triplets-re
-  "^[[:blank:]]*?\\(?:\\(const \\(?:func\\|proc\\)[^\\0]+?is\\(?:\\(?: +func\\)?$\\)\\)\\|\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:\\(?:return [^\\0]+?;\\)\\|\\(?:return .+?;\\)\\)\\)\\|\\(const func .+? is .+?\\(?:\\(?:action .+?\\)\\|\\(?:forward\\)\\);\\)\\)"
-  ;;                             (----------------)                (----------)          |              (---------------)              (--------------------)     (---------------)        |                               (--------------)     (-----------)
-  ;;                                                          (--------------------)     |     (----------------------------)     (--------------------------------------------------)     |                          (----------------------------------------)
-  ;;                    (-------------------------------------------------------------)  |  (-------------------------------------------------------------------------------------------)  |  (--------------------------------------------------------------------)
+  (format
+   "^[[:blank:]]*?\\(?:%s\\|%s\\|%s\\)"
+   seed7---inner-callables-1
+   seed7---inner-callables-2
+   seed7---inner-callables-3)
   "A regexp with 3 groups:
 - group 1: function/procedure start,
 - group 2: function/procedure end,
