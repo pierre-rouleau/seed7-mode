@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-27 10:51:18 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-27 11:27:21 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -442,7 +442,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-27T14:51:18+0000 W26-5"
+(defconst seed7-mode-version-timestamp "2025-06-27T15:27:21+0000 W26-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5675,13 +5675,6 @@ the function `seed7-line-inside-a-block'."
       (when (and block-local-start block-local-end)
         (cons block-local-start block-local-end)))))
 
-;; [:todo 2025-06-20, by Pierre Rouleau: The following function allows finding
-;; a variable declaration that is misplaced between the end of the
-;; function/procedure argument declaration and the beginning of the
-;; local-begin or the result-begin block.  Placing the declaration there is
-;; not valid Seed7 code so ideally ti should not find it.On the other hand it
-;; might help find the misplaced code location after the compiler complains
-;; about the code being invalid. ]
 (defun seed7--find-info-about (identifier &optional block-spec)
   "Find information about IDENTIFIER, globally or inside BLOCK-SPEC.
 
@@ -5704,11 +5697,17 @@ of s7xref program."
       (goto-char (or start-pos (point-min)))
       (when (search-forward identifier end-pos :noerror)
         (let ((specs nil))
-          (when (seed7--set (seed7-line-inside-a-block 0) specs)
-            (list (expand-file-name buffer-file-truename)
-                  (seed7-current-line-number)
-                  (- (current-column) (length identifier))
-                  (seed7--signature-at (nth 2 specs)))))))))
+          (when (or (seed7--set (seed7-line-inside-a-block 0) specs)
+                    (not block-spec))
+              (list (expand-file-name buffer-file-truename)
+                    (seed7-current-line-number)
+                    (- (current-column) (length identifier))
+                    (seed7--signature-at
+                     (if block-spec
+                         ;; inside-block definition
+                         (nth 2 specs)
+                       ;; global definition
+                       (progn (forward-line 0) (point)))))))))))
 
 
 (defun seed7--xref-get-from-s7xref (identifier)
