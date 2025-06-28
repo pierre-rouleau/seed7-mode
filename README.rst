@@ -3,9 +3,11 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 =============================================================
 
 
-This is a **work-in-progress** version of seed7-mode 🚧 .
-A lot of features are implemented but there's still some
-areas that need improvements or fixes.
+🚧 This is a **work-in-progress** version of seed7-mode, a major mode for the
+`Seed7 programming language`_.
+
+A lot of features are implemented but there's still some areas that need
+improvements or fixes, mainly for the complete support of .s7i files.
 Please create a bug report for  any problem you detect.
 
 Currently Implemented Features
@@ -854,6 +856,7 @@ Any help, questions, suggestions are welcome!
 .. _Navigation to structure menu:    screenshots/menu-defs-struct.png
 .. _Comments menu:                   screenshots/menu-comments.png
 .. _Template insertion menu:         screenshots/menu-insert.png
+.. _Seed7 programming language:                 https://seed7.net/
 .. _Emacs imenu mode:                           https://www.gnu.org/software/emacs/manual/html_node/elisp/Imenu.html
 .. _Emacs Speedbar:                             https://www.gnu.org/software/emacs/manual/html_node/speedbar/
 .. _while statement:                            https://seed7.sourceforge.net/manual/stats.htm#while-statement
