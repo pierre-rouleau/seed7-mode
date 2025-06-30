@@ -602,8 +602,21 @@ navigate in Seed7 code.
 . **xref-go-back**             ``M-,``     Go back to the previous position in xref history.
 = ============================ =========== =============================================================
 
-The current implementation does not yet display the signature of the identified candidates.
-This will be done soon.
+
+In Seed7 buffers, the seed7-mode implementation supports identification of
+local and file defined global variables and constants.
+
+- When issuing the **xref-find-definitions** command over an identifier, the
+  implementation first looks inside the local block.  If it is not found it
+  looks into the table built by the s7xref program for the current file.
+  If nothing is found there it looks into the current file.
+- When issuing the **xref-find-definitions** command over any Seed7 keyword,
+  it only looks into the table built by the s7xref program for the current
+  file.
+
+If there are multiple candidates found for the searched identifier, the
+signature of each found entry is shown in a selection list.
+
 
 There are other xref framework commands.  They are not yet implemented to support Seed7.  This will also be done.
 
