@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-30 09:55:41 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-30 18:32:18 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -443,7 +443,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-30T13:55:41+0000 W27-1"
+(defconst seed7-mode-version-timestamp "2025-06-30T22:32:18+0000 W27-1"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1984,6 +1984,19 @@ Move point."
         (setq keep-searching nil)))
     found-pos))
 
+(defun seed7-re-search-forward-closest (regexps)
+  "Search for all specified regexp in REGEXPS and stop at the closest found.
+Return position of the closest found, nil if nothing found."
+  (let* ((positions nil)
+         (closest-position
+          (dolist (regexp regexps (car-safe
+                                   (sort
+                                    (seq-filter #'identity positions))))
+            (save-excursion
+              (push (seed7-re-search-forward regexp) positions)))))
+    (when closest-position
+      (goto-char closest-position))))
+
 (defun seed7-re-search-backward (regexp &optional bound)
   "Search for REGEXP inside code.  Skip comment and strings.
 The optional second argument BOUND is a buffer position that bounds
@@ -2841,12 +2854,14 @@ Negative N starts counting from the end of the line: -1 is the last word."
       (when (string= line-number-str (format-mode-line "%l"))
         (thing-at-point 'word :no-properties)))))
 
+;; [:todo 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
 (defconst seed7---inner-callables-1
    ;;         (----------------)                (----------)
    ;;                                      (--------------------)
    ;;(-------------------------------------------------------------)
   "\\(const \\(?:func\\|proc\\)[^\\0]+?is\\(?:\\(?: +func\\)?$\\)\\)")
 
+;; [:todo 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
 (defconst seed7---inner-callables-2
   ;;              (---------------)
   ;;     (----------------------------)     (--------------)
@@ -2855,11 +2870,12 @@ Negative N starts counting from the end of the line: -1 is the last word."
    "\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s+?;\\)\\)"
    seed7--any-wp-text-re))
 
+;; [:todo 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
 (defconst seed7---inner-callables-3
-   ;;                             (--------------)     (-----------)
-   ;;                        (----------------------------------------)
-   ;;(--------------------------------------------------------------------)
-  "\\(const func .+? is .+?\\(?:\\(?:action .+?\\)\\|\\(?:forward\\)\\);\\)")
+  ;;                             (--------------)     (-----------)
+  ;;                        (----------------------------------------)
+  ;;(--------------------------------------------------------------------)
+  "\\(const func .+? is \\(?:\\(?:action .+?\\)\\|\\(?:forward\\)\\);\\)")
 
 
 (defconst seed7--callable-return-re
@@ -2896,7 +2912,7 @@ The regexp has 2 or 3 groups:
 - group 2: the block end text,
 - group 3: optional, a peer level clause."
   (let ((regexp nil)
-        (same-line nil))
+        (start-pos 'end-of-line))
     (setq regexp
           (cond
            ;; deal with special cases first
@@ -2916,12 +2932,18 @@ The regexp has 2 or 3 groups:
            ((member word1 '("local" "begin")) seed7--inner-callables-triplets-re)
            ((string= word1 "const")
             (cond
-             ((member word2 '("func" "proc")) seed7--inner-callables-triplets-re)
+             ((member word2 '("func" "proc"))
+              (when (string= last-word "forward")
+                (setq start-pos 'beginning-of-line))
+              (list
+               seed7---inner-callables-1
+               seed7---inner-callables-2
+               seed7---inner-callables-3))
              ((string= word2 "type")
               (cond
                ((member last-word '("enum" "struct")) (seed7--type-regexp last-word))
                (t
-                (setq same-line t)
+                (setq start-pos 'dont-move)
                 ;; return a regexp where group 1 never matches
                 "\\(^\\(?:;INVALID-MAKE-IT-NEVER-MATCH;\\)\\)\\|\\([[:blank:]]is[[:blank:]]+?.+?;\\)")))
              ((string= word2 "array") "^\\(?:[[:blank:]]*?\\(const[[:blank:]]+?array[[:blank:]]+?.+?:\\)\\|[[:blank:]]+?\\();\\)\\)")
@@ -2930,7 +2952,7 @@ The regexp has 2 or 3 groups:
            ((member word1 seed7--block-start-keywords)
             (format "^[[:blank:]]*?\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word1 word1))
            (t nil)))
-    (cons regexp same-line)))
+    (cons regexp start-pos)))
 
 (defun seed7-to-block-forward (&optional dont-push-mark)
   "Move forward from the block beginning to its end.
@@ -2952,10 +2974,10 @@ Return found position or nil if nothing found."
         (let* ((first-word  (seed7--current-line-nth-word 1))
                (second-word (seed7--current-line-nth-word 2))
                (last-word   (seed7--current-line-nth-word -1))
-               (regexp.same-line (seed7--end-regxp-for first-word second-word
+               (regexp.start-pos (seed7--end-regxp-for first-word second-word
                                                        last-word))
-               (regexp (car regexp.same-line))
-               (same-line (cdr regexp.same-line)))
+               (regexp (car regexp.start-pos))
+               (start-pos (cdr regexp.start-pos)))
           (if regexp
               ;; Inside a block: search with nesting handling.
               (let ((nesting 0)
@@ -2964,42 +2986,49 @@ Return found position or nil if nothing found."
                 ;; moving point to end of line.
                 ;; That skipping won't be necessary in the loop because each
                 ;; search moves the point after the match.
-                (unless same-line
-                  (end-of-line))
+                (cond
+                 ((eq start-pos 'beginning-of-line) (forward-line 0))
+                 ((eq start-pos 'end-of-line (end-of-line))))
                 ;; The perform search, handing potential nesting.
                 (while searching
-                  (if (seed7-re-search-forward regexp)
-                      (cond
-                       ;; found another block start text: nesting deeper.
-                       ((match-string 1)
-                        (setq nesting (1+ nesting)))
-                       ;; found block end text: exiting one nesting level.
-                       ((match-string 2)
-                        (if (eq nesting 0)
-                            (progn
+                  (if (stringp regexp)
+                      (if (seed7-re-search-forward regexp)
+                          (cond
+                           ;; found another block start text: nesting deeper.
+                           ((match-string 1)
+                            (setq nesting (1+ nesting)))
+                           ;; found block end text: exiting one nesting level.
+                           ((match-string 2)
+                            (if (eq nesting 0)
+                                (progn
+                                  (setq searching nil)
+                                  (setq found-position (point)))
+                              (setq nesting (1- nesting))))
+                           ;; Found a peer level clause: stop if at nesting level 0
+                           ((match-string 3)
+                            (when (and (not (string= second-word "func"))
+                                       (eq nesting 0))
                               (setq searching nil)
-                              (setq found-position (point)))
-                          (setq nesting (1- nesting))))
-                       ;; Found a peer level clause: stop if at nesting level 0
-                       ((match-string 3)
-                        (when (and (not (string= second-word "func"))
-                                   (eq nesting 0))
-                          (setq searching nil)
-                          (setq found-position (point))))
-                       ;; found nothing
-                       (t (user-error
-                           "seed7-to-block-forward: \
+                              (setq found-position (point))))
+                           ;; found nothing
+                           (t (user-error
+                               "seed7-to-block-forward: \
 No match.  At point %d, nesting=%d, line %d for: %S"
-                           (point)
-                           nesting
-                           (seed7-current-line-number)
-                           regexp)))
-                    (user-error "seed7-to-block-forward: \
+                               (point)
+                               nesting
+                               (seed7-current-line-number)
+                               regexp)))
+                        (user-error "seed7-to-block-forward: \
 NO match.  At point %d, nesting=%d, line %d for: %S"
-                                (point)
-                                nesting
-                                (seed7-current-line-number)
-                                regexp))))
+                                    (point)
+                                    nesting
+                                    (seed7-current-line-number)
+                                    regexp))
+                    ;; 3 regexps are used, not only 1, search for each and move
+                    ;; to the one that match closest.
+                    (when (seed7-re-search-forward-closest regexp)
+                      (setq searching nil
+                            found-position (point))))))
             ;; Not inside a block: search for end of function or procedure.
             ;; - Not pushing mark is also an indication to operate silently.
             (seed7-end-of-defun nil dont-push-mark dont-push-mark)
