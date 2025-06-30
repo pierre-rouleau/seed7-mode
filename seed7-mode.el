@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-27 17:47:48 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-06-30 09:55:41 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -401,6 +401,7 @@
 ;;    + `xref-backend-definitions'
 ;;      . `seed7--find-symbol'
 ;;        . `seed7--xref-get'
+;;          . `seed7--find-info-about'
 ;;          . `seed7--xref-get-from-s7xref'
 ;;            . `seed7--build-xref'
 ;;            . `seed7--xref-in-list'
@@ -442,7 +443,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-27T21:47:48+0000 W26-5"
+(defconst seed7-mode-version-timestamp "2025-06-30T13:55:41+0000 W27-1"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5785,28 +5786,26 @@ Return a list of 4-element lists, where each 4-element list has:
     entries))
 
 (defun seed7--xref-get (identifier)
-    "Get a list of all entries matching IDENTIFIER literally.
+  "Get a list of all entries matching IDENTIFIER literally.
 Return a list of 4-element lists, where each 4-element list has:
 - 0: The file name where this identifier entry was found.
 - 1: The line number integer,
 - 2: The column number integer
 - 3: A description string (the signature, if found, otherwise a replacement)."
-    ;;
-    ;; First look inside the current block for a variable with the same name.
-    ;; If that fails look into the xref reference buffer, created by the
-    ;; s7xref program that parsed the entire program and identified all global
-    ;; symbols.
-    ;;
-    ;; [:todo 2025-06-18, by Pierre Rouleau: the local look-up currently only
-    ;; support ONE definition because it assumes these are variables. This is
-    ;; probably sufficient but needs to be confirmed.  The global lookup,
-    ;; performed by s7xref based table supports multiple definitions.]
-    (let ((local-block-spec (save-excursion (seed7-to-top-of-block)
-                                            (seed7-line-inside-a-block 0)))
-          (candidate nil)
-          ;; prevent case fold searching: Seed7 is case sensitive.
-          (case-fold-search nil))
-      ;; try looking inside current block first
+  (let ((point-face (get-char-property (point) 'face))
+        (local-block-spec (save-excursion (seed7-to-top-of-block)
+                                          (seed7-line-inside-a-block 0)))
+        (candidate nil)
+        ;; prevent case fold searching: Seed7 is case sensitive.
+        (case-fold-search nil))
+
+    (cond
+     ((eq point-face 'font-lock-comment-face)
+      (user-error "Comments cross reference is not supported."))
+
+     ;; For identifiers, look in local block first, then in the s7xref built
+     ;; table and then in the global scope of the current file.
+     ((eq point-face 'seed7-name-identifier-face)
       (if (seed7--set
            (seed7--find-info-about identifier local-block-spec)
            candidate)
@@ -5818,7 +5817,10 @@ Return a list of 4-element lists, where each 4-element list has:
           ;; scope of the current file.
           (unless entries
             (setq entries (list (seed7--find-info-about identifier))))
-          entries))))
+          entries)))
+
+     ;; for other keywords only look into the xref extracted by s7xref
+     (t (seed7--xref-get-from-s7xref identifier)))))
 
 ;; [:todo 2025-06-13, by Pierre Rouleau: Should we also skip parens?.]
 (defun seed7-operator-at-point ()
