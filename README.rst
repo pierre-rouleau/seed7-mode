@@ -576,7 +576,8 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
 
 . seed7-to-top-of-block        ``C-c C-t``  Move point to the top of the current outer block:
                                             the beginning of the current
-                                            function, procedure, structure, enum.
+                                            function, procedure, struct_,
+                                            enum_, array_, set_.
 = ============================ ============ =============================================================
 
 Note that when issuing the ``seed7-end-of-defun`` or ``seed7-to-block-forward``
