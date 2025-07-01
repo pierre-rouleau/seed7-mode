@@ -542,10 +542,10 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                             With optional repeat argument.
 . seed7-to-block-forward       ``C-c C-e``  Move point forward to the end line of the matching statement:
 
-                                            - function and procedure definitions (from begin to end),
-                                            - array and set definitions  (from begin to end),
-                                            - ``struct`` or ``enum`` definitions,
-                                            - ``block``,
+                                            - `function and procedure`_ definitions (from begin to end),
+                                            - `array`_ and `set`_ definitions  (from begin to end),
+                                            - `struct`_ or `enum`_ definitions,
+                                            - `block`_,
                                             - `case statement`_:
 
                                               - Move from ``case`` to ``end case``
@@ -897,6 +897,13 @@ Any help, questions, suggestions are welcome!
 .. _for-until:                                  https://seed7.sourceforge.net/manual/stats.htm#for-until-statement
 .. _case statement:                             https://seed7.sourceforge.net/manual/stats.htm#case-statement
 .. _Exception handler block:                    https://seed7.net/manual/errors.htm#Handlers
+.. _function and procedure:                     https://seed7.net/faq.htm#possible_function_declaration_syntaxes
+.. _array:                                      https://seed7.net/manual/types.htm#array
+.. _set:                                        https://seed7.net/manual/types.htm#set
+.. _struct:                                     https://seed7.net/manual/types.htm#struct
+.. _enum:                                       https://seed7.net/manual/types.htm#enumeration
+.. _block:                                      https://seed7.net/manual/errors.htm#Handlers
+
 .. _s7check.sd7:                                https://github.com/pierre-rouleau/seed7/blob/master/prg/s7check.sd7
 .. _iedit:                                      https://github.com/victorhge/iedit
 .. _expand-region:                              https://github.com/magnars/expand-region.el?tab=readme-ov-file#readme
@@ -930,6 +937,7 @@ Any help, questions, suggestions are welcome!
 .. _Examining and Editing Abbrevs:              https://www.gnu.org/software/emacs/manual/html_node/emacs/Editing-Abbrevs.html#Editing-Abbrevs
 .. _smart-dash-mode:                            https://github.com/malsyned/smart-dash
 .. _s7xref.sd7:                                 https://github.com/pierre-rouleau/seed7-mode/blob/main/tools/s7xref.sd7
+
 
 .. ---------------------------------------------------------------------------
 
