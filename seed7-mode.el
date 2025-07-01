@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-01 13:07:58 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-01 15:35:27 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -443,7 +443,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-01T17:07:58+0000 W27-2"
+(defconst seed7-mode-version-timestamp "2025-07-01T19:35:27+0000 W27-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1993,7 +1993,9 @@ The optional second argument BOUND is a buffer position that bounds
 Return found position or nil if nothing found.
 Move point."
   (let ((found-pos nil)
-        (keep-searching t))
+        (keep-searching t)
+        ;; prevent case fold searching: Seed7 is case sensitive.
+        (case-fold-search nil))
     (while (and keep-searching
                 (not (eobp)))
       (if (re-search-forward regexp bound :noerror)
@@ -2031,7 +2033,9 @@ The optional second argument BOUND is a buffer position that bounds
 Return found position or nil if nothing found.
 Move point."
   (let ((found-pos nil)
-        (keep-searching t))
+        (keep-searching t)
+        ;; prevent case fold searching: Seed7 is case sensitive.
+        (case-fold-search nil))
     (while (and keep-searching
                 (not (bobp)))
       (if (re-search-backward regexp bound :noerror)
@@ -5792,12 +5796,13 @@ the function `seed7-line-inside-a-block'."
           (block-local-end   nil))
       (goto-char block-start-pos)
       ;; look for local-begin or result-begin block
-      (when (re-search-forward "^[[:blank:]]+\\(?:local\\>\\|result\\>\\)"
-                               enclosing-block-end-pos :noerror)
+      (when (seed7-re-search-forward
+             "^[[:blank:]]+\\(?:local\\>\\|result\\>\\)"
+             enclosing-block-end-pos)
         (forward-line 1)
         (setq block-local-start (point))
-        (when (re-search-forward "^[[:blank:]]+begin\\>" enclosing-block-end-pos
-                                 :noerror)
+        (when (seed7-re-search-forward "^[[:blank:]]+begin\\>"
+                                       enclosing-block-end-pos)
           (forward-line 0)
           (setq block-local-end (point))))
       (when (and block-local-start block-local-end)
@@ -5859,14 +5864,12 @@ Return a list of 4-element lists, where each 4-element list has:
   (let ((entries nil)
         (keep-searching t)
         (text-re (format "^\\(%s\\)\t\\(.+?\\)\t\\(.+?\\)$" (regexp-quote
-                                                             identifier)))
-        ;; prevent case fold searching: Seed7 is case sensitive.
-        (case-fold-search nil))
+                                                             identifier))))
     (with-current-buffer seed7---xref-buffer
       (goto-char (point-min))
       (while (and keep-searching)
         (not (eobp))
-        (if (re-search-forward text-re nil :noerror)
+        (if (seed7-re-search-forward text-re)
             (let ((filename (match-string 2))
                   (lineno (string-to-number (match-string 3))))
               (unless (seed7--xref-in-list entries filename lineno)
