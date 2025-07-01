@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-01 12:18:25 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-01 12:47:00 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -443,7 +443,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-01T16:18:25+0000 W27-2"
+(defconst seed7-mode-version-timestamp "2025-07-01T16:47:00+0000 W27-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3001,18 +3001,23 @@ Return found position or nil if nothing found."
            ;; handle array
            ((and (string= word2 "array")
                  (member word1 '("const" "var")))
-            (search-forward "(")
+            (seed7-re-search-forward "(")
             (backward-char)
             (forward-sexp)
-            (search-forward ";")
+            (seed7-re-search-forward ";")
             (setq found-position (point)))
            ;; handle set
            ((and (string= word2 "set")
                  (member word1 '("const" "var")))
-            (search-forward "{")
+            (seed7-re-search-forward "{")
             (backward-char)
             (forward-sexp)
-            (search-forward ";")
+            (seed7-re-search-forward ";")
+            (setq found-position (point)))
+           ;; handle type
+           ((and (string= word2 "type")
+                 (member word1 '("const" "var")))
+            (seed7-re-search-forward ";")
             (setq found-position (point)))
            ;; handle everything else
            (t
