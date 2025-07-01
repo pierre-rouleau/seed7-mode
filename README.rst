@@ -542,14 +542,15 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                             With optional repeat argument.
 . seed7-to-block-forward       ``C-c C-e``  Move point forward to the end line of the matching statement:
 
-                                            - array declaration (from begin to end)
+                                            - function and procedure definitions (from begin to end),
+                                            - array and set definitions  (from begin to end),
+                                            - ``struct`` or ``enum`` definitions,
                                             - ``block``,
                                             - `case statement`_:
 
                                               - Move from ``case`` to ``end case``
                                                 but also across the ``when`` sections.
 
-                                            - ``enum block``
                                             - any of the for statements:
 
                                               - `for`_
@@ -566,7 +567,6 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                                 ``elsif`` move to the next portion.
 
                                             - `repeat - until statement`_
-                                            - ``struct`` or
                                             - `while statement`_.
 
                                             If none is found move to the end of the function or procedure.
@@ -574,6 +574,14 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
 . seed7-to-block-backward      ``C-c C-a``  Move point backward to the beginning line of the matching
                                             block or statement (listed above).
 = ============================ ============ =============================================================
+
+Note that when issuing the ``seed7-end-of-defun`` or ``seed7-to-block-forward``
+command from the end of a procedure or function moves the point to the end of
+the next function or procedure if there is one.  Issuing the
+``seed7-end-of-defun`` or ``seed7-to-block-backward`` from the beginning of a
+function or procedure moves the point to the beginning of the previous
+function or procedure if there is one.  This is only true for function and
+procedures (the commands do not try to find the next array for instance).
 
 
 Code Navigation Through xref
