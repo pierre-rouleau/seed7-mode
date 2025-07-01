@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-01 16:38:03 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-01 17:22:28 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -443,7 +443,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-01T20:38:03+0000 W27-2"
+(defconst seed7-mode-version-timestamp "2025-07-01T21:22:28+0000 W27-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2909,6 +2909,13 @@ Negative N starts counting from the end of the line: -1 is the last word."
 (defconst seed7---inner-callables-4
   "const proc: .+? is forward;")
 
+(defconst seed7---inner-callables-5
+  (format "const proc:%s%sis action \\(?:\".+?\"\\|DYNAMIC\\);"
+          seed7--any-wp-text-re
+          seed7--whitespace-re))
+
+
+
 (defconst seed7--callable-return-re
   (format "return%s+?;"
           seed7--any-wp-text-re))
@@ -2964,11 +2971,14 @@ The regexp has 2 or 3 groups:
            ((string= word1 "const")
             (cond
              ((member word2 '("func" "proc"))
-              (when (string= last-word "forward")
+              (when (or (string= last-word "forward")
+                        (and (string= (seed7--current-line-nth-word -3) "is")
+                             (string= (seed7--current-line-nth-word -2) "action")))
                 (setq start-pos 'beginning-of-line))
               (list
                seed7---inner-callables-3
                seed7---inner-callables-4
+               seed7---inner-callables-5
                seed7---inner-callables-1
                seed7---inner-callables-2))
              ((string= word2 "type")
@@ -2992,7 +3002,8 @@ Handle function and forward declarations blocks.
 Push mark unless DONT-PUSH-MARK is non-nil.  Supports shift-marking.
 Return found position or nil if nothing found."
   (interactive "^")
-  (let ((found-position nil))
+  (let ((original-pos (point))
+        (found-position nil))
     (save-excursion
       (if (or
            (seed7-inside-comment-p)
@@ -3091,7 +3102,8 @@ NO match.  At point %d, nesting=%d, line %d for: %S"
                 (seed7-end-of-defun nil dont-push-mark dont-push-mark)
                 (setq found-position (point)))))))))
     (when found-position
-      (unless dont-push-mark (push-mark))
+      (unless (eq original-pos found-position)
+        (unless dont-push-mark (push-mark)))
       (goto-char found-position))))
 
 
