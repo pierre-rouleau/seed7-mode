@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-01 12:47:00 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-01 13:07:58 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -443,7 +443,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-01T16:47:00+0000 W27-2"
+(defconst seed7-mode-version-timestamp "2025-07-01T17:07:58+0000 W27-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2309,7 +2309,7 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
   "Regexp to detect end of short function.  No group.")
 
 (defconst seed7-forward-declaration-end-regexp
-  ")[[:blank:]]*?is[[:blank:]]+?forward;"
+  "[[:blank:]]*?is[[:blank:]]+?forward;"
   "Regexp to detect end of forward declaration.  No group.")
 
 (defconst seed7-function-implementation-declaration-end-regexp
@@ -2902,6 +2902,8 @@ Negative N starts counting from the end of the line: -1 is the last word."
   ;;(--------------------------------------------------------------------)
   "\\(const func .+? is \\(?:\\(?:action .+?\\)\\|\\(?:forward\\)\\);\\)")
 
+(defconst seed7---inner-callables-4
+  "const proc: .+? is forward;")
 
 (defconst seed7--callable-return-re
   (format "return%s+?;"
@@ -2961,9 +2963,10 @@ The regexp has 2 or 3 groups:
               (when (string= last-word "forward")
                 (setq start-pos 'beginning-of-line))
               (list
+               seed7---inner-callables-3
+               seed7---inner-callables-4
                seed7---inner-callables-1
-               seed7---inner-callables-2
-               seed7---inner-callables-3))
+               seed7---inner-callables-2))
              ((string= word2 "type")
               (cond
                ((member last-word '("enum" "struct")) (seed7--type-regexp last-word))
