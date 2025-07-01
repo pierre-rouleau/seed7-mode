@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-06-30 18:32:18 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-01 10:53:05 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -443,7 +443,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-06-30T22:32:18+0000 W27-1"
+(defconst seed7-mode-version-timestamp "2025-07-01T14:53:05+0000 W27-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2946,7 +2946,6 @@ The regexp has 2 or 3 groups:
                 (setq start-pos 'dont-move)
                 ;; return a regexp where group 1 never matches
                 "\\(^\\(?:;INVALID-MAKE-IT-NEVER-MATCH;\\)\\)\\|\\([[:blank:]]is[[:blank:]]+?.+?;\\)")))
-             ((string= word2 "array") "^\\(?:[[:blank:]]*?\\(const[[:blank:]]+?array[[:blank:]]+?.+?:\\)\\|[[:blank:]]+?\\();\\)\\)")
              (t nil)))
            ;; then deal with general case: block, case, for, while.
            ((member word1 seed7--block-start-keywords)
@@ -2971,68 +2970,88 @@ Return found position or nil if nothing found."
           (setq found-position
                 (seed7-skip-comment-forward dont-push-mark))
         ;; outside comment handle blocks, functions and procedures
-        (let* ((first-word  (seed7--current-line-nth-word 1))
-               (second-word (seed7--current-line-nth-word 2))
-               (last-word   (seed7--current-line-nth-word -1))
-               (regexp.start-pos (seed7--end-regxp-for first-word second-word
-                                                       last-word))
-               (regexp (car regexp.start-pos))
-               (start-pos (cdr regexp.start-pos)))
-          (if regexp
-              ;; Inside a block: search with nesting handling.
-              (let ((nesting 0)
-                    (searching t))
-                ;; For the very first search, skip the current keyword by
-                ;; moving point to end of line.
-                ;; That skipping won't be necessary in the loop because each
-                ;; search moves the point after the match.
-                (cond
-                 ((eq start-pos 'beginning-of-line) (forward-line 0))
-                 ((eq start-pos 'end-of-line (end-of-line))))
-                ;; The perform search, handing potential nesting.
-                (while searching
-                  (if (stringp regexp)
-                      (if (seed7-re-search-forward regexp)
-                          (cond
-                           ;; found another block start text: nesting deeper.
-                           ((match-string 1)
-                            (setq nesting (1+ nesting)))
-                           ;; found block end text: exiting one nesting level.
-                           ((match-string 2)
-                            (if (eq nesting 0)
-                                (progn
+        (let ((word1  (seed7--current-line-nth-word 1))
+              (word2 (seed7--current-line-nth-word 2)))
+          (cond
+           ;; handle array
+           ((and (string= word2 "array")
+                 (member word1 '("const" "var")))
+            (search-forward "(")
+            (backward-char)
+            (forward-sexp)
+            (search-forward ";")
+            (setq found-position (point)))
+           ;; handle set
+           ((and (string= word2 "set")
+                 (member word1 '("const" "var")))
+            (search-forward "{")
+            (backward-char)
+            (forward-sexp)
+            (search-forward ";")
+            (setq found-position (point)))
+           ;; handle everything else
+           (t
+            (let* ((regexp.start-pos (seed7--end-regxp-for
+                                      word1 word2
+                                      (seed7--current-line-nth-word -1)))
+                   (regexp (car regexp.start-pos))
+                   (start-pos (cdr regexp.start-pos)))
+              (if regexp
+                  ;; Inside a block: search with nesting handling.
+                  (let ((nesting 0)
+                        (searching t))
+                    ;; For the very first search, skip the current keyword by
+                    ;; moving point to end of line.
+                    ;; That skipping won't be necessary in the loop because
+                    ;; each search moves the point after the match.
+                    (cond
+                     ((eq start-pos 'beginning-of-line) (forward-line 0))
+                     ((eq start-pos 'end-of-line (end-of-line))))
+                    ;; The perform search, handing potential nesting.
+                    (while searching
+                      (if (stringp regexp)
+                          (if (seed7-re-search-forward regexp)
+                              (cond
+                               ;; found another block start: nesting deeper.
+                               ((match-string 1)
+                                (setq nesting (1+ nesting)))
+                               ;; found block end: exiting one nesting level.
+                               ((match-string 2)
+                                (if (eq nesting 0)
+                                    (progn
+                                      (setq searching nil)
+                                      (setq found-position (point)))
+                                  (setq nesting (1- nesting))))
+                               ;; Found a peer level clause: stop if at
+                               ;; nesting level 0
+                               ((match-string 3)
+                                (when (and (not (string= word2 "func"))
+                                           (eq nesting 0))
                                   (setq searching nil)
-                                  (setq found-position (point)))
-                              (setq nesting (1- nesting))))
-                           ;; Found a peer level clause: stop if at nesting level 0
-                           ((match-string 3)
-                            (when (and (not (string= second-word "func"))
-                                       (eq nesting 0))
-                              (setq searching nil)
-                              (setq found-position (point))))
-                           ;; found nothing
-                           (t (user-error
-                               "seed7-to-block-forward: \
+                                  (setq found-position (point))))
+                               ;; found nothing
+                               (t (user-error
+                                   "seed7-to-block-forward: \
 No match.  At point %d, nesting=%d, line %d for: %S"
-                               (point)
-                               nesting
-                               (seed7-current-line-number)
-                               regexp)))
-                        (user-error "seed7-to-block-forward: \
+                                   (point)
+                                   nesting
+                                   (seed7-current-line-number)
+                                   regexp)))
+                            (user-error "seed7-to-block-forward: \
 NO match.  At point %d, nesting=%d, line %d for: %S"
-                                    (point)
-                                    nesting
-                                    (seed7-current-line-number)
-                                    regexp))
-                    ;; 3 regexps are used, not only 1, search for each and move
-                    ;; to the one that match closest.
-                    (when (seed7-re-search-forward-closest regexp)
-                      (setq searching nil
-                            found-position (point))))))
-            ;; Not inside a block: search for end of function or procedure.
-            ;; - Not pushing mark is also an indication to operate silently.
-            (seed7-end-of-defun nil dont-push-mark dont-push-mark)
-            (setq found-position (point))))))
+                                        (point)
+                                        nesting
+                                        (seed7-current-line-number)
+                                        regexp))
+                        ;; 3 regexps are used, not only 1, search for each and move
+                        ;; to the one that match closest.
+                        (when (seed7-re-search-forward-closest regexp)
+                          (setq searching nil
+                                found-position (point))))))
+                ;; Not inside a block: search for end of function or procedure.
+                ;; - Not pushing mark is also an indication to operate silently.
+                (seed7-end-of-defun nil dont-push-mark dont-push-mark)
+                (setq found-position (point)))))))))
     (when found-position
       (unless dont-push-mark (push-mark))
       (goto-char found-position))))
@@ -3157,11 +3176,25 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
                      nesting
                      (seed7-current-line-number)
                      regexp))))
-            ;; Not inside a block. search for beginning of function or
-            ;; procedure.
-            ;; - Not pushing mark is also an indication to operate silently.
-            (seed7-beg-of-defun nil dont-push-mark dont-push-mark)
-            (setq found-position (point))))))
+            ;; Not inside a block.
+            ;; Check for end of parens pair (used for array and set)
+            (let ((pos nil))
+              (cond
+               ((seed7--set (seed7-line-code-ends-with 0 ");") pos)
+                (goto-char (1+ pos))
+                (backward-sexp)
+                (seed7-to-indent)
+                (setq found-position (point)))
+               ((seed7--set (seed7-line-code-ends-with 0 "};") pos)
+                (goto-char (1+ pos))
+                (backward-sexp)
+                (seed7-to-indent)
+                (setq found-position (point)))
+               (t
+                ;; search for beginning of function or procedure.
+                ;; - Not pushing mark is also an indication to operate silently.
+                (seed7-beg-of-defun nil dont-push-mark dont-push-mark)
+                (setq found-position (point)))))))))
     (when found-position
       (unless dont-push-mark (push-mark))
       (goto-char found-position)
