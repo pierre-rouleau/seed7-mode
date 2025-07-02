@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-01 17:22:28 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-02 09:43:14 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -443,7 +443,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-01T21:22:28+0000 W27-2"
+(defconst seed7-mode-version-timestamp "2025-07-02T13:43:14+0000 W27-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3664,6 +3664,25 @@ N is: - :previous-non-empty for the previous non empty line,
       (when (looking-at-p regexp)
         (current-column)))))
 
+(defun seed7-line-starts-with-any (n regexps
+                                     &optional dont-skip-comment-start)
+  "Return indent column when line N non-white space begins with any of REGEXPS.
+Return nil otherwise.
+N is: - :previous-non-empty for the previous non empty line,
+        skipping lines with starting comments unless DONT-SKIP-COMMENT-START
+         is non-nil,
+      - 0 for the current line,
+      - A negative number for previous lines: -1 previous, -2 line before..."
+  (let ((regexp nil)
+        (found-column nil))
+    (while (and regexps (not found-column))
+      (setq regexp  (car-safe regexps))
+      (setq regexps (cdr-safe regexps))
+      (when regexp
+        (setq found-column (seed7-line-starts-with n regexp
+                                                   dont-skip-comment-start))))
+    found-column))
+
 (defun seed7-column-of-line-that-starts-with (regexp &optional n)
   "Return the column of the previous line that begins with REGEXP.
 Look into the previous N lines only unless N is nil.
@@ -4635,27 +4654,41 @@ N is: - :previous-non-empty for the previous non empty line,
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before..."
-  (save-excursion
-    (if (or (seed7-line-starts-with n "end[[:blank:]]+?func[[:blank:]]*?;"
-                                    dont-skip-comment-start)
-            (seed7-line-starts-with n "end[[:blank:]]+?struct[[:blank:]]*?;"
-                                    dont-skip-comment-start)
-            (seed7-line-starts-with n "end[[:blank:]]+?enum[[:blank:]]*?;"
-                                    dont-skip-comment-start))
-        (save-excursion
-          (seed7-move-to-line n)
-          (seed7-to-block-backward nil :dont-push-mark)
-          (seed7-to-indent)
-          (current-column))
-      ;; Line N is not a end func; struc or enum.
-      ;; For safety, check with a different way.
-      ;; Check if where at a defun definition line below a previous one
-      ;; by moving back to the previous one and back to see if we end up
-      ;; at the same spot.
-      (when (seed7-move-to-line n dont-skip-comment-start)
+  (let ((previous-defun-column nil))
+    (cond
+     ;; handle line that is a end func, struc or enum
+     ((or (seed7-line-starts-with-any n
+                                      (list
+                                       "end[[:blank:]]+?func[[:blank:]]*?;"
+                                       "end[[:blank:]]+?struct[[:blank:]]*?;"
+                                       "end[[:blank:]]+?enum[[:blank:]]*?;")
+                                      dont-skip-comment-start))
+      (save-excursion
+        (seed7-move-to-line n)
+        (seed7-to-block-backward nil :dont-push-mark)
+        (seed7-to-indent)
+        (current-column)))
+     ;; handle forward and native action declarations of func and proc
+     ((seed7--set (seed7-line-starts-with-any n
+                                              (list
+                                               seed7---inner-callables-3
+                                               seed7---inner-callables-4
+                                               seed7---inner-callables-5)
+                                              dont-skip-comment-start)
+                  previous-defun-column)
+      previous-defun-column)
+     ;;
+     ;; [:todo 2025-07-02, by Pierre Rouleau: the following is probably not
+     ;; needed. Check, update remove.]
+     ;; Line N is not a end func; struc or enum.
+     ;; For safety, check with a different way.
+     ;; Check if where at a defun definition line below a previous one
+     ;; by moving back to the previous one and back to see if we end up
+     ;; at the same spot.
+     (t
+      (save-excursion
         (let ((endline-pos nil)
-              (endline-pos-2 nil)
-              (previous-defun-column nil))
+              (endline-pos-2 nil))
           (end-of-line)
           (setq endline-pos (point))
           (when (ignore-errors
@@ -4666,7 +4699,7 @@ N is: - :previous-non-empty for the previous non empty line,
                                                       :dont-push-mark)
                                   (point)))
             (when (eq endline-pos endline-pos-2)
-              previous-defun-column)))))))
+              previous-defun-column))))))))
 
 ;;** Seed7 Indentation Comment Checking Function
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
