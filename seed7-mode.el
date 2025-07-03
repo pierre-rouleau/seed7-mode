@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-03 13:43:14 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-03 17:45:29 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -445,7 +445,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-03T17:43:14+0000 W27-4"
+(defconst seed7-mode-version-timestamp "2025-07-03T21:45:29+0000 W27-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4714,36 +4714,34 @@ N is: - :previous-non-empty for the previous non empty line,
   (let ((previous-defun-column nil))
     (cond
      ;; handle line that is a end func, struc or enum
-     ((or (seed7-line-starts-with-any n
-                                      (list
-                                       "end[[:blank:]]+?func[[:blank:]]*?;"
-                                       "end[[:blank:]]+?struct[[:blank:]]*?;"
-                                       "end[[:blank:]]+?enum[[:blank:]]*?;")
-                                      dont-skip-comment-start))
+     ((seed7-line-starts-with-any n
+                                  (list
+                                   "end[[:blank:]]+?func[[:blank:]]*?;"
+                                   "end[[:blank:]]+?struct[[:blank:]]*?;"
+                                   "end[[:blank:]]+?enum[[:blank:]]*?;")
+                                  dont-skip-comment-start)
       (save-excursion
         (seed7-move-to-line n)
         (seed7-to-block-backward nil :dont-push-mark)
         (seed7-to-indent)
         (current-column)))
      ;; handle forward and native action declarations of func and proc
-     ((seed7--set (seed7-line-starts-with-any n
-                                              (list
-                                               seed7---forward-or-action-function-declaration-re
-                                               seed7---inner-callables-4
-                                               seed7---forward-or-action-procedure-declaration-re)
-                                              dont-skip-comment-start)
+     ((seed7--set (seed7-line-starts-with-any
+                   n
+                   (list
+                    seed7---forward-or-action-function-declaration-re
+                    seed7---inner-callables-4
+                    seed7---forward-or-action-procedure-declaration-re)
+                   dont-skip-comment-start)
                   previous-defun-column)
       previous-defun-column)
-     ;;
-     ;; [:todo 2025-07-02, by Pierre Rouleau: the following is probably not
-     ;; needed. Check, update remove.]
      ;; Line N is not a end func; struc or enum.
-     ;; For safety, check with a different way.
-     ;; Check if where at a defun definition line below a previous one
-     ;; by moving back to the previous one and back to see if we end up
-     ;; at the same spot.
+     ;; It might be another block such as a function forward or action
+     ;; declaration. To check that, use the `seed7-beg-of-defun' and
+     ;; `seed7-end-of-defun' to check if they match.
      (t
       (save-excursion
+        (seed7-move-to-line n)
         (let ((endline-pos nil)
               (endline-pos-2 nil))
           (end-of-line)
