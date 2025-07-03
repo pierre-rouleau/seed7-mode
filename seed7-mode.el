@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-03 11:55:33 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-03 13:10:20 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -445,7 +445,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-03T15:55:33+0000 W27-4"
+(defconst seed7-mode-version-timestamp "2025-07-03T17:10:20+0000 W27-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4997,9 +4997,9 @@ otherwise leave point over the same character."
     (save-excursion
       (if (use-region-p)
           ;; region active: indent complete region
-          (progn
+          (let ((line-count (count-lines (region-beginning) (region-end))))
             (goto-char (region-beginning))
-            (dotimes (_ (count-lines (region-beginning) (region-end)))
+            (dotimes (_ line-count)
               (seed7--indent-one-line)
               (forward-line 1)))
         ;; no region: indent current line
