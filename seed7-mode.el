@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-03 08:55:53 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-03 10:25:22 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -443,7 +443,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-03T12:55:53+0000 W27-4"
+(defconst seed7-mode-version-timestamp "2025-07-03T14:25:22+0000 W27-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -990,6 +990,7 @@ Has only one capturing group.")
     "const"
     "in"
     "inout"
+    "out"
     "ref"
     "val"
     "var"))
