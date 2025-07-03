@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-03 13:10:20 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-03 13:16:15 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -445,7 +445,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-03T17:10:20+0000 W27-4"
+(defconst seed7-mode-version-timestamp "2025-07-03T17:16:15+0000 W27-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3135,13 +3135,15 @@ Return found position or nil if nothing found."
                                ;; found nothing
                                (t (user-error
                                    "seed7-to-block-forward: \
-No match.  At point %d, nesting=%d, line %d for: %S"
+No match.  From %d, at point %d, nesting=%d, line %d for: %S"
+                                   original-pos
                                    (point)
                                    nesting
                                    (seed7-current-line-number)
                                    regexp)))
                             (user-error "seed7-to-block-forward: \
-NO match.  At point %d, nesting=%d, line %d for: %S"
+NO match.  From %d, at point  %d, nesting=%d, line %d for: %S"
+                                        original-pos
                                         (point)
                                         nesting
                                         (seed7-current-line-number)
