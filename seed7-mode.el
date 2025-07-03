@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-03 10:39:56 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-03 11:55:33 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -349,12 +349,14 @@
 ;;   - Seed7 Indentation Comment Checking Function
 ;;     . `seed7-comment-column'
 ;;     . `';;   - Seed7 Indentation Calculator Function
-;;     * `seed7-indent-line'
-;;       . `seed7-calc-indent'
+;;     o `seed7-complete-statement-or-indent'
+;;       * `seed7-indent-line'
+;;         . `seed7-calc-indent'
+;;           . `seed7--indent-one-line'
 ;; - Seed7 Code Template Expansion
 ;;   * `seed7-complete-statement-or-indent'
 ;;     . `seed7--delete-backward'
-;;     * `seed7-indent-line'
+;;     o `seed7-indent-line'
 ;;     . `seed7-insert-if-statement'
 ;;     . `seed7-insert-if-else-statement'
 ;;     . `seed7-insert-if-elsif-statement'
@@ -443,7 +445,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-03T14:39:56+0000 W27-4"
+(defconst seed7-mode-version-timestamp "2025-07-03T15:55:33+0000 W27-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4975,19 +4977,33 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
         indent-column
       (* indent-step seed7-indent-width))))
 
+
+(defun seed7--indent-one-line ()
+  "Utility: indent the current Seed7 line of code."
+  (seed7-to-indent)
+  (let ((indent (seed7-calc-indent)))
+    (when (not (= indent (current-column)))
+      (forward-line 0)
+      (delete-horizontal-space)
+      (unless (eq indent 0)
+        (indent-to indent)))))
+
 (defun seed7-indent-line ()
-  "Indent the current Seed7 line of code."
+  "Indent the current Seed7 line of code or all marked lines.
+If point was inside the indentation space move it to first non white space,
+otherwise leave point over the same character."
   (interactive "*")
   (let ((move-point (seed7-inside-line-indent-p)))
     (save-excursion
-      (seed7-to-indent)
-      (let ((current-indent (current-column))
-            (indent (seed7-calc-indent)))
-        (when (not (= indent current-indent))
-          (forward-line 0)
-            (delete-horizontal-space)
-            (unless (eq indent 0)
-              (indent-to indent)))))
+      (if (use-region-p)
+          ;; region active: indent complete region
+          (progn
+            (goto-char (region-beginning))
+            (dotimes (_ (count-lines (region-beginning) (region-end)))
+              (seed7--indent-one-line)
+              (forward-line 1)))
+        ;; no region: indent current line
+        (seed7--indent-one-line)))
     (when move-point
       (seed7-to-indent))))
 
@@ -5584,7 +5600,8 @@ struct       struct type definition
     ;; expand only if there's 1 word at the beginning of a line of code,
     ;; with nothing after and only for specified predefined keywords
     ;; or inside parens, just before the closing parens
-    (if (and keyword
+    (if (and (not (use-region-p))
+             keyword
              (not (seed7-inside-comment-p))
              (not (seed7-inside-string-p))
              (or (and (or in-indent
