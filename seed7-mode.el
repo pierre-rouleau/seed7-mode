@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-03 13:16:15 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-03 13:43:14 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -445,7 +445,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-03T17:16:15+0000 W27-4"
+(defconst seed7-mode-version-timestamp "2025-07-03T17:43:14+0000 W27-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2998,7 +2998,7 @@ Negative N starts counting from the end of the line: -1 is the last word."
 The regexp has 2 capture groups:
 - group1 for the starting expression,
 - group2 for then end part."
-  (format "^\\(?:[[:space:]]*?\\(const[[:space:]]+?type:.+?[[:space:]]%s\\)\\|[[:space:]]+?\\(end %s;\\)\\)"
+  (format "^\\(?:[[:space:]]*?\\(const[[:space:]]+?type:.+?[[:space:]]%s\\)\\|[[:space:]]*?\\(end %s;\\)\\)"
           keyword keyword))
 
 ;; [:todo 2025-05-31, by Pierre Rouleau: Add support for hard tab after keyword
@@ -3035,7 +3035,8 @@ The regexp has 2 or 3 groups:
               nil)   ; use `seed7-end-of-defun' for function and procedures.
              ((string= word2 "type")
               (cond
-               ((member last-word '("enum" "struct")) (seed7--type-regexp last-word))
+               ((member last-word '("enum" "struct"))
+                (seed7--type-regexp last-word))
                (t
                 (setq start-pos 'dont-move)
                 ;; return a regexp where group 1 never matches
