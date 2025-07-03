@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-02 09:43:14 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-03 08:55:53 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -443,7 +443,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-02T13:43:14+0000 W27-3"
+(defconst seed7-mode-version-timestamp "2025-07-03T12:55:53+0000 W27-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -621,7 +621,7 @@ interpreter to run it without having to compile it."
   "Match any horizontal white space character")
 
 (defconst seed7--whitespace-re
-  "[[:space:]
+  "[[:blank:]
 ]"
   "Match any horizontal whitespace character and new line.")
 
@@ -630,7 +630,7 @@ interpreter to run it without having to compile it."
   "Match any character including new-line.")
 
 (defconst seed7--any-wp-text-re
-  (format "\\(?:%s+?.+?\\)"
+  (format "\\(?:%s+?.+?\\)+?"
           seed7--whitespace-re)
   "Any sequence of whitespace followed by non-whitespace.
 Inside a non-capturing group.")
@@ -1834,15 +1834,23 @@ Note: the default style for all Seed7 buffers is controlled by the
 ;;* Seed7 iMenu Support Regexp
 ;;  ==========================
 
+(defconst seed7-procfunc-forward-or-action-re
+  (format "forward;\\|DYNAMIC;\\|action%s+?\\\".+?\\\";"
+          seed7--whitespace-re)
+  "Regular expression matching forward or action declaration. No group. ")
+
 (defconst seed7-procedure-regexp
   (format
-   "^[[:blank:]]*const%s+proc:%s\\([[:alpha:]][[:alnum:]_]+\\)%s*?is%s+?\\(func\\|forward;\\|DYNAMIC;\\|action%s\".+?\";\\)"
+   "^[[:blank:]]*const%s+proc:%s\\(%s\\)%s*?is%s+?\\(func\\|%s\\)"
    ;;                             G1
-   seed7--whitespace-re
-   seed7--whitespace-re
-   seed7--anychar-re
-   seed7--whitespace-re
-   seed7--whitespace-re)
+   ;;                 %       %   %     %     %             %
+   ;;                 1       2   3     4     5             6
+   seed7--whitespace-re                    ; 1
+   seed7--whitespace-re                    ; 2
+   seed7--non-capturing-name-identifier-re ; 3
+   seed7--anychar-re                       ; 4
+   seed7--whitespace-re                    ; 5
+   seed7-procfunc-forward-or-action-re)    ; 6
   "Match procedure name in group 1.")
 
 
@@ -1850,9 +1858,9 @@ Note: the default style for all Seed7 buffers is controlled by the
   (format
    ;;             const   func T       :                                                                     is      func
    ;;                              w    w[      w                                                      .   w]w w
-   "^[[:blank:]]*?const%s+\\(?:var\\)?func %s??%s??:%s?\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?%s?is%s+\\(func\\|return\\|forward;\\|DYNAMIC;\\|action%s\".+?\";\\)"
-   ;;                  %                   G2  %    %        %         %           %   G3%    %         %  %       %   %    %    G4                                           %
-   ;;                  1                   %2  3    4        5         6           7     8    9         10 11      12  13   14                                                15
+   "^[[:blank:]]*?const%s+\\(?:var\\)?func %s??%s??:%s?\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?%s?is%s+\\(func\\|return\\|%s\\)"
+   ;;                  %                   G2  %    %        %         %           %   G3%    %         %  %       %   %    %    G4               %
+   ;;                  1                   %2  3    4        5         6           7     8    9         10 11      12  13   14                    15
    ;;
    seed7--whitespace-re                       ; 1
    seed7-type-identifier-re                   ; 2
@@ -1868,7 +1876,7 @@ Note: the default style for all Seed7 buffers is controlled by the
    seed7--anychar-re                          ; 12
    seed7--opt-square-brace-end-re             ; 13 w]w
    seed7--whitespace-re                       ; 14
-   seed7--whitespace-re)                      ; 15
+   seed7-procfunc-forward-or-action-re)       ; 15
   "Regexp identifying beginning of procedures and functions.
 Group 1: The function return type.
 Group 2: The function name.
@@ -2063,6 +2071,19 @@ Move point."
         (setq keep-searching nil)))
     found-pos))
 
+(defun seed7-re-search-backward-closest (regexps)
+  "Search for all specified regexp in REGEXPS and stop at the closest found.
+Return position of the closest found, nil if nothing found."
+  (let* ((positions nil)
+         (closest-position
+          (dolist (regexp regexps (car-safe
+                                   (nreverse
+                                    (sort
+                                     (seq-filter #'identity positions)))))
+            (save-excursion
+              (push (seed7-re-search-backward regexp) positions)))))
+    (when closest-position
+      (goto-char closest-position))))
 
 ;;** Seed7 Procedure/Function Regular Expressions
 ;;   --------------------------------------------
@@ -2687,6 +2708,30 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
          (unless silent
            (seed7--show-info 'at-start-of item-name item-type tail-type)))))))
 
+
+(defconst seed7---forward-or-action-function-declaration-re
+  ;;                             (--------------)     (-----------)
+  ;;                        (----------------------------------------)
+  ;;(--------------------------------------------------------------------)
+  (format "\\(const \\(?:var\\)?func%s+?%s:%s+?%s+?is%s+?\\(?:%s\\)\\)"
+          ;;                        %   %  %  %     %        %
+          ;;                        1   2  3  4     5        6
+          seed7--whitespace-re                    ; 1
+          seed7--non-capturing-name-identifier-re ; 2
+          seed7--anychar-re                       ; 3
+          seed7--whitespace-re                    ; 4
+          seed7--whitespace-re                    ; 5
+          seed7-procfunc-forward-or-action-re))   ; 6
+
+(defconst seed7---forward-or-action-procedure-declaration-re
+  (format
+   "const proc\\(?:%s\\)+?is%s+?\\(?:%s\\)"
+   seed7--anychar-re
+   seed7--whitespace-re
+   seed7-procfunc-forward-or-action-re)
+  "Regexp matching forward or action procedure declaration. No group.")
+
+
 (defun seed7-end-of-defun (&optional n silent dont-push-mark)
   "Move forward to the end of the current or next function or procedure.
 Move inside the current if inside one, to the next if outside one.
@@ -2806,14 +2851,38 @@ Move inside the current if inside one, to the next if outside one.
                     tail-type tail-type2
                     top-block-name top-block-name2)))
 
+          (save-excursion
+            (when
+                (and
+                 (setq found-pos
+                       (seed7-re-search-forward seed7-function-implementation-declaration-end-regexp)
+                       top-block-name2 (seed7-top-block-name))
+                 (when (seed7-re-search-backward-closest (list seed7---forward-or-action-procedure-declaration-re
+                                                               seed7---forward-or-action-function-declaration-re))
+
+                   (setq item-type2 (if (seed7-line-starts-with 0 "const proc") "proc" "func")
+                         item-name2 "?"
+                         tail-type2 "??")
+                   t)
+                 (seed7-re-search-forward seed7-function-implementation-declaration-end-regexp)
+                 (eq (point) found-pos)
+                 (or (not final-pos)
+                     (< found-pos final-pos)))
+              (setq final-pos found-pos
+                    found-candidate t
+                    item-name item-name2
+                    item-type item-type2
+                    tail-type tail-type2
+                    top-block-name top-block-name2)))
+
           (if found-candidate
               ;; move to the end of first function to allow next search in loop
               (goto-char final-pos)
             ;; Nothing found in this loop.  Quit searching right away
             (user-error (seed7--no-defun-found-msg-for n 'forward)))))
       (when (and top-block-name
-                   (not (string= top-block-name item-name)))
-          (setq item-name (format "%s %s" top-block-name item-name)))
+                 (not (string= top-block-name item-name)))
+        (setq item-name (format "%s %s" top-block-name item-name)))
       (seed7--move-and-mark
        original-pos
        final-pos
@@ -2899,21 +2968,9 @@ Negative N starts counting from the end of the line: -1 is the last word."
    "\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s+?;\\)\\)"
    seed7--any-wp-text-re))
 
-;; [:todo 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
-(defconst seed7---inner-callables-3
-  ;;                             (--------------)     (-----------)
-  ;;                        (----------------------------------------)
-  ;;(--------------------------------------------------------------------)
-  "\\(const func .+? is \\(?:\\(?:action .+?\\)\\|\\(?:forward\\)\\);\\)")
 
 (defconst seed7---inner-callables-4
   "const proc: .+? is forward;")
-
-(defconst seed7---inner-callables-5
-  (format "const proc:%s%sis action \\(?:\".+?\"\\|DYNAMIC\\);"
-          seed7--any-wp-text-re
-          seed7--whitespace-re))
-
 
 
 (defconst seed7--callable-return-re
@@ -2925,7 +2982,7 @@ Negative N starts counting from the end of the line: -1 is the last word."
    "^[[:blank:]]*?\\(?:%s\\|%s\\|%s\\)"
    seed7---inner-callables-1
    seed7---inner-callables-2
-   seed7---inner-callables-3)
+   seed7---forward-or-action-function-declaration-re)
   "A regexp with 3 groups:
 - group 1: function/procedure start,
 - group 2: function/procedure end,
@@ -2970,17 +3027,8 @@ The regexp has 2 or 3 groups:
            ((member word1 '("local" "begin")) seed7--inner-callables-triplets-re)
            ((string= word1 "const")
             (cond
-             ((member word2 '("func" "proc"))
-              (when (or (string= last-word "forward")
-                        (and (string= (seed7--current-line-nth-word -3) "is")
-                             (string= (seed7--current-line-nth-word -2) "action")))
-                (setq start-pos 'beginning-of-line))
-              (list
-               seed7---inner-callables-3
-               seed7---inner-callables-4
-               seed7---inner-callables-5
-               seed7---inner-callables-1
-               seed7---inner-callables-2))
+             ((member word2 '("varfunc" "func" "proc"))
+              nil)   ; use `seed7-end-of-defun' for function and procedures.
              ((string= word2 "type")
               (cond
                ((member last-word '("enum" "struct")) (seed7--type-regexp last-word))
@@ -2989,6 +3037,7 @@ The regexp has 2 or 3 groups:
                 ;; return a regexp where group 1 never matches
                 "\\(^\\(?:;INVALID-MAKE-IT-NEVER-MATCH;\\)\\)\\|\\([[:blank:]]is[[:blank:]]+?.+?;\\)")))
              (t nil)))
+
            ;; then deal with general case: block, case, for, while.
            ((member word1 seed7--block-start-keywords)
             (format "^[[:blank:]]*?\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word1 word1))
@@ -3054,10 +3103,11 @@ Return found position or nil if nothing found."
                     ;; That skipping won't be necessary in the loop because
                     ;; each search moves the point after the match.
                     (cond
-                     ((eq start-pos 'beginning-of-line) (forward-line 0))
-                     ((eq start-pos 'end-of-line (end-of-line))))
+                     ((eq start-pos 'beginning-of-line)   (forward-line 0))
+                     ((eq start-pos 'end-of-line)         (end-of-line)))
                     ;; The perform search, handing potential nesting.
-                    (while searching
+                    (while (and searching
+                                (not (eobp)))
                       (if (stringp regexp)
                           (if (seed7-re-search-forward regexp)
                               (cond
@@ -3990,34 +4040,34 @@ If it finds something it returns a list that holds the following information:
                 ;; In that case the enclosing block start should be the same as
                 ;; the block start.  If it's not the case there's a logic error.
                 (when (eq enclosing-block-start-pos block-start-pos)
-                    ;; When at the line of top-level enclosing block, use the
-                    ;; `seed7-calc-indent' to get the indentation of the line just
-                    ;; above the current line, as if the previous line was a noop
-                    ;; statement.  Simulate the noop statement by temporary
-                    ;; inserting it in the above line.  This way it will be
-                    ;; possible to handle the case where the statement is inside
-                    ;; the first line of another block statement like an if
-                    ;; statement.
-                    ;; Note that calling `seed7-calc-indent' means recursing into
-                    ;; it since it's `seed7-calc-indent' that calls
-                    ;; `seed7-line-inside-a-block'.  But doing it this way we use
-                    ;; all the logic necessary to compute the indentation for this
-                    ;; case.
-                    (setq keep-searching nil
-                          result (list (save-excursion (forward-line 0)
-                                                       (insert " noop;\n")
-                                                       (forward-line -1)
-                                                       (prog1
-                                                           (seed7-calc-indent)
-                                                         (delete-region
-                                                          (point)
-                                                          (progn
-                                                            (forward-line 1)
-                                                            (point)))))
-                                       match-text
-                                       enclosing-block-start-pos
-                                       enclosing-block-end-pos
-                                       block-start-indent-column))))
+                  ;; When at the line of top-level enclosing block, use the
+                  ;; `seed7-calc-indent' to get the indentation of the line just
+                  ;; above the current line, as if the previous line was a noop
+                  ;; statement.  Simulate the noop statement by temporary
+                  ;; inserting it in the above line.  This way it will be
+                  ;; possible to handle the case where the statement is inside
+                  ;; the first line of another block statement like an if
+                  ;; statement.
+                  ;; Note that calling `seed7-calc-indent' means recursing into
+                  ;; it since it's `seed7-calc-indent' that calls
+                  ;; `seed7-line-inside-a-block'.  But doing it this way we use
+                  ;; all the logic necessary to compute the indentation for this
+                  ;; case.
+                  (setq keep-searching nil
+                        result (list (save-excursion (forward-line 0)
+                                                     (insert " noop;\n")
+                                                     (forward-line -1)
+                                                     (prog1
+                                                         (seed7-calc-indent)
+                                                       (delete-region
+                                                        (point)
+                                                        (progn
+                                                          (forward-line 1)
+                                                          (point)))))
+                                     match-text
+                                     enclosing-block-start-pos
+                                     enclosing-block-end-pos
+                                     block-start-indent-column))))
                ;;
                ;; Case 2: point is on an internal block start line.
                ((seed7--on-lineof block-start-pos current-pos)
@@ -4671,9 +4721,9 @@ N is: - :previous-non-empty for the previous non empty line,
      ;; handle forward and native action declarations of func and proc
      ((seed7--set (seed7-line-starts-with-any n
                                               (list
-                                               seed7---inner-callables-3
+                                               seed7---forward-or-action-function-declaration-re
                                                seed7---inner-callables-4
-                                               seed7---inner-callables-5)
+                                               seed7---forward-or-action-procedure-declaration-re)
                                               dont-skip-comment-start)
                   previous-defun-column)
       previous-defun-column)
