@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-04 10:53:37 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-04 12:15:17 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -449,7 +449,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-04T14:53:37+0000 W27-5"
+(defconst seed7-mode-version-timestamp "2025-07-04T16:15:17+0000 W27-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5004,7 +5004,9 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
 (defun seed7-indent-line ()
   "Indent the current Seed7 line of code or all marked lines.
 If point was inside the indentation space move it to first non white space,
-otherwise leave point over the same character."
+otherwise leave point over the same character.
+If a region is marked, use it to identify the lines that must be indented,
+then deactivates it (to prevent the area to limit searches)."
   (interactive "*")
   (let ((move-point (seed7-inside-line-indent-p)))
     (save-excursion
@@ -5012,6 +5014,7 @@ otherwise leave point over the same character."
           ;; region active: indent complete region
           (let ((line-count (count-lines (region-beginning) (region-end))))
             (goto-char (region-beginning))
+            (deactivate-mark)
             (dotimes (_ line-count)
               (seed7--indent-one-line)
               (forward-line 1)))
