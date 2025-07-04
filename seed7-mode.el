@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-03 17:45:29 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-03 22:30:18 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -445,7 +445,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-03T21:45:29+0000 W27-4"
+(defconst seed7-mode-version-timestamp "2025-07-04T02:30:18+0000 W27-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2722,7 +2722,7 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
           ;;                        1   2  3  4     5        6
           seed7--whitespace-re                    ; 1
           seed7--non-capturing-name-identifier-re ; 2
-          seed7--anychar-re                       ; 3
+          "[^;]"                                  ; 3  any char but semi-colon
           seed7--whitespace-re                    ; 4
           seed7--whitespace-re                    ; 5
           seed7-procfunc-forward-or-action-re))   ; 6
@@ -2730,7 +2730,7 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
 (defconst seed7---forward-or-action-procedure-declaration-re
   (format
    "const proc\\(?:%s\\)+?is%s+?\\(?:%s\\)"
-   seed7--anychar-re
+   "[^;]"
    seed7--whitespace-re
    seed7-procfunc-forward-or-action-re)
   "Regexp matching forward or action procedure declaration. No group.")
