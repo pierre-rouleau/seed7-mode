@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-04 14:20:56 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-04 15:06:04 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -449,7 +449,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-04T18:20:56+0000 W27-5"
+(defconst seed7-mode-version-timestamp "2025-07-04T19:06:04+0000 W27-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3727,7 +3727,8 @@ If END-POS is non-nil, it identifies the limit for the string."
       (skip-chars-forward " \t")
       (when (and (looking-at-p regexp)
                  (or (not end-pos)
-                     (re-search-forward regexp end-pos :noerror)))
+                     (save-excursion
+                       (re-search-forward regexp end-pos :noerror))))
         (current-column)))))
 
 (defun seed7-line-starts-with-any (n regexps
