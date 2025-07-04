@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-03 22:30:18 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-04 10:53:37 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -320,8 +320,10 @@
 ;;   - Seed7 Indentation Line Checking Base Functions
 ;;     . `seed7-to-previous-line-starts-with'
 ;;     . `seed7-to-next-line-starts-with'
-;;     . `seed7-column-of-line-that-starts-with'
+;;     . `seed7-line-starts-with-any'
 ;;       . `seed7-line-starts-with'
+;;     . `seed7-column-of-line-that-starts-with'
+;;       o `seed7-line-starts-with'
 ;;     . `seed7-line-code-ends-with'
 ;;   - Seed7 Indentation Line Type Checking Functions
 ;;     . `seed7-line-isa-string'
@@ -346,6 +348,8 @@
 ;;     . `seed7-line-inside-nested-parens-pairs-column'
 ;;     . `seed7-indentation-of-previous-non-string-line'
 ;;     . `seed7-line-is-defun-end'
+;;       o `seed7-line-starts-with-any'
+;;         o `seed7-line-starts-with'
 ;;   - Seed7 Indentation Comment Checking Function
 ;;     . `seed7-comment-column'
 ;;     . `';;   - Seed7 Indentation Calculator Function
@@ -445,7 +449,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-04T02:30:18+0000 W27-5"
+(defconst seed7-mode-version-timestamp "2025-07-04T14:53:37+0000 W27-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3707,29 +3711,34 @@ When something is found, leave point at the found position, if nothing
     (when found-pos
       (goto-char found-pos))))
 
-(defun seed7-line-starts-with (n regexp &optional dont-skip-comment-start)
+(defun seed7-line-starts-with (n regexp
+                                 &optional dont-skip-comment-start end-pos)
   "Return indent column when line N non-white space begins with REGEXP.
 Return nil otherwise.
 N is: - :previous-non-empty for the previous non empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
-      - A negative number for previous lines: -1 previous, -2 line before..."
+      - A negative number for previous lines: -1 previous, -2 line before...
+If END-POS is non-nil, it identifies the limit for the string."
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
       (skip-chars-forward " \t")
-      (when (looking-at-p regexp)
+      (when (and (looking-at-p regexp)
+                 (or (not end-pos)
+                     (re-search-forward regexp end-pos :noerror)))
         (current-column)))))
 
 (defun seed7-line-starts-with-any (n regexps
-                                     &optional dont-skip-comment-start)
+                                     &optional dont-skip-comment-start end-pos)
   "Return indent column when line N non-white space begins with any of REGEXPS.
 Return nil otherwise.
 N is: - :previous-non-empty for the previous non empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
-      - A negative number for previous lines: -1 previous, -2 line before..."
+      - A negative number for previous lines: -1 previous, -2 line before...
+If END-POS is non-nil, it identifies the limit for the string."
   (let ((regexp nil)
         (found-column nil))
     (while (and regexps (not found-column))
@@ -3737,7 +3746,8 @@ N is: - :previous-non-empty for the previous non empty line,
       (setq regexps (cdr-safe regexps))
       (when regexp
         (setq found-column (seed7-line-starts-with n regexp
-                                                   dont-skip-comment-start))))
+                                                   dont-skip-comment-start
+                                                   end-pos))))
     found-column))
 
 (defun seed7-column-of-line-that-starts-with (regexp &optional n)
@@ -4711,7 +4721,8 @@ N is: - :previous-non-empty for the previous non empty line,
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before..."
-  (let ((previous-defun-column nil))
+  (let ((previous-defun-column nil)
+        (end-pos (save-excursion (end-of-line) (point))))
     (cond
      ;; handle line that is a end func, struc or enum
      ((seed7-line-starts-with-any n
@@ -4732,7 +4743,8 @@ N is: - :previous-non-empty for the previous non empty line,
                     seed7---forward-or-action-function-declaration-re
                     seed7---inner-callables-4
                     seed7---forward-or-action-procedure-declaration-re)
-                   dont-skip-comment-start)
+                   dont-skip-comment-start
+                   end-pos)
                   previous-defun-column)
       previous-defun-column)
      ;; Line N is not a end func; struc or enum.
