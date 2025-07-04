@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-04 12:15:17 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-04 14:20:56 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -449,7 +449,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-04T16:15:17+0000 W27-5"
+(defconst seed7-mode-version-timestamp "2025-07-04T18:20:56+0000 W27-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3225,7 +3225,7 @@ Move point to the beginning of the block keyword or comment.
 Push mark unless DONT-PUSH-MARK is non-nil.  Supports shift-marking.
 Return found position if found, nil if nothing found."
   (interactive "^P")
-  (let ((start-pos (point))
+  (let ((original-pos (point))
         (found-position nil))
     (if (or (seed7-inside-comment-p)
             (seed7-inside-line-indent-before-comment-p))
@@ -3274,7 +3274,7 @@ Return found position if found, nil if nothing found."
                        (t (user-error
                            "seed7-to-block-backward: \
 No match.  From %d, at point %d, nesting=%d, line %d for: %S"
-                           start-pos
+                           original-pos
                            (point)
                            nesting
                            (seed7-current-line-number)
@@ -3282,7 +3282,7 @@ No match.  From %d, at point %d, nesting=%d, line %d for: %S"
                     (user-error
                      "seed7-to-block-backward: \
 NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
-                     start-pos
+                     original-pos
                      (point)
                      nesting
                      (seed7-current-line-number)
@@ -3307,7 +3307,8 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
                 (seed7-beg-of-defun nil dont-push-mark dont-push-mark)
                 (setq found-position (point)))))))))
     (when found-position
-      (unless dont-push-mark (push-mark))
+      (unless (eq original-pos found-position)
+        (unless dont-push-mark (push-mark)))
       (goto-char found-position)
       (unless at-beginning-of-line
         (when (seed7-inside-line-indent-before-comment-p)
