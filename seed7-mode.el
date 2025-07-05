@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-04 15:06:04 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-05 07:45:22 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -449,7 +449,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-04T19:06:04+0000 W27-5"
+(defconst seed7-mode-version-timestamp "2025-07-05T11:45:22+0000 W27-6"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1842,10 +1842,48 @@ Note: the default style for all Seed7 buffers is controlled by the
 ;;* Seed7 iMenu Support Regexp
 ;;  ==========================
 
-(defconst seed7-procfunc-forward-or-action-re
+(defconst seed7--procedure-forward-or-action-re
   (format "forward;\\|DYNAMIC;\\|action%s+?\\\".+?\\\";"
           seed7--whitespace-re)
-  "Regular expression matching forward or action declaration. No group. ")
+  "Regexp matching forward or action declaration. No capture group.")
+
+;; functions declarations support all procedure have plus ability to complete
+;;  with a 'is value;' syntax like 'is 16;'
+(defconst seed7--function-value-forward-or-action-declaration-re
+  (format "[^;]+?;\\|%s"
+          seed7--procedure-forward-or-action-re)
+  "Regexp matching value, forward or action declaration. No capture group.")
+
+;; --
+;; Regexp for procedure and function declarations. No matching group.
+
+(defconst seed7-forward-or-action-procedure-declaration-re
+  (format
+   "const proc\\(?:%s\\)+?is%s+?\\(?:%s\\)"
+   "[^;]"
+   seed7--whitespace-re
+   seed7--procedure-forward-or-action-re)
+  "Regexp matching forward or action procedure declaration. No capture group.")
+
+(defconst seed7-forward-or-action-function-declaration-re
+  ;;                             (--------------)     (-----------)
+  ;;                        (----------------------------------------)
+  ;;(--------------------------------------------------------------------)
+  (format "\\(const \\(?:var\\)?func%s+?%s:%s+?%s+?is%s+?\\(?:%s\\)\\)"
+          ;;                        %   %  %  %     %        %
+          ;;                        1   2  3  4     5        6
+          seed7--whitespace-re                    ; 1
+          seed7--non-capturing-name-identifier-re ; 2
+          "[^;]"                                  ; 3  any char but semi-colon
+          seed7--whitespace-re                    ; 4
+          seed7--whitespace-re                    ; 5
+          seed7--function-value-forward-or-action-declaration-re) ; 6
+  "Regexp matching value, forward or action function declaration.
+No matching group.")
+
+
+;; --
+;; Regexp for procedure and function declarations or beginning of block.
 
 (defconst seed7-procedure-regexp
   (format
@@ -1858,9 +1896,8 @@ Note: the default style for all Seed7 buffers is controlled by the
    seed7--non-capturing-name-identifier-re ; 3
    seed7--anychar-re                       ; 4
    seed7--whitespace-re                    ; 5
-   seed7-procfunc-forward-or-action-re)    ; 6
+   seed7--procedure-forward-or-action-re)  ; 6
   "Match procedure name in group 1.")
-
 
 (defconst seed7-function-regexp
   (format
@@ -1870,21 +1907,21 @@ Note: the default style for all Seed7 buffers is controlled by the
    ;;                  %                   G2  %    %        %         %           %   G3%    %         %  %       %   %    %    G4               %
    ;;                  1                   %2  3    4        5         6           7     8    9         10 11      12  13   14                    15
    ;;
-   seed7--whitespace-re                       ; 1
-   seed7-type-identifier-re                   ; 2
-   seed7--whitespace-re                       ; 3
-   seed7--opt-square-brace-start-re           ; 4 w[
-   seed7--whitespace-re                       ; 5
-   seed7--anychar-re                          ; 6
-   seed7--whitespace-re                       ; 7
-   seed7--non-capturing-name-identifier-re    ; 8
-   seed7--non-capturing-special-identifier-re ; 9
-   seed7--whitespace-re                       ; 10
-   seed7--anychar-re                          ; 11
-   seed7--anychar-re                          ; 12
-   seed7--opt-square-brace-end-re             ; 13 w]w
-   seed7--whitespace-re                       ; 14
-   seed7-procfunc-forward-or-action-re)       ; 15
+   seed7--whitespace-re                                   ; 1
+   seed7-type-identifier-re                               ; 2
+   seed7--whitespace-re                                   ; 3
+   seed7--opt-square-brace-start-re                       ; 4 w[
+   seed7--whitespace-re                                   ; 5
+   seed7--anychar-re                                      ; 6
+   seed7--whitespace-re                                   ; 7
+   seed7--non-capturing-name-identifier-re                ; 8
+   seed7--non-capturing-special-identifier-re             ; 9
+   seed7--whitespace-re                                   ; 10
+   seed7--anychar-re                                      ; 11
+   seed7--anychar-re                                      ; 12
+   seed7--opt-square-brace-end-re                         ; 13 w]w
+   seed7--whitespace-re                                   ; 14
+   seed7--function-value-forward-or-action-declaration-re) ; 15
   "Regexp identifying beginning of procedures and functions.
 Group 1: The function return type.
 Group 2: The function name.
@@ -1892,6 +1929,8 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
          - \"return\" for a func that only has a return statement.
          - \"forward\" for a forward declaration.
          - \"action ACTION\" for an action function." )
+
+;; --
 
 (defconst seed7-enum-regexp
   "const type: \\([[:alpha:]][[:alnum:]_]+\\) is new enum")
@@ -2717,27 +2756,7 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
            (seed7--show-info 'at-start-of item-name item-type tail-type)))))))
 
 
-(defconst seed7---forward-or-action-function-declaration-re
-  ;;                             (--------------)     (-----------)
-  ;;                        (----------------------------------------)
-  ;;(--------------------------------------------------------------------)
-  (format "\\(const \\(?:var\\)?func%s+?%s:%s+?%s+?is%s+?\\(?:%s\\)\\)"
-          ;;                        %   %  %  %     %        %
-          ;;                        1   2  3  4     5        6
-          seed7--whitespace-re                    ; 1
-          seed7--non-capturing-name-identifier-re ; 2
-          "[^;]"                                  ; 3  any char but semi-colon
-          seed7--whitespace-re                    ; 4
-          seed7--whitespace-re                    ; 5
-          seed7-procfunc-forward-or-action-re))   ; 6
 
-(defconst seed7---forward-or-action-procedure-declaration-re
-  (format
-   "const proc\\(?:%s\\)+?is%s+?\\(?:%s\\)"
-   "[^;]"
-   seed7--whitespace-re
-   seed7-procfunc-forward-or-action-re)
-  "Regexp matching forward or action procedure declaration. No group.")
 
 
 (defun seed7-end-of-defun (&optional n silent dont-push-mark)
@@ -2865,8 +2884,8 @@ Move inside the current if inside one, to the next if outside one.
                  (setq found-pos
                        (seed7-re-search-forward seed7-function-implementation-declaration-end-regexp)
                        top-block-name2 (seed7-top-block-name))
-                 (when (seed7-re-search-backward-closest (list seed7---forward-or-action-procedure-declaration-re
-                                                               seed7---forward-or-action-function-declaration-re))
+                 (when (seed7-re-search-backward-closest (list seed7-forward-or-action-procedure-declaration-re
+                                                               seed7-forward-or-action-function-declaration-re))
 
                    (setq item-type2 (if (seed7-line-starts-with 0 "const proc") "proc" "func")
                          item-name2 "?"
@@ -2990,7 +3009,7 @@ Negative N starts counting from the end of the line: -1 is the last word."
    "^[[:blank:]]*?\\(?:%s\\|%s\\|%s\\)"
    seed7---inner-callables-1
    seed7---inner-callables-2
-   seed7---forward-or-action-function-declaration-re)
+   seed7-forward-or-action-function-declaration-re)
   "A regexp with 3 groups:
 - group 1: function/procedure start,
 - group 2: function/procedure end,
@@ -3427,6 +3446,15 @@ If point is before or between 2 functions or procedure, mark the next one."
     (goto-char end-pos)
     (set-mark (point))
     (goto-char start-pos)))
+
+(defun seed7-lines-in-defun ()
+  "Return the number of lines of a Seed7 function or procedure."
+  (let ((line-count 0))
+    (save-excursion
+      (seed7-mark-defun)
+      (setq line-count (count-lines (region-beginning) (region-end)))
+      (deactivate-mark))
+    line-count))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Indentation
@@ -4742,9 +4770,9 @@ N is: - :previous-non-empty for the previous non empty line,
      ((seed7--set (seed7-line-starts-with-any
                    n
                    (list
-                    seed7---forward-or-action-function-declaration-re
+                    seed7-forward-or-action-function-declaration-re
                     seed7---inner-callables-4
-                    seed7---forward-or-action-procedure-declaration-re)
+                    seed7-forward-or-action-procedure-declaration-re)
                    dont-skip-comment-start
                    end-pos)
                   previous-defun-column)
