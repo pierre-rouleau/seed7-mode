@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-05 07:45:22 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-05 09:18:42 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -217,6 +217,7 @@
 ;;    - Seed7 Predefined Constants
 ;;    - Seed7 Predefined Variables
 ;;    - Seed7 Predefined errinfo value
+;;    - Seed7 Predefined Functions
 ;;    - Seed7 Operator Symbols
 ;;    - Seed7 Predefined Assignment Operators
 ;;    - Seed7 Predefined Comparison Operators
@@ -449,7 +450,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-05T11:45:22+0000 W27-6"
+(defconst seed7-mode-version-timestamp "2025-07-05T13:18:42+0000 W27-6"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1152,6 +1153,18 @@ Has only one capturing group.")
            `(: (or ,@seed7--errinfo-values)))
           "\\>"))
 
+;;** Seed7 Predefined Functions
+;;   --------------------------
+(defconst seed7--predefined-functions
+  '("type_implements_interface"))
+
+(defconst seed7-predefined-functions-regxp
+  (format "%s\\(%s\\)%s"
+          "\\<"
+          (rx-to-string
+           `(: (or ,@seed7--predefined-functions)))
+          "\\>"))
+
 ;;** Seed7 Operator Symbols
 ;;   ----------------------
 
@@ -1619,6 +1632,24 @@ Allows selecting similar colours for various systems."
   :group 'seed7-faces)
 
 ;; --
+(defface seed7-predefined-functions-face
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold))
+
+    (((class color) (background light))
+     (:foreground "blue" :weight bold))
+    (((class color) (background dark))
+     (:foreground "blue" :background ,seed7-dark-background
+                  :weight bold))
+
+    (t (:weight bold)))
+  "Font Lock mode face that highlights errinfo values."
+  :group 'seed7-faces)
+
+
+;; --
 (defface seed7-float-face
   `((((class grayscale) (background light))
      (:background "Gray90" :weight bold))
@@ -1747,6 +1778,8 @@ Allows selecting similar colours for various systems."
    (cons seed7-predefined-variables-regxp            (list 1 ''seed7-predefined-variables-face))
    ;; predefined errinfo values
    (cons seed7-errinfo-values-regxp                  (list 1 ''seed7-errinfo-value-face))
+   ;; predefined functions
+   (cons seed7-predefined-functions-regxp            (list 1 ''seed7-predefined-functions-face))
    ;; operator symbols
    (cons seed7-operator-symbols-regexp               (list 1 ''font-lock-keyword-face))
    (cons seed7-predef-assignment-operator-regxp      (list 0 ''font-lock-keyword-face))
@@ -2754,10 +2787,6 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
          dont-push-mark
          (unless silent
            (seed7--show-info 'at-start-of item-name item-type tail-type)))))))
-
-
-
-
 
 (defun seed7-end-of-defun (&optional n silent dont-push-mark)
   "Move forward to the end of the current or next function or procedure.
