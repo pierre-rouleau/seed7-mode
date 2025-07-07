@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-05 09:18:42 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-07 10:59:48 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -408,7 +408,9 @@
 ;;    + `xref-backend-definitions'
 ;;      . `seed7--find-symbol'
 ;;        . `seed7--xref-get'
-;;          . `seed7--find-info-about'
+;;          . `seed7--find-candidates-for'
+;;            . `seed7--symbol-definition-areas-for-block'
+;;            . `seed7--find-identifier-in'
 ;;          . `seed7--xref-get-from-s7xref'
 ;;            . `seed7--build-xref'
 ;;            . `seed7--xref-in-list'
@@ -450,7 +452,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-05T13:18:42+0000 W27-6"
+(defconst seed7-mode-version-timestamp "2025-07-07T14:59:48+0000 W28-1"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5974,31 +5976,77 @@ Please update!"
       (setq entry (car-safe list)))
     found))
 
-(defun seed7--local-var-area-for-block (block-spec)
-  "Return cons of star and end position of local-begin area of block if any.
-Return nil if there is none.
-Block specification is in specified BLOCK-SPEC, which is a list returned by
-the function `seed7-line-inside-a-block'."
+(defun seed7--symbol-definition-areas-for-block (block-spec)
+  "Return a list of (start-pos . end-pos) cons.
+Each position pair identify an area inside the block where a Seed7 variable
+or parameter can be defined.
+The BLOCK-SPEC parameter identifies the specification of the function or
+procedure. It's a is a list returned by the function
+`seed7-line-inside-a-block'."
   (save-excursion
-    (let ((block-start-pos (nth 2 block-spec))
-          (enclosing-block-end-pos   (nth 3 block-spec))
-          (block-local-start nil)
-          (block-local-end   nil))
+    (let ((block-start-pos          (nth 2 block-spec))
+          (enclosing-block-end-pos  (nth 3 block-spec))
+          (area-start nil)
+          (area-end   nil)
+          (areas nil))
+      ;;
+      ;; identify parameter area
+      (goto-char block-start-pos)
+      (when (seed7-re-search-forward "(" enclosing-block-end-pos)
+        (setq area-start (point))
+        (backward-char)
+        (forward-sexp)
+        (setq area-end (1- (point)))
+        (push (cons area-start area-end) areas))
+      ;;
+      ;; Identify variable definition area: local-begin or result-begin block
       (goto-char block-start-pos)
       ;; look for local-begin or result-begin block
       (when (seed7-re-search-forward
              "^[[:blank:]]+\\(?:local\\>\\|result\\>\\)"
              enclosing-block-end-pos)
         (forward-line 1)
-        (setq block-local-start (point))
+        (setq area-start (point))
         (when (seed7-re-search-forward "^[[:blank:]]+begin\\>"
                                        enclosing-block-end-pos)
           (forward-line 0)
-          (setq block-local-end (point))))
-      (when (and block-local-start block-local-end)
-        (cons block-local-start block-local-end)))))
+          (setq area-end (point))
+          (push (cons area-start area-end) areas)))
+      ;;
+      ;; return the list of cons
+      areas)))
 
-(defun seed7--find-info-about (identifier &optional block-spec)
+
+(defun seed7--find-identifier-in (identifier &optional block-spec
+                                             start-pos end-pos)
+  "Return position info list of IDENTIFIER inside specified constraints.
+The constraints are optional: BLOCK-SPEC, START-POS and END-POS.
+If these are not specified, perform a file global scope search.
+
+Return a list of 4-elements:
+- The file name where this identifier entry was found.
+- The line number integer,
+- The column number integer
+- A description string (the signature, if found)."
+  (save-excursion
+    (goto-char (or start-pos (point-min)))
+    (when (search-forward identifier end-pos :noerror)
+      (let ((specs nil))
+        (when (or (seed7--set (seed7-line-inside-a-block 0)
+                              specs)
+                  (not block-spec))
+          (list (expand-file-name buffer-file-truename)
+                (seed7-current-line-number)
+                (- (current-column) (length identifier))
+                (seed7--signature-at
+                 (if block-spec
+                     ;; inside-block definition
+                     (nth 2 specs)
+                   ;; global definition
+                   (progn (forward-line 0) (point))))))))))
+
+
+(defun seed7--find-candidates-for (identifier &optional block-spec)
   "Find information about IDENTIFIER, globally or inside BLOCK-SPEC.
 
 Return a list of 4-element lists, where each 4-element list has:
@@ -6010,27 +6058,21 @@ Return a list of 4-element lists, where each 4-element list has:
 This function is used only when the IDENTIFIER is not identified in the output
 of s7xref program."
   (save-excursion
-    (let ((start-pos nil)
-          (end-pos nil)
-          (start.end nil))
-      (when block-spec
-        (setq start.end (seed7--local-var-area-for-block block-spec)
-              start-pos (nth 2 block-spec) ; include  argument list or return
-              end-pos (cdr start.end)))    ; end when the begin starts
-      (goto-char (or start-pos (point-min)))
-      (when (search-forward identifier end-pos :noerror)
-        (let ((specs nil))
-          (when (or (seed7--set (seed7-line-inside-a-block 0) specs)
-                    (not block-spec))
-              (list (expand-file-name buffer-file-truename)
-                    (seed7-current-line-number)
-                    (- (current-column) (length identifier))
-                    (seed7--signature-at
-                     (if block-spec
-                         ;; inside-block definition
-                         (nth 2 specs)
-                       ;; global definition
-                       (progn (forward-line 0) (point)))))))))))
+    (let ((candidate nil)
+          (candidates nil))
+      (if block-spec
+          ;; with a block spec: check into all possible areas for the block
+          (dolist (start.end (seed7--symbol-definition-areas-for-block
+                              block-spec)
+                             candidates)
+            (when (seed7--set (seed7--find-identifier-in identifier
+                                                         block-spec
+                                                         (car start.end)
+                                                         (cdr start.end))
+                              candidate)
+              (push candidate candidates)))
+        ;; without a block spec: check in the entire file
+        (list (seed7--find-identifier-in identifier))))))
 
 
 (defun seed7--xref-get-from-s7xref (identifier)
@@ -6083,30 +6125,25 @@ Return a list of 4-element lists, where each 4-element list has:
   (let ((point-face (get-char-property (point) 'face))
         (local-block-spec (save-excursion (seed7-to-top-of-block)
                                           (seed7-line-inside-a-block 0)))
-        (candidate nil)
+        (candidates nil)
         ;; prevent case fold searching: Seed7 is case sensitive.
         (case-fold-search nil))
-
     (cond
      ((eq point-face 'font-lock-comment-face)
       (user-error "Comments cross reference is not supported."))
-
      ;; For identifiers, look in local block first, then in the s7xref built
      ;; table and then in the global scope of the current file.
      ((eq point-face 'seed7-name-identifier-face)
       (if (seed7--set
-           (seed7--find-info-about identifier local-block-spec)
-           candidate)
-          (list candidate)
+           (seed7--find-candidates-for identifier local-block-spec)
+           candidates)
+          candidates
         ;; if nothing found in current block, search at program scope
         ;; using the cross reference list of object created by s7xref
-        (let ((entries (seed7--xref-get-from-s7xref identifier)))
-          ;; if that also fails to find something, then look into the global
-          ;; scope of the current file.
-          (unless entries
-            (setq entries (list (seed7--find-info-about identifier))))
-          entries)))
-
+        (or (seed7--xref-get-from-s7xref identifier)
+            ;; if that also fails to find something, then look into the global
+            ;; scope of the current file.
+            (seed7--find-candidates-for identifier))))
      ;; for other keywords only look into the xref extracted by s7xref
      (t (seed7--xref-get-from-s7xref identifier)))))
 
