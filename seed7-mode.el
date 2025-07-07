@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-07 12:04:47 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-07 15:10:21 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -452,7 +452,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-07T16:04:47+0000 W28-1"
+(defconst seed7-mode-version-timestamp "2025-07-07T19:10:21+0000 W28-1"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1879,9 +1879,9 @@ Note: the default style for all Seed7 buffers is controlled by the
   ;;                             (--------------)     (-----------)
   ;;                        (----------------------------------------)
   ;;(--------------------------------------------------------------------)
-  (format "\\(const \\(?:var\\)?func%s+?%s:%s+?%s+?is%s+?\\(?:%s\\)\\)"
-          ;;                        %   %  %  %     %        %
-          ;;                        1   2  3  4     5        6
+  (format "\\(?:const \\(?:var\\)?func%s+?%s:%s+?%s+?is%s+?\\(?:%s\\)\\)"
+          ;;                          %   %  %      %     %        %
+          ;;                          1   2  3      4     5        6
           seed7--whitespace-re                    ; 1
           seed7--non-capturing-name-identifier-re ; 2
           "[^;]"                                  ; 3  any char but semi-colon
@@ -1890,6 +1890,22 @@ Note: the default style for all Seed7 buffers is controlled by the
           seed7--function-value-forward-or-action-declaration-re) ; 6
   "Regexp matching value, forward or action function declaration.
 No matching group.")
+
+(defconst seed7-forward-or-action-function-declaration-g1-re
+  ;;                             (--------------)     (-----------)
+  ;;                        (----------------------------------------)
+  ;;(--------------------------------------------------------------------)
+  (format "\\(?:const \\(?:var\\)?func%s+?%s:\\(%s+?\\)%s+?is%s+?\\(?:%s\\)\\)"
+          ;;                          %   %     %      %     %        %
+          ;;                          1   2     3      4     5        6
+          seed7--whitespace-re                    ; 1
+          seed7--non-capturing-name-identifier-re ; 2
+          "[^;]"                                  ; 3  any char but semi-colon
+          seed7--whitespace-re                    ; 4
+          seed7--whitespace-re                    ; 5
+          seed7--function-value-forward-or-action-declaration-re) ; 6
+  "Regexp matching value, forward or action function declaration.
+1 group: function name.")
 
 
 ;; --
@@ -2394,13 +2410,6 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
   "[[:blank:]]*?is[[:blank:]]+?forward;"
   "Regexp to detect end of forward declaration.  No group.")
 
-(defconst seed7-function-implementation-declaration-end-regexp
-  (format "%s+?is%s+?\\(?:\\(?:action%s+?\".+?\"\\)\\|\\(?:DYNAMIC\\)\\);"
-          seed7--whitespace-re
-          seed7--whitespace-re
-          seed7--whitespace-re)
-  "Regexp to detect end of function implementation declaration.  No group.")
-
 ;;** Seed7 Skipping Comments
 ;;   -----------------------
 
@@ -2593,20 +2602,20 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
   (interactive)
   (seed7--to-top))
 
-(defun seed7--block-name (&optional pos)
+(defun seed7--block-name (&optional pos end-pos)
   "Return the name of the block declared at POS or point.
 Return nil if name is not found."
   (save-excursion
     (when pos (goto-char pos))
-    (when (seed7-re-search-forward seed7-procfunc-regexp)
+    (when (seed7-re-search-forward seed7-procfunc-regexp end-pos)
       (substring-no-properties (match-string
                                 seed7-procfunc-regexp-item-name-group)))))
 
-(defun seed7-top-block-name (&optional pos)
+(defun seed7-top-block-name (&optional pos end-pos)
   "Return the name of the top block item surrounding code at POS or point."
   (save-excursion
     (seed7--to-top pos)
-    (or (seed7--block-name) "?")))
+    (or (seed7--block-name nil end-pos) "?")))
 
 ;;*** Seed7 Procedure/Function Search Utility functions
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2693,13 +2702,15 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
       (save-excursion
         (dotimes (_ n)
           (setq found-pos nil)
-          (when (seed7-re-search-backward seed7-procfunc-regexp)
+          (when (seed7-re-search-backward-closest (list seed7-procfunc-regexp
+                                                        seed7-forward-or-action-procedure-declaration-re
+                                                        seed7-forward-or-action-function-declaration-g1-re))
             (setq found-pos (point)
-                  item-type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
-                  item-name (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
-                  tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group))))))
+                  item-type (substring-no-properties (or (match-string seed7-procfunc-regexp-item-type-group) "?"))
+                  item-name (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group) "?"))
+                  tail-type (substring-no-properties (or (match-string seed7-procfunc-regexp-tail-type-group) "?"))))))
       (if found-pos
-          (let ((top-block-name (seed7-top-block-name)))
+          (let ((top-block-name (seed7-top-block-name nil original-pos)))
             (when (and top-block-name
                        (not (string= top-block-name item-name)))
               (setq item-name (format "%s %s" top-block-name item-name)))
@@ -2866,14 +2877,14 @@ Move inside the current if inside one, to the next if outside one.
             (when
                 (and
                  (setq found-pos
-                       (seed7-re-search-forward seed7-function-implementation-declaration-end-regexp)
+                       (seed7-re-search-forward seed7-forward-or-action-function-declaration-g1-re)
                        top-block-name2 (seed7-top-block-name))
                  (when (seed7-re-search-backward seed7-procfunc-regexp)
                    (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
                          item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
                          tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                    t)
-                 (seed7-re-search-forward seed7-function-implementation-declaration-end-regexp)
+                 (seed7-re-search-forward seed7-forward-or-action-function-declaration-re)
                  (eq (point) found-pos)
                  (or (not final-pos)
                      (< found-pos final-pos)))
@@ -2888,7 +2899,7 @@ Move inside the current if inside one, to the next if outside one.
             (when
                 (and
                  (setq found-pos
-                       (seed7-re-search-forward seed7-function-implementation-declaration-end-regexp)
+                       (seed7-re-search-forward seed7-forward-or-action-function-declaration-re)
                        top-block-name2 (seed7-top-block-name))
                  (when (seed7-re-search-backward-closest (list seed7-forward-or-action-procedure-declaration-re
                                                                seed7-forward-or-action-function-declaration-re))
@@ -2897,7 +2908,7 @@ Move inside the current if inside one, to the next if outside one.
                          item-name2 "?"
                          tail-type2 "??")
                    t)
-                 (seed7-re-search-forward seed7-function-implementation-declaration-end-regexp)
+                 (seed7-re-search-forward seed7-forward-or-action-function-declaration-re)
                  (eq (point) found-pos)
                  (or (not final-pos)
                      (< found-pos final-pos)))
