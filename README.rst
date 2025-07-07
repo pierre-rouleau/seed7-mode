@@ -822,10 +822,15 @@ How To update seed7-mode in plain Emacs
 
 To update to a later revision,
 
-- Erase the seed7-mode.el and
-  seed7-mode.elc files from the utils directory where you stored them.
-- Download the new revision in the same directory.
-- Byte-compile the new file as described in the previous section.
+- Erase the following files from the utils directory where you stored them:
+
+  - seed7-mode.el
+  - seed7-mode.elc
+  - s7xref.sd7
+
+- Download the new revision of the same files, and store them in the same
+  directories they previously were located.
+- Byte-compile the new ``seed7-mode.el`` file as described in the previous section.
 
 
 .. ---------------------------------------------------------------------------
@@ -857,8 +862,9 @@ How to Update Seed7-Mode with PEL
 =================================
 
 With PEL, updating is a little simpler:
-just delete your ``~/.emacs.d/utils/seed7-mode.*`` files and restart Emacs;
-it will download the new version and byte-compile it.
+just delete your ``~/.emacs.d/utils/seed7-mode.*`` and
+``~/.emacs.d/utils/tools/s7xref.sd7`` files and restart Emacs;
+it will download the new version of the files and byte-compile ``seed7-mode.el``.
 
 
 .. ---------------------------------------------------------------------------
