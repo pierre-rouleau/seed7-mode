@@ -874,8 +874,8 @@ Future
 
 
 Once this code is stable I will add the logic to make it a proper Emacs
-package and probably will include it under MELPA.  But the code is far from
-being ready for that.
+package and probably will include it under MELPA.  But the code is not yet
+ready for that.
 
 Any help, questions, suggestions are welcome!
 
