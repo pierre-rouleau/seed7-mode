@@ -797,7 +797,15 @@ previous section.  Once this is done proceed with the following:
 
   - The utils directory is the one you created above.
 
-- **5: Byte compile seed7-mode.el**
+- **5: Download the s7xref.sd7 file and copy it in the utils directory**
+
+  - The utils directory is the one you created above.
+  - The ``s7xref.sd7`` is a short Seed7 program that analyses a Seed7 source
+    code file and creates a cross reference list of all identifiers defined in
+    that file. This program is used by the cross reference support of
+    ``seed7-mode``.
+
+- **6: Byte compile seed7-mode.el**
 
   - Open Emacs and edit (visit) the `seed7-mode.el` file located in your utils directory.
   - Byte compile it by typing the following command: `M-x emacs-lisp-byte-compile-and-load`
@@ -807,7 +815,6 @@ previous section.  Once this is done proceed with the following:
   Just remember to byte-compile that file every time you modify it,
   otherwise Emacs will complain that it's using a byte-compile file
   that is older than the source file.
-
 
 How To update seed7-mode in plain Emacs
 =======================================

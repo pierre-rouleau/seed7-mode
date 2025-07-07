@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-07 11:18:13 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-07 11:51:28 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -452,7 +452,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-07T15:18:13+0000 W28-1"
+(defconst seed7-mode-version-timestamp "2025-07-07T15:51:28+0000 W28-1"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -563,25 +563,32 @@ The name of the source code file is appended to the end of that line."
 
 ;;** Seed7 Cross Reference
 
-(defcustom seed7-xref "s7xref"
+(defcustom seed7-xref (format "s7 %ss7xref.sd7"
+                              (file-name-directory (locate-library "seed7-mode")))
   "Seed7 cross reference builder command line.
 
 The command line must identify the Seed7 cross reference builder,
 s7xref, by default.
 
 You may type:
-- the cross reference builder executable program to use, or
-- the s7 interpreter, followed by the Seed7 source file to use.
-
-The name of the cross reference executable or the s7 Seed interpreter program
-must include their absolute path unless these programs can be found through
-the PATH environment variable accessible to Emacs.
-
-The ~ character is expanded.
+- the s7 interpreter, followed by the Seed7 source file to use, or
+- the cross reference builder executable program to use.
 
 The seed7 mode repository includes the s7xref.sd7 file inside the tools
 sub-directory. You can either create an executable for it or use the s7
-interpreter to run it without having to compile it."
+interpreter to run it without having to compile it.
+
+Using the interpreted version is the preferred method: an interpreted
+version of the program will continue work if you later update the Seed7
+system.  If you use the compiled version, you will need to re-compile
+the s7xref.sd7 file each time you update Seed7.
+
+The name of the cross reference executable or the s7 Seed interpreter
+program must include their absolute path unless these programs can be
+found through the PATH environment variable accessible to Emacs.
+
+The ~ character, if you use it, is expanded to identify your HOME
+directory."
   :group 'seed7
   :type 'string)
 
