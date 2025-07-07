@@ -797,9 +797,10 @@ previous section.  Once this is done proceed with the following:
 
   - The utils directory is the one you created above.
 
-- **5: Download the s7xref.sd7 file and copy it in the utils directory**
+- **5: Download the s7xref.sd7 file and copy it in the utils/tools directory**
 
   - The utils directory is the one you created above.
+  - If the utils/tools sub-directory does not exists, create it.
   - The ``s7xref.sd7`` is a short Seed7 program that analyses a Seed7 source
     code file and creates a cross reference list of all identifiers defined in
     that file. This program is used by the cross reference support of
