@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-08 11:09:32 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-08 13:38:17 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -452,7 +452,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-08T15:09:32+0000 W28-2"
+(defconst seed7-mode-version-timestamp "2025-07-08T17:38:17+0000 W28-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6211,10 +6211,12 @@ DESC describes it."
 (defun seed7--find-symbol (symbol)
   "Get list of xref locations objects for Seed7 SYMBOL."
   ;; First get a list of candidates using the s7xref mechanism.
-  (let ((candidates (seed7--xref-get symbol)))
-    ;; return a list of xref location objects for those candidates.
-    (mapcar (function seed7--make-xref-from-file-loc)
-            candidates)))
+  (let ((candidates (seq-filter #'identity (seed7--xref-get symbol))))
+    (if candidates
+        ;; return a list of xref location objects for those candidates.
+        (mapcar (function seed7--make-xref-from-file-loc)
+                candidates)
+      (user-error "Nothing matching %S here" symbol))))
 
 ;;** Seed7 Cross Reference Xref Backend Framework
 
