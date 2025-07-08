@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-07 15:10:21 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-08 09:43:54 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -452,7 +452,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-07T19:10:21+0000 W28-1"
+(defconst seed7-mode-version-timestamp "2025-07-08T13:43:54+0000 W28-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1029,6 +1029,22 @@ Has only one capturing group.")
           "\\>")
   "Argument declaration intro keyword: no capturing group.")
 
+(defconst seed7-parameter-var-declaration-regexp
+  ;;       in         T              T
+  (format "%s%s+?\\(?:%s%s+?\\)?\\(?:%s\\)%s*?:%s+?\\(%s\\)"
+          ;;%%        % %             %    %    %      %
+          ;;12        3 4             5    6    7      8
+
+          seed7-non-capturing-declaration-intro-keywords-regexp ; 1
+          seed7--whitespace-re                                  ; 2
+          seed7--non-capturing-type-identifier-re               ; 3
+          seed7--whitespace-re                                  ; 4
+          seed7--non-capturing-type-identifier-re               ; 5
+          seed7--whitespace-re                                  ; 6
+          seed7--whitespace-re                                  ; 7
+          seed7--non-capturing-name-identifier-re)              ; 8
+  "Regexp extracting identifier from parameter or local variable declaration.
+1 group: identifier name")
 
 ;;** Seed7 Predefined Types
 ;;   ----------------------
@@ -1860,7 +1876,7 @@ Note: the default style for all Seed7 buffers is controlled by the
 ;; functions declarations support all procedure have plus ability to complete
 ;;  with a 'is value;' syntax like 'is 16;'
 (defconst seed7--function-value-forward-or-action-declaration-re
-  (format "[^;]+?;\\|%s"
+  (format "[^;:]+?;\\|%s"
           seed7--procedure-forward-or-action-re)
   "Regexp matching value, forward or action declaration. No capture group.")
 
@@ -1875,38 +1891,49 @@ Note: the default style for all Seed7 buffers is controlled by the
    seed7--procedure-forward-or-action-re)
   "Regexp matching forward or action procedure declaration. No capture group.")
 
+
+
 (defconst seed7-forward-or-action-function-declaration-re
-  ;;                             (--------------)     (-----------)
-  ;;                        (----------------------------------------)
-  ;;(--------------------------------------------------------------------)
-  (format "\\(?:const \\(?:var\\)?func%s+?%s:%s+?%s+?is%s+?\\(?:%s\\)\\)"
-          ;;                          %   %  %      %     %        %
-          ;;                          1   2  3      4     5        6
+  ;;                    (-------)             (----------)        (------)            (------)
+  ;;         (----------------------------------------------------------------------------------)
+  ;;            const      var    func    T          T?        :  name
+  (format "\\(?:const \\(?:var\\)?func%s+?%s\\(?:%s+?%s\\)?%s*?:\\(%s%s+?([^;]+?)\\)%s+?is%s+?\\(?:%s\\)\\)"
+          ;;                                                      G1
+          ;;                          %   %      %   %     %       %  %             %     %        %
+          ;;                          1   2      3   4     5       6  7             8     9        10
           seed7--whitespace-re                    ; 1
           seed7--non-capturing-name-identifier-re ; 2
-          "[^;]"                                  ; 3  any char but semi-colon
-          seed7--whitespace-re                    ; 4
+          seed7--whitespace-re                    ; 3
+          seed7--non-capturing-name-identifier-re ; 4
           seed7--whitespace-re                    ; 5
-          seed7--function-value-forward-or-action-declaration-re) ; 6
+          "?:"                                    ; 6: don't capture G1
+          "[^;]"                                  ; 7
+          seed7--whitespace-re                    ; 8
+          seed7--whitespace-re                    ; 9
+          seed7--function-value-forward-or-action-declaration-re) ; 10
   "Regexp matching value, forward or action function declaration.
-No matching group.")
+No capture group.")
 
 (defconst seed7-forward-or-action-function-declaration-g1-re
-  ;;                             (--------------)     (-----------)
-  ;;                        (----------------------------------------)
-  ;;(--------------------------------------------------------------------)
-  (format "\\(?:const \\(?:var\\)?func%s+?%s:\\(%s+?\\)%s+?is%s+?\\(?:%s\\)\\)"
-          ;;                          %   %     %      %     %        %
-          ;;                          1   2     3      4     5        6
+  ;;                    (-------)             (----------)        (------)            (------)
+  ;;         (----------------------------------------------------------------------------------)
+  ;;            const      var    func    T          T?        :  name
+  (format "\\(?:const \\(?:var\\)?func%s+?%s\\(?:%s+?%s\\)?%s*?:\\(%s%s+?([^;]+?)\\)%s+?is%s+?\\(?:%s\\)\\)"
+          ;;                                                      G1
+          ;;                          %   %      %   %     %       %  %             %     %        %
+          ;;                          1   2      3   4     5       6  7             8     9        10
           seed7--whitespace-re                    ; 1
           seed7--non-capturing-name-identifier-re ; 2
-          "[^;]"                                  ; 3  any char but semi-colon
-          seed7--whitespace-re                    ; 4
+          seed7--whitespace-re                    ; 3
+          seed7--non-capturing-name-identifier-re ; 4
           seed7--whitespace-re                    ; 5
-          seed7--function-value-forward-or-action-declaration-re) ; 6
+          ""                                      ; 6: capture G1
+          "[^;]"                                  ; 7
+          seed7--whitespace-re                    ; 8
+          seed7--whitespace-re                    ; 9
+          seed7--function-value-forward-or-action-declaration-re) ; 10
   "Regexp matching value, forward or action function declaration.
 1 group: function name.")
-
 
 ;; --
 ;; Regexp for procedure and function declarations or beginning of block.
@@ -5839,6 +5866,14 @@ If optional COMPILE argument set, compile the file to executable instead."
 (defvar-local seed7---xref-buffer nil
   "Internal/hidden buffer holding cross-reference info for visited Seed7 file.")
 
+(defconst seed7--xref-line-re-fmt
+  "^\\(%s\\)\t\\(.+?\\)\t\\(.+?\\)$"
+  "Regexp format extracting the 3 elements of the s7xref output line.
+Requires 1 format %s argument for the identifier.
+- Group 1: identifier,
+- Group 2: file name,
+- Group 3: line number.")
+
 (defun seed7--build-xref ()
   "Build a cross reference buffer for the current Seed7 file.
 The buffer holds 1 line per object referenced.
@@ -5850,70 +5885,70 @@ Each line holds 3 tab-separated elements:
 This uses the Seed7 cross reference tool identified by the `seed7-xref'
 user-option."
   (let* ((xref-uo-list (split-string seed7-xref))
-        (xref-executable-name (executable-find (car-safe xref-uo-list))))
+         (xref-executable-name (executable-find (car-safe xref-uo-list))))
     (if (and xref-executable-name
              (file-executable-p xref-executable-name))
-      (let* ((sd7-source-fname-with-path
-              (expand-file-name buffer-file-truename))
-             (fbasename (file-name-sans-extension
-                         (file-name-nondirectory
-                          buffer-file-truename)))
-             (outbuf (or (and seed7---xref-buffer
-                              (buffer-live-p seed7---xref-buffer))
-                         (setq-local
-                          seed7---xref-buffer
-                          (get-buffer-create
-                           ;; Create a hidden buffer by using a leading
-                           ;; space in its name.
-                           (format " *s7xref-for-%s*" fbasename))))))
-        ;; In case the command was executed before, erase prior content
-        (with-current-buffer outbuf
-          (erase-buffer))
-        (if (eq (length xref-uo-list) 1)
-            ;; seed7-xref is just 1 word, the name of the xref program
-            (call-process xref-executable-name
-                          nil outbuf nil
-                          sd7-source-fname-with-path)
-          ;; seed7-xref has more than 1 word.  The first word is the program,
-          ;; and the following words are its arguments.  For instance the
-          ;; program name could be s7 and the next word a Seed7 source file to
-          ;; interpret.  And there could be other options.  Pass them all to
-          ;; the `call-process' as args.
-          ;; Since we do not use the shell, the file paths *must* be expanded.
-          (let ((args (list sd7-source-fname-with-path)))
-            (if (string= (file-name-nondirectory (car xref-uo-list)) "s7")
-                ;; If Seed7 interpreter is used, ensure that the second element
-                ;; is a fully expanded file name that exists.  If it exists
-                ;; prepend the fully expanded file name to args.
-                (progn
-                  (setq xref-uo-list (cdr xref-uo-list))
-                  (let ((sd7-script-fn
-                         (expand-file-name (car-safe xref-uo-list))))
-                    (if (and sd7-script-fn (file-exists-p sd7-script-fn))
-                        (progn
-                          ;; remove script filename from the list
-                          (setq xref-uo-list (cdr-safe xref-uo-list))
-                          ;; prepend scripts args if any
-                          (when xref-uo-list
-                            (setq args (append xref-uo-list args)))
-                          ;; then prepend script file-name
-                          (setq args (append (list sd7-script-fn) args)))
-                      (user-error
-                       "Invalid seed7-xref: %s\nseed7-xref = %s"
-                       (if sd7-script-fn
-                           (format "Can't find script: %s" sd7-script-fn)
-                         "No Seed7 file identified after s7 interpreter.")
-                       seed7-xref))))
-              ;; The command is not a s7 command but something else.
-              ;; We know the first word is a valid executable, just proceed
-              ;; by setting pre-pending the cdr of seed7-xref list.
-              (when (> (length xref-uo-list) 1)
-                (setq args (append (cdr xref-uo-list) args))))
-            ;; Execute the command with appropriate arguments.
-            (apply #'call-process
-                   xref-executable-name
-                   nil outbuf nil
-                   args))))
+        (let* ((sd7-source-fname-with-path
+                (expand-file-name buffer-file-truename))
+               (fbasename (file-name-sans-extension
+                           (file-name-nondirectory
+                            buffer-file-truename)))
+               (outbuf (or (and seed7---xref-buffer
+                                (buffer-live-p seed7---xref-buffer))
+                           (setq-local
+                            seed7---xref-buffer
+                            (get-buffer-create
+                             ;; Create a hidden buffer by using a leading
+                             ;; space in its name.
+                             (format " *s7xref-for-%s*" fbasename))))))
+          ;; In case the command was executed before, erase prior content
+          (with-current-buffer outbuf
+            (erase-buffer))
+          (if (eq (length xref-uo-list) 1)
+              ;; seed7-xref is just 1 word, the name of the xref program
+              (call-process xref-executable-name
+                            nil outbuf nil
+                            sd7-source-fname-with-path)
+            ;; seed7-xref has more than 1 word.  The first word is the program,
+            ;; and the following words are its arguments.  For instance the
+            ;; program name could be s7 and the next word a Seed7 source file to
+            ;; interpret.  And there could be other options.  Pass them all to
+            ;; the `call-process' as args.
+            ;; Since we do not use the shell, the file paths *must* be expanded.
+            (let ((args (list sd7-source-fname-with-path)))
+              (if (string= (file-name-nondirectory (car xref-uo-list)) "s7")
+                  ;; If Seed7 interpreter is used, ensure that the second element
+                  ;; is a fully expanded file name that exists.  If it exists
+                  ;; prepend the fully expanded file name to args.
+                  (progn
+                    (setq xref-uo-list (cdr xref-uo-list))
+                    (let ((sd7-script-fn
+                           (expand-file-name (car-safe xref-uo-list))))
+                      (if (and sd7-script-fn (file-exists-p sd7-script-fn))
+                          (progn
+                            ;; remove script filename from the list
+                            (setq xref-uo-list (cdr-safe xref-uo-list))
+                            ;; prepend scripts args if any
+                            (when xref-uo-list
+                              (setq args (append xref-uo-list args)))
+                            ;; then prepend script file-name
+                            (setq args (append (list sd7-script-fn) args)))
+                        (user-error
+                         "Invalid seed7-xref: %s\nseed7-xref = %s"
+                         (if sd7-script-fn
+                             (format "Can't find script: %s" sd7-script-fn)
+                           "No Seed7 file identified after s7 interpreter.")
+                         seed7-xref))))
+                ;; The command is not a s7 command but something else.
+                ;; We know the first word is a valid executable, just proceed
+                ;; by setting pre-pending the cdr of seed7-xref list.
+                (when (> (length xref-uo-list) 1)
+                  (setq args (append (cdr xref-uo-list) args))))
+              ;; Execute the command with appropriate arguments.
+              (apply #'call-process
+                     xref-executable-name
+                     nil outbuf nil
+                     args))))
       (user-error "\
 The seed7-xref user-option does not identify an executable file: %s
 Please update!"
@@ -6069,8 +6104,8 @@ Return a list of 4-element lists, where each 4-element list has:
 - 1: The line number integer,
 - 2: The column number integer
 - 3: A description string (the signature, if found, otherwise a replacement)."
-  ;; build the xref list for this See7 file if it does not already exist.
-  ;; store it inside an internal buffer `seed7---xref-buffer'.
+  ;; Build the xref list for this Seed7 file if it does not already exist.
+  ;; Store it inside an internal buffer `seed7---xref-buffer'.
   (unless (and seed7---xref-buffer
                (buffer-live-p seed7---xref-buffer))
     (seed7--build-xref))
@@ -6081,8 +6116,7 @@ Return a list of 4-element lists, where each 4-element list has:
   ;; identifier string, the file name and the line number.
   (let ((entries nil)
         (keep-searching t)
-        (text-re (format "^\\(%s\\)\t\\(.+?\\)\t\\(.+?\\)$" (regexp-quote
-                                                             identifier))))
+        (text-re (format seed7--xref-line-re-fmt (regexp-quote identifier))))
     (with-current-buffer seed7---xref-buffer
       (goto-char (point-min))
       (while (and keep-searching)
@@ -6208,6 +6242,51 @@ DESC describes it."
 ;;  ========================
 ;; [:todo 2025-06-07, by Pierre Rouleau: add completion support]
 ;; (defun seed7-completions-at-point)
+
+
+(defun seed7--xref-identifiers ()
+  "Return a list of all identifiers extracted by s7xref for current file."
+  ;; Build the xref list for this Seed7 file if it does not already exist.
+  ;; Store it inside an internal buffer `seed7---xref-buffer'.
+  (unless (and seed7---xref-buffer
+               (buffer-live-p seed7---xref-buffer))
+    (seed7--build-xref))
+  (let ((identifiers nil)
+        (identifier nil)
+        (text-re (format
+                  seed7--xref-line-re-fmt
+                  seed7--non-capturing-name-identifier-re)))
+    (with-current-buffer seed7---xref-buffer
+      (goto-char (point-min))
+      (while (seed7-re-search-forward text-re)
+        (setq identifier (match-string 1))
+        (unless (member identifier identifiers)
+          (push identifier identifiers))))
+    (sort identifiers)))
+
+(defun seed7--procfun-identifiers ()
+  "Return list of all identifiers of function or procedure."
+  (save-excursion
+    (let ((identifiers nil)
+          (callable-start nil)
+          (callable-end nil)
+          (param-var-end nil))
+      (seed7--to-top)
+      (setq callable-start (point))
+      (seed7-end-of-defun)
+      (setq callable-end (point))
+      (goto-char callable-start)
+      (setq param-var-end
+            (if (seed7-re-search-forward "^[[:blank:]]+begin\\>" callable-end)
+                (point)
+              callable-end))
+      (dolist (start.end (seed7--symbol-definition-areas-for-block
+                          (list 0 "" callable-start param-var-end))
+                         (sort identifiers))
+        (goto-char (car start.end))
+        (while (seed7-re-search-forward seed7-parameter-var-declaration-regexp
+                                        (cdr start.end))
+          (push (substring-no-properties (match-string 1)) identifiers))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Abbreviation Support
