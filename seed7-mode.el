@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-08 09:43:54 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-08 10:52:48 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -452,7 +452,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-08T13:43:54+0000 W28-2"
+(defconst seed7-mode-version-timestamp "2025-07-08T14:52:48+0000 W28-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6231,10 +6231,6 @@ DESC describes it."
 ;; (cl-defmethod xref-backend-apropos ((_backend (eql seed7)) symbol)
 ;;   (seed7-find-symbol-apropos symbol))
 ;;
-;; (cl-defmethod
-;;     xref-backend-identifier-completion-table ((_backend (eql seed7)))
-;;   "Return a list of terms for completions taken from the symbols in the current buffer."
-;;   (seed7--list-of-terms)))
 
 
 ;; ---------------------------------------------------------------------------
@@ -6287,6 +6283,14 @@ DESC describes it."
         (while (seed7-re-search-forward seed7-parameter-var-declaration-regexp
                                         (cdr start.end))
           (push (substring-no-properties (match-string 1)) identifiers))))))
+
+(defun seed7--list-of-terms ()
+  "Return the list of identifiers available from the current location."
+  (sort (append (seed7--xref-identifiers) (seed7--procfun-identifiers))))
+
+(cl-defmethod xref-backend-identifier-completion-table ((_backend (eql seed7)))
+  "Return a list of terms for completions taken from the current buffer."
+  (seed7--list-of-terms))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Abbreviation Support
@@ -6628,7 +6632,12 @@ Make sure you have no duplication of keywords if you edit the list."
 
   ;; Seed7 Cross Reference
   ;; - Use the xref framework : implement a backend for Seed7 here. See above.
-  (add-hook 'xref-backend-functions #'seed7--xref-backend nil t))
+  (add-hook 'xref-backend-functions #'seed7--xref-backend nil t)
+
+  ;; Seed7 Completion [:todo 2025-07-08, by Pierre Rouleau: find the proper way to hook it]
+  ;; (add-hook 'completion-at-point-functions #'seed7--xref-backend nil t)
+  ;; (add-hook 'completion-at-point-functions #'seed7--list-of-terms nil 'local)
+  )
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.s\\(d7\\|7i\\)\\'" . seed7-mode))
