@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-08 13:38:17 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-08 14:07:34 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -452,7 +452,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-08T17:38:17+0000 W28-2"
+(defconst seed7-mode-version-timestamp "2025-07-08T18:07:34+0000 W28-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1868,17 +1868,13 @@ Note: the default style for all Seed7 buffers is controlled by the
 ;;* Seed7 iMenu Support Regexp
 ;;  ==========================
 
-(defconst seed7--procedure-forward-or-action-re
-  (format "forward;\\|DYNAMIC;\\|action%s+?\\\".+?\\\";"
-          seed7--whitespace-re)
+(defconst seed7--procfunc-forward-or-action-re
+  (format "forward;\\|DYNAMIC;\\|action%s+?\\\"%s+?\\\";"
+          ;;                           %       %
+          ;;                           1       2
+          seed7--whitespace-re
+          seed7--non-capturing-name-identifier-re)
   "Regexp matching forward or action declaration. No capture group.")
-
-;; functions declarations support all procedure have plus ability to complete
-;;  with a 'is value;' syntax like 'is 16;'
-(defconst seed7--function-value-forward-or-action-declaration-re
-  (format "[^;:]+?;\\|%s"
-          seed7--procedure-forward-or-action-re)
-  "Regexp matching value, forward or action declaration. No capture group.")
 
 ;; --
 ;; Regexp for procedure and function declarations. No matching group.
@@ -1888,7 +1884,7 @@ Note: the default style for all Seed7 buffers is controlled by the
    "const proc\\(?:%s\\)+?is%s+?\\(?:%s\\)"
    "[^;]"
    seed7--whitespace-re
-   seed7--procedure-forward-or-action-re)
+   seed7--procfunc-forward-or-action-re)
   "Regexp matching forward or action procedure declaration. No capture group.")
 
 
@@ -1910,7 +1906,7 @@ Note: the default style for all Seed7 buffers is controlled by the
           "[^;]"                                  ; 7
           seed7--whitespace-re                    ; 8
           seed7--whitespace-re                    ; 9
-          seed7--function-value-forward-or-action-declaration-re) ; 10
+          seed7--procfunc-forward-or-action-re)   ; 10
   "Regexp matching value, forward or action function declaration.
 No capture group.")
 
@@ -1931,7 +1927,7 @@ No capture group.")
           "[^;]"                                  ; 7
           seed7--whitespace-re                    ; 8
           seed7--whitespace-re                    ; 9
-          seed7--function-value-forward-or-action-declaration-re) ; 10
+          seed7--procfunc-forward-or-action-re)   ; 10
   "Regexp matching value, forward or action function declaration.
 1 group: function name.")
 
@@ -1949,7 +1945,7 @@ No capture group.")
    seed7--non-capturing-name-identifier-re ; 3
    seed7--anychar-re                       ; 4
    seed7--whitespace-re                    ; 5
-   seed7--procedure-forward-or-action-re)  ; 6
+   seed7--procfunc-forward-or-action-re)   ; 6
   "Match procedure name in group 1.")
 
 (defconst seed7-function-regexp
@@ -1960,21 +1956,21 @@ No capture group.")
    ;;                  %                   G2  %    %        %         %           %   G3%    %         %  %       %   %    %    G4               %
    ;;                  1                   %2  3    4        5         6           7     8    9         10 11      12  13   14                    15
    ;;
-   seed7--whitespace-re                                   ; 1
-   seed7-type-identifier-re                               ; 2
-   seed7--whitespace-re                                   ; 3
-   seed7--opt-square-brace-start-re                       ; 4 w[
-   seed7--whitespace-re                                   ; 5
-   seed7--anychar-re                                      ; 6
-   seed7--whitespace-re                                   ; 7
-   seed7--non-capturing-name-identifier-re                ; 8
-   seed7--non-capturing-special-identifier-re             ; 9
-   seed7--whitespace-re                                   ; 10
-   seed7--anychar-re                                      ; 11
-   seed7--anychar-re                                      ; 12
-   seed7--opt-square-brace-end-re                         ; 13 w]w
-   seed7--whitespace-re                                   ; 14
-   seed7--function-value-forward-or-action-declaration-re) ; 15
+   seed7--whitespace-re                         ; 1
+   seed7-type-identifier-re                     ; 2
+   seed7--whitespace-re                         ; 3
+   seed7--opt-square-brace-start-re             ; 4 w[
+   seed7--whitespace-re                         ; 5
+   seed7--anychar-re                            ; 6
+   seed7--whitespace-re                         ; 7
+   seed7--non-capturing-name-identifier-re      ; 8
+   seed7--non-capturing-special-identifier-re   ; 9
+   seed7--whitespace-re                         ; 10
+   seed7--anychar-re                            ; 11
+   seed7--anychar-re                            ; 12
+   seed7--opt-square-brace-end-re               ; 13 w]w
+   seed7--whitespace-re                         ; 14
+   seed7--procfunc-forward-or-action-re)        ; 15
   "Regexp identifying beginning of procedures and functions.
 Group 1: The function return type.
 Group 2: The function name.
