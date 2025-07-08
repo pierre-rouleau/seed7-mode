@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-08 10:52:48 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-08 11:09:32 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -452,7 +452,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-08T14:52:48+0000 W28-2"
+(defconst seed7-mode-version-timestamp "2025-07-08T15:09:32+0000 W28-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6038,7 +6038,8 @@ procedure. It's a is a list returned by the function
       areas)))
 
 
-(defun seed7--find-identifier-in (identifier &optional block-spec
+(defun seed7--find-identifier-in (identifier from-line
+                                             &optional block-spec
                                              start-pos end-pos)
   "Return position info list of IDENTIFIER inside specified constraints.
 The constraints are optional: BLOCK-SPEC, START-POS and END-POS.
@@ -6052,12 +6053,14 @@ Return a list of 4-elements:
   (save-excursion
     (goto-char (or start-pos (point-min)))
     (when (search-forward identifier end-pos :noerror)
-      (let ((specs nil))
-        (when (or (seed7--set (seed7-line-inside-a-block 0)
-                              specs)
-                  (not block-spec))
+      (let ((specs nil)
+            (found-lineno (seed7-current-line-number)))
+        (when (and (not (eq from-line found-lineno))
+                   (or (seed7--set (seed7-line-inside-a-block 0)
+                                   specs)
+                       (not block-spec)))
           (list (expand-file-name buffer-file-truename)
-                (seed7-current-line-number)
+                found-lineno
                 (- (current-column) (length identifier))
                 (seed7--signature-at
                  (if block-spec
@@ -6067,7 +6070,8 @@ Return a list of 4-elements:
                    (progn (forward-line 0) (point))))))))))
 
 
-(defun seed7--find-candidates-for (identifier &optional block-spec)
+(defun seed7--find-candidates-for (identifier from-line
+                                              &optional block-spec)
   "Find information about IDENTIFIER, globally or inside BLOCK-SPEC.
 
 Return a list of 4-element lists, where each 4-element list has:
@@ -6086,14 +6090,14 @@ of s7xref program."
           (dolist (start.end (seed7--symbol-definition-areas-for-block
                               block-spec)
                              candidates)
-            (when (seed7--set (seed7--find-identifier-in identifier
+            (when (seed7--set (seed7--find-identifier-in identifier from-line
                                                          block-spec
                                                          (car start.end)
                                                          (cdr start.end))
                               candidate)
               (push candidate candidates)))
         ;; without a block spec: check in the entire file
-        (list (seed7--find-identifier-in identifier))))))
+        (list (seed7--find-identifier-in identifier from-line))))))
 
 
 (defun seed7--xref-get-from-s7xref (identifier)
@@ -6142,7 +6146,8 @@ Return a list of 4-element lists, where each 4-element list has:
 - 1: The line number integer,
 - 2: The column number integer
 - 3: A description string (the signature, if found, otherwise a replacement)."
-  (let ((point-face (get-char-property (point) 'face))
+  (let ((current-lineno (seed7-current-line-number))
+        (point-face (get-char-property (point) 'face))
         (local-block-spec (save-excursion (seed7-to-top-of-block)
                                           (seed7-line-inside-a-block 0)))
         (candidates nil)
@@ -6155,7 +6160,7 @@ Return a list of 4-element lists, where each 4-element list has:
      ;; table and then in the global scope of the current file.
      ((eq point-face 'seed7-name-identifier-face)
       (if (seed7--set
-           (seed7--find-candidates-for identifier local-block-spec)
+           (seed7--find-candidates-for identifier current-lineno local-block-spec)
            candidates)
           candidates
         ;; if nothing found in current block, search at program scope
@@ -6163,7 +6168,7 @@ Return a list of 4-element lists, where each 4-element list has:
         (or (seed7--xref-get-from-s7xref identifier)
             ;; if that also fails to find something, then look into the global
             ;; scope of the current file.
-            (seed7--find-candidates-for identifier))))
+            (seed7--find-candidates-for identifier current-lineno))))
      ;; for other keywords only look into the xref extracted by s7xref
      (t (seed7--xref-get-from-s7xref identifier)))))
 
