@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-08 16:40:34 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-08 17:26:43 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -199,31 +199,32 @@
 ;; - Version Info
 ;; - Seed7 Customization
 ;; - Seed7 Keyword Regexp
-;;    - Seed7 Tokens
-;;      - Seed7 Comments Control
-;;      - Seed7 Basic Element Regexp
-;;      - Seed7 Float Literals
-;;      - Seed7 Numbers with Exponents
-;;      - Seed7 BigInteger Literals
-;;      - Seed7 Integer Literals
-;;    - Seed7 Pragmas
-;;    - Seed7 include
-;;    - Seed7 keywords used in statements
-;;    - Seed7 is-statemement keywords
-;;    - Seed7 keywords used in middle of statements
-;;    - Seed7 statement enclosing keywords
-;;    - Seed7 declaration introduction keywords
-;;    - Seed7 Predefined Types
-;;    - Seed7 Predefined Constants
-;;    - Seed7 Predefined Variables
-;;    - Seed7 Predefined errinfo value
-;;    - Seed7 Predefined Functions
-;;    - Seed7 Operator Symbols
-;;    - Seed7 Predefined Assignment Operators
-;;    - Seed7 Predefined Comparison Operators
-;;    - Seed7 Other Predefined Operators
-;;    - Seed7 Arithmetic Operators
-;;    - Seed7 Block Processing Regular Expressions
+;;   - Seed7 Tokens
+;;     - Seed7 Comments Control
+;;     - Seed7 Basic Element Regexp
+;;     - Seed7 Float Literals
+;;     - Seed7 Numbers with Exponents
+;;     - Seed7 BigInteger Literals
+;;     - Seed7 Integer Literals
+;;   - Seed7 Pragmas
+;;   - Seed7 include
+;;   - Seed7 keywords used in statements
+;;   - Seed7 is-statemement keywords
+;;   - Seed7 keywords used in middle of statements
+;;   - Seed7 statement enclosing keywords
+;;   - Seed7 declaration introduction keywords
+;;   - Seed7 Predefined Types
+;;   - Seed7 Predefined Constants
+;;   - Seed7 Predefined Variables
+;;   - Seed7 Predefined errinfo value
+;;   - Seed7 Predefined Functions
+;;   - Seed7 Operator Symbols
+;;   - Seed7 Predefined Assignment Operators
+;;   - Seed7 Predefined Comparison Operators
+;;   - Seed7 Other Predefined Operators
+;;   - Seed7 Arithmetic Operators
+;;   - Seed7 Block Processing Regular Expressions
+;;   - Seed7 Procedure/Function Regular Expressions
 ;; - Seed7 Mode Syntax Control
 ;;   - Seed7 Mode Syntax Table
 ;;   - Seed7 Mode Syntax Propertize Function
@@ -240,45 +241,44 @@
 ;; - Seed7 Low-level Macros
 ;;   . `seed7--set'
 ;; - Seed7 Code Navigation
-;;  - Seed7 Comment and String Identification Macros and Functions
-;;    . `seed7--point-in-code-p'
-;;      . `seed7--inside-string-p'
-;;      . `seed7--inside-comment-p'
-;;    . `seed7-inside-comment-p'
-;;    . `seed7-inside-string-p'
-;;      . `seed7--inside-string-p'
-;;  - Seed7 Code Search Functions
-;;    . `seed7-re-search-forward'
-;;    . `seed7-re-search-backward'
-;;  - Seed7 Procedure/Function Regular Expressions
-;;  - Seed7 Skipping Comments
-;;    . `seed7-skip-comment-backward'
-;;    . `seed7-skip-comment-forward'
-;;      . `seed7---skip-block-comment-forward'
-;;      . `seed7---skip-line-end-comment'
-;;  - Seed7 Navigation by Block/Procedure/Function
-;;    - Navigation to Outer Block
-;;      . `seed7-top-block-name'
-;;        . `seed7--to-top'
-;;        . `seed7--block-name'
-;;      . `seed7-to-top-of-block'
-;;        . `seed7--to-top'
-;;    - Seed7 Procedure/Function Search Utility functions
-;;      . `seed7--move-and-mark'
-;;      . `seed7--pos-msg'
-;;      . `seed7--show-info'
-;;      . `seed7--no-defun-found-msg-for'
-;;    - Seed7 Procedure/Function Navigation Commands
-;;      * `seed7-beg-of-defun'
-;;      * `seed7-beg-of-next-defun'
-;;      * `seed7-end-of-defun'
-;;        o `seed7--move-and-mark'
-;;        o `seed7--pos-msg'
-;;     - Seed7 Procedure/Function Navigation Mode Functions
-;;       > `seed7--beg-of-defun-silently'
-;;         o `seed7-beg-of-defun'
-;;       > `seed7--end-of-defun-silently'
-;;         o `seed7-end-of-defun'
+;;   - Seed7 Comment and String Identification Macros and Functions
+;;     . `seed7--point-in-code-p'
+;;       . `seed7--inside-string-p'
+;;       . `seed7--inside-comment-p'
+;;     . `seed7-inside-comment-p'
+;;     . `seed7-inside-string-p'
+;;       . `seed7--inside-string-p'
+;;   - Seed7 Code Search Functions
+;;     . `seed7-re-search-forward'
+;;     . `seed7-re-search-backward'
+;;   - Seed7 Skipping Comments
+;;     . `seed7-skip-comment-backward'
+;;     . `seed7-skip-comment-forward'
+;;       . `seed7---skip-block-comment-forward'
+;;       . `seed7---skip-line-end-comment'
+;;   - Seed7 Navigation by Block/Procedure/Function
+;;     - Navigation to Outer Block
+;;       . `seed7-top-block-name'
+;;         . `seed7--to-top'
+;;         . `seed7--block-name'
+;;       . `seed7-to-top-of-block'
+;;         . `seed7--to-top'
+;;     - Seed7 Procedure/Function Search Utility functions
+;;       . `seed7--move-and-mark'
+;;       . `seed7--pos-msg'
+;;       . `seed7--show-info'
+;;       . `seed7--no-defun-found-msg-for'
+;;     - Seed7 Procedure/Function Navigation Commands
+;;       * `seed7-beg-of-defun'
+;;       * `seed7-beg-of-next-defun'
+;;       * `seed7-end-of-defun'
+;;         o `seed7--move-and-mark'
+;;         o `seed7--pos-msg'
+;;      - Seed7 Procedure/Function Navigation Mode Functions
+;;        > `seed7--beg-of-defun-silently'
+;;          o `seed7-beg-of-defun'
+;;        > `seed7--end-of-defun-silently'
+;;          o `seed7-end-of-defun'
 ;;   - Seed7 Navigation by Block
 ;;     * `seed7-to-block-forward'
 ;;       . `seed7--end-regxp-for'
@@ -452,7 +452,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-08T20:40:34+0000 W28-2"
+(defconst seed7-mode-version-timestamp "2025-07-08T21:26:43+0000 W28-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1354,6 +1354,259 @@ catch \\|\
 \\<result\\>\\)"
   "Regexp for the top of a Seed7 block.  One capture group.")
 
+
+;;** Seed7 Procedure/Function Regular Expressions
+;;   --------------------------------------------
+
+(defconst seed7-one-arg-re
+  ;;         (-------------------------------------------------------------------)
+  ;;                      in       type1      type   :   id             attr attribute
+  ;;              (    (          (----------)          )         )  |  (--------------)
+  (format "\\(?:\\(?:\\(?:%s%s+?\\(?:%s%s+?\\)?%s%s*?:\\)?%s+?%s\\)\\|\\(?:attr%s+?%s\\)\\)"
+          ;;              % %        % %       % %        %   %                %   %
+          ;;              1 2        3 4       5 6        7   8                9   10
+          seed7-non-capturing-declaration-intro-keywords-regexp ; 1 in/out/inout...
+          seed7--whitespace-re                                  ; 2
+          seed7--non-capturing-name-identifier-re               ; 3 type (opt)
+          seed7--whitespace-re                                  ; 4
+          seed7--non-capturing-name-identifier-re               ; 5 type
+          seed7--whitespace-re                                  ; 6
+          seed7--whitespace-re                                  ; 7
+          seed7--non-capturing-name-identifier-re               ; 8 identifier
+          seed7--whitespace-re                                  ; 9
+          seed7--non-capturing-name-identifier-re               ; 10 attribute
+          )
+  "Regexp for one argument declaration.  No capture group.
+Matches something like:
+  - \"in integer: index\" or,
+  - \"attr arrayType\".")
+
+(defconst seed7-args-in-parens-re
+  (format "(\\(?:%s*?%s\\(?:%s*?,%s*?%s%s*?\\)*?\\)?)"
+          ;;     %   %    %    %   % %
+          ;;     1   2    3    4   5 6
+          seed7--whitespace-re     ; 1
+          seed7-one-arg-re         ; 2
+          seed7--whitespace-re     ; 3
+          seed7--whitespace-re     ; 4
+          seed7-one-arg-re         ; 5
+          seed7--whitespace-re)    ; 6
+  "Regexp for 0 to many arguments inside parenthesis pair.")
+
+;; --
+
+(defconst seed7-name-paramparens-re               ; 1
+  (format "\\(%s\\)%s+?%s"
+          seed7--non-capturing-name-identifier-re
+          seed7--whitespace-re
+          seed7-args-in-parens-re)
+  "Regexp for fctname ( args... ).  Group1 : fctname.")
+
+(defconst seed7-paramparens-name-paramparens-re     ; 2
+  (format "%s%s+?\\(%s\\|%s\\)%s+?%s"
+          seed7-args-in-parens-re
+          seed7--whitespace-re
+          seed7--non-capturing-name-identifier-re
+          seed7--non-capturing-special-identifier-re
+          seed7--whitespace-re
+          seed7-args-in-parens-re)
+  "Regexp for (args...) fctname (args...). Group1: fctname.")
+
+
+(defconst seed7-arrparens-name-arrparens-re     ; 3
+  (format "\\[%s*?%s%s+?\\(%s\\|%s\\)%s+?%s%s*?]"
+          seed7--whitespace-re
+          seed7-args-in-parens-re
+          seed7--whitespace-re
+          seed7--non-capturing-name-identifier-re
+          seed7--non-capturing-special-identifier-re
+          seed7--whitespace-re
+          seed7-args-in-parens-re
+          seed7--whitespace-re)
+  "Regexp for [ (args...) fctname (args...) ]. Group1: fctname.")
+
+(defconst seed7-arg-arrparens-name-arrparens-re ; 4
+  (format "%s%s+?\\[%s*?%s%s+?\\(%s\\|%s\\)%s+?%s%s*?]"
+          seed7-args-in-parens-re
+          seed7--whitespace-re
+          seed7--whitespace-re
+          seed7-args-in-parens-re
+          seed7--whitespace-re
+          seed7--non-capturing-name-identifier-re
+          seed7--non-capturing-special-identifier-re
+          seed7--whitespace-re
+          seed7-args-in-parens-re
+          seed7--whitespace-re)
+  "Regexp for (args...)  [ (args...) fctname (args...) ]. Group1: fctname.")
+
+(defconst seed7-emptyarr-paramparens-re           ; 5
+  (format "\\[]%s+?%s"
+          seed7--whitespace-re
+          seed7-args-in-parens-re)
+  "Regexp for [] (args...)")
+
+(defconst seed7-arrparens-paramparens-re          ; 6
+  (format "\\[%s+?%s%s+?]%s+?%s"
+          seed7--whitespace-re
+          seed7-args-in-parens-re
+          seed7--whitespace-re
+          seed7--whitespace-re
+          seed7-args-in-parens-re)
+  "Regexp for [(args...)] (args...)")
+
+(defconst seed7-paramparens-arrparens-re          ; 7
+  (format "%s+?%s%s+?\\[%s+?%s%s+?]"
+          seed7--whitespace-re
+          seed7-args-in-parens-re
+          seed7--whitespace-re
+          seed7--whitespace-re
+          seed7-args-in-parens-re
+          seed7--whitespace-re)
+  "Regexp for (args...) [(args...)]")
+
+(defconst seed7-paramparens-arrparens-op-re       ; 8
+  (format "%s+?%s%s+?\\[%s+?%s%s+?%s%s+?]"
+          seed7--whitespace-re
+          seed7-args-in-parens-re
+          seed7--whitespace-re
+          seed7--whitespace-re
+          seed7-args-in-parens-re
+          seed7--whitespace-re
+          seed7--non-capturing-special-identifier-re
+          seed7--whitespace-re)
+  "Regexp for (args...) [(args...) op ]")
+
+(defconst seed7-paramparens-op-arrparens-re       ; 9
+  (format "%s+?%s%s+?\\[%s+?%s%s+?%s%s+?]"
+          ;;%  % %      %   % %   % %
+          ;;1  2 3      4   5 6   7 8
+          seed7--whitespace-re                       ; 1
+          seed7-args-in-parens-re                    ; 2
+          seed7--whitespace-re                       ; 3
+          seed7--whitespace-re                       ; 4
+          seed7--non-capturing-special-identifier-re ; 5
+          seed7--whitespace-re                       ; 6
+          seed7-args-in-parens-re                    ; 7
+          seed7--whitespace-re)                      ; 8
+  "Regexp for (args...) [ op (args...) ]")
+
+(defconst seed7-paramparens-arrparens-op-arrparens-re ; 10
+  (format "%s+?%s%s+?\\[%s+?%s%s+?%s+?%s%s+?%s%s+?]"
+          ;;%  % %      %   % %   %   % %   % %
+          ;;1  2 3      4   5 6   7   8 9   10 11
+          seed7--whitespace-re                       ; 1
+          seed7-args-in-parens-re                    ; 2
+          seed7--whitespace-re                       ; 3
+          seed7--whitespace-re                       ; 4
+          seed7-args-in-parens-re                    ; 5
+          seed7--whitespace-re                       ; 6
+          seed7--whitespace-re                       ; 7
+          seed7--non-capturing-any-identifier-re     ; 8 : op
+          seed7--whitespace-re                       ; 9
+          seed7-args-in-parens-re                    ; 10
+          seed7--whitespace-re)                      ; 11
+  "Regexp for (args...) [ (args..) op (args...) ]")
+
+
+;; --
+
+(defconst seed7-any-param-pattern-re
+  (format "\\(?:\\(?:%s\\)\
+\\|\\(?:%s\\)\
+\\|\\(?:%s\\)\
+\\|\\(?:%s\\)\
+\\|\\(?:%s\\)\
+\\|\\(?:%s\\)\
+\\|\\(?:%s\\)\
+\\|\\(?:%s\\)\
+\\|\\(?:%s\\)\
+\\|\\(?:%s\\)\
+\\)"
+          seed7-paramparens-arrparens-op-arrparens-re ; 10
+          seed7-paramparens-op-arrparens-re           ; 9
+          seed7-paramparens-arrparens-op-re           ; 8
+          seed7-paramparens-arrparens-re              ; 7
+          seed7-arrparens-paramparens-re              ; 6
+          seed7-emptyarr-paramparens-re               ; 5
+          seed7-arg-arrparens-name-arrparens-re       ; 4
+          seed7-arrparens-name-arrparens-re           ; 3
+          seed7-paramparens-name-paramparens-re       ; 2
+          seed7-name-paramparens-re)                  ; 1
+  "Regexp for all possible argument patterns.")
+
+
+;; --
+
+;; (defconst seed7-arg-name-parens-re
+;;   (format "\\(?:%s??%s+?\\)??\\(%s\\|%s\\)%s+?%s"
+;;           seed7-args-in-parens-re
+;;           seed7--whitespace-re
+;;           seed7--non-capturing-name-identifier-re
+;;           seed7--non-capturing-special-identifier-re
+;;           seed7--whitespace-re
+;;           seed7-args-in-parens-re)
+;;   "Regexp for name followed by args within parens pair. Group1: function name.")
+
+(defconst seed7-callable-args-regexp
+  ""
+  "All potential argument forms.")
+
+
+
+(defconst seed7-procfunc-regexp
+  (format
+   ;;    const      varfunc| func | proc       RT?     :                                    fct name                           is     func
+   ;;              (--------------------------)                          (----)            (---------)        (----)                  (---------------------------------------------)
+   ;;              G1                          G2                     (----------)         G3            (------------)               G4
+   ;;                                                        (----------------------)
+   ;;                                              w    w[      w                                                      .   w]w w
+   "^%s*?const%s+\\(\\(?:var\\)?func \\|proc\\)%s??%s??:%s?\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?%s?is%s+\\(func\\|return\\|forward;\\|DYNAMIC;\\|action%s\".+?\";\\)"
+   ;;%        %    G1                          G2  %    %        %         %           %   G3%    %         %  %       %   %    %    G4                                            %
+   ;;1        2                                %3  4    5        6         7           8     9    10        11 12      13  14   15                                                 16
+   ;;
+   seed7--blank-re                            ; 1
+   seed7--whitespace-re                       ; 2
+   seed7-type-identifier-re                   ; 3 : RT? : return type (optional)
+   seed7--whitespace-re                       ; 4
+   seed7--opt-square-brace-start-re           ; 5 w[
+   seed7--whitespace-re                       ; 6
+   seed7--anychar-re                          ; 7
+   seed7--whitespace-re                       ; 8
+   seed7--non-capturing-name-identifier-re    ; 9
+   seed7--non-capturing-special-identifier-re ; 10
+   seed7--whitespace-re                       ; 11
+   seed7--anychar-re                          ; 12
+   seed7--anychar-re                          ; 13
+   seed7--opt-square-brace-end-re             ; 14 w]w
+   seed7--whitespace-re                       ; 15
+   seed7--whitespace-re)                      ; 16
+  "Regexp identifying beginning of procedures and functions.
+Group 1: \"proc\", \"varfunc\" or \"func \"
+Group 2: The func return type.  May be empty.
+Group 3: The func or proc name.
+Group 4: - \"func\" for proc or function that ends with \"end func\".
+         - \"return\" for a func that only has a return statement.
+         - \"forward\" for a forward declaration.
+         - \"action ACTION\" for an action function." )
+
+(defconst seed7-procfunc-regexp-item-type-group 1)
+(defconst seed7-procfunc-regexp-item-name-group 3)
+(defconst seed7-procfunc-regexp-tail-type-group 4)
+
+(defconst seed7-procfunc-end-regexp
+  "end[[:blank:]]+func;"
+  "Regexp to detect end of procedure or long function.  No group.")
+
+(defconst seed7-short-func-end-regexp
+  (format "^[[:blank:]]+?return\\(?:%s+?.+?\\)+?;"
+          ;;                        %
+          seed7--whitespace-re)
+  "Regexp to detect end of short function.  No group.")
+
+(defconst seed7-forward-declaration-end-regexp
+  "[[:blank:]]*?is[[:blank:]]+?forward;"
+  "Regexp to detect end of forward declaration.  No group.")
+
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;;* Seed7 Mode Syntax Control
 ;;  =========================
@@ -2182,257 +2435,6 @@ Return position of the closest found, nil if nothing found."
     (when closest-position
       (goto-char closest-position))))
 
-;;** Seed7 Procedure/Function Regular Expressions
-;;   --------------------------------------------
-
-(defconst seed7-one-arg-re
-  ;;         (-------------------------------------------------------------------)
-  ;;                      in       type1      type   :   id             attr attribute
-  ;;              (    (          (----------)          )         )  |  (--------------)
-  (format "\\(?:\\(?:\\(?:%s%s+?\\(?:%s%s+?\\)?%s%s*?:\\)?%s+?%s\\)\\|\\(?:attr%s+?%s\\)\\)"
-          ;;              % %        % %       % %        %   %                %   %
-          ;;              1 2        3 4       5 6        7   8                9   10
-          seed7-non-capturing-declaration-intro-keywords-regexp ; 1 in/out/inout...
-          seed7--whitespace-re                                  ; 2
-          seed7--non-capturing-name-identifier-re               ; 3 type (opt)
-          seed7--whitespace-re                                  ; 4
-          seed7--non-capturing-name-identifier-re               ; 5 type
-          seed7--whitespace-re                                  ; 6
-          seed7--whitespace-re                                  ; 7
-          seed7--non-capturing-name-identifier-re               ; 8 identifier
-          seed7--whitespace-re                                  ; 9
-          seed7--non-capturing-name-identifier-re               ; 10 attribute
-          )
-  "Regexp for one argument declaration.  No capture group.
-Matches something like:
-  - \"in integer: index\" or,
-  - \"attr arrayType\".")
-
-(defconst seed7-args-in-parens-re
-  (format "(\\(?:%s*?%s\\(?:%s*?,%s*?%s%s*?\\)*?\\)?)"
-          ;;     %   %    %    %   % %
-          ;;     1   2    3    4   5 6
-          seed7--whitespace-re     ; 1
-          seed7-one-arg-re         ; 2
-          seed7--whitespace-re     ; 3
-          seed7--whitespace-re     ; 4
-          seed7-one-arg-re         ; 5
-          seed7--whitespace-re)    ; 6
-  "Regexp for 0 to many arguments inside parenthesis pair.")
-
-;; --
-
-(defconst seed7-name-paramparens-re               ; 1
-  (format "\\(%s\\)%s+?%s"
-          seed7--non-capturing-name-identifier-re
-          seed7--whitespace-re
-          seed7-args-in-parens-re)
-  "Regexp for fctname ( args... ).  Group1 : fctname.")
-
-(defconst seed7-paramparens-name-paramparens-re     ; 2
-  (format "%s%s+?\\(%s\\|%s\\)%s+?%s"
-          seed7-args-in-parens-re
-          seed7--whitespace-re
-          seed7--non-capturing-name-identifier-re
-          seed7--non-capturing-special-identifier-re
-          seed7--whitespace-re
-          seed7-args-in-parens-re)
-  "Regexp for (args...) fctname (args...). Group1: fctname.")
-
-
-(defconst seed7-arrparens-name-arrparens-re     ; 3
-  (format "\\[%s*?%s%s+?\\(%s\\|%s\\)%s+?%s%s*?]"
-          seed7--whitespace-re
-          seed7-args-in-parens-re
-          seed7--whitespace-re
-          seed7--non-capturing-name-identifier-re
-          seed7--non-capturing-special-identifier-re
-          seed7--whitespace-re
-          seed7-args-in-parens-re
-          seed7--whitespace-re)
-  "Regexp for [ (args...) fctname (args...) ]. Group1: fctname.")
-
-(defconst seed7-arg-arrparens-name-arrparens-re ; 4
-  (format "%s%s+?\\[%s*?%s%s+?\\(%s\\|%s\\)%s+?%s%s*?]"
-          seed7-args-in-parens-re
-          seed7--whitespace-re
-          seed7--whitespace-re
-          seed7-args-in-parens-re
-          seed7--whitespace-re
-          seed7--non-capturing-name-identifier-re
-          seed7--non-capturing-special-identifier-re
-          seed7--whitespace-re
-          seed7-args-in-parens-re
-          seed7--whitespace-re)
-  "Regexp for (args...)  [ (args...) fctname (args...) ]. Group1: fctname.")
-
-(defconst seed7-emptyarr-paramparens-re           ; 5
-  (format "\\[]%s+?%s"
-          seed7--whitespace-re
-          seed7-args-in-parens-re)
-  "Regexp for [] (args...)")
-
-(defconst seed7-arrparens-paramparens-re          ; 6
-  (format "\\[%s+?%s%s+?]%s+?%s"
-          seed7--whitespace-re
-          seed7-args-in-parens-re
-          seed7--whitespace-re
-          seed7--whitespace-re
-          seed7-args-in-parens-re)
-  "Regexp for [(args...)] (args...)")
-
-(defconst seed7-paramparens-arrparens-re          ; 7
-  (format "%s+?%s%s+?\\[%s+?%s%s+?]"
-          seed7--whitespace-re
-          seed7-args-in-parens-re
-          seed7--whitespace-re
-          seed7--whitespace-re
-          seed7-args-in-parens-re
-          seed7--whitespace-re)
-  "Regexp for (args...) [(args...)]")
-
-(defconst seed7-paramparens-arrparens-op-re       ; 8
-  (format "%s+?%s%s+?\\[%s+?%s%s+?%s%s+?]"
-          seed7--whitespace-re
-          seed7-args-in-parens-re
-          seed7--whitespace-re
-          seed7--whitespace-re
-          seed7-args-in-parens-re
-          seed7--whitespace-re
-          seed7--non-capturing-special-identifier-re
-          seed7--whitespace-re)
-  "Regexp for (args...) [(args...) op ]")
-
-(defconst seed7-paramparens-op-arrparens-re       ; 9
-  (format "%s+?%s%s+?\\[%s+?%s%s+?%s%s+?]"
-          ;;%  % %      %   % %   % %
-          ;;1  2 3      4   5 6   7 8
-          seed7--whitespace-re                       ; 1
-          seed7-args-in-parens-re                    ; 2
-          seed7--whitespace-re                       ; 3
-          seed7--whitespace-re                       ; 4
-          seed7--non-capturing-special-identifier-re ; 5
-          seed7--whitespace-re                       ; 6
-          seed7-args-in-parens-re                    ; 7
-          seed7--whitespace-re)                      ; 8
-  "Regexp for (args...) [ op (args...) ]")
-
-(defconst seed7-paramparens-arrparens-op-arrparens-re ; 10
-  (format "%s+?%s%s+?\\[%s+?%s%s+?%s+?%s%s+?%s%s+?]"
-          ;;%  % %      %   % %   %   % %   % %
-          ;;1  2 3      4   5 6   7   8 9   10 11
-          seed7--whitespace-re                       ; 1
-          seed7-args-in-parens-re                    ; 2
-          seed7--whitespace-re                       ; 3
-          seed7--whitespace-re                       ; 4
-          seed7-args-in-parens-re                    ; 5
-          seed7--whitespace-re                       ; 6
-          seed7--whitespace-re                       ; 7
-          seed7--non-capturing-any-identifier-re     ; 8 : op
-          seed7--whitespace-re                       ; 9
-          seed7-args-in-parens-re                    ; 10
-          seed7--whitespace-re)                      ; 11
-  "Regexp for (args...) [ (args..) op (args...) ]")
-
-
-;; --
-
-(defconst seed7-any-param-pattern-re
-  (format "\\(?:\\(?:%s\\)\
-\\|\\(?:%s\\)\
-\\|\\(?:%s\\)\
-\\|\\(?:%s\\)\
-\\|\\(?:%s\\)\
-\\|\\(?:%s\\)\
-\\|\\(?:%s\\)\
-\\|\\(?:%s\\)\
-\\|\\(?:%s\\)\
-\\|\\(?:%s\\)\
-\\)"
-          seed7-paramparens-arrparens-op-arrparens-re ; 10
-          seed7-paramparens-op-arrparens-re           ; 9
-          seed7-paramparens-arrparens-op-re           ; 8
-          seed7-paramparens-arrparens-re              ; 7
-          seed7-arrparens-paramparens-re              ; 6
-          seed7-emptyarr-paramparens-re               ; 5
-          seed7-arg-arrparens-name-arrparens-re       ; 4
-          seed7-arrparens-name-arrparens-re           ; 3
-          seed7-paramparens-name-paramparens-re       ; 2
-          seed7-name-paramparens-re)                  ; 1
-  "Regexp for all possible argument patterns.")
-
-
-;; --
-
-;; (defconst seed7-arg-name-parens-re
-;;   (format "\\(?:%s??%s+?\\)??\\(%s\\|%s\\)%s+?%s"
-;;           seed7-args-in-parens-re
-;;           seed7--whitespace-re
-;;           seed7--non-capturing-name-identifier-re
-;;           seed7--non-capturing-special-identifier-re
-;;           seed7--whitespace-re
-;;           seed7-args-in-parens-re)
-;;   "Regexp for name followed by args within parens pair. Group1: function name.")
-
-(defconst seed7-callable-args-regexp
-  ""
-  "All potential argument forms.")
-
-
-
-(defconst seed7-procfunc-regexp
-  (format
-   ;;    const      varfunc| func | proc       RT?     :                                    fct name                           is     func
-   ;;              (--------------------------)                          (----)            (---------)        (----)                  (---------------------------------------------)
-   ;;              G1                          G2                     (----------)         G3            (------------)               G4
-   ;;                                                        (----------------------)
-   ;;                                              w    w[      w                                                      .   w]w w
-   "^%s*?const%s+\\(\\(?:var\\)?func \\|proc\\)%s??%s??:%s?\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?%s?is%s+\\(func\\|return\\|forward;\\|DYNAMIC;\\|action%s\".+?\";\\)"
-   ;;%        %    G1                          G2  %    %        %         %           %   G3%    %         %  %       %   %    %    G4                                            %
-   ;;1        2                                %3  4    5        6         7           8     9    10        11 12      13  14   15                                                 16
-   ;;
-   seed7--blank-re                            ; 1
-   seed7--whitespace-re                       ; 2
-   seed7-type-identifier-re                   ; 3 : RT? : return type (optional)
-   seed7--whitespace-re                       ; 4
-   seed7--opt-square-brace-start-re           ; 5 w[
-   seed7--whitespace-re                       ; 6
-   seed7--anychar-re                          ; 7
-   seed7--whitespace-re                       ; 8
-   seed7--non-capturing-name-identifier-re    ; 9
-   seed7--non-capturing-special-identifier-re ; 10
-   seed7--whitespace-re                       ; 11
-   seed7--anychar-re                          ; 12
-   seed7--anychar-re                          ; 13
-   seed7--opt-square-brace-end-re             ; 14 w]w
-   seed7--whitespace-re                       ; 15
-   seed7--whitespace-re)                      ; 16
-  "Regexp identifying beginning of procedures and functions.
-Group 1: \"proc\", \"varfunc\" or \"func \"
-Group 2: The func return type.  May be empty.
-Group 3: The func or proc name.
-Group 4: - \"func\" for proc or function that ends with \"end func\".
-         - \"return\" for a func that only has a return statement.
-         - \"forward\" for a forward declaration.
-         - \"action ACTION\" for an action function." )
-
-(defconst seed7-procfunc-regexp-item-type-group 1)
-(defconst seed7-procfunc-regexp-item-name-group 3)
-(defconst seed7-procfunc-regexp-tail-type-group 4)
-
-(defconst seed7-procfunc-end-regexp
-  "end[[:blank:]]+func;"
-  "Regexp to detect end of procedure or long function.  No group.")
-
-(defconst seed7-short-func-end-regexp
-  (format "^[[:blank:]]+?return\\(?:%s+?.+?\\)+?;"
-          ;;                        %
-          seed7--whitespace-re)
-  "Regexp to detect end of short function.  No group.")
-
-(defconst seed7-forward-declaration-end-regexp
-  "[[:blank:]]*?is[[:blank:]]+?forward;"
-  "Regexp to detect end of forward declaration.  No group.")
 
 ;;** Seed7 Skipping Comments
 ;;   -----------------------
