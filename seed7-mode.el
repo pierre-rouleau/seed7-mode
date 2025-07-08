@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-08 14:07:34 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-08 16:40:34 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -452,7 +452,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-08T18:07:34+0000 W28-2"
+(defconst seed7-mode-version-timestamp "2025-07-08T20:40:34+0000 W28-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -612,6 +612,10 @@ directory."
 ;; the mode to dynamically adapt to the Seed7 extended systax.
 ;;
 ;; See: https://seed7.net/faq.htm#add_syntax_highlighting
+;;
+;; Note: for several keywords, the "\\<" and "\\>" are important to prevent
+;;       detection of words inside other words, specially for regexp where
+;;       those keywords are not surrounded by whitespace.
 
 ;;** Seed7 Tokens
 ;;   ------------
@@ -835,7 +839,6 @@ Has only one capturing group.")
     "system"
     ))
 
-;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7-pragma-keywords-regexp
   (format "^%s\\(\\$ +%s\\)%s"
           "\\<"
@@ -855,7 +858,7 @@ Has only one capturing group.")
 ;;** Seed7 keywords used in statements
 ;;   ---------------------------------
 ;;
-;; All keywords a re listed here, but some are commented out because
+;; All keywords are listed here, but some are commented out because
 ;; they are part of another list below.  The ones left are the ones that
 ;; are at the beginning of a line (with or without leading white space),
 ;; identified in `seed7--lead-in-statement-keywords' and some that can also
@@ -864,11 +867,10 @@ Has only one capturing group.")
 
 (defconst seed7--lead-in-statement-keywords
   '(
-    "raise"                      ; currently missing in the Seed7 keyword list
-    "return"
+    "raise"     ; https://seed7.net/manual/errors.htm#Exceptions
+    "return"    ; https://seed7.net/faq.htm#no_return_statement
     ))
 
-;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7-lead-in-statement-keywords-regexp
   (format "^ *%s\\(%s\\)%s"        ; these are all the first keyword on a line
           "\\<"
@@ -881,7 +883,6 @@ Has only one capturing group.")
     "noop" ; not mentioned in operators but not an identifier, probably a special case
     ))
 
-;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7-in-statement-keywords-regexp
   (format ". %s\\(%s\\)%s"        ; these are all the first keyword on a line
           "\\<"
@@ -900,11 +901,12 @@ Has only one capturing group.")
     "forward"
     "DYNAMIC"
     "new"
-    "sub"))
+    "sub"
+    "action"  ; https://seed7.net/manual/actions.htm
+    ))
 
-;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7--is-statement-keywords-regexp
-  (format " is%s+\\<\\(%s\\)\\>"
+  (format " is%s+\\(%s\\)\\>"
           seed7--whitespace-re
           (rx-to-string
            `(: (or ,@seed7-is-statement-keywords)))))
@@ -950,10 +952,9 @@ Has only one capturing group.")
     "until"                    ; also in `seed7--statement-enclosing-keywords'
     ))
 
-;; Note: the < > are important to prevent detection of words inside other words.
 (defconst seed7-in-middle-statement-keywords-regexp
   (format "%s\\(%s\\)%s"
-          "[[:space:]]\\<"
+          "[[:space:]]"
           (rx-to-string
            `(: (or ,@seed7--in-middle-statement-keywords)))
           "\\>"))
@@ -2221,14 +2222,14 @@ Matches something like:
 
 ;; --
 
-(defconst seed7-name-argparens-re               ; 1
+(defconst seed7-name-paramparens-re               ; 1
   (format "\\(%s\\)%s+?%s"
           seed7--non-capturing-name-identifier-re
           seed7--whitespace-re
           seed7-args-in-parens-re)
   "Regexp for fctname ( args... ).  Group1 : fctname.")
 
-(defconst seed7-argparens-name-argparens-re     ; 2
+(defconst seed7-paramparens-name-paramparens-re     ; 2
   (format "%s%s+?\\(%s\\|%s\\)%s+?%s"
           seed7-args-in-parens-re
           seed7--whitespace-re
@@ -2265,13 +2266,13 @@ Matches something like:
           seed7--whitespace-re)
   "Regexp for (args...)  [ (args...) fctname (args...) ]. Group1: fctname.")
 
-(defconst seed7-emptyarr-argparens-re           ; 5
+(defconst seed7-emptyarr-paramparens-re           ; 5
   (format "\\[]%s+?%s"
           seed7--whitespace-re
           seed7-args-in-parens-re)
   "Regexp for [] (args...)")
 
-(defconst seed7-arrparens-argparens-re          ; 6
+(defconst seed7-arrparens-paramparens-re          ; 6
   (format "\\[%s+?%s%s+?]%s+?%s"
           seed7--whitespace-re
           seed7-args-in-parens-re
@@ -2280,7 +2281,7 @@ Matches something like:
           seed7-args-in-parens-re)
   "Regexp for [(args...)] (args...)")
 
-(defconst seed7-argparens-arrparens-re          ; 7
+(defconst seed7-paramparens-arrparens-re          ; 7
   (format "%s+?%s%s+?\\[%s+?%s%s+?]"
           seed7--whitespace-re
           seed7-args-in-parens-re
@@ -2290,7 +2291,7 @@ Matches something like:
           seed7--whitespace-re)
   "Regexp for (args...) [(args...)]")
 
-(defconst seed7-argparens-arrparens-op-re       ; 8
+(defconst seed7-paramparens-arrparens-op-re       ; 8
   (format "%s+?%s%s+?\\[%s+?%s%s+?%s%s+?]"
           seed7--whitespace-re
           seed7-args-in-parens-re
@@ -2302,7 +2303,7 @@ Matches something like:
           seed7--whitespace-re)
   "Regexp for (args...) [(args...) op ]")
 
-(defconst seed7-argparens-op-arrparens-re       ; 9
+(defconst seed7-paramparens-op-arrparens-re       ; 9
   (format "%s+?%s%s+?\\[%s+?%s%s+?%s%s+?]"
           ;;%  % %      %   % %   % %
           ;;1  2 3      4   5 6   7 8
@@ -2316,7 +2317,7 @@ Matches something like:
           seed7--whitespace-re)                      ; 8
   "Regexp for (args...) [ op (args...) ]")
 
-(defconst seed7-argparens-arrparens-op-arrparens-re ; 10
+(defconst seed7-paramparens-arrparens-op-arrparens-re ; 10
   (format "%s+?%s%s+?\\[%s+?%s%s+?%s+?%s%s+?%s%s+?]"
           ;;%  % %      %   % %   %   % %   % %
           ;;1  2 3      4   5 6   7   8 9   10 11
@@ -2336,7 +2337,7 @@ Matches something like:
 
 ;; --
 
-(defconst seed7-any-arg-pattern-re
+(defconst seed7-any-param-pattern-re
   (format "\\(?:\\(?:%s\\)\
 \\|\\(?:%s\\)\
 \\|\\(?:%s\\)\
@@ -2348,16 +2349,16 @@ Matches something like:
 \\|\\(?:%s\\)\
 \\|\\(?:%s\\)\
 \\)"
-          seed7-argparens-arrparens-op-arrparens-re ; 10
-          seed7-argparens-op-arrparens-re           ; 9
-          seed7-argparens-arrparens-op-re           ; 8
-          seed7-argparens-arrparens-re              ; 7
-          seed7-arrparens-argparens-re              ; 6
-          seed7-emptyarr-argparens-re               ; 5
-          seed7-arg-arrparens-name-arrparens-re     ; 4
-          seed7-arrparens-name-arrparens-re         ; 3
-          seed7-argparens-name-argparens-re         ; 2
-          seed7-name-argparens-re)                  ; 1
+          seed7-paramparens-arrparens-op-arrparens-re ; 10
+          seed7-paramparens-op-arrparens-re           ; 9
+          seed7-paramparens-arrparens-op-re           ; 8
+          seed7-paramparens-arrparens-re              ; 7
+          seed7-arrparens-paramparens-re              ; 6
+          seed7-emptyarr-paramparens-re               ; 5
+          seed7-arg-arrparens-name-arrparens-re       ; 4
+          seed7-arrparens-name-arrparens-re           ; 3
+          seed7-paramparens-name-paramparens-re       ; 2
+          seed7-name-paramparens-re)                  ; 1
   "Regexp for all possible argument patterns.")
 
 
@@ -6096,7 +6097,7 @@ of s7xref program."
         (list (seed7--find-identifier-in identifier from-line))))))
 
 
-(defun seed7--xref-get-from-s7xref (identifier)
+(defun seed7--xref-get-from-s7xref (identifier from-line)
   "Get a list of all entries matching IDENTIFIER literally using the s7xref.
 
 Return a list of 4-element lists, where each 4-element list has:
@@ -6124,7 +6125,8 @@ Return a list of 4-element lists, where each 4-element list has:
         (if (seed7-re-search-forward text-re)
             (let ((filename (match-string 2))
                   (lineno (string-to-number (match-string 3))))
-              (unless (seed7--xref-in-list entries filename lineno)
+              (unless (or (eq lineno from-line)
+                          (seed7--xref-in-list entries filename lineno))
                 (push (list filename
                             lineno
                             0      ; column not identified by s7xref: set to 0
@@ -6161,12 +6163,12 @@ Return a list of 4-element lists, where each 4-element list has:
           candidates
         ;; if nothing found in current block, search at program scope
         ;; using the cross reference list of object created by s7xref
-        (or (seed7--xref-get-from-s7xref identifier)
+        (or (seed7--xref-get-from-s7xref identifier current-lineno)
             ;; if that also fails to find something, then look into the global
             ;; scope of the current file.
             (seed7--find-candidates-for identifier current-lineno))))
      ;; for other keywords only look into the xref extracted by s7xref
-     (t (seed7--xref-get-from-s7xref identifier)))))
+     (t (seed7--xref-get-from-s7xref identifier current-lineno)))))
 
 ;; [:todo 2025-06-13, by Pierre Rouleau: Should we also skip parens?.]
 (defun seed7-operator-at-point ()
@@ -6212,7 +6214,7 @@ DESC describes it."
         ;; return a list of xref location objects for those candidates.
         (mapcar (function seed7--make-xref-from-file-loc)
                 candidates)
-      (user-error "Nothing matching %S here" symbol))))
+      (user-error "Nothing matching %S here. Is point at its definition?" symbol))))
 
 ;;** Seed7 Cross Reference Xref Backend Framework
 
