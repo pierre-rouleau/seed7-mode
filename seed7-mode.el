@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-08 17:26:43 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-08 22:42:48 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -223,8 +223,12 @@
 ;;   - Seed7 Predefined Comparison Operators
 ;;   - Seed7 Other Predefined Operators
 ;;   - Seed7 Arithmetic Operators
-;;   - Seed7 Block Processing Regular Expressions
-;;   - Seed7 Procedure/Function Regular Expressions
+;;   - Seed7 Block Processing Regexp
+;;   - Seed7 Procedure/Function Parameters Regexp
+;;   - Seed7 Procedure/Function Regexp
+;; - Seed7 iMenu Support Regexp
+;;   - Seed7 Procedure/Function iMenu Regexp
+;;   - Seed7 Enum/Structure iMenu Regexp
 ;; - Seed7 Mode Syntax Control
 ;;   - Seed7 Mode Syntax Table
 ;;   - Seed7 Mode Syntax Propertize Function
@@ -236,7 +240,6 @@
 ;;   * `seed7-toggle-comment-style'
 ;;     . `seed7--new-state-for'
 ;;     . `seed7--set-comment-style'
-;; - Seed7 iMenu Support Regexp
 ;; - Seed7 Speedbar Support
 ;; - Seed7 Low-level Macros
 ;;   . `seed7--set'
@@ -452,7 +455,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-08T21:26:43+0000 W28-2"
+(defconst seed7-mode-version-timestamp "2025-07-09T02:42:48+0000 W28-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1294,8 +1297,8 @@ Has only one capturing group.")
   "Arithmetic minus operator in group 1.")
 
 
-;;** Seed7 Block Processing Regular Expressions
-;;   ------------------------------------------
+;;** Seed7 Block Processing Regexp
+;;   -----------------------------
 
 (defconst seed7-block-start-regexp "\\(\
 const proc: \\|\
@@ -1322,6 +1325,7 @@ catch \\|\
                                          seed7-block-start-regexp)
   "Regexp to find location of blocks.")
 
+;; [:todo 2025-07-01, by Pierre Rouleau: optimize this regexp]
 (defconst seed7-block-end-regexp "\
 \\(?:end \
 \\(?:\\(?:\\(?:enum\\|for\\|func\\|if\\|struct\\|while\\|case\\);\\)\
@@ -1329,7 +1333,7 @@ catch \\|\
 \\|\\(?:until \\)"
   "Regexp for generic end of block.")
 
-;; [:todo 2025-07-01, by Pierre Rouleau: optimize these 2 regexps]
+;; [:todo 2025-07-01, by Pierre Rouleau: optimize this regexp]
 (defconst seed7-block-top-start-regexp "\\(\
 const proc: \\|\
 const func \\|\
@@ -1355,8 +1359,8 @@ catch \\|\
   "Regexp for the top of a Seed7 block.  One capture group.")
 
 
-;;** Seed7 Procedure/Function Regular Expressions
-;;   --------------------------------------------
+;;** Seed7 Procedure/Function Parameters Regexp
+;;   ------------------------------------------
 
 (defconst seed7-one-arg-re
   ;;         (-------------------------------------------------------------------)
@@ -1521,7 +1525,7 @@ Matches something like:
 \\|\\(?:%s\\)\
 \\|\\(?:%s\\)\
 \\|\\(?:%s\\)\
-\\)"
+\\)"                                                  ; match the more complex first
           seed7-paramparens-arrparens-op-arrparens-re ; 10
           seed7-paramparens-op-arrparens-re           ; 9
           seed7-paramparens-arrparens-op-re           ; 8
@@ -1533,7 +1537,6 @@ Matches something like:
           seed7-paramparens-name-paramparens-re       ; 2
           seed7-name-paramparens-re)                  ; 1
   "Regexp for all possible argument patterns.")
-
 
 ;; --
 
@@ -1547,11 +1550,9 @@ Matches something like:
 ;;           seed7-args-in-parens-re)
 ;;   "Regexp for name followed by args within parens pair. Group1: function name.")
 
-(defconst seed7-callable-args-regexp
-  ""
-  "All potential argument forms.")
 
-
+;;** Seed7 Procedure/Function Regexp
+;;   -------------------------------
 
 (defconst seed7-procfunc-regexp
   (format
@@ -1606,6 +1607,157 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
 (defconst seed7-forward-declaration-end-regexp
   "[[:blank:]]*?is[[:blank:]]+?forward;"
   "Regexp to detect end of forward declaration.  No group.")
+
+;;* Seed7 iMenu Support Regexp
+;;  ==========================
+
+;;** Seed7 Procedure/Function iMenu Regexp
+;;   -------------------------------------
+
+(defconst seed7--procfunc-forward-or-action-re
+  (format "forward;\\|DYNAMIC;\\|action%s+?\\\"%s+?\\\";"
+          ;;                           %       %
+          ;;                           1       2
+          seed7--whitespace-re
+          seed7--non-capturing-name-identifier-re)
+  "Regexp matching forward or action declaration. No capture group.")
+
+;; --
+;; Regexp for procedure and function declarations. No matching group.
+
+(defconst seed7-forward-or-action-procedure-declaration-re
+  (format
+   "const proc\\(?:%s\\)+?is%s+?\\(?:%s\\)"
+   "[^;]"
+   seed7--whitespace-re
+   seed7--procfunc-forward-or-action-re)
+  "Regexp matching forward or action procedure declaration. No capture group.")
+
+
+
+(defconst seed7-forward-or-action-function-declaration-re
+  ;;                    (-------)             (----------)        (------)            (------)
+  ;;         (----------------------------------------------------------------------------------)
+  ;;            const      var    func    T          T?        :  name
+  (format "\\(?:const \\(?:var\\)?func%s+?%s\\(?:%s+?%s\\)?%s*?:\\(%s%s+?([^;]+?)\\)%s+?is%s+?\\(?:%s\\)\\)"
+          ;;                                                      G1
+          ;;                          %   %      %   %     %       %  %             %     %        %
+          ;;                          1   2      3   4     5       6  7             8     9        10
+          seed7--whitespace-re                    ; 1
+          seed7--non-capturing-name-identifier-re ; 2
+          seed7--whitespace-re                    ; 3
+          seed7--non-capturing-name-identifier-re ; 4
+          seed7--whitespace-re                    ; 5
+          "?:"                                    ; 6: don't capture G1
+          "[^;]"                                  ; 7
+          seed7--whitespace-re                    ; 8
+          seed7--whitespace-re                    ; 9
+          seed7--procfunc-forward-or-action-re)   ; 10
+  "Regexp matching value, forward or action function declaration.
+No capture group.")
+
+(defconst seed7-forward-or-action-function-declaration-g1-re
+  ;;                    (-------)             (----------)        (------)            (------)
+  ;;         (----------------------------------------------------------------------------------)
+  ;;            const      var    func    T          T?        :  name
+  (format "\\(?:const \\(?:var\\)?func%s+?%s\\(?:%s+?%s\\)?%s*?:\\(%s%s+?([^;]+?)\\)%s+?is%s+?\\(?:%s\\)\\)"
+          ;;                                                      G1
+          ;;                          %   %      %   %     %       %  %             %     %        %
+          ;;                          1   2      3   4     5       6  7             8     9        10
+          seed7--whitespace-re                    ; 1
+          seed7--non-capturing-name-identifier-re ; 2
+          seed7--whitespace-re                    ; 3
+          seed7--non-capturing-name-identifier-re ; 4
+          seed7--whitespace-re                    ; 5
+          ""                                      ; 6: capture G1
+          "[^;]"                                  ; 7
+          seed7--whitespace-re                    ; 8
+          seed7--whitespace-re                    ; 9
+          seed7--procfunc-forward-or-action-re)   ; 10
+  "Regexp matching value, forward or action function declaration.
+1 group: function name.")
+
+;; --
+;; Regexp for procedure and function declarations or beginning of block.
+
+(defconst seed7-procedure-regexp
+  (format
+   "^[[:blank:]]*const%s+proc:%s\\(%s\\)%s*?is%s+?\\(func\\|%s\\)"
+   ;;                             G1
+   ;;                 %       %   %     %     %             %
+   ;;                 1       2   3     4     5             6
+   seed7--whitespace-re                    ; 1
+   seed7--whitespace-re                    ; 2
+   seed7--non-capturing-name-identifier-re ; 3
+   seed7--anychar-re                       ; 4
+   seed7--whitespace-re                    ; 5
+   seed7--procfunc-forward-or-action-re)   ; 6
+  "Match procedure name in group 1.")
+
+(defconst seed7-function-regexp
+  (format
+   ;;             const   func T       :                                                                     is      func
+   ;;                              w    w[      w                                                      .   w]w w
+   "^[[:blank:]]*?const%s+\\(?:var\\)?func %s??%s??:%s?\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?%s?is%s+\\(func\\|return\\|%s\\)"
+   ;;                  %                   G2  %    %        %         %           %   G3%    %         %  %       %   %    %    G4               %
+   ;;                  1                   %2  3    4        5         6           7     8    9         10 11      12  13   14                    15
+   ;;
+   seed7--whitespace-re                         ; 1
+   seed7-type-identifier-re                     ; 2
+   seed7--whitespace-re                         ; 3
+   seed7--opt-square-brace-start-re             ; 4 w[
+   seed7--whitespace-re                         ; 5
+   seed7--anychar-re                            ; 6
+   seed7--whitespace-re                         ; 7
+   seed7--non-capturing-name-identifier-re      ; 8
+   seed7--non-capturing-special-identifier-re   ; 9
+   seed7--whitespace-re                         ; 10
+   seed7--anychar-re                            ; 11
+   seed7--anychar-re                            ; 12
+   seed7--opt-square-brace-end-re               ; 13 w]w
+   seed7--whitespace-re                         ; 14
+   seed7--procfunc-forward-or-action-re)        ; 15
+  "Regexp identifying beginning of procedures and functions.
+Group 1: The function return type.
+Group 2: The function name.
+Group 3: - \"func\" for proc or function that ends with \"end func\".
+         - \"return\" for a func that only has a return statement.
+         - \"forward\" for a forward declaration.
+         - \"action ACTION\" for an action function." )
+
+;;** Seed7 Enum/Structure iMenu Regexp
+;;   ---------------------------------
+
+(defconst seed7-enum-regexp
+  "const type: \\([[:alpha:]][[:alnum:]_]+\\) is new enum")
+
+(defconst seed7-interface-regexp
+  (format "const%stype:%s\\(%s\\)%sis%s\\(?:new\\|sub%s%s\\)%sinterface;"
+          ;;    %      %    %    %   %             % %    %
+          ;;    1      2    3    4   5             6 7    8
+          seed7--whitespace-re                    ; 1
+          seed7--whitespace-re                    ; 2
+          seed7--non-capturing-name-identifier-re ; 3
+          seed7--whitespace-re                    ; 4
+          seed7--whitespace-re                    ; 5
+          seed7--whitespace-re                    ; 6
+          seed7--non-capturing-name-identifier-re ; 7
+          seed7--whitespace-re)                   ; 8
+  "Regexp to extract interface type declaration. Group 1: name of type.")
+
+(defconst seed7-struct-regexp
+  (format
+   "const type: %s%s+?is%s+?\\(?:sub\\|new\\)%s+?\\(?:%s%s+?\\)??struct"
+   ;;           G1
+   ;;           % %     %                    %        % %
+   ;;           1 2     3                    4        5 6
+   seed7-name-identifier-re    ; 1
+   seed7--whitespace-re        ; 2
+   seed7--whitespace-re        ; 3
+   seed7--whitespace-re        ; 4
+   seed7-name-identifier-re    ; 5
+   seed7--whitespace-re))      ; 6
+
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;;* Seed7 Mode Syntax Control
@@ -2117,154 +2269,6 @@ Note: the default style for all Seed7 buffers is controlled by the
 	                (seed7-line-comment-starter nil)
 	                (t t))))
     (seed7--set-comment-style use-block 'verbose)))
-
-;; ---------------------------------------------------------------------------
-;;* Seed7 iMenu Support Regexp
-;;  ==========================
-
-(defconst seed7--procfunc-forward-or-action-re
-  (format "forward;\\|DYNAMIC;\\|action%s+?\\\"%s+?\\\";"
-          ;;                           %       %
-          ;;                           1       2
-          seed7--whitespace-re
-          seed7--non-capturing-name-identifier-re)
-  "Regexp matching forward or action declaration. No capture group.")
-
-;; --
-;; Regexp for procedure and function declarations. No matching group.
-
-(defconst seed7-forward-or-action-procedure-declaration-re
-  (format
-   "const proc\\(?:%s\\)+?is%s+?\\(?:%s\\)"
-   "[^;]"
-   seed7--whitespace-re
-   seed7--procfunc-forward-or-action-re)
-  "Regexp matching forward or action procedure declaration. No capture group.")
-
-
-
-(defconst seed7-forward-or-action-function-declaration-re
-  ;;                    (-------)             (----------)        (------)            (------)
-  ;;         (----------------------------------------------------------------------------------)
-  ;;            const      var    func    T          T?        :  name
-  (format "\\(?:const \\(?:var\\)?func%s+?%s\\(?:%s+?%s\\)?%s*?:\\(%s%s+?([^;]+?)\\)%s+?is%s+?\\(?:%s\\)\\)"
-          ;;                                                      G1
-          ;;                          %   %      %   %     %       %  %             %     %        %
-          ;;                          1   2      3   4     5       6  7             8     9        10
-          seed7--whitespace-re                    ; 1
-          seed7--non-capturing-name-identifier-re ; 2
-          seed7--whitespace-re                    ; 3
-          seed7--non-capturing-name-identifier-re ; 4
-          seed7--whitespace-re                    ; 5
-          "?:"                                    ; 6: don't capture G1
-          "[^;]"                                  ; 7
-          seed7--whitespace-re                    ; 8
-          seed7--whitespace-re                    ; 9
-          seed7--procfunc-forward-or-action-re)   ; 10
-  "Regexp matching value, forward or action function declaration.
-No capture group.")
-
-(defconst seed7-forward-or-action-function-declaration-g1-re
-  ;;                    (-------)             (----------)        (------)            (------)
-  ;;         (----------------------------------------------------------------------------------)
-  ;;            const      var    func    T          T?        :  name
-  (format "\\(?:const \\(?:var\\)?func%s+?%s\\(?:%s+?%s\\)?%s*?:\\(%s%s+?([^;]+?)\\)%s+?is%s+?\\(?:%s\\)\\)"
-          ;;                                                      G1
-          ;;                          %   %      %   %     %       %  %             %     %        %
-          ;;                          1   2      3   4     5       6  7             8     9        10
-          seed7--whitespace-re                    ; 1
-          seed7--non-capturing-name-identifier-re ; 2
-          seed7--whitespace-re                    ; 3
-          seed7--non-capturing-name-identifier-re ; 4
-          seed7--whitespace-re                    ; 5
-          ""                                      ; 6: capture G1
-          "[^;]"                                  ; 7
-          seed7--whitespace-re                    ; 8
-          seed7--whitespace-re                    ; 9
-          seed7--procfunc-forward-or-action-re)   ; 10
-  "Regexp matching value, forward or action function declaration.
-1 group: function name.")
-
-;; --
-;; Regexp for procedure and function declarations or beginning of block.
-
-(defconst seed7-procedure-regexp
-  (format
-   "^[[:blank:]]*const%s+proc:%s\\(%s\\)%s*?is%s+?\\(func\\|%s\\)"
-   ;;                             G1
-   ;;                 %       %   %     %     %             %
-   ;;                 1       2   3     4     5             6
-   seed7--whitespace-re                    ; 1
-   seed7--whitespace-re                    ; 2
-   seed7--non-capturing-name-identifier-re ; 3
-   seed7--anychar-re                       ; 4
-   seed7--whitespace-re                    ; 5
-   seed7--procfunc-forward-or-action-re)   ; 6
-  "Match procedure name in group 1.")
-
-(defconst seed7-function-regexp
-  (format
-   ;;             const   func T       :                                                                     is      func
-   ;;                              w    w[      w                                                      .   w]w w
-   "^[[:blank:]]*?const%s+\\(?:var\\)?func %s??%s??:%s?\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?%s?is%s+\\(func\\|return\\|%s\\)"
-   ;;                  %                   G2  %    %        %         %           %   G3%    %         %  %       %   %    %    G4               %
-   ;;                  1                   %2  3    4        5         6           7     8    9         10 11      12  13   14                    15
-   ;;
-   seed7--whitespace-re                         ; 1
-   seed7-type-identifier-re                     ; 2
-   seed7--whitespace-re                         ; 3
-   seed7--opt-square-brace-start-re             ; 4 w[
-   seed7--whitespace-re                         ; 5
-   seed7--anychar-re                            ; 6
-   seed7--whitespace-re                         ; 7
-   seed7--non-capturing-name-identifier-re      ; 8
-   seed7--non-capturing-special-identifier-re   ; 9
-   seed7--whitespace-re                         ; 10
-   seed7--anychar-re                            ; 11
-   seed7--anychar-re                            ; 12
-   seed7--opt-square-brace-end-re               ; 13 w]w
-   seed7--whitespace-re                         ; 14
-   seed7--procfunc-forward-or-action-re)        ; 15
-  "Regexp identifying beginning of procedures and functions.
-Group 1: The function return type.
-Group 2: The function name.
-Group 3: - \"func\" for proc or function that ends with \"end func\".
-         - \"return\" for a func that only has a return statement.
-         - \"forward\" for a forward declaration.
-         - \"action ACTION\" for an action function." )
-
-;; --
-
-(defconst seed7-enum-regexp
-  "const type: \\([[:alpha:]][[:alnum:]_]+\\) is new enum")
-
-(defconst seed7-interface-regexp
-  (format "const%stype:%s\\(%s\\)%sis%s\\(?:new\\|sub%s%s\\)%sinterface;"
-          ;;    %      %    %    %   %             % %    %
-          ;;    1      2    3    4   5             6 7    8
-          seed7--whitespace-re                    ; 1
-          seed7--whitespace-re                    ; 2
-          seed7--non-capturing-name-identifier-re ; 3
-          seed7--whitespace-re                    ; 4
-          seed7--whitespace-re                    ; 5
-          seed7--whitespace-re                    ; 6
-          seed7--non-capturing-name-identifier-re ; 7
-          seed7--whitespace-re)                   ; 8
-  "Regexp to extract interface type declaration. Group 1: name of type.")
-
-(defconst seed7-struct-regexp
-  (format
-   "const type: %s%s+?is%s+?\\(?:sub\\|new\\)%s+?\\(?:%s%s+?\\)??struct"
-   ;;           G1
-   ;;           % %     %                    %        % %
-   ;;           1 2     3                    4        5 6
-   seed7-name-identifier-re    ; 1
-   seed7--whitespace-re        ; 2
-   seed7--whitespace-re        ; 3
-   seed7--whitespace-re        ; 4
-   seed7-name-identifier-re    ; 5
-   seed7--whitespace-re))      ; 6
-
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Speedbar Support
