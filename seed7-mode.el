@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-08 22:42:48 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-08 23:03:16 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -455,7 +455,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-09T02:42:48+0000 W28-3"
+(defconst seed7-mode-version-timestamp "2025-07-09T03:03:16+0000 W28-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1556,14 +1556,14 @@ Matches something like:
 
 (defconst seed7-procfunc-regexp
   (format
-   ;;    const      varfunc| func | proc       RT?     :                                    fct name                           is     func
-   ;;              (--------------------------)                          (----)            (---------)        (----)                  (---------------------------------------------)
+   ;;    const      varfunc| func | proc       RT?     :                                    fct name                           is     func | return | ...
+   ;;              (--------------------------)                          (----)            (---------)        (----)                  (-------------------)
    ;;              G1                          G2                     (----------)         G3            (------------)               G4
    ;;                                                        (----------------------)
    ;;                                              w    w[      w                                                      .   w]w w
-   "^%s*?const%s+\\(\\(?:var\\)?func \\|proc\\)%s??%s??:%s?\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?%s?is%s+\\(func\\|return\\|forward;\\|DYNAMIC;\\|action%s\".+?\";\\)"
-   ;;%        %    G1                          G2  %    %        %         %           %   G3%    %         %  %       %   %    %    G4                                            %
-   ;;1        2                                %3  4    5        6         7           8     9    10        11 12      13  14   15                                                 16
+   "^%s*?const%s+\\(\\(?:var\\)?func \\|proc\\)%s??%s??:%s?\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?%s?is%s+\\(func\\|return\\|%s\\)"
+   ;;%        %    G1                          G2  %    %        %         %           %   G3%    %         %  %       %   %    %    G4               %
+   ;;1        2                                %3  4    5        6         7           8     9    10        11 12      13  14   15                    16
    ;;
    seed7--blank-re                            ; 1
    seed7--whitespace-re                       ; 2
@@ -1580,7 +1580,7 @@ Matches something like:
    seed7--anychar-re                          ; 13
    seed7--opt-square-brace-end-re             ; 14 w]w
    seed7--whitespace-re                       ; 15
-   seed7--whitespace-re)                      ; 16
+   seed7--procfunc-forward-or-action-re)      ; 16
   "Regexp identifying beginning of procedures and functions.
 Group 1: \"proc\", \"varfunc\" or \"func \"
 Group 2: The func return type.  May be empty.
@@ -6055,7 +6055,8 @@ Return a list of 4-elements:
 - A description string (the signature, if found)."
   (save-excursion
     (goto-char (or start-pos (point-min)))
-    (when (search-forward identifier end-pos :noerror)
+    ;; search for a isolated identifier (don't match partial identifiers)
+    (when (seed7-re-search-forward (format "\\<%s\\>" identifier) end-pos)
       (let ((specs nil)
             (found-lineno (seed7-current-line-number)))
         (when (and (not (eq from-line found-lineno))
