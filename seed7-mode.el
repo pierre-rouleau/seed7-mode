@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-08 23:03:16 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-08 23:25:30 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -455,7 +455,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-09T03:03:16+0000 W28-3"
+(defconst seed7-mode-version-timestamp "2025-07-09T03:25:30+0000 W28-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1551,6 +1551,15 @@ Matches something like:
 ;;   "Regexp for name followed by args within parens pair. Group1: function name.")
 
 
+(defconst seed7--procfunc-forward-or-action-re
+  (format "forward;\\|DYNAMIC;\\|action%s+?\\\"%s+?\\\";"
+          ;;                           %       %
+          ;;                           1       2
+          seed7--whitespace-re
+          seed7--non-capturing-name-identifier-re)
+  "Regexp matching forward or action declaration. No capture group.")
+
+
 ;;** Seed7 Procedure/Function Regexp
 ;;   -------------------------------
 
@@ -1614,15 +1623,6 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
 ;;** Seed7 Procedure/Function iMenu Regexp
 ;;   -------------------------------------
 
-(defconst seed7--procfunc-forward-or-action-re
-  (format "forward;\\|DYNAMIC;\\|action%s+?\\\"%s+?\\\";"
-          ;;                           %       %
-          ;;                           1       2
-          seed7--whitespace-re
-          seed7--non-capturing-name-identifier-re)
-  "Regexp matching forward or action declaration. No capture group.")
-
-;; --
 ;; Regexp for procedure and function declarations. No matching group.
 
 (defconst seed7-forward-or-action-procedure-declaration-re
