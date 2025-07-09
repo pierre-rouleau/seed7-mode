@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-08 23:25:30 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-09 09:29:54 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -455,7 +455,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-09T03:25:30+0000 W28-3"
+(defconst seed7-mode-version-timestamp "2025-07-09T13:29:54+0000 W28-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6084,6 +6084,8 @@ Return a list of 4-element lists, where each 4-element list has:
 - The column number integer
 - A description string (the signature, if found).
 
+If nothing is found it returns nil.
+
 This function is used only when the IDENTIFIER is not identified in the output
 of s7xref program."
   (save-excursion
@@ -6093,7 +6095,7 @@ of s7xref program."
           ;; with a block spec: check into all possible areas for the block
           (dolist (start.end (seed7--symbol-definition-areas-for-block
                               block-spec)
-                             candidates)
+                             (seq-filter #'identity candidates))
             (when (seed7--set (seed7--find-identifier-in identifier from-line
                                                          block-spec
                                                          (car start.end)
@@ -6101,7 +6103,8 @@ of s7xref program."
                               candidate)
               (push candidate candidates)))
         ;; without a block spec: check in the entire file
-        (list (seed7--find-identifier-in identifier from-line))))))
+        (seq-filter #'identity
+                    (list (seed7--find-identifier-in identifier from-line)))))))
 
 
 (defun seed7--xref-get-from-s7xref (identifier from-line)
@@ -6165,7 +6168,9 @@ Return a list of 4-element lists, where each 4-element list has:
      ;; table and then in the global scope of the current file.
      ((eq point-face 'seed7-name-identifier-face)
       (if (seed7--set
-           (seed7--find-candidates-for identifier current-lineno local-block-spec)
+           (seed7--find-candidates-for identifier
+                                       current-lineno
+                                       local-block-spec)
            candidates)
           candidates
         ;; if nothing found in current block, search at program scope
