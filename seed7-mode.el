@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-09 09:29:54 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-09 10:22:12 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -411,6 +411,7 @@
 ;;    + `xref-backend-definitions'
 ;;      . `seed7--find-symbol'
 ;;        . `seed7--xref-get'
+;;          . `seed7-point-on-defined-identifier-p'
 ;;          . `seed7--find-candidates-for'
 ;;            . `seed7--symbol-definition-areas-for-block'
 ;;            . `seed7--find-identifier-in'
@@ -455,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-09T13:29:54+0000 W28-3"
+(defconst seed7-mode-version-timestamp "2025-07-09T14:22:12+0000 W28-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6147,6 +6148,15 @@ Return a list of 4-element lists, where each 4-element list has:
           (setq keep-searching nil))))
     entries))
 
+(defun seed7-point-on-defined-identifier-p (&optional pos)
+  "Return non-nil is identifier at point is being defined, nil otherwise."
+  (save-excursion
+    (when pos
+      (goto-char pos))
+    (forward-word-strictly 2)
+    (backward-word-strictly)
+    (looking-at "is\\>")))
+
 (defun seed7--xref-get (identifier)
   "Get a list of all entries matching IDENTIFIER literally.
 Return a list of 4-element lists, where each 4-element list has:
@@ -6164,21 +6174,28 @@ Return a list of 4-element lists, where each 4-element list has:
     (cond
      ((eq point-face 'font-lock-comment-face)
       (user-error "Comments cross reference is not supported."))
+     ((memq point-face '(seed7-float-face
+                         seed7-integer-face
+                         seed7-number-face))
+      (user-error "This is a number: no reference available."))
+
      ;; For identifiers, look in local block first, then in the s7xref built
      ;; table and then in the global scope of the current file.
      ((eq point-face 'seed7-name-identifier-face)
-      (if (seed7--set
-           (seed7--find-candidates-for identifier
-                                       current-lineno
-                                       local-block-spec)
-           candidates)
-          candidates
-        ;; if nothing found in current block, search at program scope
-        ;; using the cross reference list of object created by s7xref
-        (or (seed7--xref-get-from-s7xref identifier current-lineno)
-            ;; if that also fails to find something, then look into the global
-            ;; scope of the current file.
-            (seed7--find-candidates-for identifier current-lineno))))
+      (if (seed7-point-on-defined-identifier-p)
+          (user-error "%S is defined here!" identifier)
+        (if (seed7--set
+             (seed7--find-candidates-for identifier
+                                         current-lineno
+                                         local-block-spec)
+             candidates)
+            candidates
+          ;; if nothing found in current block, search at program scope
+          ;; using the cross reference list of object created by s7xref
+          (or (seed7--xref-get-from-s7xref identifier current-lineno)
+              ;; if that also fails to find something, then look into the global
+              ;; scope of the current file.
+              (seed7--find-candidates-for identifier current-lineno)))))
      ;; for other keywords only look into the xref extracted by s7xref
      (t (seed7--xref-get-from-s7xref identifier current-lineno)))))
 
