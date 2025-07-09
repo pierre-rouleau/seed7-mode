@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-09 15:06:43 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-09 16:52:30 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-09T19:06:43+0000 W28-3"
+(defconst seed7-mode-version-timestamp "2025-07-09T20:52:30+0000 W28-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6193,6 +6193,8 @@ Return a list of 4-element lists, where each 4-element list has:
     (cond
      ((eq point-face 'font-lock-comment-face)
       (user-error "Comments cross reference is not supported."))
+     ((eq point-face 'font-lock-string-face)
+      (user-error "This is a string: no reference available"))
      ((memq point-face '(seed7-float-face
                          seed7-integer-face
                          seed7-number-face))
