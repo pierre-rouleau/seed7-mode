@@ -33,16 +33,21 @@ $ include "seed7_05.s7i";
   include "progs.s7i";
 
 
+# Use a hash to filter multiple entries.
+const type: entry_presence_hash is hash [string] integer;
+
 const proc: main is func
   local
     var string: fileName is "";
     var string: pgmCode is "";
+    var string: obj_file_line is "";
     var program: aProgram is program.value;
     var ref_list: globalObjects is ref_list.EMPTY;
     var reference: anObject is NIL;
     var string: obj_str is "";
     var string: obj_filename is "";
     var integer: obj_lineno is 0;
+    var entry_presence_hash: xref_printed_instances is entry_presence_hash.EMPTY_HASH;
   begin
     if length(argv(PROGRAM)) >= 1 then
 
@@ -66,9 +71,13 @@ const proc: main is func
         obj_str := str(anObject);
         obj_filename := file(anObject);
         obj_lineno := line(anObject);
+        obj_file_line := obj_str <& "\t" <& obj_filename <& "\t" <& obj_lineno;
         if obj_str <> " *NULL_ENTITY_OBJECT* " and
            obj_filename <> "?" then
-          writeln(obj_str <& "\t" <& obj_filename <& "\t" <& obj_lineno);
+          if obj_file_line not in xref_printed_instances then
+            writeln(obj_file_line);
+            xref_printed_instances @:= [obj_file_line] 1;
+          end if;
         end if;
       end for;
     end if;
