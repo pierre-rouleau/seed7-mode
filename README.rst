@@ -589,18 +589,41 @@ function or procedure if there is one.  This is only true for function and
 procedures (the commands do not try to find the next array for instance).
 
 
-Code Navigation Through xref
-----------------------------
+Cross Reference Code Navigation Through Xref
+--------------------------------------------
 
-The seed7-mode supports Emacs xref framework and implement an xref-backend for
-Seed7 code using the supplied `s7xref.sd7`_ Seed7 program.
+The seed7-mode supports `Emacs xref framework`_ supports:
 
-The **seed7-xref** user option, which defaults to ``s7xref`` identifies the
-program that should be used to parse the visited Seed7 file and extract
-information about all identifiers and operators used by the Seed7n program or
-library file.  See the **seed7-xref** docstring for more information.
+- Searches in the current buffer to find the definition of local variables and
+  constants, and file global variables and constants.
+- Searches of all program or library identifiers defined in the same file or
+  the library files used by the current file.  This includes global functions,
+  procedures, types, variables and constants defined in the current file or
+  library files.  That also includes all operators and special operators.
 
-Once this is properly setup, you can use the following xref commands to
+  The seed7-mode uses Seed7 compile-time reflectivity to build a
+  cross-reference table automatically by running the supplied `s7xref.sd7`_
+  Seed7 program; it analyzes all Seed7 files used by the visited file and
+  produces a cross reference table listing all identifiers, operators and
+  special operators accessible to the program.
+
+  No other software (such as CTags for instance) is required to provide cross
+  reference for Seed7 code.
+
+The **seed7-xref** user option identifies the program that should be used to
+parse the visited Seed7 file and extract information about all identifiers and
+operators used by the Seed7n program or library file.  See the **seed7-xref**
+docstring for more information.  It defaults to ``s7 path/to/s7xref.sd7``,
+where the path is adjusted to the location where the ``s7xref.sd7`` file is
+stored.  This uses the ``s7`` Seed7 interpreter.
+
+It's also possible to compile the ``s7xref.sd7`` program and
+refer to its compiled executable, but using the interpreter is preferred here:
+it allows you to update the Seed7 system and continue to use the cross
+reference system without having to re-compile ``s7xref.sd7``.
+
+
+With **seed7-xref** properly setup, you can use the following xref commands to
 navigate in Seed7 code.
 
 = ============================ =========== =============================================================
@@ -631,7 +654,8 @@ If there are multiple candidates found for the searched identifier, the
 signature of each found entry is shown in a selection list.
 
 
-There are other xref framework commands.  They are not yet implemented to support Seed7.  This will also be done.
+..
+   There are other xref framework commands.  They are not yet implemented to support Seed7.  This will also be done.
 
 
 Code Marking Commands
@@ -896,9 +920,17 @@ Any help, questions, suggestions are welcome!
 .. _Navigation to structure menu:    screenshots/menu-defs-struct.png
 .. _Comments menu:                   screenshots/menu-comments.png
 .. _Template insertion menu:         screenshots/menu-insert.png
-.. _Seed7 programming language:                 https://seed7.net/
+.. _Emacs xref framework:                       https://www.gnu.org/software/emacs/manual/html_node/emacs/Xref.html
 .. _Emacs imenu mode:                           https://www.gnu.org/software/emacs/manual/html_node/elisp/Imenu.html
 .. _Emacs Speedbar:                             https://www.gnu.org/software/emacs/manual/html_node/speedbar/
+.. _Emacs outline minor mode:                   https://www.gnu.org/software/emacs/manual/html_node/emacs/Outline-Minor-Mode.html
+.. _comment-dwim:                               https://www.gnu.org/software/emacs/manual/html_node/emacs/Comment-Commands.html
+.. _which-function-mode:                        https://www.gnu.org/software/emacs/manual/html_node/emacs/Which-Function.html
+.. _Emacs tempo markers:                        https://www.gnu.org/software/emacs/manual/html_node/autotype/Tempo.html
+.. _Abbrev Concepts:                            https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrev-Concepts.html
+.. _Abbrevs @ Emacs Manual:                     https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrevs.html
+.. _Examining and Editing Abbrevs:              https://www.gnu.org/software/emacs/manual/html_node/emacs/Editing-Abbrevs.html#Editing-Abbrevs
+.. _Seed7 programming language:                 https://seed7.net/
 .. _while statement:                            https://seed7.sourceforge.net/manual/stats.htm#while-statement
 .. _repeat - until statement:                   https://seed7.sourceforge.net/manual/stats.htm#repeat-statement
 .. _if statement:                               https://seed7.sourceforge.net/manual/stats.htm#if-statement
@@ -922,7 +954,6 @@ Any help, questions, suggestions are welcome!
 .. _struct:                                     https://seed7.net/manual/types.htm#struct
 .. _enum:                                       https://seed7.net/manual/types.htm#enumeration
 .. _block:                                      https://seed7.net/manual/errors.htm#Handlers
-
 .. _s7check.sd7:                                https://github.com/pierre-rouleau/seed7/blob/master/prg/s7check.sd7
 .. _iedit:                                      https://github.com/victorhge/iedit
 .. _expand-region:                              https://github.com/magnars/expand-region.el?tab=readme-ov-file#readme
@@ -930,14 +961,6 @@ Any help, questions, suggestions are welcome!
 .. _The Emacs Initialization File:              https://www.gnu.org/software/emacs/manual/html_node/emacs/Init-File.html
 .. _PEL Emacs project:                          https://github.com/pierre-rouleau/pel?tab=readme-ov-file#readme
 .. _install PEL as described in the PEL manual: https://github.com/pierre-rouleau/pel/blob/master/doc/pel-manual.rst#how-to-install-pel
-.. _PEL Seed7 support:
-.. _PEL Seed7 PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/pl-seed7.pdf
-.. _PEL Index PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/-index.pdf
-.. _PEL Speedbar PDF:                           https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/speedbar.pdf
-.. _Emacs outline minor mode:                   https://www.gnu.org/software/emacs/manual/html_node/emacs/Outline-Minor-Mode.html
-.. _comment-dwim:                               https://www.gnu.org/software/emacs/manual/html_node/emacs/Comment-Commands.html
-.. _which-function-mode:                        https://www.gnu.org/software/emacs/manual/html_node/emacs/Which-Function.html
-.. _Emacs tempo markers:                        https://www.gnu.org/software/emacs/manual/html_node/autotype/Tempo.html
 .. _value-parameter:                            https://seed7.sourceforge.net/manual/params.htm#val_parameter
 .. _reference-parameter:                        https://seed7.sourceforge.net/manual/params.htm#ref_parameter
 .. _in-parameter:                               https://seed7.sourceforge.net/manual/params.htm#in_parameter
@@ -951,12 +974,12 @@ Any help, questions, suggestions are welcome!
 .. _function declaration:                       https://seed7.sourceforge.net/manual/decls.htm#Function_declarations
 .. _enum type declaration:                      https://seed7.sourceforge.net/manual/types.htm#enumeration
 .. _struct type declaration:                    https://seed7.sourceforge.net/manual/types.htm#struct
-.. _Abbrev Concepts:                            https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrev-Concepts.html
-.. _Abbrevs @ Emacs Manual:                     https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrevs.html
-.. _Examining and Editing Abbrevs:              https://www.gnu.org/software/emacs/manual/html_node/emacs/Editing-Abbrevs.html#Editing-Abbrevs
 .. _smart-dash-mode:                            https://github.com/malsyned/smart-dash
 .. _s7xref.sd7:                                 https://github.com/pierre-rouleau/seed7-mode/blob/main/tools/s7xref.sd7
-
+.. _PEL Seed7 support:
+.. _PEL Seed7 PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/pl-seed7.pdf
+.. _PEL Index PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/-index.pdf
+.. _PEL Speedbar PDF:                           https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/speedbar.pdf
 
 .. ---------------------------------------------------------------------------
 
