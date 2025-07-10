@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-10 11:24:57 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-10 11:29:12 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-10T15:24:57+0000 W28-4"
+(defconst seed7-mode-version-timestamp "2025-07-10T15:29:12+0000 W28-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -709,7 +709,7 @@ but used in Seed7 syntax via different mechanisms.  Some may be implemented
 by Seed7 code, but if s7xref does not create a reference for them it's because
 they are understood by the Seed7 compiler/interpreter.")
 
-(defconst seed7--cpmpile-time-symbols '(".."
+(defconst seed7--compile-time-symbols '(".."
                                         "len")
   "List of symbols that Seed7 uses but are not defined by Seed7 code.
 These are known by the Seed7 compiler and interpreter and run at compile time.")
@@ -6292,7 +6292,7 @@ DESC describes it."
               (string-match "[[:blank:]\n]" symbol))
           (user-error "Point is at white space character!"))
          ;;
-         ((member symbol seed7--cpmpile-time-symbols)
+         ((member symbol seed7--compile-time-symbols)
           (user-error "%S is a Seed7 compile-time symbol" symbol))
          ;;
          ((string-match seed7--very-special-char-re symbol)
