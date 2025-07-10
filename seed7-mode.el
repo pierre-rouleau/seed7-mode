@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-10 08:36:24 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-10 10:52:16 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-10T12:36:24+0000 W28-4"
+(defconst seed7-mode-version-timestamp "2025-07-10T14:52:16+0000 W28-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2236,10 +2236,7 @@ Allows selecting similar colours for various systems."
    (cons seed7-minus-operator-regexp                 (list 1 ''font-lock-keyword-face))
    ;; other low priority characters [:todo 2025-07-09, by Pierre Rouleau:
    ;; check if any missing and improve control of ..]
-   (cons "[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]"   (list 1 ''font-lock-keyword-face))
-
-
-   )
+   (cons "[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]"   (list 1 ''font-lock-keyword-face)))
   "Associates regexp to a regexp group and a face to render it.")
 
 
@@ -3062,10 +3059,10 @@ Negative N starts counting from the end of the line: -1 is the last word."
 
 ;; [:todo 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
 (defconst seed7---inner-callables-1
-   ;;         (----------------)                (----------)
-   ;;                                      (--------------------)
-   ;;(-------------------------------------------------------------)
-  "\\(const \\(?:func\\|proc\\)[^\\0]+?is\\(?:\\(?: +func\\)?$\\)\\)")
+   ;;         (----------------)              (----------)
+   ;;                                    (--------------------)
+   ;;(-----------------------------------------------------------)
+  "\\(const \\(?:func\\|proc\\)[^;]+?is\\(?:\\(?: +func\\)?$\\)\\)")
 
 ;; [:todo 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
 (defconst seed7---inner-callables-2
