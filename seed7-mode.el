@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-10 10:52:16 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-10 11:24:57 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-10T14:52:16+0000 W28-4"
+(defconst seed7-mode-version-timestamp "2025-07-10T15:24:57+0000 W28-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6286,22 +6286,23 @@ DESC describes it."
                 candidates)
       ;; If nothing is found then check if symbol is something we expect to
       ;; not have a reference and issue an appropriate error.
-      (cond
-       ((or (string= symbol "")
-            (string-match "[[:blank:]\n]" symbol))
-        (user-error "Point is at white space character!"))
-       ;;
-       ((member symbol seed7--cpmpile-time-symbols)
-        (user-error "%S is a Seed7 compile-time symbol" symbol))
-       ;;
-       ((string-match seed7--very-special-char-re symbol nil :inhibit-modify)
-        (user-error
-         "%S is part of another Seed7 statement, hard-coded\
+      (save-match-data
+        (cond
+         ((or (string= symbol "")
+              (string-match "[[:blank:]\n]" symbol))
+          (user-error "Point is at white space character!"))
+         ;;
+         ((member symbol seed7--cpmpile-time-symbols)
+          (user-error "%S is a Seed7 compile-time symbol" symbol))
+         ;;
+         ((string-match seed7--very-special-char-re symbol)
+          (user-error
+           "%S is part of another Seed7 statement, hard-coded\
  or a Seed7 compile time symbol." symbol))
-       ;;
-       (t
-        (user-error "Nothing matching %S here. Is point at its definition?"
-                    symbol))))))
+         ;;
+         (t
+          (user-error "Nothing matching %S here. Is point at its definition?"
+                      symbol)))))))
 
 ;;** Seed7 Cross Reference Xref Backend Framework
 
