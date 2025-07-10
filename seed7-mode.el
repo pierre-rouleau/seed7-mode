@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-09 16:52:30 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-09 22:17:28 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-09T20:52:30+0000 W28-3"
+(defconst seed7-mode-version-timestamp "2025-07-10T02:17:28+0000 W28-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -700,6 +700,11 @@ Has only one capturing group.")
 (defconst seed7--special-char-re
   "[-!$%&*+,\\./:;<=>?@\\^`|~]"
   "Any one of the special characters.")
+
+(defconst seed7--very-special-char-re
+  "[];)(}{.[]"
+  "Regexp for characters not implemented as callable, but used in syntax.
+Cross referencing should intercept those characters.")
 
 (defconst seed7--special-identifier-nc-re
   (format "\\(?:%s+\\)" seed7--special-char-re)
@@ -2207,8 +2212,7 @@ Allows selecting similar colours for various systems."
    (cons "[[:alnum:] _)]\\(/\\)[[:alnum:] _(]"       (list 1 ''font-lock-keyword-face)) ; /
    (cons "[[:alnum:] _)]\\(\\*\\*\\)[[:alnum:] _(]"  (list 1 ''font-lock-keyword-face)) ; **
    ;; logic operator
-   (cons "[[:alnum:] _)\\\"]\\(&\\)[[:alnum:] _(\\\"]" (list 1 ''font-lock-keyword-face)) ; &
-   (cons "[[:alnum:] _)\\\"]\\(|\\)[[:alnum:] _(\\\"]" (list 1 ''font-lock-keyword-face)) ; |
+   (cons "[\n[:alnum:] _)\\\"]\\([&|]\\)[\n[:alnum:] _(\\\"]" (list 1 ''font-lock-keyword-face)) ; &
 
    ;; invalid single quote char literals
    (cons seed7--invalid-char-literal-re              (list 1 ''font-lock-warning-face))
@@ -2222,6 +2226,9 @@ Allows selecting similar colours for various systems."
    (cons seed7-integer-re                            (list 1 ''seed7-integer-face))
    ;; low priority rendering of arithmetic + and -
    (cons seed7-minus-operator-regexp                 (list 1 ''font-lock-keyword-face))
+   ;; other low priority characters [:todo 2025-07-09, by Pierre Rouleau:
+   ;; check if any missing and improve control of ..]
+   (cons "[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]"   (list 1 ''font-lock-keyword-face))
 
 
    )
@@ -6240,12 +6247,17 @@ Return a list of 4-element lists, where each 4-element list has:
       (substring-no-properties (buffer-substring start-pos (point))))))
 
 (defun seed7-symbol-at-point ()
-  "Return the element at point as a string."
-  (if  (and  (looking-at seed7--special-char-re)
-             (not (looking-at ";")))
-      (seed7-operator-at-point)
-    (or (thing-at-point 'symbol t)
-        (seed7-operator-at-point))))
+  "Return the element at point as a string.
+Treat special symbols not used in operator, \"];)(}{.[\", as special the
+single character as a string.  Return word or operator at point or just
+before point.  Return \" \" if point is in middle of white-space."
+  (cond
+   ((looking-at seed7--very-special-char-re)
+    (string (char-after)))
+   ((looking-at seed7--special-char-re)
+    (seed7-operator-at-point))
+   (t (or (thing-at-point 'symbol t)
+          (seed7-operator-at-point)))))
 
 (defun seed7--make-xref-from-file-loc (elems)
   "Create an xref object pointing to the given file location.
