@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-09 22:17:28 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-10 08:36:24 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-10T02:17:28+0000 W28-4"
+(defconst seed7-mode-version-timestamp "2025-07-10T12:36:24+0000 W28-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -702,9 +702,17 @@ Has only one capturing group.")
   "Any one of the special characters.")
 
 (defconst seed7--very-special-char-re
-  "[];)(}{.[]"
-  "Regexp for characters not implemented as callable, but used in syntax.
-Cross referencing should intercept those characters.")
+  "[];:)(}{.[]"
+  "Regexp for special characters to extract.
+Some of those characters, but not all, are  not implemented as callable,
+but used in Seed7 syntax via different mechanisms.  Some may be implemented
+by Seed7 code, but if s7xref does not create a reference for them it's because
+they are understood by the Seed7 compiler/interpreter.")
+
+(defconst seed7--cpmpile-time-symbols '(".."
+                                        "len")
+  "List of symbols that Seed7 uses but are not defined by Seed7 code.
+These are known by the Seed7 compiler and interpreter and run at compile time.")
 
 (defconst seed7--special-identifier-nc-re
   (format "\\(?:%s+\\)" seed7--special-char-re)
@@ -6270,13 +6278,33 @@ DESC describes it."
 
 (defun seed7--find-symbol (symbol)
   "Get list of xref locations objects for Seed7 SYMBOL."
-  ;; First get a list of candidates using the s7xref mechanism.
+  ;; First get a list of candidates using the s7xref mechanism for symbol
+  ;; regardless of what symbol is.  We may search something that is hard
+  ;; coded, but Seed7 may also evolve over time, so don't take any chance and
+  ;; check if the symbol is referred somewhere first.
   (let ((candidates (seq-filter #'identity (seed7--xref-get symbol))))
     (if candidates
         ;; return a list of xref location objects for those candidates.
         (mapcar (function seed7--make-xref-from-file-loc)
                 candidates)
-      (user-error "Nothing matching %S here. Is point at its definition?" symbol))))
+      ;; If nothing is found then check if symbol is something we expect to
+      ;; not have a reference and issue an appropriate error.
+      (cond
+       ((or (string= symbol "")
+            (string-match "[[:blank:]\n]" symbol))
+        (user-error "Point is at white space character!"))
+       ;;
+       ((member symbol seed7--cpmpile-time-symbols)
+        (user-error "%S is a Seed7 compile-time symbol" symbol))
+       ;;
+       ((string-match seed7--very-special-char-re symbol nil :inhibit-modify)
+        (user-error
+         "%S is part of another Seed7 statement, hard-coded\
+ or a Seed7 compile time symbol." symbol))
+       ;;
+       (t
+        (user-error "Nothing matching %S here. Is point at its definition?"
+                    symbol))))))
 
 ;;** Seed7 Cross Reference Xref Backend Framework
 
