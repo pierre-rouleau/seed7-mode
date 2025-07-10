@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-10 11:47:22 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-10 12:06:25 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-10T15:47:22+0000 W28-4"
+(defconst seed7-mode-version-timestamp "2025-07-10T16:06:25+0000 W28-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4708,8 +4708,10 @@ Invalid boundaries: begin=%S, end=%S"
         (when candidate-list
           ;; sort the list by distance between open paren and start of line
           (setq candidate-list (sort candidate-list
-                                     :key (lambda (e) ""
-                                            (- start-pos (nth 1 e)))))
+                                     (lambda (e1 e2) ""
+                                       (<
+                                        (- start-pos (nth 1 e1))
+                                        (- start-pos (nth 1 e2))))))
           ;; The inner block is in the first element of the candidate-list
           ;; Return the column position right after its opening paren.
           (goto-char (nth 1 (nth 0 candidate-list)))
