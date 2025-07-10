@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-10 12:06:25 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-10 16:54:03 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-10T16:06:25+0000 W28-4"
+(defconst seed7-mode-version-timestamp "2025-07-10T20:54:03+0000 W28-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2743,8 +2743,8 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
 
 - With optional argument N, repeat the search that many times and succeed
   only when that many function or procedures are found.
-  A value of zero means no action.  A negative value is not allowed and raises
-  a user error.
+  A value of zero means no action. Negative N means move forward
+  to the Nth following beginning of defun.
 - Unless SILENT, the function prints a message showing the name of the
   found function or procedure.
 - When a new function or procedure is found the function pushes the mark
@@ -2758,39 +2758,39 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
          (item-type nil)
          (item-name nil)
          (tail-type nil))
-    (when (< n 0)
-      (user-error "Negative N (%d) not allowed!" n))
-    (unless (eq n 0)
-      (save-excursion
-        (dotimes (_ n)
-          (setq found-pos nil)
-          (when (seed7-re-search-backward-closest (list seed7-procfunc-regexp
-                                                        seed7-forward-or-action-procedure-declaration-re
-                                                        seed7-forward-or-action-function-declaration-g1-re))
-            (setq found-pos (point)
-                  item-type (substring-no-properties (or (match-string seed7-procfunc-regexp-item-type-group) "?"))
-                  item-name (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group) "?"))
-                  tail-type (substring-no-properties (or (match-string seed7-procfunc-regexp-tail-type-group) "?"))))))
-      (if found-pos
-          (let ((top-block-name (seed7-top-block-name nil original-pos)))
-            (when (and top-block-name
-                       (not (string= top-block-name item-name)))
-              (setq item-name (format "%s %s" top-block-name item-name)))
-            (seed7--move-and-mark
-             original-pos
-             found-pos
-             dont-push-mark
-             (unless silent
-               (seed7--show-info 'at-start-of item-name item-type tail-type))))
-        (user-error (seed7--no-defun-found-msg-for n 'backward))))))
+    (if (< n 0)
+        (seed7-end-of-defun (abs n) silent dont-push-mark)
+      (unless (eq n 0)
+        (save-excursion
+          (dotimes (_ n)
+            (setq found-pos nil)
+            (when (seed7-re-search-backward-closest (list seed7-procfunc-regexp
+                                                          seed7-forward-or-action-procedure-declaration-re
+                                                          seed7-forward-or-action-function-declaration-g1-re))
+              (setq found-pos (point)
+                    item-type (substring-no-properties (or (match-string seed7-procfunc-regexp-item-type-group) "?"))
+                    item-name (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group) "?"))
+                    tail-type (substring-no-properties (or (match-string seed7-procfunc-regexp-tail-type-group) "?"))))))
+        (if found-pos
+            (let ((top-block-name (seed7-top-block-name nil original-pos)))
+              (when (and top-block-name
+                         (not (string= top-block-name item-name)))
+                (setq item-name (format "%s %s" top-block-name item-name)))
+              (seed7--move-and-mark
+               original-pos
+               found-pos
+               dont-push-mark
+               (unless silent
+                 (seed7--show-info 'at-start-of item-name item-type tail-type))))
+          (user-error (seed7--no-defun-found-msg-for n 'backward)))))))
 
 (defun seed7-beg-of-next-defun (&optional n silent dont-push-mark)
   "Move forward to the beginning of the next function or procedure.
 
 - With optional argument N, repeat the search that many times and succeed
   only when that many function or procedures are found.
-  A value of zero means no action.  A negative value is not allowed and raises
-  a user error.
+  A value of zero means no action.   A negative value is not allowed and
+  raises a user error.
 - Unless SILENT, the function prints a message showing the name of the
   found function or procedure.
 - When a new function or procedure is found the function pushes the mark
@@ -2843,8 +2843,8 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
 Move inside the current if inside one, to the next if outside one.
 - With optional argument N, repeat the search that many times and succeed
   only when that many function or procedures are found.
-  A value of zero means no action.  A negative value is not allowed and raises
-  a user error.
+  A value of zero means no action.  A negative value means move backward to
+  the Nth preceding start of defun.
 - Unless SILENT, the function prints a message showing the item-name of the new
   found function or procedure.
 - When a new function or procedure is found the function pushes the mark
@@ -2862,139 +2862,139 @@ Move inside the current if inside one, to the next if outside one.
          (item-type nil)         (item-type2 nil)
          (tail-type nil)         (tail-type2 nil)
          (top-block-name nil)    (top-block-name2 nil))
-    (when (< n 0)
-      (user-error "Negative N (%d) not allowed!" n))
-    (unless (eq n 0)
-      (save-excursion
-        (dotimes (_ n)
-          (setq found-candidate nil
-                final-pos nil
-                found-pos nil)
-          ;; Search for all possible function/procedure end.
-          ;; - Retain the one that is closest to point.
-          ;; Search for next procedure or long function
-          (save-excursion
-            (when
-                (and
-                 (setq final-pos (seed7-re-search-forward seed7-procfunc-end-regexp)
-                       top-block-name2 (seed7-top-block-name))
-                 (when (seed7-re-search-backward seed7-procfunc-regexp)
-                   ;; [:todo 2025-06-12, by Pierre Rouleau: when at end of
-                   ;; func that has nested func/proc, the spec extracted below
-                   ;; are the spec of the last nested func/proc NOT the spec
-                   ;; of the top one. Need a way to distinguish the 2...]
-                   (setq item-type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
-                         item-name (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
-                         tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group))
-                         top-block-name top-block-name2)
-                   t)
-                 (seed7-re-search-forward  seed7-procfunc-end-regexp)
-                 (eq (point) final-pos))
-              (setq found-candidate t)))
-          ;; Search for next short function
-          (save-excursion
-            (when
-                (and
-                 (setq found-pos (seed7-re-search-forward seed7-short-func-end-regexp)
-                       top-block-name2 (seed7-top-block-name))
-                 (when (seed7-re-search-backward seed7-procfunc-regexp)
-                   (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
-                         item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
-                         tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
-                   t)
-                 (seed7-re-search-forward seed7-short-func-end-regexp)
-                 (eq (point) found-pos)
-                 (or (not final-pos)
-                     (< found-pos final-pos)))
-              (setq final-pos found-pos
-                    found-candidate t
-                    item-name item-name2
-                    item-type item-type2
-                    tail-type tail-type2
-                    top-block-name top-block-name2)))
-          ;; Search for next forward declaration
-          (save-excursion
-            (when
-                (and
-                 (setq found-pos
-                       (seed7-re-search-forward seed7-forward-declaration-end-regexp)
-                       top-block-name2 (seed7-top-block-name))
-                 (when (seed7-re-search-backward seed7-procfunc-regexp)
-                   (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
-                         item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
-                         tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
-                   t)
-                 (seed7-re-search-forward seed7-forward-declaration-end-regexp)
-                 (eq (point) found-pos)
-                 (or (not final-pos)
-                     (< found-pos final-pos)))
-              (setq final-pos found-pos
-                    found-candidate t
-                    item-name item-name2
-                    item-type item-type2
-                    tail-type tail-type2
-                    top-block-name top-block-name2)))
-          ;; Search for next function implementation declaration
-          (save-excursion
-            (when
-                (and
-                 (setq found-pos
-                       (seed7-re-search-forward seed7-forward-or-action-function-declaration-g1-re)
-                       top-block-name2 (seed7-top-block-name))
-                 (when (seed7-re-search-backward seed7-procfunc-regexp)
-                   (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
-                         item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
-                         tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
-                   t)
-                 (seed7-re-search-forward seed7-forward-or-action-function-declaration-re)
-                 (eq (point) found-pos)
-                 (or (not final-pos)
-                     (< found-pos final-pos)))
-              (setq final-pos found-pos
-                    found-candidate t
-                    item-name item-name2
-                    item-type item-type2
-                    tail-type tail-type2
-                    top-block-name top-block-name2)))
+    (if (< n 0)
+        (seed7-beg-of-defun (abs n) silent dont-push-mark)
+      (unless (eq n 0)
+        (save-excursion
+          (dotimes (_ n)
+            (setq found-candidate nil
+                  final-pos nil
+                  found-pos nil)
+            ;; Search for all possible function/procedure end.
+            ;; - Retain the one that is closest to point.
+            ;; Search for next procedure or long function
+            (save-excursion
+              (when
+                  (and
+                   (setq final-pos (seed7-re-search-forward seed7-procfunc-end-regexp)
+                         top-block-name2 (seed7-top-block-name))
+                   (when (seed7-re-search-backward seed7-procfunc-regexp)
+                     ;; [:todo 2025-06-12, by Pierre Rouleau: when at end of
+                     ;; func that has nested func/proc, the spec extracted below
+                     ;; are the spec of the last nested func/proc NOT the spec
+                     ;; of the top one. Need a way to distinguish the 2...]
+                     (setq item-type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                           item-name (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                           tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group))
+                           top-block-name top-block-name2)
+                     t)
+                   (seed7-re-search-forward  seed7-procfunc-end-regexp)
+                   (eq (point) final-pos))
+                (setq found-candidate t)))
+            ;; Search for next short function
+            (save-excursion
+              (when
+                  (and
+                   (setq found-pos (seed7-re-search-forward seed7-short-func-end-regexp)
+                         top-block-name2 (seed7-top-block-name))
+                   (when (seed7-re-search-backward seed7-procfunc-regexp)
+                     (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                           item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                           tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
+                     t)
+                   (seed7-re-search-forward seed7-short-func-end-regexp)
+                   (eq (point) found-pos)
+                   (or (not final-pos)
+                       (< found-pos final-pos)))
+                (setq final-pos found-pos
+                      found-candidate t
+                      item-name item-name2
+                      item-type item-type2
+                      tail-type tail-type2
+                      top-block-name top-block-name2)))
+            ;; Search for next forward declaration
+            (save-excursion
+              (when
+                  (and
+                   (setq found-pos
+                         (seed7-re-search-forward seed7-forward-declaration-end-regexp)
+                         top-block-name2 (seed7-top-block-name))
+                   (when (seed7-re-search-backward seed7-procfunc-regexp)
+                     (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                           item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                           tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
+                     t)
+                   (seed7-re-search-forward seed7-forward-declaration-end-regexp)
+                   (eq (point) found-pos)
+                   (or (not final-pos)
+                       (< found-pos final-pos)))
+                (setq final-pos found-pos
+                      found-candidate t
+                      item-name item-name2
+                      item-type item-type2
+                      tail-type tail-type2
+                      top-block-name top-block-name2)))
+            ;; Search for next function implementation declaration
+            (save-excursion
+              (when
+                  (and
+                   (setq found-pos
+                         (seed7-re-search-forward seed7-forward-or-action-function-declaration-g1-re)
+                         top-block-name2 (seed7-top-block-name))
+                   (when (seed7-re-search-backward seed7-procfunc-regexp)
+                     (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                           item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                           tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
+                     t)
+                   (seed7-re-search-forward seed7-forward-or-action-function-declaration-re)
+                   (eq (point) found-pos)
+                   (or (not final-pos)
+                       (< found-pos final-pos)))
+                (setq final-pos found-pos
+                      found-candidate t
+                      item-name item-name2
+                      item-type item-type2
+                      tail-type tail-type2
+                      top-block-name top-block-name2)))
 
-          (save-excursion
-            (when
-                (and
-                 (setq found-pos
-                       (seed7-re-search-forward seed7-forward-or-action-function-declaration-re)
-                       top-block-name2 (seed7-top-block-name))
-                 (when (seed7-re-search-backward-closest (list seed7-forward-or-action-procedure-declaration-re
-                                                               seed7-forward-or-action-function-declaration-re))
+            (save-excursion
+              (when
+                  (and
+                   (setq found-pos
+                         (seed7-re-search-forward seed7-forward-or-action-function-declaration-re)
+                         top-block-name2 (seed7-top-block-name))
+                   (when (seed7-re-search-backward-closest (list seed7-forward-or-action-procedure-declaration-re
+                                                                 seed7-forward-or-action-function-declaration-re))
 
-                   (setq item-type2 (if (seed7-line-starts-with 0 "const proc") "proc" "func")
-                         item-name2 "?"
-                         tail-type2 "??")
-                   t)
-                 (seed7-re-search-forward seed7-forward-or-action-function-declaration-re)
-                 (eq (point) found-pos)
-                 (or (not final-pos)
-                     (< found-pos final-pos)))
-              (setq final-pos found-pos
-                    found-candidate t
-                    item-name item-name2
-                    item-type item-type2
-                    tail-type tail-type2
-                    top-block-name top-block-name2)))
+                     (setq item-type2 (if (seed7-line-starts-with 0 "const proc") "proc" "func")
+                           item-name2 "?"
+                           tail-type2 "??")
+                     t)
+                   (seed7-re-search-forward seed7-forward-or-action-function-declaration-re)
+                   (eq (point) found-pos)
+                   (or (not final-pos)
+                       (< found-pos final-pos)))
+                (setq final-pos found-pos
+                      found-candidate t
+                      item-name item-name2
+                      item-type item-type2
+                      tail-type tail-type2
+                      top-block-name top-block-name2)))
 
-          (if found-candidate
-              ;; move to the end of first function to allow next search in loop
-              (goto-char final-pos)
-            ;; Nothing found in this loop.  Quit searching right away
-            (user-error (seed7--no-defun-found-msg-for n 'forward)))))
-      (when (and top-block-name
-                 (not (string= top-block-name item-name)))
-        (setq item-name (format "%s %s" top-block-name item-name)))
-      (seed7--move-and-mark
-       original-pos
-       final-pos
-       dont-push-mark
-       (unless silent
-         (seed7--show-info 'at-end-of item-name item-type tail-type))))))
+            (if found-candidate
+                ;; move to the end of first function to allow next search in loop
+                (goto-char final-pos)
+              ;; Nothing found in this loop.  Quit searching right away
+              (user-error (seed7--no-defun-found-msg-for n 'forward)))))
+        (when (and top-block-name
+                   (not (string= top-block-name item-name)))
+          (setq item-name (format "%s %s" top-block-name item-name)))
+        (seed7--move-and-mark
+         original-pos
+         final-pos
+         dont-push-mark
+         (unless silent
+           (seed7--show-info 'at-end-of item-name item-type tail-type)))))))
 
 ;;*** Seed7 Procedure/Function Navigation Mode Functions
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -6713,6 +6713,8 @@ Make sure you have no duplication of keywords if you edit the list."
               (function seed7--beg-of-defun-silently))
   (setq-local end-of-defun-function
               (function seed7--end-of-defun-silently))
+  (setq-local open-paren-in-column-0-is-defun-start nil)
+  (setq-local end-of-defun-moves-to-eol nil)
 
   ;; Seed7 outline minor-mode support
   (setq-local outline-regexp
