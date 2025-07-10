@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-10 11:29:12 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-10 11:47:22 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-10T15:29:12+0000 W28-4"
+(defconst seed7-mode-version-timestamp "2025-07-10T15:47:22+0000 W28-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2411,7 +2411,8 @@ Return position of the closest found, nil if nothing found."
          (closest-position
           (dolist (regexp regexps (car-safe
                                    (sort
-                                    (seq-filter #'identity positions))))
+                                    (seq-filter #'identity positions)
+                                    (function <))))
             (save-excursion
               (push (seed7-re-search-forward regexp) positions)))))
     (when closest-position
@@ -2462,9 +2463,9 @@ Return position of the closest found, nil if nothing found."
   (let* ((positions nil)
          (closest-position
           (dolist (regexp regexps (car-safe
-                                   (nreverse
-                                    (sort
-                                     (seq-filter #'identity positions)))))
+                                   (sort
+                                    (seq-filter #'identity positions)
+                                    (function >))))
             (save-excursion
               (push (seed7-re-search-backward regexp) positions)))))
     (when closest-position
@@ -6334,7 +6335,8 @@ DESC describes it."
 
 
 (defun seed7--xref-identifiers ()
-  "Return a list of all identifiers extracted by s7xref for current file."
+  "Return list of all identifiers extracted by s7xref for current file.
+The list has no duplicate and is unsorted."
   ;; Build the xref list for this Seed7 file if it does not already exist.
   ;; Store it inside an internal buffer `seed7---xref-buffer'.
   (unless (and seed7---xref-buffer
@@ -6351,10 +6353,10 @@ DESC describes it."
         (setq identifier (match-string 1))
         (unless (member identifier identifiers)
           (push identifier identifiers))))
-    (sort identifiers)))
+    identifiers))
 
 (defun seed7--procfun-identifiers ()
-  "Return list of all identifiers of function or procedure."
+  "Return (unsorted) list of all identifiers of function or procedure."
   (save-excursion
     (let ((identifiers nil)
           (callable-start nil)
@@ -6371,15 +6373,16 @@ DESC describes it."
               callable-end))
       (dolist (start.end (seed7--symbol-definition-areas-for-block
                           (list 0 "" callable-start param-var-end))
-                         (sort identifiers))
+                         identifiers)
         (goto-char (car start.end))
         (while (seed7-re-search-forward seed7-parameter-var-declaration-regexp
                                         (cdr start.end))
           (push (substring-no-properties (match-string 1)) identifiers))))))
 
 (defun seed7--list-of-terms ()
-  "Return the list of identifiers available from the current location."
-  (sort (append (seed7--xref-identifiers) (seed7--procfun-identifiers))))
+  "Return sorted list of identifiers available from the current location."
+  (sort (append (seed7--xref-identifiers) (seed7--procfun-identifiers))
+        (function string<)))
 
 (cl-defmethod xref-backend-identifier-completion-table ((_backend (eql seed7)))
   "Return a list of terms for completions taken from the current buffer."
