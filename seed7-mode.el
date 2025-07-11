@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-11 09:51:10 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-11 10:14:43 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-11T13:51:10+0000 W28-5"
+(defconst seed7-mode-version-timestamp "2025-07-11T14:14:43+0000 W28-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2286,10 +2286,14 @@ Allows selecting similar colours for various systems."
 ;; - Region:      "(\*" "\*)"
 ;; - To line end: "#"
 
-(defconst seed7-block-comment-starter "(*")
-(defconst seed7-block-comment-ender   "*)")
-(defconst seed7-block-comment-prefix  "**")
+(defconst seed7-block-comment-starter  "(*")
+(defconst seed7-block-comment-ender    "*)")
+(defconst seed7-block-comment-prefix   "**")
+(defconst seed7-block-comment-continue "* ")
+
 (defconst seed7-line-comment-starter  "#")
+(defconst seed7-line-comment-continue "#")
+
 
 (defun seed7--new-state-for (arg prevstate)
   "Calculate the new state of PREVSTATE, t or nil, based on ARG.
@@ -2318,6 +2322,10 @@ Note: the default style for all Seed7 buffers is controlled by the
 	          (if seed7-uses-block-comment
 	              (concat " " seed7-block-comment-ender)
 	            ""))
+  (setq-local comment-continue
+              (if seed7-uses-block-comment
+                  (concat " " seed7-block-comment-continue)
+                seed7-line-comment-continue))
   (when verbose
     (message "Now use %s style comments" (if use-block
                                              "block"
