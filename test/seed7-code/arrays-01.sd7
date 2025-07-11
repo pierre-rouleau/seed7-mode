@@ -1,0 +1,56 @@
+# SEED7 FILE: arrays-01.sd7
+#
+# Purpose   : Seed7 test code - Seed7 array definition statements.
+# Created   : Friday, July 11 2025.
+# Author    : Pierre Rouleau <prouleau001@gmail.com>
+# Time-stamp: <2025-07-11 14:19:37 EDT, updated by Pierre Rouleau>
+# ----------------------------------------------------------------------------
+# Module Description
+# ------------------
+#
+# The file holds Seed7 code that is used to test seed7-mode functionality.
+# The Seed7 code should compile but does not need to do anything useful.
+#
+# DO NOT MODIFY the code.  It is used by seed7-mode test code which expects
+#                          lines to be at specific locations.
+
+# ----------------------------------------------------------------------------
+# Test Code
+# ---------
+#
+#
+$ include "seed7_05.s7i";
+
+
+const array color: loresColor is [0] (
+  black,
+  color(16#9000, 16#1700, 16#4000), # Deep Red
+  color(16#4000, 16#2c00, 16#a500), # Dark Blue
+  color(16#d000, 16#4300, 16#e500), # Purple
+  color(16#0000, 16#6900, 16#4000), # Dark Green
+  color(16#8000, 16#8000, 16#8000), # Gray 1
+  color(16#2f00, 16#9500, 16#e500), # Medium Blue
+  color(16#bf00, 16#ab00, 16#ff00), # Light Blue
+  color(16#4000, 16#2400, 16#0000), # Brown
+  color(16#d000, 16#6a00, 16#1a00), # Orange
+  color(16#8000, 16#8000, 16#8000), # Gray 2
+  color(16#ff00, 16#9600, 16#bf00), # Pink
+  color(16#2f00, 16#bc00, 16#1a00), # Light Green
+  color(16#bf00, 16#d300, 16#5a00), # Yellow
+  color(16#6f00, 16#e800, 16#bf00), # Aquamarine
+  white);
+
+const array color: hiresColor is [0] (
+  black,                            # Black 1
+  color(16#2f00, 16#bc00, 16#1a00), # Green
+  color(16#d000, 16#4300, 16#e500), # Violet
+  white,                            # White 1
+  black,                            # Black 2
+  color(16#d000, 16#6a00, 16#1a00), # Orange
+  color(16#2f00, 16#9500, 16#e500), # Medium Blue
+  white);                           # White 2
+
+
+
+
+# ----------------------------------------------------------------------------
