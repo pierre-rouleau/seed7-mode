@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-11 09:39:43 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-11 09:51:10 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-11T13:39:43+0000 W28-5"
+(defconst seed7-mode-version-timestamp "2025-07-11T13:51:10+0000 W28-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -568,7 +568,9 @@ The name of the source code file is appended to the end of that line."
 ;;** Seed7 Cross Reference
 
 (defcustom seed7-xref (format "s7 %stools/s7xref.sd7"
-                              (file-name-directory (locate-library "seed7-mode")))
+                              (file-name-directory
+                               (or (locate-library "seed7-mode")
+                                   "~/.emacs.d/utils/")))
   "Seed7 cross reference builder command line.
 
 The command line must identify the Seed7 cross reference builder,
@@ -592,7 +594,12 @@ program must include their absolute path unless these programs can be
 found through the PATH environment variable accessible to Emacs.
 
 The ~ character, if you use it, is expanded to identify your HOME
-directory."
+directory.
+
+The default value attempts to locate seed7-mode from Emacs
+`load-path'. If this fails it uses \"~/.emacs.d/utils/\".
+Modify this value if seed7-mode is not in your Emacs load path
+and the default path is not appropriate."
   :group 'seed7
   :type 'string)
 
