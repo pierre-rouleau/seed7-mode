@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-11 08:04:31 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-11 09:39:43 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-11T12:04:31+0000 W28-5"
+(defconst seed7-mode-version-timestamp "2025-07-11T13:39:43+0000 W28-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3945,7 +3945,7 @@ N is: - :previous-non-empty for the previous non empty line,
             (line-code-end-pos nil)
             (found-pos nil))
         ;; First move to the end of the line code, skipping comments.
-        (end-of-line nil)
+        (end-of-line)
         (when (seed7-re-search-backward "[^ \t]" line-start-pos)
           (forward-char)
           (setq line-code-end-pos (point))
@@ -4156,8 +4156,7 @@ Does not move point, does not modify search match data."
                       (point))
       (or pos (point))
       (save-excursion (goto-char start-pos)
-                      (end-of-line)
-                      (point))))
+                      (line-end-position))))
 
 ;; [:todo 2025-06-04, by Pierre Rouleau: optimize #1? Add first-word argument
 ;;                    and pass it to seed7--indent-offset-for ]
@@ -4539,11 +4538,10 @@ N is: - :previous-non-empty for the previous non empty line,
              (block-indent-column (progn
                                     (skip-chars-forward " \t")
                                     (current-column)))
-             (line-end-pos (progn
-                             (end-of-line)
-                             (point)))
+             (line-end-pos (line-end-position))
              (block-start-pos nil)
              (enclosing-block-end-pos nil))
+        (end-of-line)
         (when (seed7-re-search-backward ");")
           (forward-char)
           (setq enclosing-block-end-pos (point))
@@ -4674,11 +4672,10 @@ N is: - :previous-non-empty for the previous non empty line,
              (block-indent-column (progn
                                     (skip-chars-forward " \t")
                                     (current-column)))
-             (line-end-pos (progn
-                             (end-of-line)
-                             (point)))
+             (line-end-pos (line-end-position))
              (block-start-pos nil)
              (enclosing-block-end-pos nil))
+        (end-of-line)
         (when (seed7-re-search-backward "};")
           (forward-char)
           (setq enclosing-block-end-pos (point))
@@ -4881,7 +4878,7 @@ N is: - :previous-non-empty for the previous non empty line,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before..."
   (let ((previous-defun-column nil)
-        (end-pos (save-excursion (end-of-line) (point))))
+        (end-pos (line-end-position)))
     (cond
      ;; handle line that is a end func, struc or enum
      ((seed7-line-starts-with-any n
