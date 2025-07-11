@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-10 16:54:03 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-10 23:08:10 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-10T20:54:03+0000 W28-4"
+(defconst seed7-mode-version-timestamp "2025-07-11T03:08:10+0000 W28-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1585,6 +1585,38 @@ Matches something like:
 ;;** Seed7 Procedure/Function Regexp
 ;;   -------------------------------
 
+
+
+(defconst seed7-procfunc-start-regexp
+  (format
+   ;;    const      varfunc| func | proc       RT?     :                                    fct name                           is
+   ;;              (--------------------------)                          (----)            (---------)        (----)
+   ;;              G1                          G2                     (----------)         G3            (------------)
+   ;;                                                        (----------------------)
+   ;;                                              w    w[      w                                                      .   w]w w
+   "^%s*?const%s+\\(\\(?:var\\)?func \\|proc\\)%s??%s??:%s?\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?%s?is\\>"
+   ;;%        %    G1                          G2  %    %        %         %           %   G3%    %         %  %       %   %
+   ;;1        2                                %3  4    5        6         7           8     9    10        11 12      13  14
+   ;;
+   seed7--blank-re                       ; 1
+   seed7--whitespace-re                  ; 2
+   seed7-type-identifier-re              ; 3 : RT? : return type (optional)
+   seed7--whitespace-re                  ; 4
+   seed7--opt-square-brace-start-re      ; 5 w[
+   seed7--whitespace-re                  ; 6
+   seed7--anychar-re                     ; 7
+   seed7--whitespace-re                  ; 8
+   seed7--name-identifier-nc-re          ; 9
+   seed7--special-identifier-nc-re       ; 10
+   seed7--whitespace-re                  ; 11
+   seed7--anychar-re                     ; 12
+   seed7--anychar-re                     ; 13
+   seed7--opt-square-brace-end-re)       ; 14
+  "Regexp identifying beginning of procedures and functions.
+Group 1: \"proc\", \"varfunc\" or \"func \"
+Group 2: The func return type.  May be empty.
+Group 3: The func or proc name." )
+
 (defconst seed7-procfunc-regexp
   (format
    ;;    const      varfunc| func | proc       RT?     :                                    fct name                           is     func | return | ...
@@ -1596,22 +1628,22 @@ Matches something like:
    ;;%        %    G1                          G2  %    %        %         %           %   G3%    %         %  %       %   %    %    G4               %
    ;;1        2                                %3  4    5        6         7           8     9    10        11 12      13  14   15                    16
    ;;
-   seed7--blank-re                            ; 1
-   seed7--whitespace-re                       ; 2
-   seed7-type-identifier-re                   ; 3 : RT? : return type (optional)
-   seed7--whitespace-re                       ; 4
-   seed7--opt-square-brace-start-re           ; 5 w[
-   seed7--whitespace-re                       ; 6
-   seed7--anychar-re                          ; 7
-   seed7--whitespace-re                       ; 8
-   seed7--name-identifier-nc-re               ; 9
-   seed7--special-identifier-nc-re            ; 10
-   seed7--whitespace-re                       ; 11
-   seed7--anychar-re                          ; 12
-   seed7--anychar-re                          ; 13
-   seed7--opt-square-brace-end-re             ; 14 w]w
-   seed7--whitespace-re                       ; 15
-   seed7--procfunc-forward-or-action-re)      ; 16
+   seed7--blank-re                       ; 1
+   seed7--whitespace-re                  ; 2
+   seed7-type-identifier-re              ; 3 : RT? : return type (optional)
+   seed7--whitespace-re                  ; 4
+   seed7--opt-square-brace-start-re      ; 5 w[
+   seed7--whitespace-re                  ; 6
+   seed7--anychar-re                     ; 7
+   seed7--whitespace-re                  ; 8
+   seed7--name-identifier-nc-re          ; 9
+   seed7--special-identifier-nc-re       ; 10
+   seed7--whitespace-re                  ; 11
+   seed7--anychar-re                     ; 12
+   seed7--anychar-re                     ; 13
+   seed7--opt-square-brace-end-re        ; 14 w]w
+   seed7--whitespace-re                  ; 15
+   seed7--procfunc-forward-or-action-re) ; 16
   "Regexp identifying beginning of procedures and functions.
 Group 1: \"proc\", \"varfunc\" or \"func \"
 Group 2: The func return type.  May be empty.
@@ -2764,9 +2796,11 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
         (save-excursion
           (dotimes (_ n)
             (setq found-pos nil)
-            (when (seed7-re-search-backward-closest (list seed7-procfunc-regexp
-                                                          seed7-forward-or-action-procedure-declaration-re
-                                                          seed7-forward-or-action-function-declaration-g1-re))
+            (when (seed7-re-search-backward-closest (list
+                                                     seed7-procfunc-regexp
+                                                     seed7-procfunc-start-regexp
+                                                     seed7-forward-or-action-procedure-declaration-re
+                                                     seed7-forward-or-action-function-declaration-g1-re))
               (setq found-pos (point)
                     item-type (substring-no-properties (or (match-string seed7-procfunc-regexp-item-type-group) "?"))
                     item-name (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group) "?"))
