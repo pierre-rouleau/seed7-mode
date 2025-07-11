@@ -3,7 +3,7 @@
 # Purpose   : Seed7 test code - Seed7 array definition statements.
 # Created   : Friday, July 11 2025.
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
-# Time-stamp: <2025-07-11 15:15:35 EDT, updated by Pierre Rouleau>
+# Time-stamp: <2025-07-11 15:54:27 EDT, updated by Pierre Rouleau>
 # ----------------------------------------------------------------------------
 # Module Description
 # ------------------
@@ -11,14 +11,20 @@
 # The file holds Seed7 code that is used to test seed7-mode functionality.
 # The Seed7 code should compile but does not need to do anything useful.
 #
+# This test code consists of picked snippets from Thomas Mertes Seed7 code
+# located at https://github.com/ThomasMertes/seed7.  The original code from
+# which this is copied is Copyright Thomas Mertes, with GPL-2.0 license.  The
+# Seed7 code used here is not meant to be functional and should only be used
+# for testing the validity of seed7-mode.el logic applied to valid Seed7
+# source code.
+#
 # DO NOT MODIFY the code.  It is used by seed7-mode test code which expects
 #                          lines to be at specific locations.
 
 # ----------------------------------------------------------------------------
 # Test Code
 # ---------
-#
-#
+
 $ include "seed7_05.s7i";
 
 
@@ -40,7 +46,7 @@ const array color: loresColor is [0] (
   color(16#6f00, 16#e800, 16#bf00), # Aquamarine
   white);
 
-const array color: hiresColor is [0] (
+var array color: hiresColor is [0] (
   black,                            # Black 1
   color(16#2f00, 16#bc00, 16#1a00), # Green
   color(16#d000, 16#4300, 16#e500), # Violet
