@@ -3,7 +3,7 @@
 # Purpose   : Seed7 test code - Seed7 array definition statements.
 # Created   : Friday, July 11 2025.
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
-# Time-stamp: <2025-07-11 14:19:37 EDT, updated by Pierre Rouleau>
+# Time-stamp: <2025-07-11 15:15:35 EDT, updated by Pierre Rouleau>
 # ----------------------------------------------------------------------------
 # Module Description
 # ------------------
@@ -51,6 +51,12 @@ const array color: hiresColor is [0] (
   white);                           # White 2
 
 
+# --
 
+const func boolean: isStringVar (in string: symbol) is
+  return symbol in string_var_name or
+         symbol <> "" and
+         (symbol[length(symbol)] = '$' or symbol[1] in defstr_var and
+          not symbol[length(symbol)] in numeric_var_suffix);
 
 # ----------------------------------------------------------------------------
