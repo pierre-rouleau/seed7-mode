@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-10 23:08:10 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-11 08:04:31 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-11T03:08:10+0000 W28-5"
+(defconst seed7-mode-version-timestamp "2025-07-11T12:04:31+0000 W28-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3421,19 +3421,32 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
                      (seed7-current-line-number)
                      regexp))))
             ;; Not inside a block.
-            ;; Check for end of parens pair (used for array and set)
+            ;; Check for end of parens pair, used for array and set, but also
+            ;; possible at the end of a return statement of a short function.
             (let ((pos nil))
               (cond
                ((seed7--set (seed7-line-code-ends-with 0 ");") pos)
                 (goto-char (1+ pos))
                 (backward-sexp)
                 (seed7-to-indent)
+                ;; in case we were at the return statement of a short function
+                ;; check if we land before a const keyword.  If not, we're not
+                ;; at the beginning of the block and most probably inside a
+                ;; function return statement so use `seed7-beg-of-defun' to
+                ;; find it.
+                (unless (looking-at "const ")
+                  (seed7-beg-of-defun nil dont-push-mark dont-push-mark))
                 (setq found-position (point)))
+               ;;
+               ;; same logic for {} hash blocks
                ((seed7--set (seed7-line-code-ends-with 0 "};") pos)
                 (goto-char (1+ pos))
                 (backward-sexp)
                 (seed7-to-indent)
+                (unless (looking-at "const ")
+                  (seed7-beg-of-defun nil dont-push-mark dont-push-mark))
                 (setq found-position (point)))
+               ;;
                (t
                 ;; search for beginning of function or procedure.
                 ;; - Not pushing mark is also an indication to operate silently.
