@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, July 11 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-11 16:01:08 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-14 10:25:50 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -48,8 +48,8 @@
                                             (directory-file-name
                                              (buffer-file-name))))))
   ;; That directory is the peer of the directory holing this emacs lisp file.
-  ;; The current file is in          : seed7-mode/test/erl-tests
-  ;; The Seed7 test code files are in: seed7-mode/test/seed7-code
+  ;; The current file is in          : seed7-mode/tests/erl-tests
+  ;; The Seed7 test code files are in: seed7-mode/tests/seed7-code
   "Absolute path of the directory that holds the Seed7 test code files.")
 
 ;; line, column, expected result of (seed7-line-at-endof-array-definition-block 0)
