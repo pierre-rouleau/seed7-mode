@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-11 10:32:14 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-14 10:10:01 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -278,9 +278,9 @@
 ;;         o `seed7--move-and-mark'
 ;;         o `seed7--pos-msg'
 ;;      - Seed7 Procedure/Function Navigation Mode Functions
-;;        > `seed7--beg-of-defun-silently'
+;;        > `seed7--beg-of-defun-conventional'
 ;;          o `seed7-beg-of-defun'
-;;        > `seed7--end-of-defun-silently'
+;;        > `seed7--end-of-defun-conventional'
 ;;          o `seed7-end-of-defun'
 ;;   - Seed7 Navigation by Block
 ;;     * `seed7-to-block-forward'
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-11T14:32:14+0000 W28-5"
+(defconst seed7-mode-version-timestamp "2025-07-14T14:10:01+0000 W29-1"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2797,10 +2797,10 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
 
 - With optional argument N, repeat the search that many times and succeed
   only when that many function or procedures are found.
-  A value of zero means no action. Negative N means move forward
-  to the Nth following beginning of defun.
+  A value of zero means no action. A nil value is equivalent to 1.
+  A Negative N means move forward to the Nth following beginning of defun.
 - Unless SILENT, the function prints a message showing the name of the
-  found function or procedure.
+  found function or procedure.  If it found nothing it issues a user error.
 - When a new function or procedure is found the function pushes the mark
   unless DONT-PUSH-MARK is non-nil.  Pushing the mark allows future pop to
   go back to the original position with \\[universal-argument] \\[set-mark-command].
@@ -2902,7 +2902,7 @@ Move inside the current if inside one, to the next if outside one.
   A value of zero means no action.  A negative value means move backward to
   the Nth preceding start of defun.
 - Unless SILENT, the function prints a message showing the item-name of the new
-  found function or procedure.
+  found function or procedure.  If it found nothing it issues a user error.
 - When a new function or procedure is found the function pushes the mark
   unless DONT-PUSH-MARK is non-nil.  Pushing the mark allows future pop to
   go back to the original position with \\[universal-argument] \\[set-mark-command].
@@ -3055,13 +3055,15 @@ Move inside the current if inside one, to the next if outside one.
 ;;*** Seed7 Procedure/Function Navigation Mode Functions
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;
-;; The following functions are used as mode callbacks to perform various
-;; operations such as `mark-defun' for marking a complete function. These
-;; functions must therefore be silent and not push mark.  They use their
-;; interactive counterparts specifying the extra parameters and silencing
-;; errors.
+;; The following functions are used as mode navigation callbacks that conform
+;; to Emacs lisp.el conventions to perform various operations such as
+;; `beginning-of-defun', `end-of-defun' and `mark-defun' for marking a
+;; complete function. These functions must therefore be silent and not push
+;; mark. They use their interactive and verbose counterparts specifying the
+;; extra parameters, silence errors, move to the top of buffer or end of
+;; buffer on failure and return t on success, nil on failure.
 
-(defun seed7--beg-of-defun-silently (&optional n)
+(defun seed7--beg-of-defun-conventional (&optional n)
   "Simple beginning of defun to use as `beginning-of-defun-function'.
 
 Move once, unless N specifies a different count.
@@ -3071,9 +3073,11 @@ Return t if point moved to the beginning of function, nil if nothing found."
       (progn
         (seed7-beg-of-defun n :silent)
         t)
-    (error nil)))
+    (error
+     (goto-char (point-min))
+     nil)))
 
-(defun seed7--end-of-defun-silently (&optional n)
+(defun seed7--end-of-defun-conventional (&optional n)
   "Simple end of defun to use as `end-of-defun-function'.
 
 Move once, unless N specifies a different count.
@@ -3083,7 +3087,9 @@ Return t if point moved to the beginning of function, nil if nothing found."
       (progn
         (seed7-end-of-defun n :silent)
         t)
-    (error nil)))
+    (error
+     (goto-char (point-max))
+     nil)))
 
 ;;** Seed7 Navigation by Block
 ;;   -------------------------
@@ -6776,9 +6782,9 @@ Make sure you have no duplication of keywords if you edit the list."
   ;; `end-of-defun' to work inside Seed7 buffers.  This includes iedit,
   ;; expand-region, etc...
   (setq-local beginning-of-defun-function
-              (function seed7--beg-of-defun-silently))
+              (function seed7--beg-of-defun-conventional))
   (setq-local end-of-defun-function
-              (function seed7--end-of-defun-silently))
+              (function seed7--end-of-defun-conventional))
   (setq-local open-paren-in-column-0-is-defun-start nil)
   (setq-local end-of-defun-moves-to-eol nil)
 
