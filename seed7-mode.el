@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-14 10:12:59 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-14 11:26:49 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-14T14:12:59+0000 W29-1"
+(defconst seed7-mode-version-timestamp "2025-07-14T15:26:49+0000 W29-1"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -716,7 +716,7 @@ Has only one capturing group.")
   "Any one of the special characters.")
 
 (defconst seed7--very-special-char-re
-  "[];:)(}{.[]"
+  "[];:)(}{.,[]"
   "Regexp for special characters to extract.
 Some of those characters, but not all, are  not implemented as callable,
 but used in Seed7 syntax via different mechanisms.  Some may be implemented
@@ -1328,7 +1328,8 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
 ;;
 (defconst seed7-arithmetic-operator-regxp
   "[[:alnum:]_ )]\\([/*]\\)[[:alnum:]_ (]"
-  "Arithmetic operator except the minus sign.")
+  "Arithmetic operator except the minus sign.
+Match group 1")
 
 (defconst seed7-minus-operator-regexp
   "[^+-]\\([+-]\\)[^+-]"
@@ -6334,6 +6335,10 @@ Treat special symbols not used in operator, \"];)(}{.[\", as special the
 single character as a string.  Return word or operator at point or just
 before point.  Return \" \" if point is in middle of white-space."
   (cond
+   ((looking-at seed7-predef-assignment-operator-regxp)
+    (substring-no-properties (match-string 0)))
+   ((looking-at-p seed7-arithmetic-operator-regxp)
+    (substring-no-properties (match-string 1)))
    ((looking-at seed7--very-special-char-re)
     (string (char-after)))
    ((looking-at seed7--special-char-re)
@@ -6378,7 +6383,8 @@ DESC describes it."
  or a Seed7 compile time symbol." symbol))
          ;;
          (t
-          (user-error "Nothing matching %S here. Is point at its definition?"
+          (user-error "Nothing matching %S here.
+Is point at its definition? Is this file compiling?"
                       symbol)))))))
 
 ;;** Seed7 Cross Reference Xref Backend Framework
