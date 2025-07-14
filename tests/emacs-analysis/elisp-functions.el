@@ -1,8 +1,8 @@
 ;; Emacs Lisp Example Code Used For Tests
 
-(defun fct-b ()
+(defun fct-a ()
   "First test function."
-  (message "fct-b"))
+  (message "fct-ab"))
 
 
 (defun fct-b ()
