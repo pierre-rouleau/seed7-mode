@@ -1,0 +1,35 @@
+# Seed7 Example Code Used For Tests
+
+$ include "seed7_05.s7i";
+  include "float.s7i";
+
+const func boolean: f1_flipCoin is
+  return rand(FALSE, TRUE);
+
+
+const func boolean:  f2_flipCoin is func
+  result
+    var boolean: coinState is FALSE;
+  begin
+    coinState := rand(FALSE, TRUE);
+  end func;
+
+# function 3: inverse
+const func float: f3_inverse (in float: number) is
+  return 1.0 // number;
+
+#  function 4: power
+
+const func float: f4_power (in float: number, in integer: base) is
+  return number ** base;
+
+
+#  function 5: log 10 of power
+#  with 3 comment lines
+#  before it.
+
+
+const func float: f4_log10_of_power (in float: number, in integer: base) is
+  return log10(number ** base);
+
+# --------last line (line 35) ------------------------------------------------
