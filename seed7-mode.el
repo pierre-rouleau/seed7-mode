@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-14 11:26:49 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-14 11:58:22 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-14T15:26:49+0000 W29-1"
+(defconst seed7-mode-version-timestamp "2025-07-14T15:58:22+0000 W29-1"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2274,11 +2274,14 @@ Allows selecting similar colours for various systems."
    ;; invalid single quote char literals
    (cons seed7--invalid-char-literal-re              (list 1 ''font-lock-warning-face))
 
-   ;; big numbers: have an underscore : must be done before seed7-name-identifier-re
+   ;; identifiers: include the underscore (must be done before
+   ;; seed7-big-number-re to prevent something like 'f10_fct' from being
+   ;; rendered as a partial number.)
+   (cons seed7-name-identifier-re                    (list 1 ''seed7-name-identifier-face))
+
+   ;; big numbers: have an underscore
    (cons seed7-big-number-re                         (list 1 ''seed7-number-face))
 
-   ;; identifiers: include the underscore
-   (cons seed7-name-identifier-re                    (list 1 ''seed7-name-identifier-face))
    ;; other numbers
    (cons seed7-integer-re                            (list 1 ''seed7-integer-face))
    ;; low priority rendering of arithmetic + and -
