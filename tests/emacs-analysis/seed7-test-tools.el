@@ -2,7 +2,7 @@
 
 ;; Created   : Monday, July 14 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-14 23:10:57 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-15 09:30:05 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -47,9 +47,9 @@
   "Test forward-sexp 1"
   (interactive)
   (save-excursion
-    (message "   %3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
+    (message "   %-3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
     (forward-sexp 1)
-    (message "-> %3d, %2d, %2d" (point) (seed7-current-line-number)
+    (message "-> %-3d, %2d, %2d" (point) (seed7-current-line-number)
              (current-column)))
   (unless stay-on-line
    (forward-line 1)))
@@ -58,9 +58,9 @@
   "Test end-of-defun "
   (interactive)
   (save-excursion
-    (message "   %3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
+    (message "   %-3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
     (end-of-defun)
-    (message "-> %3d, %2d, %2d" (point) (seed7-current-line-number)
+    (message "-> %-3d, %2d, %2d" (point) (seed7-current-line-number)
              (current-column)))
   (unless stay-on-line
    (forward-line 1)))
@@ -68,9 +68,9 @@
 (defun test--beginning-of-defun (&optional stay-on-line)
   "Test beginning-of-defun"
   (save-excursion
-    (message "   %3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
+    (message "   %-3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
     (beginning-of-defun)
-    (message "-> %3d, %2d, %2d" (point) (seed7-current-line-number)
+    (message "-> %-3d, %2d, %2d" (point) (seed7-current-line-number)
              (current-column)))
   (unless stay-on-line
      (forward-line 1)))
@@ -101,9 +101,9 @@
   "Test forward-sexp 1"
   (interactive)
   (save-excursion
-    (message "   %3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
+    (message "   %-3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
     (python-nav-forward-sexp 1)
-    (message "-> %3d, %2d, %2d" (point) (seed7-current-line-number)
+    (message "-> %-3d, %2d, %2d" (point) (seed7-current-line-number)
              (current-column)))
   (unless stay-on-line
    (forward-line 1)))
@@ -112,9 +112,9 @@
   "Test forward-sexp 1"
   (interactive)
   (save-excursion
-    (message "   %3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
+    (message "   %-3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
     (python-nav-end-of-defun)
-    (message "-> %3d, %2d, %2d" (point) (seed7-current-line-number)
+    (message "-> %-3d, %2d, %2d" (point) (seed7-current-line-number)
              (current-column)))
   (unless stay-on-line
    (forward-line 1)))
@@ -123,9 +123,9 @@
   "Test forward-sexp 1"
   (interactive)
   (save-excursion
-    (message "   %3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
+    (message "   %-3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
     (python-nav-beginning-of-defun 1)
-    (message "-> %3d, %2d, %2d" (point) (seed7-current-line-number)
+    (message "-> %-3d, %2d, %2d" (point) (seed7-current-line-number)
              (current-column)))
   (unless stay-on-line
    (forward-line 1)))
@@ -166,9 +166,9 @@
   "Test forward-sexp 1"
   (interactive)
   (save-excursion
-    (message "   %3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
+    (message "   %-3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
     (seed7-nav-end-of-defun)
-    (message "-> %3d, %2d, %2d" (point) (seed7-current-line-number)
+    (message "-> %-3d, %2d, %2d" (point) (seed7-current-line-number)
              (current-column)))
   (unless stay-on-line
    (forward-line 1)))
@@ -177,9 +177,9 @@
   "Test forward-sexp 1"
   (interactive)
   (save-excursion
-    (message "   %3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
+    (message "   %-3d, %2d, %2d" (point) (seed7-current-line-number) (current-column))
     (seed7-nav-beginning-of-defun 1)
-    (message "-> %3d, %2d, %2d" (point) (seed7-current-line-number)
+    (message "-> %-3d, %2d, %2d" (point) (seed7-current-line-number)
              (current-column)))
   (unless stay-on-line
    (forward-line 1)))
