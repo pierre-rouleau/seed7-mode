@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-15 15:14:21 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-15 16:43:25 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-15T19:14:21+0000 W29-2"
+(defconst seed7-mode-version-timestamp "2025-07-15T20:43:25+0000 W29-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3073,14 +3073,22 @@ Move inside the current if inside one, to the next if outside one.
 ;; buffer on failure and return t on success, nil on failure.
 
 (defun seed7-nav-beginning-of-defun (&optional n)
-  "Simple beginning of defun to use as `beginning-of-defun-function'.
-
-Move once, unless N specifies a different count.
-Operate silently; do not issue an error when nothing is found.
-Return t if point moved to the beginning of function, nil if nothing found."
+  "Move backward to the beginning of defun.
+Move once (nil is equivalent to 1), unless N specifies a different count.
+With negative N, move point forward to the beginning of the Nth defun,
+N of 1 meaning the current one (or the one after the current comment
+or whitespace.
+- Operate silently; do not issue an error when nothing is found.
+- Return t if point moved to the beginning of function, nil if nothing found.
+- This is meant to be used as the `beginning-of-defun-function' of lisp.el."
+  ;; (message ":seed7-nav-beginning-of-defun: n=%S, called from point:%d, line %d" n
+  ;;            (point)
+  ;;            (seed7-current-line-number))
   (condition-case nil
       (progn
-        (seed7-beg-of-defun n :silent)
+        (if (> n 0)
+            (seed7-beg-of-defun n :silent)
+          (seed7-beg-of-next-defun (abs n) :silent))
         t)
     (error nil)))
 
@@ -6800,11 +6808,6 @@ Make sure you have no duplication of keywords if you edit the list."
               (function seed7-nav-end-of-defun))
   (setq-local open-paren-in-column-0-is-defun-start nil)
   (setq-local end-of-defun-moves-to-eol nil)
-  ;; [:todo 2025-07-15, by Pierre Rouleau: determine if lisp.el must be
-  ;;   modified to properly support end-of-defun and mark-defun in Seed7.
-  ;;   If so, the lisp.el modification is activated by end-of-defun-skips-one
-  ;;   variable set to t (it should default to nil) ]
-  ;; (setq-local end-of-defun-skips-one t)
 
   ;; Seed7 outline minor-mode support
   (setq-local outline-regexp
