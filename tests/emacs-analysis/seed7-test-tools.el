@@ -2,7 +2,7 @@
 
 ;; Created   : Monday, July 14 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-14 22:56:06 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-14 23:10:57 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -30,6 +30,11 @@
 ;;; --------------------------------------------------------------------------
 ;;; Dependencies:
 ;;
+
+(require 'python)                       ; use `python-nav-forward-sexp',
+                                        ; `python-nav-end-of-defun',
+                                        ; `python-nav-beginning-of-defun'
+
 
 (require 'seed7-mode)                   ; use `seed7-current-line-number'
 ;; lisp: use `forward-sexp', `end-of-defun'
