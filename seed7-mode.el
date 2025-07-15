@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-15 17:14:12 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-15 18:51:42 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-15T21:14:12+0000 W29-2"
+(defconst seed7-mode-version-timestamp "2025-07-15T22:51:42+0000 W29-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1604,33 +1604,43 @@ Matches something like:
 ;;** Seed7 Procedure/Function Regexp
 ;;   -------------------------------
 
-
+(defconst seed7-procfunc-beg-of-decl-re
+  (format
+   ;;    const      varfunc| func | proc        RT?     :
+   "^%s*?const%s+\\(\\(?:var\\)?func%s\\|proc\\)%s??%s??:"
+   ;;              G1                           G2
+   ;;%        %                     %           %   %
+   ;;1        2                     3           4   5
+   seed7--blank-re                     ; 1
+   seed7--whitespace-re                ; 2
+   seed7--blank-re                     ; 3
+   seed7-type-identifier-re            ; 4 : RT? : return type (for functions)
+   seed7--whitespace-re)               ; 5
+  "Regexp for the beginning part of a function or procedure.
+Group 1: \"proc\", \"varfunc \" or \"func \" ")
 
 (defconst seed7-procfunc-start-regexp
   (format
-   ;;    const      varfunc| func | proc       RT?     :                                    fct name                           is
-   ;;              (--------------------------)                          (----)            (---------)        (----)
-   ;;              G1                          G2                     (----------)         G3            (------------)
-   ;;                                                        (----------------------)
-   ;;                                              w    w[      w                                                      .   w]w w
-   "^%s*?const%s+\\(\\(?:var\\)?func \\|proc\\)%s??%s??:%s?\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?%s?is\\>"
-   ;;%        %    G1                          G2  %    %        %         %           %   G3%    %         %  %       %   %
-   ;;1        2                                %3  4    5        6         7           8     9    10        11 12      13  14
-   ;;
-   seed7--blank-re                       ; 1
-   seed7--whitespace-re                  ; 2
-   seed7-type-identifier-re              ; 3 : RT? : return type (optional)
-   seed7--whitespace-re                  ; 4
-   seed7--opt-square-brace-start-re      ; 5 w[
-   seed7--whitespace-re                  ; 6
-   seed7--anychar-re                     ; 7
-   seed7--whitespace-re                  ; 8
-   seed7--name-identifier-nc-re          ; 9
-   seed7--special-identifier-nc-re       ; 10
-   seed7--whitespace-re                  ; 11
-   seed7--anychar-re                     ; 12
-   seed7--anychar-re                     ; 13
-   seed7--opt-square-brace-end-re)       ; 14
+   ;;                                    fct name                           is
+   ;;                  (----)            (---------)        (----)
+   ;;               (----------)         G3            (------------)
+   ;;      (----------------------)
+   ;;w[      w                                                      .   w]w w
+   "%s%s?\\(?:%s+?\\(?:(%s+?)\\)\\)?%s*\\(%s\\|%s\\)\\(?:%s(%s+?)\\)?%s*?%s?is\\>"
+   ;;%%        %         %           %   G3%    %         %  %       %   %
+   ;;1         3         4           5     6    7         8  9       10  11
+   ;; 2
+   seed7-procfunc-beg-of-decl-re        ; 1
+   seed7--opt-square-brace-start-re     ; 2 w[
+   seed7--whitespace-re                 ; 3
+   seed7--anychar-re                    ; 4
+   seed7--whitespace-re                 ; 5
+   seed7--name-identifier-nc-re         ; 6
+   seed7--special-identifier-nc-re      ; 7
+   seed7--whitespace-re                 ; 8
+   seed7--anychar-re                    ; 9
+   seed7--anychar-re                    ; 10
+   seed7--opt-square-brace-end-re)      ; 11
   "Regexp identifying beginning of procedures and functions.
 Group 1: \"proc\", \"varfunc\" or \"func \"
 Group 2: The func return type.  May be empty.
@@ -2824,7 +2834,8 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
         (seed7-end-of-defun (abs n) silent dont-push-mark)
       (unless (eq n 0)
         (save-excursion
-          (end-of-line)
+          (unless (looking-at seed7-procfunc-beg-of-decl-re)
+            (end-of-line))
           (dotimes (_ n)
             (setq found-pos nil)
             (when (seed7-re-search-backward-closest (list
