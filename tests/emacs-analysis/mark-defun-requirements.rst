@@ -900,7 +900,7 @@ lisp.el variable                   Declared with  Value used in python-mode buff
 defun-prompt-regexp                defcustom      nil
 parens-require-spaces              defcustom      t
 forward-sexp-function              defvar         nil
-beginning-of-defun-function        defvar         seed7-nav-beg-of-defun
+beginning-of-defun-function        defvar         seed7-nav-beginning-of-defun
 end-of-defun-function              defvar         seed7-nav-end-of-defun
 end-of-defun-moves-to-eol          defvar         t
 narrow-to-defun-include-comments   defvar         nil
