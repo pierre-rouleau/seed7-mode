@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-14 11:58:22 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-14 23:03:23 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -278,9 +278,9 @@
 ;;         o `seed7--move-and-mark'
 ;;         o `seed7--pos-msg'
 ;;      - Seed7 Procedure/Function Navigation Mode Functions
-;;        > `seed7--beg-of-defun-conventional'
+;;        > `seed7-nav-beginning-of-defun'
 ;;          o `seed7-beg-of-defun'
-;;        > `seed7--end-of-defun-conventional'
+;;        > `seed7-nav-end-of-defun'
 ;;          o `seed7-end-of-defun'
 ;;   - Seed7 Navigation by Block
 ;;     * `seed7-to-block-forward'
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-14T15:58:22+0000 W29-1"
+(defconst seed7-mode-version-timestamp "2025-07-15T03:03:23+0000 W29-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3069,7 +3069,7 @@ Move inside the current if inside one, to the next if outside one.
 ;; extra parameters, silence errors, move to the top of buffer or end of
 ;; buffer on failure and return t on success, nil on failure.
 
-(defun seed7--beg-of-defun-conventional (&optional n)
+(defun seed7-nav-beginning-of-defun (&optional n)
   "Simple beginning of defun to use as `beginning-of-defun-function'.
 
 Move once, unless N specifies a different count.
@@ -3083,7 +3083,7 @@ Return t if point moved to the beginning of function, nil if nothing found."
      (goto-char (point-min))
      nil)))
 
-(defun seed7--end-of-defun-conventional (&optional n)
+(defun seed7-nav-end-of-defun (&optional n)
   "Simple end of defun to use as `end-of-defun-function'.
 
 Move once, unless N specifies a different count.
@@ -6793,9 +6793,9 @@ Make sure you have no duplication of keywords if you edit the list."
   ;; `end-of-defun' to work inside Seed7 buffers.  This includes iedit,
   ;; expand-region, etc...
   (setq-local beginning-of-defun-function
-              (function seed7--beg-of-defun-conventional))
+              (function seed7-nav-beginning-of-defun))
   (setq-local end-of-defun-function
-              (function seed7--end-of-defun-conventional))
+              (function seed7-nav-end-of-defun))
   (setq-local open-paren-in-column-0-is-defun-start nil)
   (setq-local end-of-defun-moves-to-eol nil)
 
