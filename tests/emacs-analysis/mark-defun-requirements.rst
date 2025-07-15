@@ -705,47 +705,56 @@ various locations.  Showing the start position (point, line, column) before
 execution of a function, and the resulting position (point, line column) after
 execution of ``(sexp-forward 1)`` and ``(end-of-function)``.
 
+======================== ============================== ================================= =====================================
+Start position           After ``(sexp-forward 1)``     After ``(end-of-defun)``          After `(beginning-of-defun)``
+======================== ============================== ================================= =====================================
+``1,    1,  0``,         ``105,  5, 20``, end of fct 1  ``106,  6,  0``, line-aeof fct 1  ``1,    1,  0``, top of buffer
+``43,   2,  0``,         ``105,  5, 20``, end of fct 1  ``106,  6,  0``, line-aeof fct 1  ``1,    1,  0``, top of buffer
+``44,   3,  0``, fct 1   ``105,  5, 20``, end of fct 1  ``106,  6,  0``, line-aeof fct 1  ``1,    1,  0``, top of buffer
+``60,   4,  0``, fct 1   ``84,   4, 24``, end of string ``106,  6,  0``, line-aeof fct 1  ``44,   3,  0``, beginning of fct 1
+``85,   5,  0``, fct 1   ``104,  5, 19``, end of call   ``106,  6,  0``, line-aeof fct 1  ``44,   3,  0``, beginning of fct 1
+``106,  6,  0``,         ``169, 10, 20``, end of fct 2  ``170, 11,  0``, line-aeof fct 2  ``44,   3,  0``, beginning of fct 1
+``107,  7,  0``,         ``169, 10, 20``, end of fct 2  ``170, 11,  0``, line-aeof fct 2  ``44,   3,  0``, beginning of fct 1
+``108,  8,  0``, fct 2   ``169, 10, 20``, end of fct 2  ``170, 11,  0``, line-aeof fct 2  ``44,   3,  0``, beginning of fct 1
+``124,  9,  0``, fct 2   ``148,  9, 24``, end of string ``170, 11,  0``, line-aeof fct 2  ``108,  8,  0``, beginning of fct 2
+``149, 10,  0``, fct 2   ``168, 10, 19``, end of call   ``170, 11,  0``, line-aeof fct 2  ``108,  8,  0``, beginning of fct 2
+``170, 11,  0``,         ``257, 16, 20``, end of fct 3  ``258, 17,  0``, line-aeof fct 3  ``108,  8,  0``, beginning of fct 2
+``171, 12,  0``,         ``257, 16, 20``, end of fct 3  ``258, 17,  0``, line-aeof fct 3  ``108,  8,  0``, beginning of fct 2
+``172, 13,  0``,         ``257, 16, 20``, end of fct 3  ``258, 17,  0``, line-aeof fct 3  ``108,  8,  0``, beginning of fct 2
+``196, 14,  0``, fct 3   ``257, 16, 20``, end of fct 3  ``258, 17,  0``, line-aeof fct 3  ``108,  8,  0``, beginning of fct 2
+``212, 15,  0``, fct 3   ``236, 15, 24``, end of string ``258, 17,  0``, line-aeof fct 3  ``196, 14,  0``, beginning of fct 3
+``237, 16,  0``, fct 3   ``256, 16, 19``, end of call   ``258, 17,  0``, line-aeof fct 3  ``196, 14,  0``, beginning of fct 3
+``258, 17,  0``,         ``346, 23, 20``, end of fct 4  ``347, 24,  0``, line-aeof fct 4  ``196, 14,  0``, beginning of fct 3
+``259, 18,  0``,         ``346, 23, 20``, end of fct 4  ``347, 24,  0``, line-aeof fct 4  ``196, 14,  0``, beginning of fct 3
+``260, 19,  0``,         ``346, 23, 20``, end of fct 4  ``347, 24,  0``, line-aeof fct 4  ``196, 14,  0``, beginning of fct 3
+``284, 20,  0``,         ``346, 23, 20``, end of fct 4  ``347, 24,  0``, line-aeof fct 4  ``196, 14,  0``, beginning of fct 3
+``285, 21,  0``, fct 4   ``346, 23, 20``, end of fct 4  ``347, 24,  0``, line-aeof fct 4  ``196, 14,  0``, beginning of fct 3
+``301, 22,  0``, fct 4   ``325, 22, 24``, end of string ``347, 24,  0``, line-aeof fct 4  ``285, 21,  0``, beginning of fct 4
+``326, 23,  0``, fct 4   ``345, 23, 19``, end of call   ``347, 24,  0``, line-aeof fct 4  ``285, 21,  0``, beginning of fct 4
+``347, 24,  0``,         ``507, 33, 20``, end of fct 5  ``508, 34,  0``, line-aeof fct 5  ``285, 21,  0``, beginning of fct 4
+``348, 25,  0``,         ``507, 33, 20``, end of fct 5  ``508, 34,  0``, line-aeof fct 5  ``285, 21,  0``, beginning of fct 4
+``349, 26,  0``,         ``507, 33, 20``, end of fct 5  ``508, 34,  0``, line-aeof fct 5  ``285, 21,  0``, beginning of fct 4
+``382, 27,  0``,         ``507, 33, 20``, end of fct 5  ``508, 34,  0``, line-aeof fct 5  ``285, 21,  0``, beginning of fct 4
+``413, 28,  0``,         ``507, 33, 20``, end of fct 5  ``508, 34,  0``, line-aeof fct 5  ``285, 21,  0``, beginning of fct 4
+``444, 29,  0``,         ``507, 33, 20``, end of fct 5  ``508, 34,  0``, line-aeof fct 5  ``285, 21,  0``, beginning of fct 4
+``445, 30,  0``,         ``507, 33, 20``, end of fct 5  ``508, 34,  0``, line-aeof fct 5  ``285, 21,  0``, beginning of fct 4
+``446, 31,  0``, fct 5   ``507, 33, 20``, end of fct 5  ``508, 34,  0``, line-aeof fct 5  ``285, 21,  0``, beginning of fct 4
+``462, 32,  0``, fct 5   ``486, 32, 24``, end of string ``508, 34,  0``, line-aeof fct 5  ``446, 31,  0``, beginning of fct 5
+``487, 33,  0``, fct 5   ``506, 33, 19``, end of call   ``508, 34,  0``, line-aeof fct 5  ``446, 31,  0``, beginning of fct 5
+``508, 34,  0``,         ``589, 36,  0``, end of buffer ``589, 36,  0``, end of buffer    ``446, 31,  0``, beginning of fct 5
+``509, 35,  0``,         ``589, 36,  0``, end of buffer ``589, 36,  0``, end of buffer    ``446, 31,  0``, beginning of fct 5
+======================== ============================== ================================= =====================================
 
-================ ============================== ======================================== =====================================
-Start position   After ``(sexp-forward 1)``     After ``(end-of-defun)``                 After `(beginning-of-defun)``
-================ ============================== ======================================== =====================================
-``1,    1,  0``  ``105,  5, 20``, end of fct-a  ``106,  6,  0``, Line after end of fct-a ``1,    1,  0``, top of buffer
-``43,   2,  0``  ``105,  5, 20``, end of fct-a  ``106,  6,  0``, Line after end of fct-a ``1,    1,  0``, top of buffer
-``44,   3,  0``  ``105,  5, 20``, end of fct-a  ``106,  6,  0``, Line after end of fct-a ``1,    1,  0``, top of buffer
-``60,   4,  0``  ``84,   4, 24``, end of string ``106,  6,  0``, Line after end of fct-a ``44,   3,  0``, beginning of fct-a
-``85,   5,  0``  ``104,  5, 19``, end of call   ``106,  6,  0``, Line after end of fct-a ``44,   3,  0``, beginning of fct-a
-``106,  6,  0``  ``169, 10, 20``, end of fct-b  ``170, 11,  0``, Line after end of fct-b ``44,   3,  0``, beginning of fct-a
-``107,  7,  0``  ``169, 10, 20``, end of fct-b  ``170, 11,  0``, Line after end of fct-b ``44,   3,  0``, beginning of fct-a
-``108,  8,  0``  ``169, 10, 20``, end of fct-b  ``170, 11,  0``, Line after end of fct-b ``44,   3,  0``, beginning of fct-a
-``124,  9,  0``  ``148,  9, 24``, end of string ``170, 11,  0``, Line after end of fct-b ``108,  8,  0``, beginning of fct-b
-``149, 10,  0``  ``168, 10, 19``, end of call   ``170, 11,  0``, Line after end of fct-b ``108,  8,  0``, beginning of fct-b
-``170, 11,  0``  ``257, 16, 20``, end of fct-c  ``258, 17,  0``, Line after end of fct-c ``108,  8,  0``, beginning of fct-b
-``171, 12,  0``  ``257, 16, 20``, end of fct-c  ``258, 17,  0``, Line after end of fct-c ``108,  8,  0``, beginning of fct-b
-``172, 13,  0``  ``257, 16, 20``, end of fct-c  ``258, 17,  0``, Line after end of fct-c ``108,  8,  0``, beginning of fct-b
-``196, 14,  0``  ``257, 16, 20``, end of fct-c  ``258, 17,  0``, Line after end of fct-c ``108,  8,  0``, beginning of fct-b
-``212, 15,  0``  ``236, 15, 24``, end of string ``258, 17,  0``, Line after end of fct-c ``196, 14,  0``, beginning of fct-c
-``237, 16,  0``  ``256, 16, 19``, end of call   ``258, 17,  0``, Line after end of fct-c ``196, 14,  0``, beginning of fct-c
-``258, 17,  0``  ``346, 23, 20``, end of fct-d  ``347, 24,  0``, Line after end of fct-d ``196, 14,  0``, beginning of fct-c
-``259, 18,  0``  ``346, 23, 20``, end of fct-d  ``347, 24,  0``, Line after end of fct-d ``196, 14,  0``, beginning of fct-c
-``260, 19,  0``  ``346, 23, 20``, end of fct-d  ``347, 24,  0``, Line after end of fct-d ``196, 14,  0``, beginning of fct-c
-``284, 20,  0``  ``346, 23, 20``, end of fct-d  ``347, 24,  0``, Line after end of fct-d ``196, 14,  0``, beginning of fct-c
-``285, 21,  0``  ``346, 23, 20``, end of fct-d  ``347, 24,  0``, Line after end of fct-d ``196, 14,  0``, beginning of fct-c
-``301, 22,  0``  ``325, 22, 24``, end of string ``347, 24,  0``, Line after end of fct-d ``285, 21,  0``, beginning of fct-d
-``326, 23,  0``  ``345, 23, 19``, end of call   ``347, 24,  0``, Line after end of fct-d ``285, 21,  0``, beginning of fct-d
-``347, 24,  0``  ``507, 33, 20``, end of fct-e  ``508, 34,  0``, Line after end of fct-e ``285, 21,  0``, beginning of fct-d
-``348, 25,  0``  ``507, 33, 20``, end of fct-e  ``508, 34,  0``, Line after end of fct-e ``285, 21,  0``, beginning of fct-d
-``349, 26,  0``  ``507, 33, 20``, end of fct-e  ``508, 34,  0``, Line after end of fct-e ``285, 21,  0``, beginning of fct-d
-``382, 27,  0``  ``507, 33, 20``, end of fct-e  ``508, 34,  0``, Line after end of fct-e ``285, 21,  0``, beginning of fct-d
-``413, 28,  0``  ``507, 33, 20``, end of fct-e  ``508, 34,  0``, Line after end of fct-e ``285, 21,  0``, beginning of fct-d
-``444, 29,  0``  ``507, 33, 20``, end of fct-e  ``508, 34,  0``, Line after end of fct-e ``285, 21,  0``, beginning of fct-d
-``445, 30,  0``  ``507, 33, 20``, end of fct-e  ``508, 34,  0``, Line after end of fct-e ``285, 21,  0``, beginning of fct-d
-``446, 31,  0``  ``507, 33, 20``, end of fct-e  ``508, 34,  0``, Line after end of fct-e ``285, 21,  0``, beginning of fct-d
-``462, 32,  0``  ``486, 32, 24``, end of string ``508, 34,  0``, Line after end of fct-e ``446, 31,  0``, beginning of fct-e
-``487, 33,  0``  ``506, 33, 19``, end of call   ``508, 34,  0``, Line after end of fct-e ``446, 31,  0``, beginning of fct-e
-``508, 34,  0``  ``589, 36,  0``, end of buffer ``589, 36,  0``, end of buffer           ``446, 31,  0``, beginning of fct-e
-``509, 35,  0``  ``589, 36,  0``, end of buffer ``589, 36,  0``, end of buffer           ``446, 31,  0``, beginning of fct-e
-================ ============================== ======================================== =====================================
+In the table,
 
+- ``line-aeof`` means "line after end of function",
+- the names of the functions were replaced by a sequence number to better represent their position.
+
+  - fct 1 is: fct-a
+  - fct 2 is: fct-b
+  - fct 3 is: fct-c
+  - fct 4 is: fct-d
+  - fct 5 is: fct-e
 
 For Emacs Lisp code, the ``end-of-defun`` moves to the first column on the
 line right after the end of a function as long as it is issued
@@ -787,192 +796,57 @@ The results of the tests over the Python code shown in the
 section
 are shown in the following table.
 
-================ ===================================== ============================== ========================================= =============================================
-Start position   After ``(python-nav-end-of-defun 1)`` After ``(end-of-defun)``       After ``(python-nav-beginning-of-defun)`` After ``(beginning-of-defun)``
-================ ===================================== ============================== ========================================= =============================================
-``1,    1,  0``  ``115,  6,  0``,  end of fct_a!!      ``115,  6,  0``, end of fct_a  ``1,    1,  0``, top of buffer            ``1,    1,  0``, top of buffer
-``33,   2,  0``  ``115,  6,  0``,  end of fct_a!!      ``115,  6,  0``, end of fct_a  ``33,   2,  0``, **no move**              ``33,   2,  0``, **no move**
-``34,   3,  0``  ``115,  6,  0``,  end of fct_a        ``115,  6,  0``, end of fct_a  ``34,   3,  0``, beginning of fct_a       ``34,   3,  0``, beginning of fct_a
-``63,   4,  0``  ``115,  6,  0``,  end of fct_a        ``115,  6,  0``, end of fct_a  ``34,   3,  0``, beginning of fct_a       ``34,   3,  0``, beginning of fct_a
-``90,   5,  0``  ``115,  6,  0``,  end of fct_a        ``115,  6,  0``, end of fct_a  ``34,   3,  0``, beginning of fct_a       ``34,   3,  0``, beginning of fct_a
-``115,  6,  0``  ``115,  6,  0``,  **no move**         ``201, 11,  0``, end of fct_b  ``34,   3,  0``, beginning of fct_a       ``34,   3,  0``, beginning of fct_a
-``116,  7,  0``  ``116,  7,  0``,  **no move**         ``201, 11,  0``, end of fct_b  ``34,   3,  0``, beginning of fct_a       ``34,   3,  0``, beginning of fct_a
-``117,  8,  0``  ``201, 11,  0``,  end of fct_b        ``201, 11,  0``, end of fct_b  ``34,   3,  0``, beginning of fct_a       ``34,   3,  0``, beginning of fct_a
-``149,  9,  0``  ``201, 11,  0``,  end of fct_b        ``201, 11,  0``, end of fct_b  ``117,  8,  0``, beginning of fct_b       ``117,  8,  0``, beginning of fct_b
-``176, 10,  0``  ``201, 11,  0``,  end of fct_b        ``201, 11,  0``, end of fct_b  ``117,  8,  0``, beginning of fct_b       ``117,  8,  0``, beginning of fct_b
-``201, 11,  0``  ``201, 11,  0``,  **no move**         ``317, 17,  0``, end of fct_c  ``117,  8,  0``, beginning of fct_b       ``117,  8,  0``, beginning of fct_b
-``202, 12,  0``  ``202, 12,  0``,  **no move**         ``317, 17,  0``, end of fct_c  ``117,  8,  0``, beginning of fct_b       ``117,  8,  0``, beginning of fct_b
-``203, 13,  0``  ``203, 13,  0``,  **no move**         ``317, 17,  0``, end of fct_c  ``117,  8,  0``, beginning of fct_b       ``117,  8,  0``, beginning of fct_b
-``231, 14,  0``  ``317, 17,  0``,  end of fct_c        ``317, 17,  0``, end of fct_c  ``117,  8,  0``, beginning of fct_b       ``117,  8,  0``, beginning of fct_b
-``265, 15,  0``  ``317, 17,  0``,  end of fct_c        ``317, 17,  0``, end of fct_c  ``231, 14,  0``, beginning of fct_c       ``231, 14,  0``, beginning of fct_c
-``292, 16,  0``  ``317, 17,  0``,  end of fct_c        ``317, 17,  0``, end of fct_c  ``231, 14,  0``, beginning of fct_c       ``231, 14,  0``, beginning of fct_c
-``317, 17,  0``  ``317, 17,  0``,  **no move**         ``430, 24,  0``, end of fct_d  ``231, 14,  0``, beginning of fct_c       ``231, 14,  0``, beginning of fct_c
-``318, 18,  0``  ``318, 18,  0``,  **no move**         ``430, 24,  0``, end of fct_d  ``231, 14,  0``, beginning of fct_c       ``231, 14,  0``, beginning of fct_c
-``319, 19,  0``  ``319, 19,  0``,  **no move**         ``430, 24,  0``, end of fct_d  ``231, 14,  0``, beginning of fct_c       ``231, 14,  0``, beginning of fct_c
-``347, 20,  0``  ``347, 20,  0``,  **no move**         ``430, 24,  0``, end of fct_d  ``231, 14,  0``, beginning of fct_c       ``231, 14,  0``, beginning of fct_c
-``348, 21,  0``  ``430, 24,  0``,  end of fct_d        ``430, 24,  0``, end of fct_d  ``231, 14,  0``, beginning of fct_c       ``231, 14,  0``, beginning of fct_c
-``378, 22,  0``  ``430, 24,  0``,  end of fct_d        ``430, 24,  0``, end of fct_d  ``348, 21,  0``, beginning of fct_d       ``348, 21,  0``, beginning of fct_d
-``405, 23,  0``  ``430, 24,  0``,  end of fct_d        ``430, 24,  0``, end of fct_d  ``348, 21,  0``, beginning of fct_d       ``348, 21,  0``, beginning of fct_d
-``430, 24,  0``  ``430, 24,  0``,  **no move**         ``620, 34,  0``, end of fct_e  ``348, 21,  0``, beginning of fct_d       ``348, 21,  0``, beginning of fct_d
-``431, 25,  0``  ``431, 25,  0``,  **no move**         ``620, 34,  0``, end of fct_e  ``348, 21,  0``, beginning of fct_d       ``348, 21,  0``, beginning of fct_d
-``432, 26,  0``  ``432, 26,  0``,  **no move**         ``620, 34,  0``, end of fct_e  ``348, 21,  0``, beginning of fct_d       ``348, 21,  0``, beginning of fct_d
-``467, 27,  0``  ``467, 27,  0``,  **no move**         ``620, 34,  0``, end of fct_e  ``348, 21,  0``, beginning of fct_d       ``348, 21,  0``, beginning of fct_d
-``502, 28,  0``  ``502, 28,  0``,  **no move**         ``620, 34,  0``, end of fct_e  ``348, 21,  0``, beginning of fct_d       ``348, 21,  0``, beginning of fct_d
-``537, 29,  0``  ``537, 29,  0``,  **no move**         ``620, 34,  0``, end of fct_e  ``348, 21,  0``, beginning of fct_d       ``348, 21,  0``, beginning of fct_d
-``538, 30,  0``  ``538, 30,  0``,  **no move**         ``620, 34,  0``, end of fct_e  ``348, 21,  0``, beginning of fct_d       ``348, 21,  0``, beginning of fct_d
-``539, 31,  0``  ``620, 34,  0``,  end of fct_e        ``620, 34,  0``, end of fct_e  ``348, 21,  0``, beginning of fct_d       ``348, 21,  0``, beginning of fct_d
-``568, 32,  0``  ``620, 34,  0``,  end of fct_e        ``620, 34,  0``, end of fct_e  ``539, 31,  0``, beginning of fct_e       ``539, 31,  0``, beginning of fct_e
-``595, 33,  0``  ``620, 34,  0``,  end of fct_e        ``620, 34,  0``, end of fct_e  ``539, 31,  0``, beginning of fct_e       ``539, 31,  0``, beginning of fct_e
-``620, 34,  0``  ``620, 34,  0``,  **no move**         ``620, 34,  0``, end of fct_e  ``539, 31,  0``, beginning of fct_e       ``539, 31,  0``, beginning of fct_e
-``621, 35,  0``  ``621, 35,  0``,  end of buffer       ``621, 35,  0``, end of buffer ``539, 31,  0``, beginning of fct_e       ``539, 31,  0``, beginning of fct_e
-================ ===================================== ============================== ========================================= =============================================
+========================= ===================================== ================================ ========================================= =============================================
+Start position            After ``(python-nav-end-of-defun 1)`` After ``(end-of-defun)``         After ``(python-nav-beginning-of-defun)`` After ``(beginning-of-defun)``
+========================= ===================================== ================================ ========================================= =============================================
+``1,    1,  0``,          ``115,  6,  0``,  end of fct 1!!      ``115,  6,  0``, line-aeo fct 1  ``1,    1,  0``, top of buffer            ``1,    1,  0``, top of buffer
+``33,   2,  0``,          ``115,  6,  0``,  end of fct 1!!      ``115,  6,  0``, line-aeo fct 1  ``33,   2,  0``, **no move**              ``33,   2,  0``, **no move**
+``34,   3,  0``, fct 1    ``115,  6,  0``,  end of fct 1        ``115,  6,  0``, line-aeo fct 1  ``34,   3,  0``, beginning of fct 1       ``34,   3,  0``, beginning of fct 1
+``63,   4,  0``, fct 1    ``115,  6,  0``,  end of fct 1        ``115,  6,  0``, line-aeo fct 1  ``34,   3,  0``, beginning of fct 1       ``34,   3,  0``, beginning of fct 1
+``90,   5,  0``, fct 1    ``115,  6,  0``,  end of fct 1        ``115,  6,  0``, line-aeo fct 1  ``34,   3,  0``, beginning of fct 1       ``34,   3,  0``, beginning of fct 1
+``115,  6,  0``,          ``115,  6,  0``,  **no move**         ``201, 11,  0``, line-aeo fct 2  ``34,   3,  0``, beginning of fct 1       ``34,   3,  0``, beginning of fct 1
+``116,  7,  0``,          ``116,  7,  0``,  **no move**         ``201, 11,  0``, line-aeo fct 2  ``34,   3,  0``, beginning of fct 1       ``34,   3,  0``, beginning of fct 1
+``117,  8,  0``, fct 2    ``201, 11,  0``,  end of fct 2        ``201, 11,  0``, line-aeo fct 2  ``34,   3,  0``, beginning of fct 1       ``34,   3,  0``, beginning of fct 1
+``149,  9,  0``, fct 2    ``201, 11,  0``,  end of fct 2        ``201, 11,  0``, line-aeo fct 2  ``117,  8,  0``, beginning of fct 2       ``117,  8,  0``, beginning of fct 2
+``176, 10,  0``, fct 2    ``201, 11,  0``,  end of fct 2        ``201, 11,  0``, line-aeo fct 2  ``117,  8,  0``, beginning of fct 2       ``117,  8,  0``, beginning of fct 2
+``201, 11,  0``,          ``201, 11,  0``,  **no move**         ``317, 17,  0``, line-aeo fct 3  ``117,  8,  0``, beginning of fct 2       ``117,  8,  0``, beginning of fct 2
+``202, 12,  0``,          ``202, 12,  0``,  **no move**         ``317, 17,  0``, line-aeo fct 3  ``117,  8,  0``, beginning of fct 2       ``117,  8,  0``, beginning of fct 2
+``203, 13,  0``,          ``203, 13,  0``,  **no move**         ``317, 17,  0``, line-aeo fct 3  ``117,  8,  0``, beginning of fct 2       ``117,  8,  0``, beginning of fct 2
+``231, 14,  0``, fct 3    ``317, 17,  0``,  end of fct 3        ``317, 17,  0``, line-aeo fct 3  ``117,  8,  0``, beginning of fct 2       ``117,  8,  0``, beginning of fct 2
+``265, 15,  0``, fct 3    ``317, 17,  0``,  end of fct 3        ``317, 17,  0``, line-aeo fct 3  ``231, 14,  0``, beginning of fct 3       ``231, 14,  0``, beginning of fct 3
+``292, 16,  0``, fct 3    ``317, 17,  0``,  end of fct 3        ``317, 17,  0``, line-aeo fct 3  ``231, 14,  0``, beginning of fct 3       ``231, 14,  0``, beginning of fct 3
+``317, 17,  0``,          ``317, 17,  0``,  **no move**         ``430, 24,  0``, line-aeo fct 4  ``231, 14,  0``, beginning of fct 3       ``231, 14,  0``, beginning of fct 3
+``318, 18,  0``,          ``318, 18,  0``,  **no move**         ``430, 24,  0``, line-aeo fct 4  ``231, 14,  0``, beginning of fct 3       ``231, 14,  0``, beginning of fct 3
+``319, 19,  0``,          ``319, 19,  0``,  **no move**         ``430, 24,  0``, line-aeo fct 4  ``231, 14,  0``, beginning of fct 3       ``231, 14,  0``, beginning of fct 3
+``347, 20,  0``,          ``347, 20,  0``,  **no move**         ``430, 24,  0``, line-aeo fct 4  ``231, 14,  0``, beginning of fct 3       ``231, 14,  0``, beginning of fct 3
+``348, 21,  0``, fct 4    ``430, 24,  0``,  end of fct 4        ``430, 24,  0``, line-aeo fct 4  ``231, 14,  0``, beginning of fct 3       ``231, 14,  0``, beginning of fct 3
+``378, 22,  0``, fct 4    ``430, 24,  0``,  end of fct 4        ``430, 24,  0``, line-aeo fct 4  ``348, 21,  0``, beginning of fct 4       ``348, 21,  0``, beginning of fct 4
+``405, 23,  0``, fct 4    ``430, 24,  0``,  end of fct 4        ``430, 24,  0``, line-aeo fct 4  ``348, 21,  0``, beginning of fct 4       ``348, 21,  0``, beginning of fct 4
+``430, 24,  0``,          ``430, 24,  0``,  **no move**         ``620, 34,  0``, line-aeo fct 5  ``348, 21,  0``, beginning of fct 4       ``348, 21,  0``, beginning of fct 4
+``431, 25,  0``,          ``431, 25,  0``,  **no move**         ``620, 34,  0``, line-aeo fct 5  ``348, 21,  0``, beginning of fct 4       ``348, 21,  0``, beginning of fct 4
+``432, 26,  0``,          ``432, 26,  0``,  **no move**         ``620, 34,  0``, line-aeo fct 5  ``348, 21,  0``, beginning of fct 4       ``348, 21,  0``, beginning of fct 4
+``467, 27,  0``,          ``467, 27,  0``,  **no move**         ``620, 34,  0``, line-aeo fct 5  ``348, 21,  0``, beginning of fct 4       ``348, 21,  0``, beginning of fct 4
+``502, 28,  0``,          ``502, 28,  0``,  **no move**         ``620, 34,  0``, line-aeo fct 5  ``348, 21,  0``, beginning of fct 4       ``348, 21,  0``, beginning of fct 4
+``537, 29,  0``,          ``537, 29,  0``,  **no move**         ``620, 34,  0``, line-aeo fct 5  ``348, 21,  0``, beginning of fct 4       ``348, 21,  0``, beginning of fct 4
+``538, 30,  0``,          ``538, 30,  0``,  **no move**         ``620, 34,  0``, line-aeo fct 5  ``348, 21,  0``, beginning of fct 4       ``348, 21,  0``, beginning of fct 4
+``539, 31,  0``, fct 5    ``620, 34,  0``,  end of fct 5        ``620, 34,  0``, line-aeo fct 5  ``348, 21,  0``, beginning of fct 4       ``348, 21,  0``, beginning of fct 4
+``568, 32,  0``, fct 5    ``620, 34,  0``,  end of fct 5        ``620, 34,  0``, line-aeo fct 5  ``539, 31,  0``, beginning of fct 5       ``539, 31,  0``, beginning of fct 5
+``595, 33,  0``, fct 5    ``620, 34,  0``,  end of fct 5        ``620, 34,  0``, line-aeo fct 5  ``539, 31,  0``, beginning of fct 5       ``539, 31,  0``, beginning of fct 5
+``620, 34,  0``,          ``620, 34,  0``,  **no move**         ``620, 34,  0``, line-aeo fct 5  ``539, 31,  0``, beginning of fct 5       ``539, 31,  0``, beginning of fct 5
+``621, 35,  0``,          ``621, 35,  0``,  end of buffer       ``621, 35,  0``, end of buffer   ``539, 31,  0``, beginning of fct 5       ``539, 31,  0``, beginning of fct 5
+========================= ===================================== ================================ ========================================= =============================================
 
+In the table,
 
-For Seed7 Code
-~~~~~~~~~~~~~~
+- ``line-aeof`` means "line after end of function",
+- the names of the functions were replaced by a sequence number to better represent their position.
 
-The lisp.el settings for seed7-mode buffers is the following:
+  - fct 1 is: greet_a
+  - fct 2 is: greet_b
+  - fct 3 is: greet_c
+  - fct 4 is: greet_d
+  - fct 5 is: greet_e
 
-================================== =============  =====================================
-lisp.el variable                   Declared with  Value used in python-mode buffers
-================================== =============  =====================================
-defun-prompt-regexp                defcustom      nil
-parens-require-spaces              defcustom      t
-forward-sexp-function              defvar         nil
-beginning-of-defun-function        defvar         seed7-nav-beg-of-defun
-end-of-defun-function              defvar         seed7-nav-end-of-defun
-end-of-defun-moves-to-eol          defvar         t
-narrow-to-defun-include-comments   defvar         nil
-insert-pair-alist                  defcustom      ``((40 41) (91 93) (123 125) (60 62) (34 34) (39 39) (96 39))``
-delete-pair-blink-delay            defcustom      1
-================================== =============  =====================================
-
-The results of the tests over the Seed7 code shown in the
-`The Seed7 test file: seed7-functions.sd7`_
-section
-are shown in the following table.
-
-Results for unmodified lisp.el on Emacs 30.1
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-================ ===================================== ================================== ========================================= =============================================
-Start position   After ``(seed7-nav-end-of-defun 1)``  After ``(end-of-defun)``           After ``(seed7-nav-beginning-of-defun)``  After ``(beginning-of-defun)``
-================ ===================================== ================================== ========================================= =============================================
-``1,    1,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1
-``37,   2,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1
-``38,   3,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1
-``64,   4,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1
-``87,   5,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1
-``88,   6,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1
-``123,  7,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1
-``151,  8,  0``  ``295, 15, 11``, end of fct 2         ``394, 20,  0``, **end of fct 3**
-``152,  9,  0``  ``295, 15, 11``, end of fct 2         ``394, 20,  0``, **end of fct 3**
-``153, 10,  0``  ``295, 15, 11``, end of fct 2         ``394, 20,  0``, **end of fct 3**
-``194, 11,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2
-``203, 12,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2
-``240, 13,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2
-``248, 14,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2
-``284, 15,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2
-``296, 16,  0``  ``393, 19, 23``, end of fct 3         ``509, 25,  0``, **end of fct 4**
-``297, 17,  0``  ``393, 19, 23``, end of fct 3         ``509, 25,  0``, **end of fct 4**
-``319, 18,  0``  ``393, 19, 23``, end of fct 3         ``509, 25,  0``, **end of fct 4**
-``370, 19,  0``  ``393, 19, 23``, end of fct 3         ``394, 20,  0``, end of fct 3
-``394, 20,  0``  ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **end of fct 5**
-``395, 21,  0``  ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **end of fct 5**
-``416, 22,  0``  ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **end of fct 5**
-``417, 23,  0``  ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **end of fct 5**
-``484, 24,  0``  ``508, 24, 24``, end of fct 4         ``509, 25,  0``, end of fct 4
-``509, 25,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer**
-``510, 26,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer**
-``511, 27,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer**
-``542, 28,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer**
-``566, 29,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer**
-``580, 30,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer**
-``581, 31,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer**
-``582, 32,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer**
-``658, 33,  0``  ``689, 33, 31``, end of fct 5         ``690, 34,  0``, end of fct 5
-``690, 34,  0``  ``770, 36,  0``, end of buffer        ``1,    1,  0``, **top of buffer**
-``691, 35,  0``  ``770, 36,  0``, end of buffer        ``1,    1,  0``, **top of buffer**
-================ ===================================== ================================== ========================================= =============================================
-
-
-
-..
-   Testing (seed7-nav-beginning-of-defun 1)
-        1,  1,  0  ->   1,  1,  0
-       37,  2,  0  ->   1,  1,  0
-       38,  3,  0  ->   1,  1,  0
-       64,  4,  0  ->   1,  1,  0
-       87,  5,  0  ->   1,  1,  0
-       88,  6,  0  ->   1,  1,  0
-      123,  7,  0  ->  88,  6,  0
-      151,  8,  0  ->  88,  6,  0
-      152,  9,  0  ->  88,  6,  0
-      153, 10,  0  ->  88,  6,  0
-      194, 11,  0  -> 153, 10,  0
-      203, 12,  0  -> 153, 10,  0
-      240, 13,  0  -> 153, 10,  0
-      248, 14,  0  -> 153, 10,  0
-      284, 15,  0  -> 153, 10,  0
-      296, 16,  0  -> 153, 10,  0
-      297, 17,  0  -> 153, 10,  0
-      319, 18,  0  -> 153, 10,  0
-      370, 19,  0  -> 319, 18,  0
-      394, 20,  0  -> 319, 18,  0
-      395, 21,  0  -> 319, 18,  0
-      416, 22,  0  -> 319, 18,  0
-      417, 23,  0  -> 319, 18,  0
-      484, 24,  0  -> 417, 23,  0
-      509, 25,  0  -> 417, 23,  0
-      510, 26,  0  -> 417, 23,  0
-      511, 27,  0  -> 417, 23,  0
-      542, 28,  0  -> 417, 23,  0
-      566, 29,  0  -> 417, 23,  0
-      580, 30,  0  -> 417, 23,  0
-      581, 31,  0  -> 417, 23,  0
-      582, 32,  0  -> 417, 23,  0
-      658, 33,  0  -> 582, 32,  0
-      690, 34,  0  -> 582, 32,  0
-      691, 35,  0  -> 582, 32,  0
-
-   Testing (beginning-of-defun)
-        1,  1,  0  ->   1,  1,  0
-       37,  2,  0  ->   1,  1,  0
-       38,  3,  0  ->   1,  1,  0
-       64,  4,  0  ->   1,  1,  0
-       87,  5,  0  ->   1,  1,  0
-       88,  6,  0  ->   1,  1,  0
-      123,  7,  0  ->  88,  6,  0
-      151,  8,  0  ->  88,  6,  0
-      152,  9,  0  ->  88,  6,  0
-      153, 10,  0  ->  88,  6,  0
-      194, 11,  0  -> 153, 10,  0
-      203, 12,  0  -> 153, 10,  0
-      240, 13,  0  -> 153, 10,  0
-      248, 14,  0  -> 153, 10,  0
-      284, 15,  0  -> 153, 10,  0
-      296, 16,  0  -> 153, 10,  0
-      297, 17,  0  -> 153, 10,  0
-      319, 18,  0  -> 153, 10,  0
-      370, 19,  0  -> 319, 18,  0
-      394, 20,  0  -> 319, 18,  0
-      395, 21,  0  -> 319, 18,  0
-      416, 22,  0  -> 319, 18,  0
-      417, 23,  0  -> 319, 18,  0
-      484, 24,  0  -> 417, 23,  0
-      509, 25,  0  -> 417, 23,  0
-      510, 26,  0  -> 417, 23,  0
-      511, 27,  0  -> 417, 23,  0
-      542, 28,  0  -> 417, 23,  0
-      566, 29,  0  -> 417, 23,  0
-      580, 30,  0  -> 417, 23,  0
-      581, 31,  0  -> 417, 23,  0
-      582, 32,  0  -> 417, 23,  0
-      658, 33,  0  -> 582, 32,  0
-      690, 34,  0  -> 582, 32,  0
-      691, 35,  0  -> 582, 32,  0
-
-.. ---------------------------------------------------------------------------
 ..
    Testing (python-nav-forward-sexp 1)
         1,  1,  0    ->  32,  1, 31
@@ -1012,465 +886,150 @@ Start position   After ``(seed7-nav-end-of-defun 1)``  After ``(end-of-defun)`` 
       621, 35,  0    -> 699, 35, 78
 
 
+For Seed7 Code
+~~~~~~~~~~~~~~
 
+The lisp.el settings for seed7-mode buffers is the following:
 
-The code of ``python-nav-end-of-defun`` from Emacs python.el is:
+================================== =============  =====================================
+lisp.el variable                   Declared with  Value used in python-mode buffers
+================================== =============  =====================================
+defun-prompt-regexp                defcustom      nil
+parens-require-spaces              defcustom      t
+forward-sexp-function              defvar         nil
+beginning-of-defun-function        defvar         seed7-nav-beg-of-defun
+end-of-defun-function              defvar         seed7-nav-end-of-defun
+end-of-defun-moves-to-eol          defvar         t
+narrow-to-defun-include-comments   defvar         nil
+insert-pair-alist                  defcustom      ``((40 41) (91 93) (123 125) (60 62) (34 34) (39 39) (96 39))``
+delete-pair-blink-delay            defcustom      1
+================================== =============  =====================================
 
-.. code:: elisp
+The results of the tests over the Seed7 code shown in the
+`The Seed7 test file: seed7-functions.sd7`_
+section
+are shown in the following table.
 
-          (defun python-nav-end-of-defun ()
-            "Move point to the end of def or class.
-          Returns nil if point is not in a def or class."
-            (interactive)
-            (let ((beg-defun-indent)
-                  (beg-pos (point)))
-              (when (or (python-info-looking-at-beginning-of-defun)
-                        (python-nav-beginning-of-defun 1)
-                        (python-nav-beginning-of-defun -1))
-                (setq beg-defun-indent (current-indentation))
-                (while (progn
-                         (python-nav-end-of-statement)
-                         (python-util-forward-comment 1)
-                         (and (> (current-indentation) beg-defun-indent)
-                              (not (eobp)))))
-                (python-util-forward-comment -1)
-                (forward-line 1)
-                ;; Ensure point moves forward.
-                (and (> beg-pos (point)) (goto-char beg-pos))
-                ;; Return non-nil if we did something (because then we were in a
-                ;; def/class).
-                (/= beg-pos (point)))))
+Results for unmodified lisp.el on Emacs 30.1
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-
-As described in the docstring of ``python-nav-end-of-defun``
-that function does not move point when it is on an empty line or a comment
-line located just before the Python function.
-
-  This behaviour **differs** from what ``(forward-sexp 1)`` issued from a
-  point located above the defun as shown by the table for emacs lisp.
-
-But look at the test results!  The function behaves **differently** at the
-beginning of the buffer!
-
-  If ``python-nav-end-of-defun`` is evaluated from the beginning of line 1 and
-  2, which are above the beginning of Python ``fct_a``, point lands at the
-  beginning of line 6, just after the end of ``fct_a``.  It behaves as if line 1
-  and 2 are part of the first function.
-
-Which behaviour is required by ``end-of-defun-function``?
-Its docstring does not describe this.  Here's a copy of the lisp.el code:
-
-.. code:: elisp
-
-          (defvar end-of-defun-function
-            (lambda () (forward-sexp 1))
-            "Function for `end-of-defun' to call.
-          This is used to find the end of the defun at point.
-          It is called with no argument, right after calling `beginning-of-defun-raw'.
-          So the function can assume that point is at the beginning of the defun body.
-          It should move point to the first position after the defun.")
-
+================ ===================================== ================================== ========================================= =============================================
+Start position   After ``(seed7-nav-end-of-defun 1)``  After ``(end-of-defun)``           After ``(seed7-nav-beginning-of-defun)``  After ``(beginning-of-defun)``
+================ ===================================== ================================== ========================================= =============================================
+``1,    1,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``1,    1,  0``, top of buffer
+``37,   2,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``1,    1,  0``, top of buffer
+``38,   3,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``1,    1,  0``, top of buffer
+``64,   4,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``1,    1,  0``, top of buffer
+``87,   5,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``1,    1,  0``, top of buffer
+``88,   6,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``1,    1,  0``, top of buffer
+``123,  7,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``88,   6,  0``,
+``151,  8,  0``  ``295, 15, 11``, end of fct 2         ``394, 20,  0``, **end of fct 3**  ``88,   6,  0``,
+``152,  9,  0``  ``295, 15, 11``, end of fct 2         ``394, 20,  0``, **end of fct 3**  ``88,   6,  0``,
+``153, 10,  0``  ``295, 15, 11``, end of fct 2         ``394, 20,  0``, **end of fct 3**  ``88,   6,  0``,
+``194, 11,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``,
+``203, 12,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``,
+``240, 13,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``,
+``248, 14,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``,
+``284, 15,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``,
+``296, 16,  0``  ``393, 19, 23``, end of fct 3         ``509, 25,  0``, **end of fct 4**  ``153, 10,  0``,
+``297, 17,  0``  ``393, 19, 23``, end of fct 3         ``509, 25,  0``, **end of fct 4**  ``153, 10,  0``,
+``319, 18,  0``  ``393, 19, 23``, end of fct 3         ``509, 25,  0``, **end of fct 4**  ``153, 10,  0``,
+``370, 19,  0``  ``393, 19, 23``, end of fct 3         ``394, 20,  0``, end of fct 3      ``319, 18,  0``,
+``394, 20,  0``  ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **end of fct 5**  ``319, 18,  0``,
+``395, 21,  0``  ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **end of fct 5**  ``319, 18,  0``,
+``416, 22,  0``  ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **end of fct 5**  ``319, 18,  0``,
+``417, 23,  0``  ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **end of fct 5**  ``319, 18,  0``,
+``484, 24,  0``  ``508, 24, 24``, end of fct 4         ``509, 25,  0``, end of fct 4      ``417, 23,  0``,
+``509, 25,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
+``510, 26,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
+``511, 27,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
+``542, 28,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
+``566, 29,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
+``580, 30,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
+``581, 31,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
+``582, 32,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
+``658, 33,  0``  ``689, 33, 31``, end of fct 5         ``690, 34,  0``, end of fct 5      ``582, 32,  0``,
+``690, 34,  0``  ``770, 36,  0``, end of buffer        ``1,    1,  0``, **top of buffer** ``582, 32,  0``,
+``691, 35,  0``  ``770, 36,  0``, end of buffer        ``1,    1,  0``, **top of buffer** ``582, 32,  0``,
+================ ===================================== ================================== ========================================= =============================================
 
 
 .. ---------------------------------------------------------------------------
-..
-      Log in a emacs lisp file
 
-     ..
-        1, 1, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=1
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=1
-     :end-of-defun: #2 : point=90
-     :end-of-defun: #3 : point=91
-      :end-of-defun: after cond. Before skip: point=91
-      :end-of-defun: after cond. After skip: point=91
-     -> 91, 6, 0
-     Repeating (test)
-        28, 2, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=28
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=1
-     :end-of-defun: #2 : point=90
-     :end-of-defun: #3 : point=91
-      :end-of-defun: after cond. Before skip: point=91
-      :end-of-defun: after cond. After skip: point=91
-     -> 91, 6, 0
-     Repeating (test)
-        29, 3, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=29
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=29
-     :end-of-defun: #2 : point=90
-     :end-of-defun: #3 : point=91
-      :end-of-defun: after cond. Before skip: point=91
-      :end-of-defun: after cond. After skip: point=91
-     -> 91, 6, 0
-     Repeating (test)
-        45, 4, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=45
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=29
-     :end-of-defun: #2 : point=90
-     :end-of-defun: #3 : point=91
-      :end-of-defun: after cond. Before skip: point=91
-      :end-of-defun: after cond. After skip: point=91
-     -> 91, 6, 0
-     Repeating (test)
-        70, 5, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=70
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=29
-     :end-of-defun: #2 : point=90
-     :end-of-defun: #3 : point=91
-      :end-of-defun: after cond. Before skip: point=91
-      :end-of-defun: after cond. After skip: point=91
-     -> 91, 6, 0
-     Repeating (test)
-        91, 6, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=91
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=29
-     :end-of-defun: #2 : point=90
-     :end-of-defun: #3 : point=91
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=93
-     :end-of-defun: #5: point=154
-      :end-of-defun: after cond. Before skip: point=154
-      :end-of-defun: after cond. After skip: point=155
-     -> 155, 11, 0
-     Repeating (test)
-        92, 7, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=92
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=29
-     :end-of-defun: #2 : point=90
-     :end-of-defun: #3 : point=92
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=93
-     :end-of-defun: #5: point=154
-      :end-of-defun: after cond. Before skip: point=154
-      :end-of-defun: after cond. After skip: point=155
-     -> 155, 11, 0
-     Repeating (test)
-        93, 8, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=93
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=93
-     :end-of-defun: #2 : point=154
-     :end-of-defun: #3 : point=155
-      :end-of-defun: after cond. Before skip: point=155
-      :end-of-defun: after cond. After skip: point=155
-     -> 155, 11, 0
-     Repeating (test)
-        109, 9, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=109
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=93
-     :end-of-defun: #2 : point=154
-     :end-of-defun: #3 : point=155
-      :end-of-defun: after cond. Before skip: point=155
-      :end-of-defun: after cond. After skip: point=155
-     -> 155, 11, 0
-     Repeating (test)
-        134, 10, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=134
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=93
-     :end-of-defun: #2 : point=154
-     :end-of-defun: #3 : point=155
-      :end-of-defun: after cond. Before skip: point=155
-      :end-of-defun: after cond. After skip: point=155
-     -> 155, 11, 0
-     Repeating (test)
-        155, 11, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=155
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=93
-     :end-of-defun: #2 : point=154
-     :end-of-defun: #3 : point=155
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=181
-     :end-of-defun: #5: point=242
-      :end-of-defun: after cond. Before skip: point=242
-      :end-of-defun: after cond. After skip: point=243
-     -> 243, 17, 0
-     Repeating (test)
-        156, 12, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=156
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=93
-     :end-of-defun: #2 : point=154
-     :end-of-defun: #3 : point=156
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=181
-     :end-of-defun: #5: point=242
-      :end-of-defun: after cond. Before skip: point=242
-      :end-of-defun: after cond. After skip: point=243
-     -> 243, 17, 0
-     Repeating (test)
-        157, 13, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=157
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=93
-     :end-of-defun: #2 : point=154
-     :end-of-defun: #3 : point=157
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=181
-     :end-of-defun: #5: point=242
-      :end-of-defun: after cond. Before skip: point=242
-      :end-of-defun: after cond. After skip: point=243
-     -> 243, 17, 0
-     Repeating (test)
-        181, 14, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=181
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=181
-     :end-of-defun: #2 : point=242
-     :end-of-defun: #3 : point=243
-      :end-of-defun: after cond. Before skip: point=243
-      :end-of-defun: after cond. After skip: point=243
-     -> 243, 17, 0
-     Repeating (test)
-        197, 15, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=197
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=181
-     :end-of-defun: #2 : point=242
-     :end-of-defun: #3 : point=243
-      :end-of-defun: after cond. Before skip: point=243
-      :end-of-defun: after cond. After skip: point=243
-     -> 243, 17, 0
-     Repeating (test)
-        222, 16, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=222
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=181
-     :end-of-defun: #2 : point=242
-     :end-of-defun: #3 : point=243
-      :end-of-defun: after cond. Before skip: point=243
-      :end-of-defun: after cond. After skip: point=243
-     -> 243, 17, 0
-     Repeating (test)
-        243, 17, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=243
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=181
-     :end-of-defun: #2 : point=242
-     :end-of-defun: #3 : point=243
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=270
-     :end-of-defun: #5: point=331
-      :end-of-defun: after cond. Before skip: point=331
-      :end-of-defun: after cond. After skip: point=332
-     -> 332, 24, 0
-     Repeating (test)
-        244, 18, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=244
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=181
-     :end-of-defun: #2 : point=242
-     :end-of-defun: #3 : point=244
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=270
-     :end-of-defun: #5: point=331
-      :end-of-defun: after cond. Before skip: point=331
-      :end-of-defun: after cond. After skip: point=332
-     -> 332, 24, 0
-     Repeating (test)
-        245, 19, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=245
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=181
-     :end-of-defun: #2 : point=242
-     :end-of-defun: #3 : point=245
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=270
-     :end-of-defun: #5: point=331
-      :end-of-defun: after cond. Before skip: point=331
-      :end-of-defun: after cond. After skip: point=332
-     -> 332, 24, 0
-     Repeating (test)
-        269, 20, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=269
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=181
-     :end-of-defun: #2 : point=242
-     :end-of-defun: #3 : point=269
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=270
-     :end-of-defun: #5: point=331
-      :end-of-defun: after cond. Before skip: point=331
-      :end-of-defun: after cond. After skip: point=332
-     -> 332, 24, 0
-     Repeating (test)
-        270, 21, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=270
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=270
-     :end-of-defun: #2 : point=331
-     :end-of-defun: #3 : point=332
-      :end-of-defun: after cond. Before skip: point=332
-      :end-of-defun: after cond. After skip: point=332
-     -> 332, 24, 0
-     Repeating (test)
-        286, 22, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=286
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=270
-     :end-of-defun: #2 : point=331
-     :end-of-defun: #3 : point=332
-      :end-of-defun: after cond. Before skip: point=332
-      :end-of-defun: after cond. After skip: point=332
-     -> 332, 24, 0
-     Repeating (test)
-        311, 23, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=311
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=270
-     :end-of-defun: #2 : point=331
-     :end-of-defun: #3 : point=332
-      :end-of-defun: after cond. Before skip: point=332
-      :end-of-defun: after cond. After skip: point=332
-     -> 332, 24, 0
-     Repeating (test)
-        332, 24, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=332
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=270
-     :end-of-defun: #2 : point=331
-     :end-of-defun: #3 : point=332
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=431
-     :end-of-defun: #5: point=492
-      :end-of-defun: after cond. Before skip: point=492
-      :end-of-defun: after cond. After skip: point=493
-     -> 493, 34, 0
-     Repeating (test)
-        333, 25, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=333
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=270
-     :end-of-defun: #2 : point=331
-     :end-of-defun: #3 : point=333
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=431
-     :end-of-defun: #5: point=492
-      :end-of-defun: after cond. Before skip: point=492
-      :end-of-defun: after cond. After skip: point=493
-     -> 493, 34, 0
-     Repeating (test)
-        334, 26, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=334
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=270
-     :end-of-defun: #2 : point=331
-     :end-of-defun: #3 : point=334
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=431
-     :end-of-defun: #5: point=492
-      :end-of-defun: after cond. Before skip: point=492
-      :end-of-defun: after cond. After skip: point=493
-     -> 493, 34, 0
-     Repeating (test)
-        367, 27, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=367
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=270
-     :end-of-defun: #2 : point=331
-     :end-of-defun: #3 : point=367
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=431
-     :end-of-defun: #5: point=492
-      :end-of-defun: after cond. Before skip: point=492
-      :end-of-defun: after cond. After skip: point=493
-     -> 493, 34, 0
-     Repeating (test)
-        398, 28, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=398
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=270
-     :end-of-defun: #2 : point=331
-     :end-of-defun: #3 : point=398
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=431
-     :end-of-defun: #5: point=492
-      :end-of-defun: after cond. Before skip: point=492
-      :end-of-defun: after cond. After skip: point=493
-     -> 493, 34, 0
-     Repeating (test)
-        429, 29, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=429
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=270
-     :end-of-defun: #2 : point=331
-     :end-of-defun: #3 : point=429
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=431
-     :end-of-defun: #5: point=492
-      :end-of-defun: after cond. Before skip: point=492
-      :end-of-defun: after cond. After skip: point=493
-     -> 493, 34, 0
-     Repeating (test)
-        430, 30, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=430
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=270
-     :end-of-defun: #2 : point=331
-     :end-of-defun: #3 : point=430
-     :end-of-defun: #4 (just after ’(when (setq success (beginning-of-defun-raw (- arg)))’ : point=431
-     :end-of-defun: #5: point=492
-      :end-of-defun: after cond. Before skip: point=492
-      :end-of-defun: after cond. After skip: point=493
-     -> 493, 34, 0
-     Repeating (test)
-        431, 31, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=431
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=431
-     :end-of-defun: #2 : point=492
-     :end-of-defun: #3 : point=493
-      :end-of-defun: after cond. Before skip: point=493
-      :end-of-defun: after cond. After skip: point=493
-     -> 493, 34, 0
-     Repeating (test)
-        447, 32, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=447
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=431
-     :end-of-defun: #2 : point=492
-     :end-of-defun: #3 : point=493
-      :end-of-defun: after cond. Before skip: point=493
-      :end-of-defun: after cond. After skip: point=493
-     -> 493, 34, 0
-     Repeating (test)
-        472, 33, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=472
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=431
-     :end-of-defun: #2 : point=492
-     :end-of-defun: #3 : point=493
-      :end-of-defun: after cond. Before skip: point=493
-      :end-of-defun: after cond. After skip: point=493
-     -> 493, 34, 0
-     Repeating (test)
-        493, 34, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=493
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=431
-     :end-of-defun: #2 : point=492
-     :end-of-defun: #3 : point=493
-      :end-of-defun: after cond. Before skip: point=575
-      :end-of-defun: after cond. After skip: point=575
-     -> 575, 37, 0
-     Repeating (test)
-        494, 35, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=494
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=431
-     :end-of-defun: #2 : point=492
-     :end-of-defun: #3 : point=494
-      :end-of-defun: after cond. Before skip: point=575
-      :end-of-defun: after cond. After skip: point=575
-     -> 575, 37, 0
-     Repeating (test)
-        574, 36, 0
-     :end-of-defun: arg=nil, interactive=nil, called from point=574
-      :end-of-defun: changed arg to: 1
-     :end-of-defun: #1 : point=431
-     :end-of-defun: #2 : point=492
-     :end-of-defun: #3 : point=574
-      :end-of-defun: after cond. Before skip: point=575
-      :end-of-defun: after cond. After skip: point=575
-     -> 575, 37, 0
+Results for modified lisp.el on Emacs 30.1
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following modification to lisp.el solves the problem for Seed7 code while keeping the code working for other modes:
+
+.. code:: diff
+
+          diff --git a/lisp/emacs-lisp/lisp.el b/lisp/emacs-lisp/lisp.el
+          index b6ebe75dbad..320b3c23e2f 100644
+          --- a/lisp/emacs-lisp/lisp.el
+          +++ b/lisp/emacs-lisp/lisp.el
+          @@ -538,6 +538,9 @@ buffer-end
+                      (side-effect-free error-free))
+             (if (> arg 0) (point-max) (point-min)))
+
+          +(defvar end-of-defun-skips-one nil
+          +  "Set this to t when end-of-defun skips one function.")
+          +
+           (defun end-of-defun (&optional arg interactive)
+             "Move forward to next end of defun.
+           With argument, do it that many times.
+          @@ -592,7 +595,8 @@ end-of-defun
+                   ;; in between two defun's), or is at the end of a defun
+                   ;; (because we started in the middle of a defun).
+                   (unless (zerop arg)
+          -          (when (setq success (beginning-of-defun-raw (- arg)))
+          +          (when (and (setq success (beginning-of-defun-raw (- arg)))
+          +                     (not end-of-defun-skips-one))
+                       (funcall end-of-defun-function))))
+                  ((< arg 0)
+                   ;; Moving backward.
 
 
 
+
+================ ===================================== ================================== ========================================= =============================================
+Start position   After ``(seed7-nav-end-of-defun 1)``  After ``(end-of-defun)``           After ``(seed7-nav-beginning-of-defun)``  After ``(beginning-of-defun)``
+================ ===================================== ================================== ========================================= =============================================
+``1,    1,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``1,    1,  0``, no move                  ``1,    1,  0``, no move
+``37,   2,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``37,   2,  0``, no move                  ``37,   2,  0``, no move
+``38,   3,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``38,   3,  0``, no move                  ``38,   3,  0``, no move
+``64,   4,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``64,   4,  0``, no move                  ``64,   4,  0``, no move
+``87,   5,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``87,   5,  0``, no move                  ``87,   5,  0``, no move
+``88,   6,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``88,   6,  0``, beginning of fct 1       ``88,   6,  0``, beginning of fct 1
+``123,  7,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``88,   6,  0``, beginning of fct 1       ``88,   6,  0``, beginning of fct 1
+``151,  8,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``88,   6,  0``, beginning of fct 1       ``88,   6,  0``, beginning of fct 1
+``152,  9,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``88,   6,  0``, beginning of fct 1       ``88,   6,  0``, beginning of fct 1
+``153, 10,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``88,   6,  0``, beginning of fct 1       ``88,   6,  0``, beginning of fct 1
+``194, 11,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``203, 12,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``240, 13,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``248, 14,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``284, 15,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``296, 16,  0``  ``393, 19, 23``, end of fct 3         ``394, 20,  0``, end of fct 3      ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``297, 17,  0``  ``393, 19, 23``, end of fct 3         ``394, 20,  0``, end of fct 3      ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``319, 18,  0``  ``393, 19, 23``, end of fct 3         ``394, 20,  0``, end of fct 3      ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``370, 19,  0``  ``393, 19, 23``, end of fct 3         ``394, 20,  0``, end of fct 3      ``319, 18,  0``, beginning of fct 3       ``319, 18,  0``, beginning of fct 3
+``394, 20,  0``  ``508, 24, 24``, end of fct 4         ``509, 25,  0``, end of fct 4      ``319, 18,  0``, beginning of fct 3       ``319, 18,  0``, beginning of fct 3
+``395, 21,  0``  ``508, 24, 24``, end of fct 4         ``509, 25,  0``, end of fct 4      ``319, 18,  0``, beginning of fct 3       ``319, 18,  0``, beginning of fct 3
+``416, 22,  0``  ``508, 24, 24``, end of fct 4         ``509, 25,  0``, end of fct 4      ``319, 18,  0``, beginning of fct 3       ``319, 18,  0``, beginning of fct 3
+``417, 23,  0``  ``508, 24, 24``, end of fct 4         ``509, 25,  0``, end of fct 4      ``319, 18,  0``, beginning of fct 3       ``319, 18,  0``, beginning of fct 3
+``484, 24,  0``  ``508, 24, 24``, end of fct 4         ``509, 25,  0``, end of fct 4      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``509, 25,  0``  ``689, 33, 31``, end of fct 5         ``690, 34,  0``, end of fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``510, 26,  0``  ``689, 33, 31``, end of fct 5         ``690, 34,  0``, end of fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``511, 27,  0``  ``689, 33, 31``, end of fct 5         ``690, 34,  0``, end of fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``542, 28,  0``  ``689, 33, 31``, end of fct 5         ``690, 34,  0``, end of fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``566, 29,  0``  ``689, 33, 31``, end of fct 5         ``690, 34,  0``, end of fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``580, 30,  0``  ``689, 33, 31``, end of fct 5         ``690, 34,  0``, end of fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``581, 31,  0``  ``689, 33, 31``, end of fct 5         ``690, 34,  0``, end of fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``582, 32,  0``  ``689, 33, 31``, end of fct 5         ``690, 34,  0``, end of fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``658, 33,  0``  ``689, 33, 31``, end of fct 5         ``690, 34,  0``, end of fct 5      ``582, 32,  0``, beginning of fct 5       ``582, 32,  0``, beginning of fct 5
+``690, 34,  0``  ``770, 36,  0``, end of buffer        ``690, 34,  0``, end of buffer     ``582, 32,  0``, beginning of fct 5       ``582, 32,  0``, beginning of fct 5
+``691, 35,  0``  ``770, 36,  0``, end of buffer        ``691  35,  0``, end of buffer     ``582, 32,  0``, beginning of fct 5       ``582, 32,  0``, beginning of fct 5
+================ ===================================== ================================== ========================================= =============================================
 
 .. ---------------------------------------------------------------------------
 .. links:
