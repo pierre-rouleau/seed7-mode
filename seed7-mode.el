@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-15 16:43:25 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-15 17:14:12 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-15T20:43:25+0000 W29-2"
+(defconst seed7-mode-version-timestamp "2025-07-15T21:14:12+0000 W29-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3101,9 +3101,6 @@ Return t if point moved to the beginning of function, nil if nothing found."
   (condition-case nil
       (progn
         (seed7-end-of-defun n :silent)
-        (message " :seed7-nav-end-of-defun: moved point to %d, line=%d"
-           (point)
-           (seed7-current-line-number))
         t)
     (error nil)))
 
