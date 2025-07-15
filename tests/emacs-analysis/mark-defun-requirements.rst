@@ -988,6 +988,12 @@ The seed7-mode has another command for that.
 The Python ``(python-nav-end-of-defun 1)`` behaves differently: it does not
 move point when it is between 2 functions.
 
+The Seed7 programming language differs from Python, lisp and C-like languages.
+It has functions and procedures.  There are several ways of declaring
+functions, a long and a short format.  Inside library files (the ``.s7i``
+files), a function can hold nested function and procedure declarations and
+definitions.  See the `array.s7i`_ file as an example of this.
+
 
 .. ---------------------------------------------------------------------------
 
@@ -1104,6 +1110,7 @@ and ``mark-defun`` from marking 2 Seed7 functions.
 .. _tests/emacs-analysis/elisp-functions.el: ./elisp-functions.el
 .. _python-functions.py:                     ./python-functions.py
 .. _seed7-functions.sd7:                     ./seed7-functions.sd7
+.. _array.s7i:                               ../seed7-code/array.s7i
 
 .. ---------------------------------------------------------------------------
 
