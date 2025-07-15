@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-14 23:03:23 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-15 00:12:12 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-15T03:03:23+0000 W29-2"
+(defconst seed7-mode-version-timestamp "2025-07-15T04:12:12+0000 W29-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3079,9 +3079,7 @@ Return t if point moved to the beginning of function, nil if nothing found."
       (progn
         (seed7-beg-of-defun n :silent)
         t)
-    (error
-     (goto-char (point-min))
-     nil)))
+    (error nil)))
 
 (defun seed7-nav-end-of-defun (&optional n)
   "Simple end of defun to use as `end-of-defun-function'.
@@ -3092,10 +3090,11 @@ Return t if point moved to the beginning of function, nil if nothing found."
   (condition-case nil
       (progn
         (seed7-end-of-defun n :silent)
+        (message " :seed7-nav-end-of-defun: moved point to %d, line=%d"
+           (point)
+           (seed7-current-line-number))
         t)
-    (error
-     (goto-char (point-max))
-     nil)))
+    (error nil)))
 
 ;;** Seed7 Navigation by Block
 ;;   -------------------------
