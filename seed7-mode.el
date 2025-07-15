@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-15 00:12:12 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-15 08:07:33 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-15T04:12:12+0000 W29-2"
+(defconst seed7-mode-version-timestamp "2025-07-15T12:07:33+0000 W29-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2822,6 +2822,7 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
         (seed7-end-of-defun (abs n) silent dont-push-mark)
       (unless (eq n 0)
         (save-excursion
+          (end-of-line)
           (dotimes (_ n)
             (setq found-pos nil)
             (when (seed7-re-search-backward-closest (list
