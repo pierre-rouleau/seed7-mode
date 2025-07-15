@@ -699,14 +699,17 @@ delete-pair-blink-delay            defcustom     blink-matching-delay : 1       
 ================================== ============= ============================================================================ =====================================
 
 
+Using the file `elisp-functions.el`_ (shown in the section titled `The Elisp
+test file: elisp-functions.el`_) the following table shows the result of
+testing several navigation functions for Emacs Lisp code.
 
-The end position of evaluating ``(sexp-forward 1)`` and (end-of-defun) from
-various locations.  Showing the start position (point, line, column) before
-execution of a function, and the resulting position (point, line column) after
-execution of ``(sexp-forward 1)`` and ``(end-of-function)``.
+Each column show the point, the line number, the column number and a
+description.  The first column shows the position before execution of the
+function and the other columns show the result position after evaluation of a
+function identified in the title.
 
 ======================== ============================== ================================= =====================================
-Start position           After ``(sexp-forward 1)``     After ``(end-of-defun)``          After `(beginning-of-defun)``
+Start position           After ``(sexp-forward 1)``     After ``(end-of-defun)``          After ``(beginning-of-defun)``
 ======================== ============================== ================================= =====================================
 ``1,    1,  0``,         ``105,  5, 20``, end of fct 1  ``106,  6,  0``, line-aeof fct 1  ``1,    1,  0``, top of buffer
 ``43,   2,  0``,         ``105,  5, 20``, end of fct 1  ``106,  6,  0``, line-aeof fct 1  ``1,    1,  0``, top of buffer
@@ -905,53 +908,85 @@ insert-pair-alist                  defcustom      ``((40 41) (91 93) (123 125) (
 delete-pair-blink-delay            defcustom      1
 ================================== =============  =====================================
 
-The results of the tests over the Seed7 code shown in the
-`The Seed7 test file: seed7-functions.sd7`_
-section
-are shown in the following table.
 
 Results for unmodified lisp.el on Emacs 30.1
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-================ ===================================== ================================== ========================================= =============================================
-Start position   After ``(seed7-nav-end-of-defun 1)``  After ``(end-of-defun)``           After ``(seed7-nav-beginning-of-defun)``  After ``(beginning-of-defun)``
-================ ===================================== ================================== ========================================= =============================================
-``1,    1,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``1,    1,  0``, top of buffer
-``37,   2,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``1,    1,  0``, top of buffer
-``38,   3,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``1,    1,  0``, top of buffer
-``64,   4,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``1,    1,  0``, top of buffer
-``87,   5,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``1,    1,  0``, top of buffer
-``88,   6,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``1,    1,  0``, top of buffer
-``123,  7,  0``  ``150,  7, 27``, end of fct 1         ``151,  8,  0``, end of fct 1      ``88,   6,  0``,
-``151,  8,  0``  ``295, 15, 11``, end of fct 2         ``394, 20,  0``, **end of fct 3**  ``88,   6,  0``,
-``152,  9,  0``  ``295, 15, 11``, end of fct 2         ``394, 20,  0``, **end of fct 3**  ``88,   6,  0``,
-``153, 10,  0``  ``295, 15, 11``, end of fct 2         ``394, 20,  0``, **end of fct 3**  ``88,   6,  0``,
-``194, 11,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``,
-``203, 12,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``,
-``240, 13,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``,
-``248, 14,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``,
-``284, 15,  0``  ``295, 15, 11``, end of fct 2         ``296, 16,  0``, end of fct 2      ``153, 10,  0``,
-``296, 16,  0``  ``393, 19, 23``, end of fct 3         ``509, 25,  0``, **end of fct 4**  ``153, 10,  0``,
-``297, 17,  0``  ``393, 19, 23``, end of fct 3         ``509, 25,  0``, **end of fct 4**  ``153, 10,  0``,
-``319, 18,  0``  ``393, 19, 23``, end of fct 3         ``509, 25,  0``, **end of fct 4**  ``153, 10,  0``,
-``370, 19,  0``  ``393, 19, 23``, end of fct 3         ``394, 20,  0``, end of fct 3      ``319, 18,  0``,
-``394, 20,  0``  ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **end of fct 5**  ``319, 18,  0``,
-``395, 21,  0``  ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **end of fct 5**  ``319, 18,  0``,
-``416, 22,  0``  ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **end of fct 5**  ``319, 18,  0``,
-``417, 23,  0``  ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **end of fct 5**  ``319, 18,  0``,
-``484, 24,  0``  ``508, 24, 24``, end of fct 4         ``509, 25,  0``, end of fct 4      ``417, 23,  0``,
-``509, 25,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
-``510, 26,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
-``511, 27,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
-``542, 28,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
-``566, 29,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
-``580, 30,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
-``581, 31,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
-``582, 32,  0``  ``689, 33, 31``, end of fct 5         ``770, 36,  0``, **end of buffer** ``417, 23,  0``,
-``658, 33,  0``  ``689, 33, 31``, end of fct 5         ``690, 34,  0``, end of fct 5      ``582, 32,  0``,
-``690, 34,  0``  ``770, 36,  0``, end of buffer        ``1,    1,  0``, **top of buffer** ``582, 32,  0``,
-``691, 35,  0``  ``770, 36,  0``, end of buffer        ``1,    1,  0``, **top of buffer** ``582, 32,  0``,
-================ ===================================== ================================== ========================================= =============================================
+The results of the tests over the Seed7 code shown in the
+`The Seed7 test file: seed7-functions.sd7`_
+section
+are shown in the following table.
+These are executed with the lisp.el version of Emacs 30.1
+
+
+====================== ===================================== ===================================== ========================================= =============================================
+Start position         After ``(seed7-nav-end-of-defun 1)``  After ``(end-of-defun)``              After ``(seed7-nav-beginning-of-defun)``  After ``(beginning-of-defun)``
+====================== ===================================== ===================================== ========================================= =============================================
+``1,    1,  0``,       ``150,  7, 27``, end of fct 1         ``151,  8,  0``, line-aeof fct 1      ``1,    1,  0``, not moved                ``1,    1,  0``, not moved
+``37,   2,  0``,       ``150,  7, 27``, end of fct 1         ``151,  8,  0``, line-aeof fct 1      ``37,   2,  0``, not moved                ``37,   2,  0``, not moved
+``38,   3,  0``,       ``150,  7, 27``, end of fct 1         ``151,  8,  0``, line-aeof fct 1      ``38,   3,  0``, not moved                ``38,   3,  0``, not moved
+``64,   4,  0``,       ``150,  7, 27``, end of fct 1         ``151,  8,  0``, line-aeof fct 1      ``64,   4,  0``, not moved                ``64,   4,  0``, not moved
+``87,   5,  0``,       ``150,  7, 27``, end of fct 1         ``151,  8,  0``, line-aeof fct 1      ``87,   5,  0``, not moved                ``87,   5,  0``, not moved
+``88,   6,  0``, fct 1 ``150,  7, 27``, end of fct 1         ``151,  8,  0``, line-aeof fct 1      ``88,   6,  0``, beginning of fct 1       ``88,   6,  0``, beginning of fct 1
+``123,  7,  0``, fct 1 ``150,  7, 27``, end of fct 1         ``151,  8,  0``, line-aeof fct 1      ``88,   6,  0``, beginning of fct 1       ``88,   6,  0``, beginning of fct 1
+``151,  8,  0``,       ``295, 15, 11``, end of fct 2         ``394, 20,  0``, **line-aeof fct 3**  ``88,   6,  0``, beginning of fct 1       ``88,   6,  0``, beginning of fct 1
+``152,  9,  0``,       ``295, 15, 11``, end of fct 2         ``394, 20,  0``, **line-aeof fct 3**  ``88,   6,  0``, beginning of fct 1       ``88,   6,  0``, beginning of fct 1
+``153, 10,  0``, fct 2 ``295, 15, 11``, end of fct 2         ``296, 16,  0``, line-aeof fct 2      ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``194, 11,  0``, fct 2 ``295, 15, 11``, end of fct 2         ``296, 16,  0``, line-aeof fct 2      ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``203, 12,  0``, fct 2 ``295, 15, 11``, end of fct 2         ``296, 16,  0``, line-aeof fct 2      ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``240, 13,  0``, fct 2 ``295, 15, 11``, end of fct 2         ``296, 16,  0``, line-aeof fct 2      ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``248, 14,  0``, fct 2 ``295, 15, 11``, end of fct 2         ``296, 16,  0``, line-aeof fct 2      ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``284, 15,  0``, fct 2 ``295, 15, 11``, end of fct 2         ``296, 16,  0``, line-aeof fct 2      ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``296, 16,  0``,       ``393, 19, 23``, end of fct 3         ``509, 25,  0``, **line-aeof fct 4**  ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``297, 17,  0``,       ``393, 19, 23``, end of fct 3         ``509, 25,  0``, **line-aeof fct 4**  ``153, 10,  0``, beginning of fct 2       ``153, 10,  0``, beginning of fct 2
+``319, 18,  0``, fct 3 ``393, 19, 23``, end of fct 3         ``394, 20,  0``, line-aeof fct 3      ``319, 18,  0``, beginning of fct 3       ``319, 18,  0``, beginning of fct 3
+``370, 19,  0``, fct 3 ``393, 19, 23``, end of fct 3         ``394, 20,  0``, line-aeof fct 3      ``319, 18,  0``, beginning of fct 3       ``319, 18,  0``, beginning of fct 3
+``394, 20,  0``,       ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **line-aeof fct 5**  ``319, 18,  0``, beginning of fct 3       ``319, 18,  0``, beginning of fct 3
+``395, 21,  0``,       ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **line-aeof fct 5**  ``319, 18,  0``, beginning of fct 3       ``319, 18,  0``, beginning of fct 3
+``416, 22,  0``,       ``508, 24, 24``, end of fct 4         ``690, 34,  0``, **line-aeof fct 5**  ``319, 18,  0``, beginning of fct 3       ``319, 18,  0``, beginning of fct 3
+``417, 23,  0``, fct 4 ``508, 24, 24``, end of fct 4         ``509, 25,  0``, line-aeof fct 4      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``484, 24,  0``, fct 4 ``508, 24, 24``, end of fct 4         ``509, 25,  0``, line-aeof fct 4      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``509, 25,  0``,       ``689, 33, 31``, end of fct 5         ``690, 34,  0``, line-aeof fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``510, 26,  0``,       ``689, 33, 31``, end of fct 5         ``690, 34,  0``, line-aeof fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``511, 27,  0``,       ``689, 33, 31``, end of fct 5         ``690, 34,  0``, line-aeof fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``542, 28,  0``,       ``689, 33, 31``, end of fct 5         ``690, 34,  0``, line-aeof fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``566, 29,  0``,       ``689, 33, 31``, end of fct 5         ``690, 34,  0``, line-aeof fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``580, 30,  0``,       ``689, 33, 31``, end of fct 5         ``690, 34,  0``, line-aeof fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``581, 31,  0``,       ``689, 33, 31``, end of fct 5         ``690, 34,  0``, line-aeof fct 5      ``417, 23,  0``, beginning of fct 4       ``417, 23,  0``, beginning of fct 4
+``582, 32,  0``, fct 5 ``689, 33, 31``, end of fct 5         ``690, 34,  0``, line-aeof fct 5      ``582, 32,  0``, beginning of fct 5       ``582, 32,  0``, beginning of fct 5
+``658, 33,  0``, fct 5 ``689, 33, 31``, end of fct 5         ``690, 34,  0``, line-aeof fct 5      ``582, 32,  0``, beginning of fct 5       ``582, 32,  0``, beginning of fct 5
+``690, 34,  0``,       ``690, 34,  0``, not moved            ``690, 34,  0``, not moved            ``582, 32,  0``, beginning of fct 5       ``582, 32,  0``, beginning of fct 5
+``691, 35,  0``,       ``691, 35,  0``, not moved            ``691, 35,  0``, not moved            ``582, 32,  0``, beginning of fct 5       ``582, 32,  0``, beginning of fct 5
+====================== ===================================== ===================================== ========================================= =============================================
+
+In the table,
+
+- ``line-aeof`` means "line after end of function",
+- the names of the functions were replaced by a sequence number to better represent their position.
+
+  - fct 1 is: f1_flipcoin
+  - fct 2 is: f2_flipCoin
+  - fct 3 is: f3_inverse
+  - fct 4 is: f4_power
+  - fct 5 is: f4_log10_of_power
+
+The results show that the ``end-of-defun`` function, when issued between fct 1
+and 2, 2 and 3, and 3 and 4, move point to the end of an extra function:
+when issued between function 1 and 2, instead of moving point the the next
+line after function 2 it moves point to the line after function 3.
+
+The table also shows that ``(seed7-nav-end-of-defun 1)`` always move point to
+the exact end of the current function (when point is inside a function) or the
+function that follows (when point is inside a non-code line just before that
+function).
+
+This behaviour is similar to what ``(sexp-forward 1)`` does in Emacs Lisp
+code, with the exception that ``(seed7-nav-end-of-defun 1)`` does not stop
+at the end of an internal block made of parens or of Seed7 code statement.
+The seed7-mode has another command for that.
+
+The Python ``(python-nav-end-of-defun 1)`` behaves differently: it does not
+move point when it is between 2 functions.
 
 
 .. ---------------------------------------------------------------------------
@@ -959,7 +994,12 @@ Start position   After ``(seed7-nav-end-of-defun 1)``  After ``(end-of-defun)`` 
 Results for modified lisp.el on Emacs 30.1
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The following modification to lisp.el solves the problem for Seed7 code while keeping the code working for other modes:
+The results of the tests over the Seed7 code shown in the
+`The Seed7 test file: seed7-functions.sd7`_
+section
+are shown in the following table.
+These are executed with the lisp.el version of Emacs 30.1 using the
+following modification to lisp.el:
 
 .. code:: diff
 
@@ -1030,6 +1070,28 @@ Start position   After ``(seed7-nav-end-of-defun 1)``  After ``(end-of-defun)`` 
 ``690, 34,  0``  ``770, 36,  0``, end of buffer        ``690, 34,  0``, end of buffer     ``582, 32,  0``, beginning of fct 5       ``582, 32,  0``, beginning of fct 5
 ``691, 35,  0``  ``770, 36,  0``, end of buffer        ``691  35,  0``, end of buffer     ``582, 32,  0``, beginning of fct 5       ``582, 32,  0``, beginning of fct 5
 ================ ===================================== ================================== ========================================= =============================================
+
+In the table,
+
+- ``line-aeof`` means "line after end of function",
+- the names of the functions were replaced by a sequence number to better represent their position.
+
+  - fct 1 is: f1_flipcoin
+  - fct 2 is: f2_flipCoin
+  - fct 3 is: f3_inverse
+  - fct 4 is: f4_power
+  - fct 5 is: f4_log10_of_power
+
+As we can see in the table above the modification to lisp.el solves the
+problem for Seed7 code.  The modifications do not affect other modes because
+the Seed7 code is the only mode function that evaluates:
+
+.. code:: elisp
+
+  (setq-local end-of-defun-skips-one t)
+
+The modification prevents ``end-of-defun`` from skipping one Seed7 function
+and ``mark-defun`` from marking 2 Seed7 functions.
 
 .. ---------------------------------------------------------------------------
 .. links:
