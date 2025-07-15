@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-15 08:07:33 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-15 15:14:21 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-15T12:07:33+0000 W29-2"
+(defconst seed7-mode-version-timestamp "2025-07-15T19:14:21+0000 W29-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1092,49 +1092,51 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
 ;; Ref: Abstract data type: https://seed7.net/manual/decls.htm#Abstract_data_types
 
 (defconst seed7--predefined-types
-  '("array"                             ; abstract data type
-    "subtype"                           ; abstract data type
-    "subrange"                          ; abstract data type
-    "interface"                         ; abstract data type
-    "bigInteger"
-    "bigRational"
-    "bin32"
-    "bin64"
-    "bitset"
-    "boolean"
-    "bstring"
-    "category"
-    "char"
-    "clib_file"
-    "color"
-    "complex"
-    "creator"
-    "database"
-    "destroyer"
-    "duration"
-    "enum"                              ; abstract data type
-    "expr"
-    "file"
-    "fileSys"
-    "float"
-    "func"
-    "hash"                              ; abstract data type
-    "integer"
-    "object"
-    "proc"
-    "process"
-    "program"
-    "rational"
-    "reference"
-    "ref_list"
-    "set"                               ; abstract data type
-    "sqlStatement"
-    "string"
-    "struct"                            ; abstract data type
-    "text"
-    "time"
-    "type"
-    "void"
+  '("array"            ; https://seed7.net/manual/types.htm#array        abstract data type.
+    "subtype"          ; abstract data type
+    "subrange"         ; abstract data type
+    "interface"        ; abstract data type
+    "bigInteger"       ; https://seed7.net/manual/types.htm#bigInteger
+    "bigRational"      ; https://seed7.net/manual/types.htm#bigRational
+    "bin32"            ; https://seed7.net/manual/types.htm#bin32
+    "bin64"            ; https://seed7.net/manual/types.htm#bin64
+    "bitset"           ; https://seed7.net/libraries/bitset.htm#bitset
+    "boolean"          ; https://seed7.net/manual/types.htm#boolean
+    "bstring"          ; https://seed7.net/manual/types.htm#bstring
+    "category"         ; https://seed7.net/manual/types.htm#category
+    "char"             ; https://seed7.net/manual/types.htm#char
+    "clib_file"        ; https://seed7.net/libraries/clib_file.htm
+    "color"            ; https://seed7.net/manual/types.htm#color
+    "complex"          ; https://seed7.net/manual/types.htm#complex
+    "creator"          ; https://seed7.net/manual/types.htm#creator
+    "database"         ; https://seed7.net/manual/types.htm#database
+    "destroyer"        ; https://seed7.net/manual/types.htm#destroyer
+    "duration"         ; https://seed7.net/manual/types.htm#duration
+    "enum"             ; https://seed7.net/manual/types.htm#enumeration  abstract data type.
+    "expr"             ; https://seed7.net/manual/types.htm#expr
+    "file"             ; https://seed7.net/manual/types.htm#file
+    "fileSys"          ; https://seed7.net/manual/types.htm#fileSys
+    "float"            ; https://seed7.net/manual/types.htm#float
+    "func"             ; https://seed7.net/manual/types.htm#func
+    "hash"             ; https://seed7.net/manual/types.htm#hash         abstract data type.
+    "integer"          ; https://seed7.net/manual/types.htm#integer
+    "object"           ; https://seed7.net/manual/types.htm#object
+    "proc"             ; https://seed7.net/manual/types.htm#proc
+    "process"          ; https://seed7.net/manual/types.htm#process
+    "program"          ; https://seed7.net/manual/types.htm#program
+    "rational"         ; https://seed7.net/manual/types.htm#rational
+    "reference"        ; https://seed7.net/manual/types.htm#reference
+    "ref_list"         ; https://seed7.net/manual/types.htm#ref_list
+    "set"              ; https://seed7.net/manual/types.htm#set          abstract data type
+    "sqlStatement"     ; https://seed7.net/manual/types.htm#sqlStatement
+    "string"           ; https://seed7.net/manual/types.htm#string
+    "struct"           ; https://seed7.net/manual/types.htm#struct
+    "structElement"    ; https://seed7.net/manual/types.htm#structElement
+    "text"             ; https://seed7.net/manual/types.htm#text
+    "time"             ; https://seed7.net/manual/types.htm#time
+    "type"             ; https://seed7.net/manual/types.htm#type
+    ;; varfunc (listed in seed7--statement-enclosing-keywords)
+    "void"             ; https://seed7.net/manual/types.htm#void
     "PRIMITIVE_WINDOW"))
 
 ;; Note: the < > are important to prevent detection of words inside other
@@ -6798,6 +6800,11 @@ Make sure you have no duplication of keywords if you edit the list."
               (function seed7-nav-end-of-defun))
   (setq-local open-paren-in-column-0-is-defun-start nil)
   (setq-local end-of-defun-moves-to-eol nil)
+  ;; [:todo 2025-07-15, by Pierre Rouleau: determine if lisp.el must be
+  ;;   modified to properly support end-of-defun and mark-defun in Seed7.
+  ;;   If so, the lisp.el modification is activated by end-of-defun-skips-one
+  ;;   variable set to t (it should default to nil) ]
+  ;; (setq-local end-of-defun-skips-one t)
 
   ;; Seed7 outline minor-mode support
   (setq-local outline-regexp
