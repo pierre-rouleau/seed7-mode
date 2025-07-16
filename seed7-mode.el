@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-16 09:08:52 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-16 10:19:25 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -304,6 +304,7 @@
 ;;       . `seed7-current-line-start-inside-comment-p'
 ;;         o `seed7-inside-comment-p'
 ;;         . `seed7-to-indent'
+;;       . `seed7-current-line-indent'
 ;;       . `seed7-to-line-last-non-whitespace'
 ;;       . `seed7-at-end-of-line-p'
 ;;       . `seed7-inside-line-end-comment-p'
@@ -456,7 +457,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-16T13:08:52+0000 W29-3"
+(defconst seed7-mode-version-timestamp "2025-07-16T14:19:25+0000 W29-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3687,6 +3688,12 @@ If point is before or between 2 functions or procedure, mark the next one."
   (forward-line 0)
   (skip-chars-forward " \t"))
 
+(defun seed7-current-line-indent ()
+  "Return indentation column number of current line, 0 if line not indented."
+  (save-excursion
+    (seed7-to-indent)
+    (current-column)))
+
 (defun seed7-current-line-start-inside-comment-p ()
   "Return non-nil if the current line start inside a comment."
   (save-excursion
@@ -4942,8 +4949,7 @@ N is: - :previous-non-empty for the previous non empty line,
       (save-excursion
         (seed7-move-to-line n)
         (seed7-to-block-backward nil :dont-push-mark)
-        (seed7-to-indent)
-        (current-column)))
+        (seed7-current-line-indent)))
      ;; handle forward and native action declarations of func and proc
      ((seed7--set (seed7-line-starts-with-any
                    n
