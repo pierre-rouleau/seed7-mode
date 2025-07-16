@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-15 18:51:42 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-16 09:08:52 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -456,7 +456,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-15T22:51:42+0000 W29-2"
+(defconst seed7-mode-version-timestamp "2025-07-16T13:08:52+0000 W29-3"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5269,7 +5269,7 @@ Also add tempo marker at each of these locations."
 (defun seed7-insert-include ()
   "Insert the file include."
   (interactive "*")
-  (insert "include \".s7i\"")
+  (insert "include \".s7i\";")
   (seed7-to-indent)
   (forward-char 9)
   (save-excursion
