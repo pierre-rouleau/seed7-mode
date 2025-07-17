@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-16 18:24:13 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-17 09:33:06 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -457,7 +457,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-16T22:24:13+0000 W29-3"
+(defconst seed7-mode-version-timestamp "2025-07-17T13:33:06+0000 W29-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1560,7 +1560,6 @@ Matches something like:
           seed7--whitespace-re)              ; 11
   "Regexp for (args...) [ (args..) op (args...) ]")
 
-
 ;; --
 
 (defconst seed7-any-param-pattern-re
@@ -1634,6 +1633,18 @@ Otherwise the returned regexp captures nothing."
      seed7-type-identifier-nc-re)
    seed7--whitespace-re))               ; 6
 
+(defconst seed7-proc-beg-of-decl-re
+  (format
+   "^%s*?const%s+proc%s*?:%s+?"
+   ;;%        %       %   %
+   ;;1        2       3   4
+   seed7--blank-re                      ; 1
+   seed7--whitespace-re                 ; 2
+   seed7--blank-re                      ; 3
+   seed7--whitespace-re)                ; 4
+  "Regexp for the beginning of a procedure declaration.
+No capture group.")
+
 ;; --
 
 (defun seed7--procfunc-beg-of-decl-re-fmt (&optional capture)
@@ -1699,6 +1710,7 @@ Group 1: \"proc\", \"varfunc\" or \"func \"
 Group 2: The func return type.  May be empty.
 Group 3: The func or proc name." )
 
+;; [:todo 2025-07-17, by Pierre Rouleau: Enhance seed7-procfunc-regexp to support array parameters.]
 (defconst seed7-procfunc-regexp
   (format
    ;;                                      fct name                           is     func | return | ...
@@ -1713,13 +1725,13 @@ Group 3: The func or proc name." )
    seed7-procfunc-beg-of-decl-re         ; 1 : includes G1 and G2
    seed7--opt-square-brace-start-re      ; 2 w[
    seed7--whitespace-re                  ; 3
-   seed7--anychar-re                     ; 4
+   "[^;]" ; seed7--anychar-re            ; 4
    seed7--whitespace-re                  ; 5
    seed7-name-identifier-nc-re           ; 6
    seed7--special-identifier-nc-re       ; 7
    seed7--whitespace-re                  ; 8
-   seed7--anychar-re                     ; 9
-   seed7--anychar-re                     ; 10
+   "[^;]" ; seed7--anychar-re            ; 9
+   "[^;]" ; seed7--anychar-re            ; 10
    seed7--opt-square-brace-end-re        ; 11 w]w
    seed7--whitespace-re                  ; 12
    seed7--procfunc-forward-or-action-re) ; 13
@@ -1756,20 +1768,17 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
 ;;** Seed7 Procedure/Function iMenu Regexp
 ;;   -------------------------------------
 
-;; Regexp for procedure and function declarations.
-;; [:todo 2025-07-16, by Pierre Rouleau: should we use `seed7-procfunc-beg-of-decl-re' here?]
-(defconst seed7-forward-or-action-procedure-declaration-re
+(defconst seed7-proc-forward-or-action-declaration-re
   (format
-   "const%s+proc:%s+?\\(%s\\)\\(?:%s\\)+?is%s+?\\(%s\\)"
-   ;;                  G1                        G2
-   ;;    %       %      %         %        %      %
-   ;;    1       2      3         4        5      6
-   seed7--whitespace-re                    ; 1
-   seed7--whitespace-re                    ; 2
-   seed7-name-identifier-nc-re             ; 3
-   "[^;]"                                  ; 4
-   seed7--whitespace-re                    ; 5
-   seed7--procfunc-forward-or-action-re)   ; 6
+   "%s\\(%s\\)\\(?:%s\\)+?is%s+?\\(%s\\)"
+   ;;   G1                        G2
+   ;;%   %         %        %      %
+   ;;1   2         3        4      5
+   seed7-proc-beg-of-decl-re             ; 1
+   seed7-name-identifier-nc-re           ; 2 : G1 : procedure name
+   "[^;]"                                ; 3
+   seed7--whitespace-re                  ; 4
+   seed7--procfunc-forward-or-action-re) ; 5 : G2 : declaration form
   "Regexp matching forward or action procedure declaration.
 - Group 1: procedure name,
 - Group 2: \"func\", \"forward\", \"DYNAMIC\", \"action XYZ\".")
@@ -1813,14 +1822,14 @@ No capture group.")
   ;;                (----------------)            (------)
   ;;         (----------------------------------------------)
   ;;                name   (params   )
-  (format "\\(?:%s\\(%s%s+?([^;]+?)\\)%s+?is%s+?\\(?:%s\\)\\)"
-          ;;        G1
-          ;;    %    %  %             %     %        %
-          ;;    1    2  3             4     5        6
+  (format "%s\\(%s%s+?([^;]+?)\\)%s+?is%s+?\\(?:%s\\)"
+          ;;   G1
+          ;;%   %  %             %     %        %
+          ;;1   2  3             4     5        6
           seed7-procfunc-beg-of-decl-nc-re      ; 1
           ""                                    ; 2: capture G1: name & params
           "[^;]"                                ; 3
-          seed7--whitespace-re                  ; 4
+          "[^;]"                                ; 4
           seed7--whitespace-re                  ; 5
           seed7--procfunc-forward-or-action-re) ; 6
   "Regexp matching value, forward or action function declaration.
@@ -2899,7 +2908,7 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
             (when (seed7-re-search-backward-closest (list
                                                      seed7-procfunc-regexp
                                                      seed7-procfunc-start-regexp
-                                                     seed7-forward-or-action-procedure-declaration-re
+                                                     seed7-proc-forward-or-action-declaration-re
                                                      seed7-procfunc-forward-or-action-declaration-re))
               (setq found-pos (point)
                     item-type (substring-no-properties (or (match-string seed7-procfunc-regexp-item-type-group) "?"))
@@ -3076,9 +3085,9 @@ Move inside the current if inside one, to the next if outside one.
                          (seed7-re-search-forward seed7-procfunc-forward-or-action-declaration-re)
                          top-block-name2 (seed7-top-block-name))
                    (when (seed7-re-search-backward seed7-procfunc-regexp)
-                     (setq item-type2 (substring-no-properties (or (match-string seed7-procfunc-regexp-item-type-group) "?"))
-                           item-name2 (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group) "?"))
-                           tail-type2 (substring-no-properties (or (match-string seed7-procfunc-regexp-tail-type-group) "?")))
+                     (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                           item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                           tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                      t)
                    (seed7-re-search-forward seed7-procfunc-forward-or-action-declaration-re)
                    (eq (point) found-pos)
@@ -3091,29 +3100,33 @@ Move inside the current if inside one, to the next if outside one.
                       tail-type tail-type2
                       top-block-name top-block-name2)))
 
-            (save-excursion
-              (when
-                  (and
-                   (setq found-pos
-                         (seed7-re-search-forward seed7-func-forward-or-action-declaration-nc-re)
-                         top-block-name2 (seed7-top-block-name))
-                   (when (seed7-re-search-backward-closest (list seed7-forward-or-action-procedure-declaration-re
-                                                                 seed7-func-forward-or-action-declaration-nc-re))
-
-                     (setq item-type2 (if (seed7-line-starts-with 0 "const proc") "proc" "func")
-                           item-name2 "?"
-                           tail-type2 "??")
-                     t)
-                   (seed7-re-search-forward seed7-func-forward-or-action-declaration-nc-re)
-                   (eq (point) found-pos)
-                   (or (not final-pos)
-                       (< found-pos final-pos)))
-                (setq final-pos found-pos
-                      found-candidate t
-                      item-name item-name2
-                      item-type item-type2
-                      tail-type tail-type2
-                      top-block-name top-block-name2)))
+            ;; search for forward or action declaration of function or procedures
+            ;; that have a complex parameter list not detected by the previous
+            ;; searches.
+            ;; [:todo 2025-07-17, by Pierre Rouleau: remove once other regexps are
+            ;;                    able to match all formats of parameters.
+            ;;                    This is currently not needed.]
+            ;; (save-excursion
+            ;;   (when
+            ;;       (and
+            ;;        (setq found-pos
+            ;;              (seed7-re-search-forward seed7-proc-forward-or-action-declaration-re)
+            ;;              top-block-name2 (seed7-top-block-name))
+            ;;        (when (seed7-re-search-backward seed7-procfunc-regexp)
+            ;;          (setq item-type2 (if (seed7-line-starts-with 0 "const proc") "proc" "func")
+            ;;                item-name2 "?"
+            ;;                tail-type2 "??")
+            ;;          t)
+            ;;        (seed7-re-search-forward seed7-proc-forward-or-action-declaration-re)
+            ;;        (eq (point) found-pos)
+            ;;        (or (not final-pos)
+            ;;            (< found-pos final-pos)))
+            ;;     (setq final-pos found-pos
+            ;;           found-candidate t
+            ;;           item-name item-name2
+            ;;           item-type item-type2
+            ;;           tail-type tail-type2
+            ;;           top-block-name top-block-name2)))
 
             (if found-candidate
                 ;; move to the end of first function to allow next search in loop
@@ -5015,7 +5028,7 @@ N is: - :previous-non-empty for the previous non empty line,
                    (list
                     seed7-func-forward-or-action-declaration-nc-re
                     seed7---inner-callables-4
-                    seed7-forward-or-action-procedure-declaration-re)
+                    seed7-proc-forward-or-action-declaration-re)
                    dont-skip-comment-start
                    end-pos)
                   previous-defun-column)
