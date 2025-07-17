@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-17 14:59:30 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-17 16:45:29 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -457,7 +457,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-17T18:59:30+0000 W29-4"
+(defconst seed7-mode-version-timestamp "2025-07-17T20:45:29+0000 W29-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6895,14 +6895,26 @@ Make sure you have no duplication of keywords if you edit the list."
   ;; Seed7 Comments Control
   (seed7--set-comment-style seed7-uses-block-comment)
 
+  ;; Drive all indent width control variables from seed7-indent-width:
+  ;; although tab-width does not really identify the number of columns
+  ;; used for indentation, Seed7 author does not recommend using hard tabs in
+  ;; Seed7 code.  Therefore we can use a philosophy that an indentation step
+  ;; corresponds to a tab-width and set the tab-with to `seed7-indent-width'.
+  ;; This will allow users to force indent one indentation level by executing
+  ;; the `indent-rigidly' command.
+  ;; To ensure this is the case, the seed-mode also forces `indent-tabs-mode'
+  ;; to nil to prevent insertion of hard tabs.
+  (setq-local tab-width        seed7-indent-width
+              indent-tabs-mode nil)
+
   ;; Seed7 Code Navigation
   ;; Allow code familiar with the standard `beginning-of-defun' and
   ;; `end-of-defun' to work inside Seed7 buffers.  This includes iedit,
   ;; expand-region, etc...
   (setq-local beginning-of-defun-function
-              (function seed7-nav-beginning-of-defun))
+              #'seed7-nav-beginning-of-defun)
   (setq-local end-of-defun-function
-              (function seed7-nav-end-of-defun))
+              #'seed7-nav-end-of-defun)
   (setq-local open-paren-in-column-0-is-defun-start nil)
   (setq-local end-of-defun-moves-to-eol nil)
 
@@ -6914,7 +6926,7 @@ Make sure you have no duplication of keywords if you edit the list."
 
   ;; Seed7 Indentation
   (when seed7-auto-indent
-    (setq-local indent-line-function (function seed7-indent-line)))
+    (setq-local indent-line-function #'seed7-indent-line))
 
   (when seed7-support-abbrev-mode
     ;; Seed7 Abbreviation Support
