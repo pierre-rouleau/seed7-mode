@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-17 09:33:06 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-17 14:59:30 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -457,7 +457,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-17T13:33:06+0000 W29-4"
+(defconst seed7-mode-version-timestamp "2025-07-17T18:59:30+0000 W29-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3999,8 +3999,11 @@ When something is found, leave point at the found position, if nothing
       (goto-char found-pos))))
 
 (defun seed7-line-starts-with (n regexp
-                                 &optional dont-skip-comment-start end-pos)
-  "Return indent column when line N non-white space begins with REGEXP.
+                                 &optional dont-skip-comment-start
+                                 end-pos)
+  "Return indent column when line N begins with REGEXP.
+If REGEXP starts with \"^\" the comparison is done from the beginning of the
+line, otherwise the string comparison is done after the indent whitespace.
 Return nil otherwise.
 N is: - :previous-non-empty for the previous non empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
@@ -4010,7 +4013,9 @@ N is: - :previous-non-empty for the previous non empty line,
 If END-POS is non-nil, it identifies the limit for the string."
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
-      (skip-chars-forward " \t")
+      (if (string=  (substring regexp 0 1) "^")
+          (forward-line 0)
+        (skip-chars-forward " \t"))
       (when (and (looking-at-p regexp)
                  (or (not end-pos)
                      (save-excursion
@@ -4998,6 +5003,11 @@ the character after the opening parens of the the inner-most nesting."
     (current-column)))
 
 
+(defun seed7-line-is-procfunc-beg-of-decl (n &optional dont-skip-comment-start)
+  "Return indent column when line N is a procedure or function declaration."
+  (seed7-line-starts-with n seed7-procfunc-beg-of-decl-nc-re
+                          dont-skip-comment-start))
+
 (defun seed7-line-is-defun-end (n &optional dont-skip-comment-start)
   "Check if line N is below the end of a func, proc, struc or enum block.
 If that is the case, return the indentation column of the func, proc, struct
@@ -5192,7 +5202,8 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
      ;; Check if line is below end of func|struct|enum before checking if it
      ;; is inside a block and is not itself a 'end func|struct|enum;' line.
      ;; This ensures it handles the next line properly.
-     ((and (not (seed7-line-is-defun-end 0))
+     ((and (or (not (seed7-line-is-defun-end 0))
+               (seed7-line-is-procfunc-beg-of-decl 0))
            (seed7--set (seed7-line-is-defun-end :previous-non-empty)
                        indent-column)))
 
