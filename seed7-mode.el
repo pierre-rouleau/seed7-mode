@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-17 23:57:16 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-18 08:42:24 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -364,6 +364,8 @@
 ;;       * `seed7-indent-line'
 ;;         . `seed7-calc-indent'
 ;;           . `seed7--indent-one-line'
+;;       * `seed7-indent-block'
+;;         o `seed7-indent-line'
 ;; - Seed7 Code Template Expansion
 ;;   * `seed7-complete-statement-or-indent'
 ;;     . `seed7--delete-backward'
@@ -459,7 +461,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-18T03:57:16+0000 W29-5"
+(defconst seed7-mode-version-timestamp "2025-07-18T12:42:24+0000 W29-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5322,6 +5324,15 @@ then deactivates it (to prevent the area to limit searches)."
     (when move-point
       (seed7-to-indent))))
 
+(defun seed7-indent-block ()
+  "Indent the block enclosing point. Do not move point."
+  (interactive)
+  (save-excursion
+    (seed7-to-block-forward :dont-push-mark)
+    (set-mark (point))
+    (seed7-to-block-backward :at-beginning-of-line :dont-push-mark)
+    (seed7-indent-line)))
+
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Code Template Expansion
 ;;  =============================
@@ -6771,18 +6782,19 @@ Make sure you have no duplication of keywords if you edit the list."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "TAB") 'seed7-complete-statement-or-indent)
     (define-key map (kbd "<backtab>") 'tempo-forward-mark)
-    (define-key map (kbd "C-c g c")   'seed7-toggle-menu-callable-list)
-    (define-key map (kbd "C-c g s")   'seed7-toggle-menu-sorting)
+    (define-key map (kbd "C-c g c") 'seed7-toggle-menu-callable-list)
+    (define-key map (kbd "C-c g s") 'seed7-toggle-menu-sorting)
     (define-key map (kbd "C-c C-a") 'seed7-to-block-backward)
     (define-key map (kbd "C-c C-e") 'seed7-to-block-forward)
     (define-key map (kbd "C-c C-n") 'seed7-beg-of-next-defun)
     (define-key map (kbd "C-c C-t") 'seed7-to-top-of-block)
-    (define-key map "\M-\C-a"  'seed7-beg-of-defun)
-    (define-key map "\M-\C-e"  'seed7-end-of-defun)
-    (define-key map "\M-\C-h"  'seed7-mark-defun)
-    (define-key map (kbd "C-c ;")  'seed7-toggle-comment-style)
-    (define-key map (kbd "C-c v")  'seed7-mode-version)
-    (define-key map (kbd "C-c C")  'seed7-mode-customize)
+    (define-key map "\M-\C-a"       'seed7-beg-of-defun)
+    (define-key map "\M-\C-e"       'seed7-end-of-defun)
+    (define-key map "\M-\C-h"       'seed7-mark-defun)
+    (define-key map "\M-\C-q"       'seed7-indent-block)
+    (define-key map (kbd "C-c ;")   'seed7-toggle-comment-style)
+    (define-key map (kbd "C-c v")   'seed7-mode-version)
+    (define-key map (kbd "C-c C")   'seed7-mode-customize)
     (define-key map (kbd "C-c C-c") 'seed7-compile)
     map)
   "Keymap used in `seed7-mode'.")

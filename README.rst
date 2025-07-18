@@ -171,11 +171,16 @@ Screenshot                  Description
 Indentation Control / Automatic Indentation
 -------------------------------------------
 
-Code indentation is done automatically when the ``<tab>`` key is pressed
-from anywhere on the line, except when used to expand a callable parameter in most cases.
-Automatic code indentation is also done when the ``<return>`` key is pressed.
+Automatic code indentation is enabled by default in seed7-mode buffers and is
+performed when the ``<return>`` key is pressed and when the ``<tab>`` key is
+pressed, unless point follows one of the pre-defined template insertion
+identifier keywords (listed in the `Code Template Insertion`_ sections).
+To indent, you can press the ``<tab>`` key from anywhere on the line.
 
 The ``auto-fill`` mode is supported.
+
+The ``seed7-indent-block`` command, bound to ``C-M-q`` indents the current
+block, without moving point.
 
 The following customizable user-option variables control Seed7 code indentation.
 
