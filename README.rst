@@ -705,6 +705,7 @@ Compatibility
 
 The seed7-mode is compatible with:
 
+- Emacs 26 and later.
 - Emacs `comment-dwim`_ command.  The recommended key binding for it is ``M-;``
 - Emacs `which-function-mode`_, when active shows the name of the current Seed7 function or procedure in the
   mode line. It also works with Seed7 actions and forward declarations.
