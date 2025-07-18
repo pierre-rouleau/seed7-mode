@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-18 10:32:30 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-18 11:11:40 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -364,8 +364,9 @@
 ;;       * `seed7-indent-line'
 ;;         . `seed7-calc-indent'
 ;;           . `seed7--indent-one-line'
-;;       * `seed7-indent-block'
-;;         o `seed7-indent-line'
+;;       * `seed7-fill'
+;;         * `seed7-indent-block'
+;;           o `seed7-indent-line'
 ;; - Seed7 Code Template Expansion
 ;;   * `seed7-complete-statement-or-indent'
 ;;     . `seed7--delete-backward'
@@ -463,7 +464,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-18T14:32:30+0000 W29-5"
+(defconst seed7-mode-version-timestamp "2025-07-18T15:11:40+0000 W29-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5335,6 +5336,14 @@ then deactivates it (to prevent the area to limit searches)."
     (seed7-to-block-backward :at-beginning-of-line :dont-push-mark)
     (seed7-indent-line)))
 
+(defun seed7-fill ()
+  "Refill/justify comment and string paragraph, re-indent current code block."
+  (interactive)
+  (if (or (seed7-inside-comment-p)
+          (seed7-inside-string-p))
+      (fill-paragraph)
+    (seed7-indent-block)))
+
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Code Template Expansion
 ;;  =============================
@@ -6793,6 +6802,7 @@ Make sure you have no duplication of keywords if you edit the list."
     (define-key map "\M-\C-a"       'seed7-beg-of-defun)
     (define-key map "\M-\C-e"       'seed7-end-of-defun)
     (define-key map "\M-\C-h"       'seed7-mark-defun)
+    (define-key map "\M-q"          'seed7-fill)
     (define-key map "\M-\C-q"       'seed7-indent-block)
     (define-key map (kbd "C-c ;")   'seed7-toggle-comment-style)
     (define-key map (kbd "C-c v")   'seed7-mode-version)

@@ -179,8 +179,33 @@ To indent, you can press the ``<tab>`` key from anywhere on the line.
 
 The ``auto-fill`` mode is supported.
 
-The ``seed7-indent-block`` command, bound to ``C-M-q`` indents the current
-block, without moving point.
+The following commands and key bindings are specialized for Seed7 code.
+
+
+= =================================== ============ =============================================================
+. Function                            Key Binding  Description
+= =================================== ============ =============================================================
+. seed7-complete-statement-or-indent  ``<tab>``    If point is after one of the Seed7 keywords supported by
+                                                   the  `Code Template Insertion`_ the command expands the
+                                                   corresponding code template .
+
+                                                   If point is anywhere on the line and not after such a keyword,
+                                                   the command re-indents the current block.  If the current block
+                                                   is a statement block it indents that.  If the block is a complete
+                                                   function, procedure, structure or similar construct it indents the entire
+                                                   block, regardless of point position inside that block.
+                                                   If point was at the beginning of the line, the command leaves point
+                                                   at the indentation.  If point was inside the line of code,
+                                                   the command leaves point at the same relative position in the code.
+
+. seed7-indent-block                  ``C-M-q``    Re-indent the current block of code.
+                                                   Does not move point relative to the code.
+
+. seed7-fill                          ``M-q``      If point is inside a comment or a string, the command fill and
+                                                   justify the current paragraph.
+                                                   If point is inside code, it re-indent the current block of code.
+= =================================== ============ =============================================================
+
 
 The following customizable user-option variables control Seed7 code indentation.
 
