@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-18 08:42:24 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-18 10:32:30 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -445,6 +445,8 @@
 (require 'imenu)          ; use: `imenu--menubar-select', `imenu--rescan-item'
 ;;                        ;      `imenu-update-menubar',
 ;;                        ;      `imenu-generic-expression'
+(require 'outline)        ; use: `outline-minor-mode', `outline-regexp',
+;;                        ;      `outline-heading-end-regexp',
 (require 'xref)           ; use: `xref-make', 'xref-make-file-location'
 
 ;;; --------------------------------------------------------------------------
@@ -461,7 +463,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-18T12:42:24+0000 W29-5"
+(defconst seed7-mode-version-timestamp "2025-07-18T14:32:30+0000 W29-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6930,7 +6932,8 @@ Make sure you have no duplication of keywords if you edit the list."
   (setq-local end-of-defun-function
               #'seed7-nav-end-of-defun)
   (setq-local open-paren-in-column-0-is-defun-start nil)
-  (setq-local end-of-defun-moves-to-eol nil)
+  (when (>= emacs-major-version 29)
+    (setq-local end-of-defun-moves-to-eol nil))
 
   ;; Seed7 outline minor-mode support
   (setq-local outline-regexp
