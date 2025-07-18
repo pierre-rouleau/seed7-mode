@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-18 11:11:40 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-18 15:19:54 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -359,7 +359,10 @@
 ;;         o `seed7-line-starts-with'
 ;;   - Seed7 Indentation Comment Checking Function
 ;;     . `seed7-comment-column'
-;;     . `';;   - Seed7 Indentation Calculator Function
+;;   - Seed7 Position Value Identification
+;;     . `seed7-position-of-end-of-statement'
+;;     . `seed7-bol-position'
+;;   - Seed7 Indentation Calculator Function
 ;;     o `seed7-complete-statement-or-indent'
 ;;       * `seed7-indent-line'
 ;;         . `seed7-calc-indent'
@@ -464,7 +467,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-18T15:11:40+0000 W29-5"
+(defconst seed7-mode-version-timestamp "2025-07-18T19:19:54+0000 W29-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5137,6 +5140,42 @@ recursive call."
              (t (current-column)))
           (current-column)))))))
 
+;;** Seed7 Position Value Identification
+;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(defun seed7-position-of-end-of-statement (n &optional dont-skip-comment)
+  "Return position of the end of statement semicolon for line N statement.
+Issue error if not found.
+In either case do not move point.
+N is: - :previous-non-empty for the previous non empty line,
+        skipping lines with starting comments unless DONT-SKIP-COMMENT-START
+         is non-nil,
+      - 0 for the current line,
+      - A negative number for previous lines: -1 previous, -2 line before..."
+  (save-excursion
+    (let ((found-pos nil))
+      (when (seed7-move-to-line n dont-skip-comment)
+        (while (and (not (seed7-line-code-ends-with 0 ";"))
+                    (not (eobp)))
+          (forward-line 1))
+        (setq found-pos (seed7-line-code-ends-with 0 ";")))
+      (or found-pos (error "No statement end found for N: %S" n)))))
+
+(defun seed7-bol-position (n &optional dont-skip-comment)
+  "Return position of the beginning of line N.
+Issue error if not found.
+Do not move point.
+N is: - :previous-non-empty for the previous non empty line,
+        skipping lines with starting comments unless DONT-SKIP-COMMENT-START
+         is non-nil,
+      - 0 for the current line,
+      - A negative number for previous lines: -1 previous, -2 line before..."
+  (save-excursion
+    (if (seed7-move-to-line n dont-skip-comment)
+        (progn
+          (forward-line 0)
+          (point))
+      (error "seed7-bol-position: No line N (%S) found" n))))
 
 ;;** Seed7 Indentation Calculator Function
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5201,8 +5240,13 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                    0
                    seed7-predef-assignment-operator-regxp)
                   indent-column))
-     ((seed7--set (seed7-line-inside-assign-statement-continuation 0)
-                  indent-column))
+     ((and (seed7--set (seed7-line-inside-assign-statement-continuation 0)
+                       indent-column2)
+           (not (seed7-line-inside-parens-pair-column
+                 0
+                 (seed7-bol-position -1)
+                 (seed7-position-of-end-of-statement -1))))
+      (setq indent-column indent-column2))
 
      ;; Handle special cases before checking if line is inside a block
      ;; --------------------------------------------------------------
