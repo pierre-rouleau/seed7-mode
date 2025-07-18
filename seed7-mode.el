@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-17 16:45:29 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-17 23:57:16 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -26,6 +26,8 @@
 ;;
 ;; This is currently an early/rough work-in-progress implementation for
 ;; Seed7 support.  It is not stable and may change.
+;;
+;; Emacs Compatibility: Emacs >= 26
 ;;
 ;; Code navigation:  the layout of this file supports Emacs outline mode.
 ;;  Use `outline-minor-mode' to hide all text except the section headings to
@@ -457,7 +459,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-17T20:45:29+0000 W29-4"
+(defconst seed7-mode-version-timestamp "2025-07-18T03:57:16+0000 W29-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6904,8 +6906,8 @@ Make sure you have no duplication of keywords if you edit the list."
   ;; the `indent-rigidly' command.
   ;; To ensure this is the case, the seed-mode also forces `indent-tabs-mode'
   ;; to nil to prevent insertion of hard tabs.
-  (setq-local tab-width        seed7-indent-width
-              indent-tabs-mode nil)
+  (setq-local tab-width        seed7-indent-width)
+  (setq-local indent-tabs-mode nil)
 
   ;; Seed7 Code Navigation
   ;; Allow code familiar with the standard `beginning-of-defun' and
