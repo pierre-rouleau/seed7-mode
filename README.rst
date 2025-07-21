@@ -555,6 +555,110 @@ Abbreviation        Expansion
 ``;re``             RANGE_ERROR
 =================== ======================
 
+Code Alignment Support
+----------------------
+
+The seed7-mode activates code alignment rules for the following Seed7 code
+constructs:
+
+- Constant and variable declaration/initialization statements aligning on the
+  ``is`` keyword.
+- Assignment statements: align the `predefined assignment operators`_ and the code that follows them.
+  The predefined assignment operators are:
+  ``:=``, ``+:=``, ``-:=``, ``*:=``, ``/:=``, ``<<:=``, ``>>:=``, ``&:=``, ``|:=``, ``><:=`` and ``@:=``.
+
+To align code, select the lines then execute Emacs **align** command with
+``M-x align`` or by typing its key binding.
+
+For example, select the following lines of code:
+
+.. code:: pascal
+
+          var float: lastRandomNumber is 0.0;
+          var integer: screenMode is 0;
+          var integer: currX is 0;
+          var integer: currY is 0;
+          var integer: foreground_color is 0;
+          var integer: background_color is 0;
+          var bitmapFont: currentFont is bitmapFont.value;
+
+The **align** command align these variable initialization lines to:
+
+.. code:: pascal
+
+          var float:      lastRandomNumber is 0.0;
+          var integer:    screenMode       is 0;
+          var integer:    currX            is 0;
+          var integer:    currY            is 0;
+          var integer:    foreground_color is 0;
+          var integer:    background_color is 0;
+          var bitmapFont: currentFont      is bitmapFont.value;
+
+It also aligns the following assignment statements from:
+
+.. code:: pascal
+
+          begin
+            start_time := time(NOW);
+            seconds := trunc(secs);
+            micro_seconds := round((secs - float(seconds)) * 1000000.0);
+            await(start_time + seconds . SECONDS + micro_seconds . MICRO_SECONDS);
+          end func;
+
+to:
+
+.. code:: pascal
+
+          begin
+            start_time    := time(NOW);
+            seconds       := trunc(secs);
+            micro_seconds := round((secs - float(seconds)) * 1000000.0);
+            await(start_time + seconds . SECONDS + micro_seconds . MICRO_SECONDS);
+          end func;
+
+
+The alignment groups statements to their smallest contiguous groups.
+For example, if the entire following function (taken from Seed7 prg/bas7.sd7)
+is selected:
+
+.. code:: pascal
+
+          const proc: addDoLoopHeader (in integer: tailLine, in integer: tailColumn,
+              in integer: headLine, in integer: headColumn) is func
+            begin
+              if tailLine in doLoopHeaders then
+                if tailColumn not in doLoopHeaders[tailLine] then
+                  doLoopHeaders[tailLine] @:= [tailColumn] doLoopDescrType.value;
+                end if;
+              else
+                doLoopHeaders @:= [tailLine] doLoopHeaderInColumn.value;
+                doLoopHeaders[tailLine] @:= [tailColumn] doLoopDescrType.value;
+              end if;
+              doLoopHeaders[tailLine][tailColumn].headLine := headLine;
+              doLoopHeaders[tailLine][tailColumn].headColumn := headColumn;
+            end func;
+
+
+executing **align** on it produces:
+
+.. code:: pascal
+
+          const proc: addDoLoopHeader (in integer: tailLine, in integer: tailColumn,
+              in integer: headLine, in integer: headColumn) is func
+            begin
+              if tailLine in doLoopHeaders then
+                if tailColumn not in doLoopHeaders[tailLine] then
+                  doLoopHeaders[tailLine] @:= [tailColumn] doLoopDescrType.value;
+                end if;
+              else
+                doLoopHeaders           @:= [tailLine] doLoopHeaderInColumn.value;
+                doLoopHeaders[tailLine] @:= [tailColumn] doLoopDescrType.value;
+              end if;
+              doLoopHeaders[tailLine][tailColumn].headLine   := headLine;
+              doLoopHeaders[tailLine][tailColumn].headColumn := headColumn;
+            end func;
+
+
 Code Navigation Commands
 ------------------------
 
@@ -985,6 +1089,7 @@ Any help, questions, suggestions are welcome!
 .. _struct:                                     https://seed7.net/manual/types.htm#struct
 .. _enum:                                       https://seed7.net/manual/types.htm#enumeration
 .. _block:                                      https://seed7.net/manual/errors.htm#Handlers
+.. _predefined assignment operators:            https://seed7.net/faq.htm#add_syntax_highlighting
 .. _s7check.sd7:                                https://github.com/pierre-rouleau/seed7/blob/master/prg/s7check.sd7
 .. _iedit:                                      https://github.com/victorhge/iedit
 .. _expand-region:                              https://github.com/magnars/expand-region.el?tab=readme-ov-file#readme

@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-18 15:19:54 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-21 18:57:53 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -190,7 +190,7 @@
 ;;
 ;;
 ;;* Table of Content
-;;  ----------------
+;;  ================
 ;;
 ;; Code Organization Layout (use these as markers to locate related code; both
 ;; in the titles and inside other code locations).
@@ -467,7 +467,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-18T19:19:54+0000 W29-5"
+(defconst seed7-mode-version-timestamp "2025-07-21T22:57:53+0000 W30-1"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7009,8 +7009,29 @@ Make sure you have no duplication of keywords if you edit the list."
 
   ;; Seed7 Completion [:todo 2025-07-08, by Pierre Rouleau: find the proper way to hook it]
   ;; (add-hook 'completion-at-point-functions #'seed7--xref-backend nil t)
-  ;; (add-hook 'completion-at-point-functions #'seed7--list-of-terms nil 'local)
-  )
+  ;; (add-hook 'completion-at-point-functions #'seed7--list-of-terms nil
+  ;; 'local)
+
+  ;; Seed7 Source Code Alignment rules
+  (setq-local align-mode-rules-list
+              (list
+               (list
+                'seed7-mode-initialization
+                ;; align on 'is' keyword
+                (cons 'regexp (format ":\\(\\s-+\\)%s+?\\(\\s-+\\)is\\>"
+                                      seed7-name-identifier-nc-re))
+                (cons 'modes (quote 'seed7-mode))
+                (list 'group 1 2))
+               (list
+                'seed7-mode-assignment
+                (cons
+                 'regexp
+                 ;; align on assignment operator and on text after it
+                 (format "\\(\\s-+\\)%s\\(\\s-+\\)"
+                         seed7-predef-assignment-operator-regxp))
+                (list 'group 1 2)
+                (cons 'modes (quote 'seed7-mode)))))
+  (setq-local align-region-separate 'group))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.s\\(d7\\|7i\\)\\'" . seed7-mode))
