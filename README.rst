@@ -658,6 +658,8 @@ executing **align** on it produces:
               doLoopHeaders[tailLine][tailColumn].headColumn := headColumn;
             end func;
 
+For more information on code alignment, you can refer to the
+`PEL align PDF`_ and the linked documents.
 
 Code Navigation Commands
 ------------------------
@@ -1116,6 +1118,7 @@ Any help, questions, suggestions are welcome!
 .. _PEL Seed7 PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/pl-seed7.pdf
 .. _PEL Index PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/-index.pdf
 .. _PEL Speedbar PDF:                           https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/speedbar.pdf
+.. _PEL align PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/align.pdf
 
 .. ---------------------------------------------------------------------------
 
