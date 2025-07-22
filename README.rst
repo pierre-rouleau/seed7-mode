@@ -309,7 +309,8 @@ press ``<backtab>`` to move point to the next field.
 As mentioned above there are two groups of keywords, listed in the following
 tables.
 
-**First Group -- Statements:**
+Templates for Statements
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Expand the following keywords when point is located just after any of these
 keywords, with the keyword being the only word on the current line.
@@ -349,8 +350,8 @@ Keyword      Expansion
 **gl**       ``global`` - ``end global`` block.
 ============ =========================================================
 
-
-**Second Group -- Argument Declarations**
+Templates for Parameter Declarations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Expand the following keywords with ``<tab>`` when point is located just after
 any of these keywords and before the closing parenthesis of a parameter list.
@@ -365,6 +366,8 @@ Keyword      Expansion
 **ref**      Declaration of a `reference-parameter`_.
 **val**      Declaration of a `value-parameter`_.
 ============ =========================================================
+
+.. ---------------------------------------------------------------------------
 
 Seed7 Specific Abbreviations
 ----------------------------
