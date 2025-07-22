@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-21 18:57:53 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-21 22:56:30 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -467,7 +467,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-21T22:57:53+0000 W30-1"
+(defconst seed7-mode-version-timestamp "2025-07-22T02:56:30+0000 W30-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -963,7 +963,8 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
     ))
 
 (defconst seed7--is-statement-keywords-regexp
-  (format " is%s+\\(%s\\)\\>"
+  (format " is\\(?:%s+?[^;]\\)?%s+\\(%s\\)\\>"
+          seed7--whitespace-re
           seed7--whitespace-re
           (rx-to-string
            `(: (or ,@seed7-is-statement-keywords)))))
