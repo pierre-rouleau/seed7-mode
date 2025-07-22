@@ -10,15 +10,15 @@ A lot of features are implemented but there's still some areas that need
 improvements or fixes, mainly for the complete support of .s7i files.
 Please create a bug report for any problem you detect.
 
-.. note:: While the seed7-mode code is a stand-alone major mode and can be
-          used on plain-vanilla Emacs as described in the installation section
-          titled `How To Install seed7-mode with plain vanilla Emacs`_,
-          another of my projects, the `PEL project`_ supports several Emacs
-          extensions that can be useful when programming in `Seed7`_.
-          PEL provides a large set of specialized information PDFs.
-          The `PEL Seed7 PDF`_ provides more information.  This document also
-          provides links to other relevant PEL PDFs.  These are best viewed
-          with a browser that can render them online (instead of downloading them).
+   While the seed7-mode code is a stand-alone major mode and can be
+   used on plain-vanilla Emacs as described in the installation section
+   titled `How To Install seed7-mode with plain vanilla Emacs`_,
+   another of my projects, the `PEL project`_ supports several Emacs
+   extensions that can be useful when programming in `Seed7`_.
+   PEL provides a large set of specialized information PDFs.
+   The `PEL Seed7 PDF`_ provides more information.  This document also
+   provides links to other relevant `PEL PDFs`_.  These are best viewed
+   with a browser that can render them online (instead of downloading them).
 
 
 Currently Implemented Features
@@ -1152,6 +1152,7 @@ Any help, questions, suggestions are welcome!
 .. _PEL Speedbar PDF:                           https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/speedbar.pdf
 .. _PEL align PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/align.pdf
 .. _PEL abbreviation PDF:                       https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/abbreviations.pdf
+.. _PEL PDFs:                                   https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/-index.pdf
 
 .. ---------------------------------------------------------------------------
 
