@@ -432,19 +432,19 @@ buffer starts the seed7-mode.
 The default seed7-mode abbreviations are shown inside the 8 following
 tables:
 
-- `pragmas`_
-- `in-statement keywords`_
-- `in-middle statement keywords`_
-- `block clause keywords`_
-- `predefined types`_
-- `predefined constants`_
-- `predefined variables`_
-- `errinfo values`_
+- `Abbreviations for pragmas`_
+- `Abbreviations for in-statement keywords`_
+- `Abbreviations for in-middle statement keywords`_
+- `Abbreviations for block clause keywords`_
+- `Abbreviations for predefined types`_
+- `Abbreviations for predefined constants`_
+- `Abbreviations for predefined variables`_
+- `Abbreviations for errinfo values`_
 
 
 
-pragmas
-~~~~~~~
+Abbreviations for pragmas
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
@@ -459,8 +459,8 @@ Abbreviation        Expansion
 ``;tr``             trace
 =================== ======================
 
-in-statement keywords
-~~~~~~~~~~~~~~~~~~~~~
+Abbreviations for in-statement keywords
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Meant to follow the ``is`` keyword (but not imposed):
 
@@ -484,8 +484,8 @@ Abbreviation        Expansion
 =================== ======================
 
 
-in-middle statement keywords
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Abbreviations for in-middle statement keywords
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
@@ -499,8 +499,8 @@ Abbreviation        Expansion
 ``;st``             step
 =================== ======================
 
-block clause keywords
-~~~~~~~~~~~~~~~~~~~~~
+Abbreviations for block clause keywords
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
@@ -512,8 +512,8 @@ Abbreviation        Expansion
 ``;w``              when
 =================== ======================
 
-predefined types
-~~~~~~~~~~~~~~~~
+Abbreviations for predefined types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
@@ -557,8 +557,8 @@ Abbreviation        Expansion
 ``;pw``             PRIMITIVE_WINDOW
 =================== ======================
 
-predefined constants
-~~~~~~~~~~~~~~~~~~~~
+Abbreviations for predefined constants
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
@@ -569,8 +569,8 @@ Abbreviation        Expansion
 ``;t``              TRUE
 =================== ======================
 
-predefined variables
-~~~~~~~~~~~~~~~~~~~~
+Abbreviations for predefined variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
@@ -585,8 +585,8 @@ Abbreviation        Expansion
 ``;so``             STD_OUT
 =================== ======================
 
-errinfo values
-~~~~~~~~~~~~~~
+Abbreviations for errinfo values
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 =================== ======================
 Abbreviation        Expansion
