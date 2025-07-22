@@ -10,6 +10,7 @@ A lot of features are implemented but there's still some areas that need
 improvements or fixes, mainly for the complete support of .s7i files.
 Please create a bug report for any problem you detect.
 
+   **Note:**
    While the seed7-mode code is a stand-alone major mode and can be
    used on plain-vanilla Emacs as described in the installation section
    titled `How To Install seed7-mode with plain vanilla Emacs`_,
