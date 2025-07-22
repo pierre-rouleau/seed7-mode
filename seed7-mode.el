@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-21 22:56:30 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-22 08:53:19 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -467,7 +467,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-22T02:56:30+0000 W30-2"
+(defconst seed7-mode-version-timestamp "2025-07-22T12:53:19+0000 W30-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6871,6 +6871,22 @@ Make sure you have no duplication of keywords if you edit the list."
     "---"
     ["Toggle abbrev-mode"   abbrev-mode]
     ["List abbreviations"   list-abbrevs]
+    "---"
+    ("Align"
+     ["Align current section" align-current]
+     ["Align marked area"     align
+      :help "Align the marked area, using distinct sections if necessary."]
+     ["Align entire"         align-entire
+      :help "Align marked region as 1 alignment section."]
+     ["Align with regexp"     align-regexp
+      :help "Align on text specified by regular expression."]
+     "---"
+     ["Align newline and indent" align-newline-and-indent]
+     "---"
+     ["Align highlight"       align-highlight-rule
+      :help "Highlight the whitespace modified by a given align rule."]
+     ["Remove highlight"      align-unhighlight-rule
+      :help "Remove any highlighting added by `align-highlight-rule'."])
     "---"
     ("Code Template"
      ["Expand keyword/Indent"   seed7-complete-statement-or-indent
