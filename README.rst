@@ -8,7 +8,18 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 
 A lot of features are implemented but there's still some areas that need
 improvements or fixes, mainly for the complete support of .s7i files.
-Please create a bug report for  any problem you detect.
+Please create a bug report for any problem you detect.
+
+.. note:: While the seed7-mode code is a stand-alone major mode and can be
+          used on plain-vanilla Emacs as described in the installation section
+          titled `How To Install seed7-mode with plain vanilla Emacs`_,
+          another of my projects, the `PEL project`_ supports several Emacs
+          extensions that can be useful when programming in `Seed7`_.
+          PEL provides a large set of specialized information PDFs.
+          The `PEL Seed7 PDF`_ provides more information.  This document also
+          provides links to other relevant PEL PDFs.  These are best viewed
+          with a browser that can render them online (instead of downloading them).
+
 
 Currently Implemented Features
 ==============================
@@ -341,34 +352,52 @@ Seed7 Specific Abbreviations
 :Ref: `Abbrevs @ Emacs Manual`_
 :Ref: `Abbrev Concepts`_
 :Ref: `Examining and Editing Abbrevs`_
+:PEL Ref: `PEL abbreviation PDF`_
 
 By default, the **seed7-support-abbrev-mode** user-option is on (non-nil).
 This makes **seed7-mode** support Seed7-specific abbreviations that can be automatically
 expanded when the **abbrev-mode** is active.
 
-You can expand a set
-of Seed7 keywords by typing their (*system*) abbreviation followed by a word-separating
-character such as ``<space>``, ``<RET>` or ``;`` and others.
-All Seed7 abbreviations are short mnemonic character sequences that start with ``;``.
+With Emacs and seed7-mode you can:
 
-Dynamically enable or disable the ``abbrev-mode`` with the ``M-x abbrev-mode``
-command.  List the abbreviations with ``M-x list-abbrevs``.  You can create
-other abbreviations and edit them with ``M-x edit-abbrevs``.  You cannot
-change the pre-defined Seed7 system abbreviations via the abbrev commands.
-However you can change all Seed7 system abbreviations since the list is
-customizable and defined by the **seed7-abbreviations** customizable user-option.
-Of course you can also create your own abbreviations via the abbrev mode
-commands to complement what is provided by seed7-mode.
+- expand a Seed7 keywords by typing its (*system*) abbreviation followed by a word-separating
+  character such as ``<space>``, ``<RET>` or ``;`` and others.
 
-While abbrev-mode is active, you can explicitly prevent expansion of the
+  - All Seed7 *system*  abbreviations are short mnemonic character sequences
+    that start with ``;``.
+
+- Dynamically enable or disable the ``abbrev-mode`` with the ``M-x abbrev-mode``
+  command.
+- List the abbreviations with ``M-x list-abbrevs``.
+- Create other abbreviations and edit them with ``M-x edit-abbrevs``.
+- Change all Seed7 *system* abbreviations via customization, but
+  not dynamically via the abbrev command as you can for other abbreviations.
+
+  - The Seed7 *system* abbreviations are **seed7-abbreviations** customizable
+    user-options.
+
+- Create your own abbreviations via the abbrev mode
+  commands to complement what is provided by seed7-mode.
+
+While **abbrev-mode** is active, you can explicitly prevent expansion of the
 keyword type ``C-q`` after the keyword before any white-space or punctuation
 character.
 
-If you do not want to use Seed7-specific abbreviations, you can change the
-customization of this user-variable with ``M-x customize-option RET
-seed7-support-abbrev-mode`` turning it off, changing the mode to another major
-mode (such as fundamental-mode) and re-enabling the seed7-mode.  If you *Apply
-and Save* the customization, the setting will persist across Emacs sessions.
+To prevent expansion of Seed7-specific *system* abbreviations< do the
+following:
+
+- Change the customization of this user-variable with ``M-x customize-option RET
+  seed7-support-abbrev-mode`` turning it off.
+- Click or hit return on  *Apply and Save* button to save the customization:
+  the setting will persist across Emacs sessions. It takes effect when the
+  seed7-mode is activated for a buffer.
+
+Note that this will take effect the next time you start Emacs or open a new
+Seed7 file. To activate it in the current seed7-mode buffer, do the following:
+
+  - Change the major mode of the current buffer to ``fundamental-mode`` (by
+    typing ``M-x fundamental-mode``),
+  - Re-activate seed7-mode (by typing ``M-x seed7-mode``).
 
 
 The list of default supported abbreviations is controlled by the
@@ -377,7 +406,7 @@ keyword or the expansion of any entry and add or delete entries
 these via customization.   The new values are activated the next time a
 buffer starts the seed7-mode.
 
-The default abbreviations are shown inside the 8 following
+The default seed7-mode abbreviations are shown inside the 8 following
 tables:
 
 - `pragmas`_
@@ -558,6 +587,8 @@ Abbreviation        Expansion
 Code Alignment Support
 ----------------------
 
+:PEL Ref:  `PEL align PDF`_
+
 The seed7-mode activates code alignment rules for the following Seed7 code
 constructs:
 
@@ -658,8 +689,7 @@ executing **align** on it produces:
               doLoopHeaders[tailLine][tailColumn].headColumn := headColumn;
             end func;
 
-For more information on code alignment, you can refer to the
-`PEL align PDF`_ and the linked documents.
+
 
 Code Navigation Commands
 ------------------------
@@ -1067,6 +1097,7 @@ Any help, questions, suggestions are welcome!
 .. _Abbrev Concepts:                            https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrev-Concepts.html
 .. _Abbrevs @ Emacs Manual:                     https://www.gnu.org/software/emacs/manual/html_node/emacs/Abbrevs.html
 .. _Examining and Editing Abbrevs:              https://www.gnu.org/software/emacs/manual/html_node/emacs/Editing-Abbrevs.html#Editing-Abbrevs
+.. _Seed7:
 .. _Seed7 programming language:                 https://seed7.net/
 .. _while statement:                            https://seed7.sourceforge.net/manual/stats.htm#while-statement
 .. _repeat - until statement:                   https://seed7.sourceforge.net/manual/stats.htm#repeat-statement
@@ -1114,11 +1145,13 @@ Any help, questions, suggestions are welcome!
 .. _struct type declaration:                    https://seed7.sourceforge.net/manual/types.htm#struct
 .. _smart-dash-mode:                            https://github.com/malsyned/smart-dash
 .. _s7xref.sd7:                                 https://github.com/pierre-rouleau/seed7-mode/blob/main/tools/s7xref.sd7
+.. _PEL project:                                https://github.com/pierre-rouleau/pel#readme
 .. _PEL Seed7 support:
 .. _PEL Seed7 PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/pl-seed7.pdf
 .. _PEL Index PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/-index.pdf
 .. _PEL Speedbar PDF:                           https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/speedbar.pdf
 .. _PEL align PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/align.pdf
+.. _PEL abbreviation PDF:                       https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/abbreviations.pdf
 
 .. ---------------------------------------------------------------------------
 
