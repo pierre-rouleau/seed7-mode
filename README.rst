@@ -418,9 +418,9 @@ following:
 Note that this will take effect the next time you start Emacs or open a new
 Seed7 file. To activate it in the current seed7-mode buffer, do the following:
 
-  - Change the major mode of the current buffer to ``fundamental-mode`` (by
-    typing ``M-x fundamental-mode``),
-  - Re-activate seed7-mode (by typing ``M-x seed7-mode``).
+- Change the major mode of the current buffer to ``fundamental-mode`` (by
+  typing ``M-x fundamental-mode``),
+- Re-activate seed7-mode (by typing ``M-x seed7-mode``).
 
 
 The list of default supported abbreviations is controlled by the
