@@ -712,6 +712,9 @@ executing **align** on it produces:
               doLoopHeaders[tailLine][tailColumn].headColumn := headColumn;
             end func;
 
+The supported alignment rules do not allow alignment of *every* code formats.
+Use the ``align-regexp`` command to perform other form of text alignment.
+
 
 
 Code Navigation Commands
