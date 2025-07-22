@@ -717,6 +717,8 @@ executing **align** on it produces:
 Code Navigation Commands
 ------------------------
 
+:PEL Ref: `PEL Navigation PDF`_
+
 Some of the commands have a built-in key binding in the seed7-key-map but not
 all of them.  The `PEL Seed7 support`_ provides more key bindings using function keys.
 
@@ -780,6 +782,8 @@ procedures (the commands do not try to find the next array for instance).
 
 Cross Reference Code Navigation Through Xref
 --------------------------------------------
+
+:PEL Ref: `PEL xref PDF`_
 
 The seed7-mode supports `Emacs xref framework`_ supports:
 
@@ -850,12 +854,16 @@ signature of each found entry is shown in a selection list.
 Code Marking Commands
 ---------------------
 
+:PEL Ref: `PEL Marking PDF`_
+
+
 = ============================ =========== =============================================================
 . Function                     Key Binding Description
 = ============================ =========== =============================================================
 . seed7-mark-defun             ``C-M-h``   Mark the current function or procedure.
                                            With point between two; mark the next one.
 = ============================ =========== =============================================================
+
 
 Compilation Command
 -------------------
@@ -876,6 +884,8 @@ Compilation Command
 
 Comment Management Commands
 ---------------------------
+
+:PEL Ref: `PEL Comment PDF`_
 
 = ============================ =========== =============================================================
 . Function                     Key Binding Description
@@ -1180,6 +1190,10 @@ Any help, questions, suggestions are welcome!
 .. _PEL PDFs:                                   https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/-index.pdf
 .. _PEL Outline PDF:                            https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/outline.pdf
 .. _PEL Menu & iMenu PDF:                       https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/menus.pdf
+.. _PEL xref PDF:                               https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/xref.pdf
+.. _PEL Navigation PDF:                         https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/navigation.pdf
+.. _PEL Comment PDF:                            https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/comments.pdf
+.. _PEL Marking PDF:                            https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/marking.pdf
 
 .. ---------------------------------------------------------------------------
 
