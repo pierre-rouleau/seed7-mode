@@ -14,11 +14,17 @@ Please create a bug report for any problem you detect.
    used on plain-vanilla Emacs as described in the installation section
    titled `How To Install seed7-mode with plain vanilla Emacs`_,
    another of my projects, the `PEL project`_ supports several Emacs
-   extensions that can be useful when programming in `Seed7`_.
-   PEL provides a large set of specialized information PDFs.
-   The `PEL Seed7 PDF`_ provides more information.  This document also
-   provides links to other relevant `PEL PDFs`_.  These are best viewed
-   with a browser that can render them online (instead of downloading them).
+   extensions that can be useful when programming in `Seed7`_ and simplifies
+   installation and upgrades (see sections `How to install and use seed7-mode
+   with PEL`_ and `How to Update Seed7-Mode with PEL`_).
+
+   - PEL also provides a large set of specialized information PDFs.
+   - The `PEL Seed7 PDF`_ provides more information.  This document also
+     provides links to other relevant `PEL PDFs`_.
+   - These are best viewed with a browser that can render them online
+     (instead of downloading each one separately) because these PDF files
+     hold a large number of hyperlinks to Emacs documentation,  package and
+     project website pages.
 
 
 Currently Implemented Features
