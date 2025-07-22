@@ -924,12 +924,16 @@ More commands will be implemented.
 
 .. ---------------------------------------------------------------------------
 
+Installing/Upgrading  seed7-mode
+================================
+
+
 How To Install seed7-mode with plain vanilla Emacs
-==================================================
+--------------------------------------------------
 
 
 Preliminary notes to new Emacs users
-------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Reference: `The Emacs Initialization File`_
 
@@ -981,7 +985,7 @@ Emacs init file.
 
 
 Install seed7-mode for plain-vanilla Emacs
-------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Make sure your Emacs initialization file is stored inside the ``~/.emacs.d``
 directory and is ``~/.emacs.d/init.el``.  If this is not the case read the
@@ -1045,7 +1049,7 @@ previous section.  Once this is done proceed with the following:
   that is older than the source file.
 
 How To update seed7-mode in plain Emacs
-=======================================
+---------------------------------------
 
 To update to a later revision,
 
@@ -1063,7 +1067,7 @@ To update to a later revision,
 .. ---------------------------------------------------------------------------
 
 How to install and use seed7-mode with PEL
-==========================================
+------------------------------------------
 
 You can also use my `PEL Emacs project`_ which deals with all installation and
 control details of several packages including this seed7-mode.
@@ -1086,7 +1090,7 @@ control details of several packages including this seed7-mode.
       Emacs-specific topics.
 
 How to Update Seed7-Mode with PEL
-=================================
+---------------------------------
 
 With PEL, updating is a little simpler:
 just delete your ``~/.emacs.d/utils/seed7-mode.*`` and
@@ -1099,8 +1103,7 @@ it will download the new version of the files and byte-compile ``seed7-mode.el``
 Future
 ======
 
-
-Once this code is stable I will add the logic to make it a proper Emacs
+Once this code is stable I will add the logic to make it an elpa-compliant Emacs
 package and probably will include it under MELPA.  But the code is not yet
 ready for that.
 
