@@ -317,7 +317,7 @@ keywords, with the keyword being the only word on the current line.
 ============ =========================================================
 Keyword      Expansion
 ============ =========================================================
-**inc**      include statement
+**inc**      `include statement`_
 **const**    `constant declaration`_
 **var**      `variable declaration`_
 .
@@ -1164,6 +1164,7 @@ Any help, questions, suggestions are welcome!
 .. _function declaration:                       https://seed7.sourceforge.net/manual/decls.htm#Function_declarations
 .. _enum type declaration:                      https://seed7.sourceforge.net/manual/types.htm#enumeration
 .. _struct type declaration:                    https://seed7.sourceforge.net/manual/types.htm#struct
+.. _include statement:                          https://seed7.net/faq.htm#dollar_signs
 .. _smart-dash-mode:                            https://github.com/malsyned/smart-dash
 .. _s7xref.sd7:                                 https://github.com/pierre-rouleau/seed7-mode/blob/main/tools/s7xref.sd7
 .. _PEL project:                                https://github.com/pierre-rouleau/pel#readme
