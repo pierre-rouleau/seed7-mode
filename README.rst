@@ -12,7 +12,7 @@ Please create a bug report for any problem you detect.
 
    **Note:**
    While the seed7-mode code is a stand-alone major mode and can be
-   used on plain-vanilla Emacs as described in the installation section
+   installed on plain-vanilla Emacs as described in the installation section
    titled `How To Install seed7-mode with plain vanilla Emacs`_,
    another of my projects, the `PEL project`_ supports several Emacs
    extensions that can be useful when programming in `Seed7`_ and simplifies
@@ -59,7 +59,7 @@ user-option variables.
 Since these control the behaviour of the ``seed7-mode`` the changes will only
 apply to buffers that are then opened in ``seed7-mode``.  If you already have
 a buffer using the mode, change to ``fundamental-mode`` and then back to
-``seed7-mode`` for the changes to take effect..
+``seed7-mode`` for the changes to take effect.
 
 
 Syntax highlighting with user-customizable faces.
@@ -86,6 +86,8 @@ Screenshot                  Description
 Emacs outline minor mode support
 --------------------------------
 
+:PEL Ref: `PEL Outline PDF`_
+
 The seed7-mode supports the `Emacs outline minor mode`_: collapse and
 expansion of blocks, where heading is the first line of a declaration
 block. This allows navigation and code manipulation by headings (blocks).
@@ -103,6 +105,8 @@ Screenshot                            Description
 
 Emacs top-level menu support
 ----------------------------
+
+:PEL Ref: `PEL Menu & iMenu PDF`_
 
 Provides a Seed7 top level menu entry which provides access to the commands.
 Here's some examples:
@@ -132,6 +136,11 @@ Screenshot                            Description
                                       declared inside ``prg/bas.sd7``
 
 `Comments menu`_                      The comments-specific commands.
+
+`Align commands menu`_                The align commands.  Note that the key
+                                      bindings shown are the ones provided
+                                      by PEL alignment command support
+                                      (see `PEL align PDF`_).
 
 `Template insertion menu`_            The template insertion commands.
                                       These can be expanded easily with
@@ -1094,6 +1103,7 @@ Any help, questions, suggestions are welcome!
 .. _Navigation to structure menu:    screenshots/menu-defs-struct.png
 .. _Comments menu:                   screenshots/menu-comments.png
 .. _Template insertion menu:         screenshots/menu-insert.png
+.. _Align commands menu:             screenshots/menu-align.png
 .. _Emacs xref framework:                       https://www.gnu.org/software/emacs/manual/html_node/emacs/Xref.html
 .. _Emacs imenu mode:                           https://www.gnu.org/software/emacs/manual/html_node/elisp/Imenu.html
 .. _Emacs Speedbar:                             https://www.gnu.org/software/emacs/manual/html_node/speedbar/
@@ -1160,6 +1170,8 @@ Any help, questions, suggestions are welcome!
 .. _PEL align PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/align.pdf
 .. _PEL abbreviation PDF:                       https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/abbreviations.pdf
 .. _PEL PDFs:                                   https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/-index.pdf
+.. _PEL Outline PDF:                            https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/outline.pdf
+.. _PEL Menu & iMenu PDF:                       https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/menus.pdf
 
 .. ---------------------------------------------------------------------------
 
