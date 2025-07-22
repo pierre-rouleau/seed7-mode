@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-22 08:53:19 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-07-22 14:00:35 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -467,7 +467,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-07-22T12:53:19+0000 W30-2"
+(defconst seed7-mode-version-timestamp "2025-07-22T18:00:35+0000 W30-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3732,7 +3732,10 @@ If point is before or between 2 functions or procedure, mark the next one."
   :type 'integer)
 
 (defcustom seed7-auto-indent t
-  "Set to t to activate automatic indentation control."
+  "Set to t to activate automatic indentation control.
+Automatic indentation is invoked when the return or tab key is typed.
+Setting this user-option to nil disables automatic indentation for
+buffers using the `seed7-mode'."
   :group 'seed7
   :type 'boolean
   :safe #'booleanp)
