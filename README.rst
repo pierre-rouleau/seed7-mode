@@ -22,10 +22,14 @@ Please create a bug report for any problem you detect.
    - PEL also provides a large set of specialized information PDFs.
    - The `PEL Seed7 PDF`_ provides more information.  This document also
      provides links to other relevant `PEL PDFs`_.
-   - These are best viewed with a browser that can render them online
-     (instead of downloading each one separately) because these PDF files
-     hold a large number of hyperlinks to Emacs documentation,  package and
-     project website pages.
+     PEL is absolutely not required to use seed7-mode.
+     PEL just provides some useful information and commands that complement
+     what Emacs provides and what seed7-mode can provide while staying
+     independent from PEL (and it is).
+   - These PEL PDF files are best viewed with a browser that can render them
+     online (instead of downloading each one separately) because these PDF
+     files hold a large number of hyperlinks to Emacs documentation, package
+     and project website pages.
 
 
 Currently Implemented Features
