@@ -540,7 +540,9 @@ Abbreviation        Expansion
 ``;fl``             float
 ``;h``              hash
 ``;i``              integer
+``;l``              listener
 ``;ob``             object
+``;pd``             pollData
 ``;pro``            process
 ``;pr``             program
 ``;rat``            rational
