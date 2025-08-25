@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-08-22 11:37:47 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-08-25 15:44:45 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -467,7 +467,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-08-22T15:37:47+0000 W34-5"
+(defconst seed7-mode-version-timestamp "2025-08-25T19:44:45+0000 W35-1"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4378,21 +4378,36 @@ If it finds something it returns a list that holds the following information:
                   ;; `seed7-line-inside-a-block'.  But doing it this way we use
                   ;; all the logic necessary to compute the indentation for this
                   ;; case.
-                  (setq keep-searching nil
-                        result (list (save-excursion (forward-line 0)
-                                                     (insert " noop;\n")
-                                                     (forward-line -1)
-                                                     (prog1
-                                                         (seed7-calc-indent)
-                                                       (delete-region
-                                                        (point)
-                                                        (progn
-                                                          (forward-line 1)
-                                                          (point)))))
-                                     match-text
-                                     enclosing-block-start-pos
-                                     enclosing-block-end-pos
-                                     block-start-indent-column))))
+                  ;; Allow modification of a read-only buffer and ensure that
+                  ;; the undo history is not modified by the insertion and
+                  ;; removal operations.
+                  (let ((orig-inhibit-read-only inhibit-read-only)
+                        (orig-buffer-modified-p (buffer-modified-p))
+                        (orig-buffer-undo-list buffer-undo-list))
+                    (setq inhibit-read-only t)
+                    (setq keep-searching nil
+                          result (list (save-excursion
+                                         (forward-line 0)
+                                         (insert " noop;\n")
+                                         (forward-line -1)
+                                         (prog1
+                                             ;; compute indentation with noop
+                                             (seed7-calc-indent)
+                                           ;; then delete the inserted noop
+                                           (delete-region
+                                            (point)
+                                            (progn
+                                              (forward-line 1)
+                                              (point))))
+                                         (setq buffer-undo-list
+                                               orig-buffer-undo-list)
+                                         (unless orig-buffer-modified-p
+                                           (set-buffer-modified-p nil)))
+                                       match-text
+                                       enclosing-block-start-pos
+                                       enclosing-block-end-pos
+                                       block-start-indent-column))
+                    (setq inhibit-read-only orig-inhibit-read-only))))
                ;;
                ;; Case 2: point is on an internal block start line.
                ((seed7--on-lineof block-start-pos current-pos)
