@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-08-26 09:44:13 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-08-26 14:20:38 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -467,7 +467,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-08-26T13:44:13+0000 W35-2"
+(defconst seed7-mode-version-timestamp "2025-08-26T18:20:38+0000 W35-2"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4381,10 +4381,9 @@ If it finds something it returns a list that holds the following information:
                   ;; Allow modification of a read-only buffer and ensure that
                   ;; the undo history is not modified by the insertion and
                   ;; removal operations.
-                  (let ((orig-inhibit-read-only inhibit-read-only)
-                        (orig-buffer-modified-p (buffer-modified-p))
+                  (let ((orig-buffer-modified-p (buffer-modified-p))
+                        (inhibit-read-only t)
                         (buffer-undo-list t))
-                    (setq inhibit-read-only t)
                     (setq keep-searching nil
                           result (list (save-excursion
                                          (forward-line 0)
@@ -4404,8 +4403,7 @@ If it finds something it returns a list that holds the following information:
                                        match-text
                                        enclosing-block-start-pos
                                        enclosing-block-end-pos
-                                       block-start-indent-column))
-                    (setq inhibit-read-only orig-inhibit-read-only))))
+                                       block-start-indent-column)))))
                ;;
                ;; Case 2: point is on an internal block start line.
                ((seed7--on-lineof block-start-pos current-pos)
