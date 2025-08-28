@@ -120,8 +120,7 @@ are available in the `Emacs outline minor mode`_.  These are also shown in the
                                              - Without any specific key binding,
                                                type ``M-x outline-minor-mode RET``
 
-.                                            **With the outline minor mode active use the following commands
-                                             to collapse and expand Seed7 top-level blocks of code**
+.                                            **outline minor mode commands**
 
 . outline-hide-body            ``C-c @ C-t`` Collapse the body of all blocks, leaving the first line visible.
 . outline-show-all             ``C-c @ C-a`` Show all: expand the body of all blocks.
