@@ -106,6 +106,33 @@ Screenshot                            Description
                                       at lines 154 and 369.
 ===================================== ================================================
 
+By default, Emacs has no special key bindings to activate the `Emacs outline
+minor mode`_ but you can execute the **outline-minor-mode** command to turn it
+on or off.  The following table shows *some* of the important key bindings that
+are available in the `Emacs outline minor mode`_.  These are also shown in the
+`PEL Outline PDF`_ along with PEL specific key bindings.
+
+= ============================ ============= =============================================================
+. Function                     Key Binding   Description
+= ============================ ============= =============================================================
+. outline-minor-mode                         Toggle (activate/de-activate) the `Emacs outline minor mode`_.
+
+                                             - Without any specific key binding,
+                                               type ``M-x outline-minor-mode RET``
+
+.                                            **With the outline minor mode active use the following commands
+                                             to collapse and expand Seed7 top-level blocks of code**
+
+. outline-hide-body            ``C-c @ C-t`` Collapse the body of all blocks, leaving the first line visible.
+. outline-show-all             ``C-c @ C-a`` Show all: expand the body of all blocks.
+.
+. outline-hide-leaves          ``C-c @ C-l`` Collapse body of current block.
+. outline-show-subtree         ``C-c @ C-s`` Expand the body of the current block.
+.
+. outline-hide-other           ``C-c @ C-o`` Collapse everything except the current block.
+= ============================ ============= =============================================================
+
+
 
 Emacs top-level menu support
 ----------------------------
