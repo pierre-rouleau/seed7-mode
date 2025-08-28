@@ -120,7 +120,7 @@ are available in the `Emacs outline minor mode`_.  These are also shown in the
                                              - Without any specific key binding,
                                                type ``M-x outline-minor-mode RET``
 
-.                                            **Command available in outline minor mode**
+.                                            **Commands available in outline minor mode:**
 
 . outline-hide-body            ``C-c @ C-t`` Collapse the body of all blocks, leaving the first line visible.
 . outline-show-all             ``C-c @ C-a`` Show all: expand the body of all blocks.
