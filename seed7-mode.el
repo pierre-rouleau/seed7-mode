@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-08-26 14:20:38 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-08-28 15:00:54 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -467,7 +467,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-08-26T18:20:38+0000 W35-2"
+(defconst seed7-mode-version-timestamp "2025-08-28T19:00:54+0000 W35-4"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -696,9 +696,9 @@ Inside a non-capturing group.")
   "[])(}{[]")
 
 ;; --
-
+;; Note: Ensure that a something like 0_ is not matched by seed7-name-identifier-nc-re
 (defconst seed7-name-identifier-nc-re
-  "\\(?:[[:alpha:]_][[:alnum:]_]*\\)"
+  "\\(?:[[:alpha:]_][[:alnum:]_]+\\)\\|\\(?:[[:alpha:]][[:alnum:]]*_*\\)"
   "A complete, valid name identifier.  No capturing group.")
 
 (defconst seed7-name-identifier-re
