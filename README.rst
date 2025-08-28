@@ -921,6 +921,15 @@ Comment Management Commands
 = ============================ =========== =============================================================
 . Function                     Key Binding Description
 = ============================ =========== =============================================================
+. comment-dwim                 ``M-;``     Insert a comment using the current comment style.
+
+                                           - If applied on commented area: un-comment the area.
+                                           - Change the style using the seed7-toggle-comment-style.
+                                           - Note that PEL uses the pel-comment-dwim which supports
+                                             argument 0 to mean creating the comment from the beginning
+                                             of the line (something not available in Emacs standard
+                                             comment-dwim).
+
 . seed7-toggle-comment-style   ``C-c ;``   Toggle between comments to line-end and block comments.
 
                                            - Use ``comment-dwim`` and ``comment-block`` to create or
