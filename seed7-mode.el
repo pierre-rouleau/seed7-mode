@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-08-28 15:00:54 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-08-30 16:20:36 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -467,7 +467,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-08-28T19:00:54+0000 W35-4"
+(defconst seed7-mode-version-timestamp "2025-08-30T20:20:36+0000 W35-6"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4381,9 +4381,7 @@ If it finds something it returns a list that holds the following information:
                   ;; Allow modification of a read-only buffer and ensure that
                   ;; the undo history is not modified by the insertion and
                   ;; removal operations.
-                  (let ((orig-buffer-modified-p (buffer-modified-p))
-                        (inhibit-read-only t)
-                        (buffer-undo-list t))
+                  (with-silent-modifications
                     (setq keep-searching nil
                           result (list (save-excursion
                                          (forward-line 0)
@@ -4397,9 +4395,7 @@ If it finds something it returns a list that holds the following information:
                                             (point)
                                             (progn
                                               (forward-line 1)
-                                              (point))))
-                                         (unless orig-buffer-modified-p
-                                           (set-buffer-modified-p nil)))
+                                              (point)))))
                                        match-text
                                        enclosing-block-start-pos
                                        enclosing-block-end-pos
