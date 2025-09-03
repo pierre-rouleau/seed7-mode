@@ -1,0 +1,97 @@
+#!/bin/sh
+# SH FILE: etags-c-seed7
+#
+# Purpose   : Build TAGS file for Seed7 C code.
+# Created   : Tuesday, September  2 2025.
+# Author    : Pierre Rouleau <prouleau001@gmail.com>
+# Time-stamp: <2025-09-03 11:31:03 EDT, updated by Pierre Rouleau>
+# ----------------------------------------------------------------------------
+# Module Description
+# ------------------
+#
+
+# Build an Emacs compliant TAGS file for Seed7 C source code which includes
+# the compiler header files.
+
+# ----------------------------------------------------------------------------
+# Dependencies
+# ------------
+#
+# This must be executed from the root of the Seed repository.
+#
+# - etags-c and its prerequisites
+#   - etags-c is a shell script part of the PEL system.
+#     - It uses:
+#       - etags
+#       - xargs, printf, uname, sort, uniq, find, rm.
+#       - fd/fdfind if available.
+#     - See: https://github.com/pierre-rouleau/pel/blob/master/bin/etags-c
+#
+# - grep, printf, xargs, find
+# - awk
+#
+
+# ----------------------------------------------------------------------------
+# Code
+# ----
+#
+#
+os_name="$(uname)"
+
+case "${os_name}" in
+    Darwin)
+        if [ -z "$USRHOME_DIR" ]; then
+            printf -- "\
+*** ERROR: etags-c-macos-clang requires USRHOME.
+    See https://github.com/pierre-rouleau/usrhome
+"
+            exit 1
+        fi
+
+        clang_version="$(clang-version -major)"
+
+        printf -- "\
+
+- First pass: build the .etags-c-files.txt.
+  This ignores the C files identified by the .gitignore file.
+"
+        etags-c . \
+                "/opt/X11/include" \
+                "$(xcrun --show-sdk-path)/usr/include" \
+                "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/${clang_version}/include"
+        ;;
+
+    Linux)
+        rm -f .etags-c-files.txt
+        etags-c -n .
+        info-gcc-c-include | while IFS='' read -r dirname
+        do
+            etags-c -n "$dirname"
+        done
+        # At this point the list of files are inside .etags-c-files.txt
+        ;;
+
+    *)
+        echo "Sorry, the $(uname) Operating System is not supported yet."
+        echo "Please create a bug report in the project to request it."
+        exit 1
+        ;;
+esac
+
+# Append the set of files that were ignored by the .gitignore file
+# but are present in the repository.
+# Get the file names directly from the .gitignore file, excluding
+# the files that are not present then append the path as a prefix
+# (using an awk script).
+#
+prefix_path="$(pwd)"/
+grep "\.[hc]$" .gitignore \
+    | xargs find 2> /dev/null \
+    | awk -v prefix="$prefix_path" '{print prefix $0}' >> .etags-c-files.txt
+sort < .etags-c-files.txt | uniq > .etags-seed7-c-files.txt
+printf -- "\
+
+- Second pass: now include the C files identified in the .gitignore.\n"
+etags-c --list=.etags-seed7-c-files.txt
+
+# ----------------------------------------------------------------------------
