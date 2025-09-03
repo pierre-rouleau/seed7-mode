@@ -4,7 +4,7 @@
 # Purpose   : Build TAGS file for Seed7 C code.
 # Created   : Tuesday, September  2 2025.
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
-# Time-stamp: <2025-09-03 11:31:03 EDT, updated by Pierre Rouleau>
+# Time-stamp: <2025-09-03 12:55:43 EDT, updated by Pierre Rouleau>
 # ----------------------------------------------------------------------------
 # Module Description
 # ------------------
@@ -92,6 +92,9 @@ sort < .etags-c-files.txt | uniq > .etags-seed7-c-files.txt
 printf -- "\
 
 - Second pass: now include the C files identified in the .gitignore.\n"
-etags-c --list=.etags-seed7-c-files.txt
+etags-c --list=.etags-seed7-c-files.txt || exit 1
+exit_code="$?"
+rm -f .etags-seed7-c-files.txt
+exit "$exit_code"
 
 # ----------------------------------------------------------------------------
