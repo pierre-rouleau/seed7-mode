@@ -881,6 +881,18 @@ signature of each found entry is shown in a selection list.
 ..
    There are other xref framework commands.  They are not yet implemented to support Seed7.  This will also be done.
 
+Navigating through Seed7 C code
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can use the `etags-c-seed7`_ shell script to build an Emacs-compliant TAGS
+file for all Seed7 C source code and the C compiler header files.  This script
+uses the `etags-c`_ that is part of the PEL package (but can be used without
+PEL being installed or used).   Create the TAGS file and then use Emacs xref
+cross-reference system to navigate through C code just as you can with Seed7
+code with the same **xref-find-definitions** and **xref-go-back** commands.
+
+The PEL `⅀ Xref PDF`_ for more information of Emacs native cross reference.
+
 
 Code Marking Commands
 ---------------------
@@ -1237,6 +1249,9 @@ Any help, questions, suggestions are welcome!
 .. _PEL Navigation PDF:                         https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/navigation.pdf
 .. _PEL Comment PDF:                            https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/comments.pdf
 .. _PEL Marking PDF:                            https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/marking.pdf
+.. _etags-c-seed7:                              https://github.com/pierre-rouleau/seed7-mode/blob/main/tools/etags-c-seed7
+.. _etags-c:                                    https://github.com/pierre-rouleau/pel/blob/master/bin/etags-c
+.. _⅀ Xref PDF:                                 https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/xref.pdf
 
 .. ---------------------------------------------------------------------------
 
