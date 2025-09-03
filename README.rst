@@ -891,7 +891,10 @@ PEL being installed or used).   Create the TAGS file and then use Emacs xref
 cross-reference system to navigate through C code just as you can with Seed7
 code with the same **xref-find-definitions** and **xref-go-back** commands.
 
-The PEL `⅀ Xref PDF`_ for more information of Emacs native cross reference.
+To use `etags-c-seed7`_, put `etags-c-seed7`_ and `etags-c`_  inside a
+directory that is in your PATH.
+
+See the PEL `⅀ Xref PDF`_ for more information of Emacs native cross reference.
 
 
 Code Marking Commands
