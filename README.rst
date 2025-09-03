@@ -892,7 +892,10 @@ cross-reference system to navigate through C code just as you can with Seed7
 code with the same **xref-find-definitions** and **xref-go-back** commands.
 
 To use `etags-c-seed7`_, put `etags-c-seed7`_ and `etags-c`_  inside a
-directory that is in your PATH.
+directory that is in your PATH.  In a shell, ``cd`` to the root of your ``Seed7``
+repository and issue the ``etags-c-seed7`` command from it.  The command will
+create a TAGS file in the directory.  It will also create a the file
+``.etags-c-files.txt`` which lists all C source code files that have been indexed.
 
 See the PEL `⅀ Xref PDF`_ for more information of Emacs native cross reference.
 
