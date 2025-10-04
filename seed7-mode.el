@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, March 26 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-08-30 16:20:36 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2025-10-04 09:31:58 EDT, updated by Pierre Rouleau>
 
 ;; This file is not part of GNU Emacs.
 
@@ -467,7 +467,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-08-30T20:20:36+0000 W35-6"
+(defconst seed7-mode-version-timestamp "2025-10-04T13:31:58+0000 W40-6"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6982,7 +6982,9 @@ Make sure you have no duplication of keywords if you edit the list."
 
 ;;;###autoload
 (define-derived-mode seed7-mode prog-mode "seed7"
-  "Major mode for editing Seed7 files."
+  "Major mode for editing Seed7 files.
+
+\\<seed7-mode-map>"
 
   ;; Seed7 Font Locking Control
   (setq-local font-lock-defaults '((seed7-font-lock-keywords)))
