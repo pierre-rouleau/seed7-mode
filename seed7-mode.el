@@ -1,13 +1,18 @@
-;;; seed7-mode.el --- Support for the Seed7 Programming Language.  -*- lexical-binding: t; -*-
+;;; seed7-mode.el --- Support for the Seed7 Programming Language  -*- lexical-binding: t; -*-
 
-;; Created   : Wednesday, March 26 2025.
+;; Copyright (C) 2025  Pierre Rouleau
+
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-10-04 09:31:58 EDT, updated by Pierre Rouleau>
+;; Maintainer: Pierre Rouleau <prouleau001@gmail.com>
+;; URL: https://github.com/pierre-rouleau/seed7-mode
+;; Created   : Wednesday, March 26 2025.
+;; Version: 0.1
+;; Package-Version: 20251113.1124
+;; Keywords: languages
+;; Package-Requires: ((emacs "25.1"))
 
 ;; This file is not part of GNU Emacs.
 
-;; Copyright (C) 2025  Pierre Rouleau
-;;
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
@@ -186,6 +191,8 @@
 ;;        I will fix that once I get the auto indentation working properly
 ;;        for all code.  I will then have to decide if that's considered a
 ;;        defun to allow marking the block just like procedure and functions.
+;;  # 05  Check if following Emacs functions can help reduce code size:
+;;        `indent-line-to', `indent-next-tab-stop'
 ;; ]
 ;;
 ;;
@@ -467,7 +474,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-10-04T13:31:58+0000 W40-6"
+(defconst seed7-mode-version-timestamp "2025-11-14T20:00:20+0000 W46-5"
   "Version UTC timestamp of the seed7-mode file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -588,7 +595,7 @@ The name of the source code file is appended to the end of that line."
             ;; Note that in that case the s7xref.sd7 may not be installed.
             (buffer-file-name (get-buffer "seed7-mode.el"))
             ;; otherwise use a default
-            "~/.emacs.d/utils/")))
+            (format "%s/utils/" user-emacs-directory))))
   "Seed7 cross reference builder command line.
 
 The command line must identify the Seed7 cross reference builder,
@@ -615,7 +622,8 @@ The ~ character, if you use it, is expanded to identify your HOME
 directory.
 
 The default value attempts to locate seed7-mode from Emacs
-`load-path'. If this fails it uses \"~/.emacs.d/utils/\".
+`load-path'. If this fails it uses the utils directory inside your
+`user-emacs-directory'.
 Modify this value if seed7-mode is not in your Emacs load path
 and the default path is not appropriate."
   :group 'seed7
@@ -869,8 +877,7 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
   (format "'\\\\%s;'\\)\\|\\(?:'\\\\[[:digit:]]+;'"
           (format seed7--base-x-integer-re-format
                   "(?:"
-                  "")
-          ))
+                  "")))
 
 (defconst seed7-base-x-big-number-re (format seed7--base-x-integer-re-format
                                              "(\\(?:"
@@ -893,8 +900,7 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
     ;; The next ones are not identified specifically as pragmas
     ;; but they are special and are also used with a leading '$'
     "syntax"
-    "system"
-    ))
+    "system"))
 
 (defconst seed7-pragma-keywords-regexp
   (format "^%s\\(\\$ +%s\\)%s"
@@ -2417,24 +2423,30 @@ Set it to line-style otherwise.  Only affect current buffer.
 Print message when VERBOSE is non-nil.
 Note: the default style for all Seed7 buffers is controlled by the
 `seed7-uses-block-comment' customizable user-option."
-  (setq-local seed7-uses-block-comment use-block)
-  (setq-local comment-start
-	          (concat (if seed7-uses-block-comment
-		                  seed7-block-comment-starter
-		                seed7-line-comment-starter)
-		              " "))
-  (setq-local comment-end
-	          (if seed7-uses-block-comment
-	              (concat " " seed7-block-comment-ender)
-	            ""))
-  (setq-local comment-continue
-              (if seed7-uses-block-comment
-                  (concat " " seed7-block-comment-continue)
-                seed7-line-comment-continue))
-  (when verbose
-    (message "Now use %s style comments" (if use-block
-                                             "block"
-                                           "line"))))
+  (let ((cblock-start    seed7-block-comment-starter)
+        (cblock-end      seed7-block-comment-ender)
+        (cblock-continue seed7-block-comment-continue)
+        (cline-start     seed7-line-comment-starter)
+        (cline-continue  seed7-line-comment-continue))
+    (setq-local seed7-uses-block-comment use-block)
+    ;; comment-start, comment-end, comment-continue are not regexp
+    ;; they are strings matched directly.
+    (setq-local comment-start    (concat (if use-block
+                                             cblock-start
+                                           cline-start)
+		                         " "))
+    (setq-local comment-end      (if use-block (concat " " cblock-end) ""))
+    (setq-local comment-continue (if use-block
+                                     (concat " " cblock-continue)
+                                   cline-continue))
+    ;; comment-skip-start is a regexp
+    (setq-local comment-start-skip (if use-block
+                                       (format "%s\\s-*"
+                                               (regexp-quote cblock-start))
+                                     "#+\\s-*") )
+
+    (when verbose
+      (message "Now use %s style comments" (if use-block "block" "line")))))
 
 (defun seed7-toggle-comment-style (&optional arg)
   "Toggle the Seed7 comment style between block and line comments.
@@ -2447,10 +2459,10 @@ Note: the default style for all Seed7 buffers is controlled by the
 `seed7-uses-block-comment' customizable user-option."
   (interactive "P")
   (let ((use-block (cond
-	                ((and seed7-line-comment-starter seed7-block-comment-starter)
-	                 (seed7--new-state-for arg seed7-uses-block-comment))
-	                (seed7-line-comment-starter nil)
-	                (t t))))
+	            ((and seed7-line-comment-starter seed7-block-comment-starter)
+	             (seed7--new-state-for arg seed7-uses-block-comment))
+	            (seed7-line-comment-starter nil)
+	            (t t))))
     (seed7--set-comment-style use-block 'verbose)))
 
 ;; ---------------------------------------------------------------------------
@@ -6852,8 +6864,8 @@ Make sure you have no duplication of keywords if you edit the list."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "TAB") 'seed7-complete-statement-or-indent)
     (define-key map (kbd "<backtab>") 'tempo-forward-mark)
-    (define-key map (kbd "C-c g c") 'seed7-toggle-menu-callable-list)
-    (define-key map (kbd "C-c g s") 'seed7-toggle-menu-sorting)
+    (define-key map (kbd "C-c %") 'seed7-toggle-menu-callable-list)
+    (define-key map (kbd "C-c =") 'seed7-toggle-menu-sorting)
     (define-key map (kbd "C-c C-a") 'seed7-to-block-backward)
     (define-key map (kbd "C-c C-e") 'seed7-to-block-forward)
     (define-key map (kbd "C-c C-n") 'seed7-beg-of-next-defun)
@@ -6864,8 +6876,8 @@ Make sure you have no duplication of keywords if you edit the list."
     (define-key map "\M-q"          'seed7-fill)
     (define-key map "\M-\C-q"       'seed7-indent-block)
     (define-key map (kbd "C-c ;")   'seed7-toggle-comment-style)
-    (define-key map (kbd "C-c v")   'seed7-mode-version)
-    (define-key map (kbd "C-c C")   'seed7-mode-customize)
+    (define-key map (kbd "C-c ?")   'seed7-mode-version)
+    (define-key map (kbd "C-c <f3>") 'seed7-mode-customize)
     (define-key map (kbd "C-c C-c") 'seed7-compile)
     map)
   "Keymap used in `seed7-mode'.")
@@ -7071,5 +7083,12 @@ Make sure you have no duplication of keywords if you edit the list."
 
 ;;; --------------------------------------------------------------------------
 (provide 'seed7-mode)
+
+;; Local variables:
+;; time-stamp-format: "%Y%02m%02d.%02H%02M"
+;; time-stamp-start: "Package-Version:[ \t]+\\\\?"
+;; time-stamp-end: "\n"
+;; time-stamp-line-limit: 15
+;; End:
 
 ;;; seed7-mode.el ends here
