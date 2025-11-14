@@ -474,8 +474,8 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-11-14T20:00:20+0000 W46-5"
-  "Version UTC timestamp of the seed7-mode file.
+(defconst seed7-mode-version-timestamp "2025-11-14T20:22:49+0000 W46-5"
+  "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
 
@@ -606,7 +606,7 @@ You may type:
 - the cross reference builder executable program to use.
 
 The seed7 mode repository includes the s7xref.sd7 file inside the tools
-sub-directory. You can either create an executable for it or use the s7
+sub-directory.  You can either create an executable for it or use the s7
 interpreter to run it without having to compile it.
 
 Using the interpreted version is the preferred method: an interpreted
@@ -621,10 +621,10 @@ found through the PATH environment variable accessible to Emacs.
 The ~ character, if you use it, is expanded to identify your HOME
 directory.
 
-The default value attempts to locate seed7-mode from Emacs
-`load-path'. If this fails it uses the utils directory inside your
+The default value attempts to locate `seed7-mode' from Emacs
+`load-path'.  If this fails it uses the utils directory inside your
 `user-emacs-directory'.
-Modify this value if seed7-mode is not in your Emacs load path
+Modify this value if `seed7-mode' is not in your Emacs load path
 and the default path is not appropriate."
   :group 'seed7
   :type 'string)
@@ -683,7 +683,7 @@ and the default path is not appropriate."
 
 (defconst seed7--blank-re
   "[[:blank:]]"
-  "Match any horizontal white space character")
+  "Match any horizontal white space character.")
 
 (defconst seed7--whitespace-re
   "[[:blank:]
@@ -766,13 +766,13 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
   (format "\\(?:\\(%s\\|%s\\)\\)"
           seed7-name-identifier-nc-re
           seed7--special-identifier-nc-re)
-  "A name or special identifier. 1 capturing group")
+  "A name or special identifier.  1 capturing group.")
 
 (defconst seed7--any-identifier-re
   (format "\\(\\(%s\\|%s\\)\\)"
           seed7-name-identifier-nc-re
           seed7--special-identifier-nc-re)
-  "A name or special identifier. 1 capturing group")
+  "A name or special identifier.  1 capturing group.")
 
 ;; --
 
@@ -1084,7 +1084,7 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
           (rx-to-string
            `(:  (or ,@seed7--declaration-intro-keywords)))
           "\\>")
-  "Argument declaration intro keyword: group 1")
+  "Argument declaration intro keyword: group 1.")
 
 (defconst seed7-declaration-intro-keywords-nc-regexp
   (format "%s\\(?:%s\\)%s"
@@ -1482,7 +1482,7 @@ Matches something like:
           seed7--special-identifier-nc-re
           seed7--whitespace-re
           seed7-args-in-parens-re)
-  "Regexp for (args...) fctname (args...). Group1: fctname.")
+  "Regexp for (args...) fctname (args...).  Group1: fctname.")
 
 
 (defconst seed7-arrparens-name-arrparens-re     ; 3
@@ -1495,7 +1495,7 @@ Matches something like:
           seed7--whitespace-re
           seed7-args-in-parens-re
           seed7--whitespace-re)
-  "Regexp for [ (args...) fctname (args...) ]. Group1: fctname.")
+  "Regexp for [ (args...) fctname (args...) ].  Group1: fctname.")
 
 (defconst seed7-arg-arrparens-name-arrparens-re ; 4
   (format "%s%s+?\\[%s*?%s%s+?\\(%s\\|%s\\)%s+?%s%s*?]"
@@ -1509,13 +1509,13 @@ Matches something like:
           seed7--whitespace-re
           seed7-args-in-parens-re
           seed7--whitespace-re)
-  "Regexp for (args...)  [ (args...) fctname (args...) ]. Group1: fctname.")
+  "Regexp for (args...)  [ (args...) fctname (args...) ].  Group1: fctname.")
 
 (defconst seed7-emptyarr-paramparens-re           ; 5
   (format "\\[]%s+?%s"
           seed7--whitespace-re
           seed7-args-in-parens-re)
-  "Regexp for [] (args...)")
+  "Regexp for [] (args...).")
 
 (defconst seed7-arrparens-paramparens-re          ; 6
   (format "\\[%s+?%s%s+?]%s+?%s"
@@ -1524,7 +1524,7 @@ Matches something like:
           seed7--whitespace-re
           seed7--whitespace-re
           seed7-args-in-parens-re)
-  "Regexp for [(args...)] (args...)")
+  "Regexp for [(args...)] (args...).")
 
 (defconst seed7-paramparens-arrparens-re          ; 7
   (format "%s+?%s%s+?\\[%s+?%s%s+?]"
@@ -1534,7 +1534,7 @@ Matches something like:
           seed7--whitespace-re
           seed7-args-in-parens-re
           seed7--whitespace-re)
-  "Regexp for (args...) [(args...)]")
+  "Regexp for (args...) [(args...)].")
 
 (defconst seed7-paramparens-arrparens-op-re       ; 8
   (format "%s+?%s%s+?\\[%s+?%s%s+?%s%s+?]"
@@ -1546,7 +1546,7 @@ Matches something like:
           seed7--whitespace-re
           seed7--special-identifier-nc-re
           seed7--whitespace-re)
-  "Regexp for (args...) [(args...) op ]")
+  "Regexp for (args...) [(args...) op ].")
 
 (defconst seed7-paramparens-op-arrparens-re       ; 9
   (format "%s+?%s%s+?\\[%s+?%s%s+?%s%s+?]"
@@ -1560,7 +1560,7 @@ Matches something like:
           seed7--whitespace-re                ; 6
           seed7-args-in-parens-re             ; 7
           seed7--whitespace-re)               ; 8
-  "Regexp for (args...) [ op (args...) ]")
+  "Regexp for (args...) [ op (args...) ].")
 
 (defconst seed7-paramparens-arrparens-op-arrparens-re ; 10
   (format "%s+?%s%s+?\\[%s+?%s%s+?%s+?%s%s+?%s%s+?]"
@@ -1577,7 +1577,7 @@ Matches something like:
           seed7--whitespace-re               ; 9
           seed7-args-in-parens-re            ; 10
           seed7--whitespace-re)              ; 11
-  "Regexp for (args...) [ (args..) op (args...) ]")
+  "Regexp for (args...) [ (args..) op (args...) ].")
 
 ;; --
 
@@ -1624,7 +1624,7 @@ Matches something like:
           ;;                           1       2
           seed7--whitespace-re
           seed7-name-identifier-nc-re)
-  "Regexp matching forward or action declaration. No capture group.")
+  "Regexp matching forward or action declaration.  No capture group.")
 
 
 ;;** Seed7 Procedure/Function Regexp
@@ -1671,7 +1671,7 @@ No capture group.")
 If CAPTURE is non-nil the returned regexp has 2 capture groups:
 - Group 1: \"proc\", \"varfunc \" or \"func \"
 - Group 2: The func return type.  May be empty.
-If CAPTURE is nil, the regexp has no capture group. "
+If CAPTURE is nil, the regexp has no capture group."
   (format
    ;;    const     (varfunc| func       | proc) RT?     :
    ;;              (--------------------------)
@@ -1922,7 +1922,7 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
           seed7--whitespace-re                    ; 6
           seed7-name-identifier-nc-re             ; 7
           seed7--whitespace-re)                   ; 8
-  "Regexp to extract interface type declaration. Group 1: name of type.")
+  "Regexp to extract interface type declaration.  Group 1: name of type.")
 
 (defconst seed7-struct-regexp-4imenu
   (format
@@ -2830,6 +2830,7 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
 
 (defun seed7--block-name (&optional pos end-pos)
   "Return the name of the block declared at POS or point.
+If END-POS is non-nil it specifies last position.
 Return nil if name is not found."
   (save-excursion
     (when pos (goto-char pos))
@@ -2838,7 +2839,8 @@ Return nil if name is not found."
                                 seed7-procfunc-regexp-item-name-group)))))
 
 (defun seed7-top-block-name (&optional pos end-pos)
-  "Return the name of the top block item surrounding code at POS or point."
+  "Return the name of the top block item surrounding code at POS or point.
+If END-POS is specified it specifies the last possible position."
   (save-excursion
     (seed7--to-top pos)
     (or (seed7--block-name nil end-pos) "?")))
@@ -2907,7 +2909,7 @@ The QUALIFIER is a string that identifies if it is a function or procedure."
 
 - With optional argument N, repeat the search that many times and succeed
   only when that many function or procedures are found.
-  A value of zero means no action. A nil value is equivalent to 1.
+  A value of zero means no action.  A nil value is equivalent to 1.
   A Negative N means move forward to the Nth following beginning of defun.
 - Unless SILENT, the function prints a message showing the name of the
   found function or procedure.  If it found nothing it issues a user error.
@@ -3246,7 +3248,7 @@ Negative N starts counting from the end of the line: -1 is the last word."
   ;;                                    (--------------------)
   ;;(-----------------------------------------------------------)
   "\\(const \\(?:func\\|proc\\)[^;]+?is\\(?:\\(?: +func\\)?$\\)\\)"
-  "Group 1: complete text")
+  "Group 1: complete text.")
 
 ;; [:todo 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
 (defconst seed7---inner-callables-2
@@ -3256,7 +3258,7 @@ Negative N starts counting from the end of the line: -1 is the last word."
   (format
    "\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s+?;\\)\\)"
    seed7--any-wp-text-re)
-  "Group 1: entire text")
+  "Group 1: entire text.")
 
 
 (defconst seed7---inner-callables-4
@@ -3666,7 +3668,7 @@ Toggles listing them together or separately.
   (seed7--refresh-imenu))
 
 (defvar-local seed7--menu-list-functions-sorted seed7-menu-list-functions-sorted
-  "Set to non-nil to list menu entries in sorted order")
+  "Set to non-nil to list menu entries in sorted order.")
 
 (defun seed7-toggle-menu-sorting ()
   "Toggle displaying menu entries in code order or sorted order."
@@ -5039,7 +5041,8 @@ the character after the opening parens of the the inner-most nesting."
 
 
 (defun seed7-line-is-procfunc-beg-of-decl (n &optional dont-skip-comment-start)
-  "Return indent column when line N is a procedure or function declaration."
+  "Return indent column when line N is a procedure or function declaration.
+Skip comment start unless DONT-SKIP-COMMENT-START is non nil."
   (seed7-line-starts-with n seed7-procfunc-beg-of-decl-nc-re
                           dont-skip-comment-start))
 
@@ -5176,7 +5179,8 @@ N is: - :previous-non-empty for the previous non empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
-      - A negative number for previous lines: -1 previous, -2 line before..."
+      - A negative number for previous lines: -1 previous, -2 line before...
+Skip comment unless DONT-SKIP-COMMENT is non-nil."
   (save-excursion
     (let ((found-pos nil))
       (when (seed7-move-to-line n dont-skip-comment)
@@ -5194,7 +5198,8 @@ N is: - :previous-non-empty for the previous non empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
-      - A negative number for previous lines: -1 previous, -2 line before..."
+      - A negative number for previous lines: -1 previous, -2 line before...
+Skip comment unless DONT-SKIP-COMMENT is non-nil."
   (save-excursion
     (if (seed7-move-to-line n dont-skip-comment)
         (progn
@@ -5397,7 +5402,7 @@ then deactivates it (to prevent the area to limit searches)."
       (seed7-to-indent))))
 
 (defun seed7-indent-block ()
-  "Indent the block enclosing point. Do not move point."
+  "Indent the block enclosing point.  Do not move point."
   (interactive)
   (save-excursion
     (seed7-to-block-forward :dont-push-mark)
@@ -6301,7 +6306,7 @@ Please update!"
     (seed7--signature-at)))
 
 (defun seed7--xref-in-list (list filename lineno)
-  "Return t if FILENAME @ LINENO is inside LIST. Return nil otherwise."
+  "Return t if FILENAME @ LINENO is inside LIST.  Return nil otherwise."
   (let ((found nil)
         (entry (car-safe list)))
     (while (and entry
@@ -6318,7 +6323,7 @@ Please update!"
 Each position pair identify an area inside the block where a Seed7 variable
 or parameter can be defined.
 The BLOCK-SPEC parameter identifies the specification of the function or
-procedure. It's a is a list returned by the function
+procedure.  It's a is a list returned by the function
 `seed7-line-inside-a-block'."
   (save-excursion
     (let ((block-start-pos          (nth 2 block-spec))
@@ -6358,6 +6363,7 @@ procedure. It's a is a list returned by the function
                                              &optional block-spec
                                              start-pos end-pos)
   "Return position info list of IDENTIFIER inside specified constraints.
+Start looking at line identified by FROM-LINE.
 The constraints are optional: BLOCK-SPEC, START-POS and END-POS.
 If these are not specified, perform a file global scope search.
 
@@ -6390,7 +6396,7 @@ Return a list of 4-elements:
 (defun seed7--find-candidates-for (identifier from-line
                                               &optional block-spec)
   "Find information about IDENTIFIER, globally or inside BLOCK-SPEC.
-
+Start looking at line specified by FROM-LINE.
 Return a list of 4-element lists, where each 4-element list has:
 - The file name where this identifier entry was found.
 - The line number integer,
@@ -6422,7 +6428,7 @@ of s7xref program."
 
 (defun seed7--xref-get-from-s7xref (identifier from-line)
   "Get a list of all entries matching IDENTIFIER literally using the s7xref.
-
+Start looking at line specified by FROM-LINE.
 Return a list of 4-element lists, where each 4-element list has:
 - 0: The file name where this identifier entry was found.
 - 1: The line number integer,
@@ -6461,7 +6467,7 @@ Return a list of 4-element lists, where each 4-element list has:
     entries))
 
 (defun seed7-point-on-defined-identifier-p (&optional pos)
-  "Return non-nil is identifier at point is being defined, nil otherwise."
+  "Return non-nil is identifier at point or POS is being defined, nil otherwise."
   (save-excursion
     (when pos
       (goto-char pos))
@@ -6485,13 +6491,13 @@ Return a list of 4-element lists, where each 4-element list has:
         (case-fold-search nil))
     (cond
      ((eq point-face 'font-lock-comment-face)
-      (user-error "Comments cross reference is not supported."))
+      (user-error "Comments cross reference is not supported!"))
      ((eq point-face 'font-lock-string-face)
       (user-error "This is a string: no reference available"))
      ((memq point-face '(seed7-float-face
                          seed7-integer-face
                          seed7-number-face))
-      (user-error "This is a number: no reference available."))
+      (user-error "This is a number: no reference available!"))
 
      ;; For identifiers, look in local block first, then in the s7xref built
      ;; table and then in the global scope of the current file.
@@ -6551,8 +6557,8 @@ before point.  Return \" \" if point is in middle of white-space."
 
 (defun seed7--make-xref-from-file-loc (elems)
   "Create an xref object pointing to the given file location.
-FILE, LINE, and COLUMN point to the location of the xref,
-DESC describes it."
+ELEMS is a list holding: file, line, and column point to the location of
+the xref, desc, the last element,  describes it."
   (xref-make (nth 3 elems)               ; desc
              (xref-make-file-location (nth 0 elems)
                                       (nth 1 elems)
@@ -6583,7 +6589,7 @@ DESC describes it."
          ((string-match seed7--very-special-char-re symbol)
           (user-error
            "%S is part of another Seed7 statement, hard-coded\
- or a Seed7 compile time symbol." symbol))
+ or a Seed7 compile time symbol.?" symbol))
          ;;
          (t
           (user-error "Nothing matching %S here.
@@ -6593,14 +6599,16 @@ Is point at its definition? Is this file compiling?"
 ;;** Seed7 Cross Reference Xref Backend Framework
 
 (defun seed7--xref-backend ()
-  "Use the Seed7 backend for Xref in seed7-mode files."
+  "Use the Seed7 backend for Xref in `seed7-mode' files."
   'seed7)
 
 (cl-defmethod xref-backend-identifier-at-point ((_backend (eql seed7)))
+  "Return symbol at point."
   (seed7-symbol-at-point))
 
 
 (cl-defmethod xref-backend-definitions ((_backend (eql seed7)) symbol)
+  "Return definition of SYMBOL."
   (seed7--find-symbol symbol))
 
 ;; [:todo 2025-06-16, by Pierre Rouleau: Complete xref support]
