@@ -982,10 +982,12 @@ More commands will be implemented.
 Installing/Upgrading  seed7-mode
 ================================
 
+To install it with use-package skip to
+`How To Install with use-package`_ section.
+
 
 How To Install seed7-mode with plain vanilla Emacs
 --------------------------------------------------
-
 
 Preliminary notes to new Emacs users
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1103,6 +1105,36 @@ previous section.  Once this is done proceed with the following:
   otherwise Emacs will complain that it's using a byte-compile file
   that is older than the source file.
 
+
+.. ---------------------------------------------------------------------------
+
+How To Install with use-package
+-------------------------------
+
+On Emacs 29 and later you can use the built-in ``use-package`` macro by adding
+the following code in your Emacs init file:
+
+.. code:: elisp
+
+    (use-package seed7-mode
+      :after pel-ert
+      :vc (:url "https://github.com/pierre-rouleau/seed7-mode" :rev :newest)
+      :ensure t
+      :config
+      (autoload 'seed7-mode "seed7-mode" nil :interactive)
+      (add-to-list 'auto-mode-alist '("\\.s\\(d7\\|7i\\)\\'" . seed7-mode)))
+
+If you want to run the test code you will also need to install ``pel-ert.el`` file.
+You can do it by adding the following code to your Emacs init file:
+
+.. code:: elisp
+
+      (use-package pel-ert
+        :vc (:url "https://github.com/pierre-rouleau/pel" :main-file "pel-ert.el" :rev :newest)
+        :ensure t)
+
+.. ---------------------------------------------------------------------------
+
 How To update seed7-mode in plain Emacs
 ---------------------------------------
 
@@ -1117,7 +1149,6 @@ To update to a later revision,
 - Download the new revision of the same files, and store them in the same
   directories they previously were located.
 - Byte-compile the new ``seed7-mode.el`` file as described in the previous section.
-
 
 .. ---------------------------------------------------------------------------
 
