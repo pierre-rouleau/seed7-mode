@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260527.1651
+;; Package-Version: 20260527.1658
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -449,7 +449,7 @@
 ;;
 (require 'simple)         ; use: `move-beginning-of-line'
 (require 'speedbar)       ; use: `speedbar-add-supported-extension'
-(require 'subr-x)         ; use: `string-trim', `string-empty-p'
+(require 'subr-x)         ; use: `string-trim', `string-blank-p'
 (require 'easymenu)       ; use: `easy-menu-define'
 (require 'tempo)          ; use: `tempo-forward-mark', `tempo-backward-mark'
 (require 'imenu)          ; use: `imenu--menubar-select', `imenu--rescan-item'
@@ -474,7 +474,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-27T20:51:09+0000 W22-3"
+(defconst seed7-mode-version-timestamp "2026-05-27T20:58:39+0000 W22-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6305,7 +6305,7 @@ See also: `seed7-check-or-compile'."
                       nil)
                      (in-error
                       ;; Continuation / context line — accumulate non empty
-                      (unless (string-empty-p line)
+                      (unless (string-blank-p line)
                         (push line context-lines)))))
                   (forward-line 1))
                 ;; Flush the final diagnostic (if any).
