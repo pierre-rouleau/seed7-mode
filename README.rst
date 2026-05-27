@@ -922,7 +922,8 @@ Compilation Command
 = ============================ =========== =============================================================
 . seed7-check-or-compile                   Static check Seed7 file visited in current buffer.
                                            With optional argument compile it.
-                                           All resulting warning or errors are shown in a compile-mode buffer.
+                                           All resulting warning or errors are shown in a
+                                           compilation-mode buffer.
 = ============================ =========== =============================================================
 
 
