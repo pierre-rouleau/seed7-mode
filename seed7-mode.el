@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260527.1637
+;; Package-Version: 20260527.1651
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -474,7 +474,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-27T20:37:05+0000 W22-3"
+(defconst seed7-mode-version-timestamp "2026-05-27T20:51:09+0000 W22-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6214,7 +6214,7 @@ Returns a cons cell (EXIT-CODE . DIAGNOSTICS) where:
   DIAGNOSTICS - list (in source order) of plists, each with the keys:
     :file    - absolute source filename string
     :line    - line number as an integer
-    :column  - column number as an integer (s7c only; nil for s7check)
+    :column  - column number as an integer, 1-based (s7c only; nil for s7check)
     :code    - symbolic error code string (s7check only, e.g. \"NO_MATCH\");
                nil when the compiler (s7c) is used
     :message - diagnostic message text string
@@ -6333,7 +6333,8 @@ The buffer is formatted to match a standard `*compilation*' buffer:
 - A `Compilation finished at DATE, duration N s' footer.
 - Mode-line showing exit code and error/warning/info counts.
 
-Returns the DIAGNOSTICS list from `seed7-check-file' (a list of plists),
+Returns the DIAGNOSTICS list from `seed7-check-file' (a list of plists;
+see that function's docstring for the plist keys),
 or nil when no diagnostics are found."
   (interactive "P")
   (let ((file (buffer-file-name)))
