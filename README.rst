@@ -917,13 +917,15 @@ Code Marking Commands
 Compilation Command
 -------------------
 
-= ============================ =========== =============================================================
-. Function                     Key Binding Description
-= ============================ =========== =============================================================
-. seed7-compile                            Static check Seed7 file visited in current buffer.
-                                           With optional argument compile it.
-                                           All resulting warning or errors are shown in a compile-mode buffer.
-= ============================ =========== =============================================================
+= ============================ =============== =============================================================
+. Function                     Key Binding     Description
+= ============================ =============== =============================================================
+. seed7-check-or-compile       ``C-c C-c``     Statically check the Seed7 file visited in the current buffer.
+                                               Show resulting errors in a compilation-mode buffer.
+
+. seed7-check-or-compile       ``C-u C-c C-c`` Compile the Seed7 file visited in the current buffer.
+                                               Show resulting errors in a compilation-mode buffer.
+= ============================ =============== =============================================================
 
 
 - The static checking and compilation commands are identified in customizable user options.

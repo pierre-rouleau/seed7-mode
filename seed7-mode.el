@@ -1,13 +1,13 @@
 ;;; seed7-mode.el --- Support for the Seed7 Programming Language  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2025  Pierre Rouleau
+;; Copyright (C) 2025, 2026  Pierre Rouleau
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
 ;; Maintainer: Pierre Rouleau <prouleau001@gmail.com>
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20251113.1124
+;; Package-Version: 20260527.1706
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -119,9 +119,8 @@
 ;;                                             2, controls the indentation
 ;;                                             width.
 ;;
-;; Static checking/compilation                 Done.  `seed7-compile' performs
-;;                                             the operation identified in the
-;;                                             `seed7-checker' and
+;; Static checking/compilation                 Done.  `seed7-check-or-compile'
+;;                                             runs `seed7-checker' or
 ;;                                             `seed7-compiler' customizable
 ;;                                             user options.
 ;;
@@ -148,7 +147,7 @@
 ;;                                             identifiers.  This uses the
 ;;                                             abbrev-mode.  It is also allowed
 ;;                                             by customization.
-
+;;
 ;;
 ;; seed7-mode key map.                         Done.
 ;; Top Menu.                                   Done.
@@ -418,7 +417,7 @@
 ;;           . `seed7--delete-char-and-mark'
 ;;       . `seed7--indent-lines'
 ;; - Seed7 Compilation
-;;   * `seed7-compile'
+;;   * `seed7-check-or-compile'
 ;; - Seed7 Cross Reference
 ;;    > `seed7--xref-backend'
 ;;    + `xref-backend-identifier-at-point'
@@ -450,7 +449,7 @@
 ;;
 (require 'simple)         ; use: `move-beginning-of-line'
 (require 'speedbar)       ; use: `speedbar-add-supported-extension'
-(require 'subr-x)         ; use: `string-trim'
+(require 'subr-x)         ; use: `string-trim', `string-blank-p'
 (require 'easymenu)       ; use: `easy-menu-define'
 (require 'tempo)          ; use: `tempo-forward-mark', `tempo-backward-mark'
 (require 'imenu)          ; use: `imenu--menubar-select', `imenu--rescan-item'
@@ -459,6 +458,7 @@
 (require 'outline)        ; use: `outline-minor-mode', `outline-regexp',
 ;;                        ;      `outline-heading-end-regexp',
 (require 'xref)           ; use: `xref-make', 'xref-make-file-location'
+(require 'cl-lib)         ; use: `cl-flet'
 
 ;;; --------------------------------------------------------------------------
 ;;; Code:
@@ -474,7 +474,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-11-14T20:22:49+0000 W46-5"
+(defconst seed7-mode-version-timestamp "2026-05-27T21:06:07+0000 W22-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6153,15 +6153,301 @@ struct       struct type definition
 ;;* Seed7 Compilation
 ;;  =================
 ;;
+;; This section provides the `seed7-check-or-compile' command which either
+;; checks the validity of the Seed7 code (static check, no executable
+;; generated) or compiles it, using the Seed7 tool identified by the
+;; `seed7-checker' user-option by default or `seed7-compiler' if its optional
+;; compile argument is non-nil.
+;;
+;; The usage hierarchy is:
+;;
+;;  * `seed7-check-or-compile'
+;;    - `seed7-check-file'
+;;      D `seed7--checker-diagnostic-regexp'   (D := data)
+;;      D `seed7--compiler-diagnostic-regexp'  (D := data)
+;;
+;; The `seed7-check-file' function static checks or compiles a file and
+;; returns a cons cell `(EXIT-CODE . DIAGNOSTICS)`.  It does not use the shell
+;; to execute the Seed7 commands specified by the `seed7-checker' or
+;; `seed7-compiler' user options.  It uses `seed7--checker-diagnostic-regexp'
+;; or `seed7--compiler-diagnostic-regexp' depending on which tool is invoked,
+;; to parse the messages output of either Seed7 tool to extract the
+;; information.
 
-(defun seed7-compile (&optional compile)
-  "Static check current Seed7 file, show errors in `compilation-mode' buffer.
+(defconst seed7--checker-diagnostic-regexp
+  "^\\([^(]+\\)(\\([0-9]+\\)):[ \t]+\\([A-Z0-9_]+\\):[ \t]+\\(.*\\)"
+  "Regexp matching a Seed7 static checker (s7check) diagnostic line.
+Expected format produced by s7check:
+  FILENAME(LINE): ERROR_CODE: message text
+Groups:
+  1 - absolute filename
+  2 - line number (integer string)
+  3 - symbolic error code (e.g. NO_MATCH, DECL_FAILED,
+      BASE2TO36ALLOWED, UTF16_SURROGATE_CHAR_FOUND)
+  4 - message text
+Context lines, source-excerpt lines, and ^ pointer lines do NOT match
+this pattern.")
 
-If optional COMPILE argument set, compile the file to executable instead."
+(defconst seed7--compiler-diagnostic-regexp
+  "^\\*\\*\\* \\([^(]+\\)(\\([0-9]+\\)):\\([0-9]+\\):[ \t]+\\(.*\\)"
+  "Regexp matching a Seed7 compiler (s7c) diagnostic line.
+Expected format produced by s7c:
+  *** FILENAME(LINE):COLUMN: message text
+Groups:
+  1 - absolute filename
+  2 - line number (integer string)
+  3 - column number (integer string, 1-based)
+  4 - message text
+Unlike s7check, s7c does not emit a symbolic error code.
+Header lines (\"SEED7 COMPILER Version …\", \"Source: …\",
+\"Compiling the program …\") and the footer (\"N errors found\")
+do NOT match this pattern and are therefore skipped during parsing.")
+
+(defun seed7-check-file (file-name &optional compile)
+  "Run static check or compilation on FILE-NAME without using the shell.
+If COMPILE is non-nil, use `seed7-compiler' (s7c) to compile the file;
+otherwise use `seed7-checker' (s7check) to perform a static check.
+
+Invokes the tool directly via `call-process' (no /bin/sh involved).
+Returns a cons cell (EXIT-CODE . DIAGNOSTICS) where:
+  EXIT-CODE   - integer exit status returned by the tool, or 1 when the
+                process was terminated by a signal.
+  DIAGNOSTICS - list (in source order) of plists, each with the keys:
+    :file    - absolute source filename string
+    :line    - line number as an integer
+    :column  - column number as an integer, 1-based (s7c only; nil for s7check)
+    :code    - symbolic error code string (s7check only, e.g. \"NO_MATCH\");
+               nil when the compiler (s7c) is used
+    :message - diagnostic message text string
+    :context - list of continuation/context strings that followed the
+               diagnostic line in the tool's output (may be nil)
+
+The DIAGNOSTICS list is nil when no diagnostics are found.
+
+The regexp used for matching depends on the tool:
+  s7check: `seed7--checker-diagnostic-regexp'
+  s7c:     `seed7--compiler-diagnostic-regexp'
+
+Signals a `user-error' with an informative message if the executable
+identified by `seed7-checker' (or `seed7-compiler' when COMPILE is
+non-nil) cannot be found or is not executable.  In that case verify the
+value of the corresponding user-option.
+
+See also: `seed7-check-or-compile'."
+  (let* ((cmd-string (if compile seed7-compiler seed7-checker))
+         (cmd-parts  (split-string-and-unquote cmd-string))
+         (program    (car cmd-parts))
+         (args       (append (cdr cmd-parts) (list file-name)))
+         (diag-re    (if compile
+                         seed7--compiler-diagnostic-regexp
+                       seed7--checker-diagnostic-regexp))
+         ;; Regexp to recognise (and discard) the s7c summary footer line.
+         ;; e.g. "64 errors found" — must not be accumulated as context.
+         ;; Only relevant for s7c output; s7check produces no such footer.
+         (footer-re  "^[0-9]+ errors? found$")
+         (out-buf    (generate-new-buffer " *seed7-check-output*"))
+         (default-directory (file-name-directory (expand-file-name file-name)))
+         results
+         exit-code)
+    (unwind-protect
+        (progn
+          (setq exit-code
+                (condition-case err
+                    (apply #'call-process program nil out-buf nil args)
+                  (file-error
+                   (user-error
+                    "seed7: cannot run \"%s\" (from `%s' = %S): %s"
+                    program
+                    (if compile "seed7-compiler" "seed7-checker")
+                    cmd-string
+                    (error-message-string err)))))
+          ;; Normalise: call-process returns a string when killed by a signal.
+          (unless (integerp exit-code)
+            (setq exit-code 1))
+          (with-current-buffer out-buf
+            (goto-char (point-min))
+            (let (cur-file cur-line cur-col cur-code cur-message
+                  context-lines in-error)
+              (cl-flet ((flush-current ()
+                          "Push the accumulated diagnostic (if any) onto results."
+                          (when in-error
+                            (push (list :file    cur-file
+                                        :line    cur-line
+                                        :column  cur-col
+                                        :code    cur-code
+                                        :message cur-message
+                                        :context (nreverse context-lines))
+                                  results)
+                            (setq in-error      nil
+                                  context-lines nil))))
+                (while (not (eobp))
+                  (let ((line (buffer-substring-no-properties
+                               (line-beginning-position)
+                               (line-end-position))))
+                    (cond
+                     ((string-match diag-re line)
+                      ;; New diagnostic — flush previous, start fresh.
+                      (flush-current)
+                      (setq in-error      t
+                            cur-file      (match-string 1 line)
+                            cur-line      (string-to-number (match-string 2 line))
+                            context-lines nil)
+                      (if compile
+                          ;; s7c: group 3 = column, group 4 = message, no code
+                          (setq cur-col     (string-to-number (match-string 3 line))
+                                cur-code    nil
+                                cur-message (match-string 4 line))
+                        ;; s7check: group 3 = code, group 4 = message, no column
+                        (setq cur-col     nil
+                              cur-code    (match-string 3 line)
+                              cur-message (match-string 4 line))))
+                     ((and compile (string-match footer-re line))
+                      ;; s7c summary footer ("N errors found") — skip entirely.
+                      nil)
+                     (in-error
+                      ;; Continuation / context line — accumulate non blank
+                      (unless (string-blank-p line)
+                        (push line context-lines)))))
+                  (forward-line 1))
+                ;; Flush the final diagnostic (if any).
+                (flush-current))))
+          (cons exit-code (nreverse results)))
+      (kill-buffer out-buf))))
+
+(defun seed7-check-or-compile (&optional compile)
+  "Check or compile the current Seed7 buffer's file and show diagnostics.
+
+When COMPILE is nil (the default), uses `seed7-checker' (s7check) for a
+static check; no executable is generated.  When COMPILE is non-nil (or
+called with \\[universal-argument]), uses `seed7-compiler' (s7c) to compile
+and generate an executable if there are no errors.
+
+Calls `seed7-check-file' internally (no shell, no /bin/sh).
+Creates or reuses a `*seed7-errors*' buffer using `compilation-mode'.
+
+The buffer is formatted to match a standard `*compilation*' buffer:
+- A `-*- mode: compilation; default-directory: DIR -*-' file-variable header.
+- GNU error lines: FILENAME:LINE: error: CODE: MESSAGE  (s7check; no column)
+                   FILENAME:LINE:COL: error: MESSAGE    (s7c; no symbolic code)
+  Both forms are navigable with \\[next-error] / \\[previous-error].
+- Verbatim continuation lines between navigable entries.
+- A `Compilation finished at DATE, duration N s' footer.
+- Mode-line showing exit code and error/warning/info counts.
+
+Returns the DIAGNOSTICS list from `seed7-check-file' (a list of plists;
+see that function's docstring for the plist keys),
+or nil when no diagnostics are found."
   (interactive "P")
-  (compile (format "%s %s"
-                   (if compile seed7-compiler seed7-checker)
-                   (shell-quote-argument (buffer-file-name)))))
+  (let ((file (buffer-file-name)))
+    (unless file
+      (user-error "Buffer is not visiting a file"))
+    (unless (eq major-mode 'seed7-mode)
+      (user-error "%s is not a Seed7 buffer" (buffer-name)))
+    ;;
+    ;; -- Prompted save
+    ;; The checker/compiler reads from file system; the buffer must be saved
+    ;; before invoking it.  Ask the user rather than saving silently.
+    (when (buffer-modified-p)
+      (if (y-or-n-p (format "Buffer %s is modified.  Save before %s? "
+                            (buffer-name)
+                            (if compile "compiling" "checking")))
+          (save-buffer)
+        (user-error "Aborted: buffer not saved")))
+    ;;
+    ;; -- Build command, execute and extract result information
+    (let* ((cmd        (if compile seed7-compiler seed7-checker))
+           (dir        (file-name-directory file))
+           ;; Record time *around* the checker invocation
+           (t0         (current-time))
+           (result     (seed7-check-file file compile))
+           (exit-code  (car result))
+           (errors     (cdr result))
+           (t1         (current-time))
+           (duration   (float-time (time-subtract t1 t0)))
+           (n-errors   (length errors))
+           (out-buf    (get-buffer-create "*seed7-errors*")))
+      ;;
+      ;; -- Format the output -----------------------------------------------
+      (with-current-buffer out-buf
+        (let ((inhibit-read-only t))
+          (setq-local default-directory dir)
+          (erase-buffer)
+          ;; -- Header ------------------------------
+          ;; Matches what compilation-start inserts; tells Emacs the
+          ;; default-directory for resolving relative filenames.
+          (insert (format "-*- mode: compilation; default-directory: %S -*-\n"
+                          dir))
+          (insert (format "%s %s\n\n" cmd file))
+          ;; -- Diagnostics -------------------------
+          (if errors
+              (dolist (e errors)
+                ;; Format the GNU-style anchor line according to the tool used.
+                ;; compilation-mode recognises both FILENAME:LINE: and
+                ;; FILENAME:LINE:COL: forms via its built-in `gnu' regexp entry.
+                (insert
+                 (if compile
+                     ;; s7c: include column, no symbolic code
+                     (format "%s:%d:%d: error: %s\n"
+                             (plist-get e :file)
+                             (plist-get e :line)
+                             (or (plist-get e :column) 0) ; :column always non-nil for s7c; guard is defensive
+                             (plist-get e :message))
+                   ;; s7check: include symbolic code, no column
+                   (format "%s:%d: error: %s: %s\n"
+                           (plist-get e :file)
+                           (plist-get e :line)
+                           (plist-get e :code)
+                           (plist-get e :message))))
+                ;; Continuation / context lines verbatim.
+                (dolist (ctx (plist-get e :context))
+                  (insert ctx "\n"))
+                ;; Blank line between diagnostics for readability.
+                (insert "\n"))
+            (insert "seed7: no errors found\n"))
+          ;; -- Footer ------------------------------
+          (insert (format "\nCompilation finished at %s, duration %.2f s\n"
+                          (format-time-string "%a %b %e %H:%M:%S" t1)
+                          duration)))
+        ;; -- Activate compilation-mode AFTER inserting ---
+        ;; This lets mode font-lock and regexp scanning run on the final text.
+        (compilation-mode)
+        ;; -- Mode-line: replicate what compilation-handle-exit produces
+        ;; NOTE: compilation-num-*-found are compile.el internals (not a public API).
+        ;; Set the three count variables that compilation-mode uses.
+        (setq-local compilation-num-errors-found   n-errors)
+        ;; The current Seed7 tools emit no warning and no information hints.
+        ;; If future versions of Seed7 emits them the following should be
+        ;; extracted.
+        (setq-local compilation-num-warnings-found 0)
+        (setq-local compilation-num-infos-found    0)
+        (setq-local mode-line-process
+                    (list
+                     ;; ":exit [N]" — green when 0, red when non-zero
+                     (propertize (format ":exit [%d]" exit-code)
+                                 'face (if (zerop exit-code)
+                                           'compilation-mode-line-exit
+                                         'compilation-mode-line-fail))
+                     " ["
+                     ;; error count — red bold (compilation-mode-line-fail)
+                     (propertize (number-to-string n-errors)
+                                 'face 'compilation-mode-line-fail)
+                     ;; warning count — orange bold (compilation-mode-line-run
+                     ;;                 inherits compilation-warning)
+                     " "
+                     (propertize "0" 'face 'compilation-mode-line-run)
+                     ;; info count — green bold (compilation-mode-line-exit)
+                     " "
+                     (propertize "0" 'face 'compilation-mode-line-exit)
+                     "]"))
+        (goto-char (point-min)))
+      (display-buffer out-buf)
+      ;; -- Show and return results -----------------------------------------
+      (if errors
+          (message "seed7: %d error%s found"
+                   n-errors
+                   (if (> n-errors 1) "s" ""))
+        (message "seed7: no errors found"))
+      errors)))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Cross Reference
@@ -6886,7 +7172,7 @@ Make sure you have no duplication of keywords if you edit the list."
     (define-key map (kbd "C-c ;")   'seed7-toggle-comment-style)
     (define-key map (kbd "C-c ?")   'seed7-mode-version)
     (define-key map (kbd "C-c <f3>") 'seed7-mode-customize)
-    (define-key map (kbd "C-c C-c") 'seed7-compile)
+    (define-key map (kbd "C-c C-c") 'seed7-check-or-compile)
     map)
   "Keymap used in `seed7-mode'.")
 
@@ -6988,9 +7274,9 @@ Make sure you have no duplication of keywords if you edit the list."
      ["To top of current block" seed7-to-top-of-block
       :help "Go to the top of the current block"])
     "---"
-    ["Static check"  seed7-compile
+    ["Static check"  seed7-check-or-compile
      :help "Perform static analysis of Seed7 code in visited file."]
-    ["Compile"       (seed7-compile t)
+    ["Compile"       (seed7-check-or-compile t)
      :help "Compile Seed7 visited file. Key binding is: C-u C-c C-c"]
     "---"
     ["Customize Mode" (customize-group 'seed7)
