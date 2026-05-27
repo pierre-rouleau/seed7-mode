@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260527.1501
+;; Package-Version: 20260527.1554
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -474,7 +474,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-27T19:01:29+0000 W22-3"
+(defconst seed7-mode-version-timestamp "2026-05-27T19:54:07+0000 W22-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6193,7 +6193,7 @@ Expected format produced by s7c:
 Groups:
   1 - absolute filename
   2 - line number (integer string)
-  3 - column number (integer string)
+  3 - column number (integer string, 1-based)
   4 - message text
 Unlike s7check, s7c does not emit a symbolic error code.
 Header lines (\"SEED7 COMPILER Version …\", \"Source: …\",
@@ -6228,7 +6228,9 @@ The regexp used for matching depends on the tool:
 Signals a `user-error' with an informative message if the executable
 identified by `seed7-checker' (or `seed7-compiler' when COMPILE is
 non-nil) cannot be found or is not executable.  In that case verify the
-value of the corresponding user-option."
+value of the corresponding user-option.
+
+See also: `seed7-check-or-compile'."
   (let* ((cmd-string (if compile seed7-compiler seed7-checker))
          (cmd-parts  (split-string-and-unquote cmd-string))
          (program    (car cmd-parts))
@@ -6240,6 +6242,7 @@ value of the corresponding user-option."
          ;; e.g. "64 errors found" — must not be accumulated as context.
          (footer-re  "^[0-9]+ errors? found$")
          (out-buf    (generate-new-buffer " *seed7-check-output*"))
+         (default-directory (file-name-directory (expand-file-name file-name)))
          results
          exit-code)
     (unwind-protect
@@ -6294,12 +6297,13 @@ value of the corresponding user-option."
                         (setq cur-col     nil
                               cur-code    (match-string 3 line)
                               cur-message (match-string 4 line))))
-                     ((string-match footer-re line)
+                     ((and compile (string-match footer-re line))
                       ;; s7c summary footer ("N errors found") — skip entirely.
-                      nil)
+                      (ignore line))
                      (in-error
-                      ;; Continuation / context line — accumulate.
-                      (push line context-lines))))
+                      ;; Continuation / context line — accumulate non empty
+                      (unless (string-empty-p line)
+                        (push line context-lines)))))
                   (forward-line 1))
                 ;; Flush the final diagnostic (if any).
                 (flush-current))))
@@ -6307,14 +6311,12 @@ value of the corresponding user-option."
       (kill-buffer out-buf))))
 
 (defun seed7-check-or-compile (&optional compile)
-  "Check the current Seed7 buffer's file and show diagnostics for navigation.
+  "Check or compile the current Seed7 buffer's file and show diagnostics.
 
-Uses the tool identified by `seed7-checker'; it is a static check and
-does not generate an executable file.
-
-To generate an executable file set the COMPILE argument to non-nil
-(or execute the command with \\[universal-argument]).  The command will
-then use the tool identified by the `seed7-compiler' user-option.
+When COMPILE is nil (the default), uses `seed7-checker' (s7check) for a
+static check; no executable is generated.  When COMPILE is non-nil (or
+called with \\[universal-argument]), uses `seed7-compiler' (s7c) to compile
+and generate an executable if there are no errors.
 
 Calls `seed7-check-file' internally (no shell, no /bin/sh).
 Creates or reuses a `*seed7-errors*' buffer using `compilation-mode'.
