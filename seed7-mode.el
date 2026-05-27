@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260527.1554
+;; Package-Version: 20260527.1612
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -449,7 +449,7 @@
 ;;
 (require 'simple)         ; use: `move-beginning-of-line'
 (require 'speedbar)       ; use: `speedbar-add-supported-extension'
-(require 'subr-x)         ; use: `string-trim'
+(require 'subr-x)         ; use: `string-trim', `string-empty-p'
 (require 'easymenu)       ; use: `easy-menu-define'
 (require 'tempo)          ; use: `tempo-forward-mark', `tempo-backward-mark'
 (require 'imenu)          ; use: `imenu--menubar-select', `imenu--rescan-item'
@@ -474,7 +474,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-27T19:54:07+0000 W22-3"
+(defconst seed7-mode-version-timestamp "2026-05-27T20:12:43+0000 W22-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6162,12 +6162,14 @@ struct       struct type definition
 ;;
 ;;  * `seed7-check-or-compile'
 ;;    - `seed7-check-file'
-;;      D `seed7--diagnostic-regexp'  (D := data)
+;;      D `seed7--checker-diagnostic-regexp'   (D := data)
+;;      D `seed7--compiler-diagnostic-regexp'  (D := data)
 ;;
 ;; The `seed7-check-file' function static checks or compiles a file and return
 ;; the resulting error data in a list.  It does not use the shell to execute
 ;; the Seed7 commands specified by the `seed7-checker' or `seed7-compiler'
-;; user options.  It uses the regexp identified by `seed7--diagnostic-regexp'
+;; user options.  It uses `seed7--checker-diagnostic-regexp' or
+;; `seed7--compiler-diagnostic-regexp' depending on which tool is invoked,
 ;; to parse the messages output of either Seed7 tool to extract the
 ;; information.
 
@@ -6240,6 +6242,7 @@ See also: `seed7-check-or-compile'."
                        seed7--checker-diagnostic-regexp))
          ;; Regexp to recognise (and discard) the s7c summary footer line.
          ;; e.g. "64 errors found" — must not be accumulated as context.
+         ;; Only relevant for s7c output; s7check produces no such footer.
          (footer-re  "^[0-9]+ errors? found$")
          (out-buf    (generate-new-buffer " *seed7-check-output*"))
          (default-directory (file-name-directory (expand-file-name file-name)))
@@ -6299,7 +6302,7 @@ See also: `seed7-check-or-compile'."
                               cur-message (match-string 4 line))))
                      ((and compile (string-match footer-re line))
                       ;; s7c summary footer ("N errors found") — skip entirely.
-                      (ignore line))
+                      nil)
                      (in-error
                       ;; Continuation / context line — accumulate non empty
                       (unless (string-empty-p line)
@@ -6323,8 +6326,9 @@ Creates or reuses a `*seed7-errors*' buffer using `compilation-mode'.
 
 The buffer is formatted to match a standard `*compilation*' buffer:
 - A `-*- mode: compilation; default-directory: DIR -*-' file-variable header.
-- GNU error lines: FILENAME:LINE: error: CODE: MESSAGE (navigable with
-  \\[next-error] / \\[previous-error]).
+- GNU error lines: FILENAME:LINE: error: CODE: MESSAGE  (s7check; no column)
+                   FILENAME:LINE:COL: error: MESSAGE    (s7c; no symbolic code)
+  Both forms are navigable with \\[next-error] / \\[previous-error].
 - Verbatim continuation lines between navigable entries.
 - A `Compilation finished at DATE, duration N s' footer.
 - Mode-line showing exit code and error/warning/info counts.
