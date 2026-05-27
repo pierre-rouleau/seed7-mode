@@ -1,13 +1,13 @@
 ;;; seed7-mode.el --- Support for the Seed7 Programming Language  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2025  Pierre Rouleau
+;; Copyright (C) 2025, 2026  Pierre Rouleau
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
 ;; Maintainer: Pierre Rouleau <prouleau001@gmail.com>
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20251113.1124
+;; Package-Version: 20260527.0930
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -474,7 +474,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2025-11-14T20:22:49+0000 W46-5"
+(defconst seed7-mode-version-timestamp "2026-05-27T13:30:36+0000 W22-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6162,6 +6162,14 @@ If optional COMPILE argument set, compile the file to executable instead."
   (compile (format "%s %s"
                    (if compile seed7-compiler seed7-checker)
                    (shell-quote-argument (buffer-file-name)))))
+
+(defun seed7-compile-buffer (buffer-name &optional compile)
+  "Static check or COMPILE specified Seed7 BUFFER-NAME."
+  (let ((buffer (get-buffer-create buffer-name)))
+    (with-current-buffer buffer
+      (if (eq major-mode 'seed7-mode)
+          (seed7-compile compile)
+        (user-error "%s is not a Seed7 buffer" buffer-name)))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Cross Reference
