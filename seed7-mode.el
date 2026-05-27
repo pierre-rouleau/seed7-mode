@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260527.1439
+;; Package-Version: 20260527.1501
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -474,7 +474,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-27T18:39:48+0000 W22-3"
+(defconst seed7-mode-version-timestamp "2026-05-27T19:01:29+0000 W22-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6171,36 +6171,59 @@ struct       struct type definition
 ;; to parse the messages output of either Seed7 tool to extract the
 ;; information.
 
-(defconst seed7--diagnostic-regexp
-  "^\\([^(]+\\)(\\([0-9]+\\)):[ \t]+\\([A-Z_]+\\):[ \t]+\\(.*\\)"
-  ;;
-  "Regexp matching a Seed7 compiler/checker diagnostic line.
-Expected format produced by s7check/s7c:
+(defconst seed7--checker-diagnostic-regexp
+  "^\\([^(]+\\)(\\([0-9]+\\)):[ \t]+\\([A-Z0-9_]+\\):[ \t]+\\(.*\\)"
+  "Regexp matching a Seed7 static checker (s7check) diagnostic line.
+Expected format produced by s7check:
   FILENAME(LINE): ERROR_CODE: message text
 Groups:
   1 - absolute filename
-  2 - line number
-  3 - error code (e.g. NO_MATCH, DECL_FAILED)
+  2 - line number (integer string)
+  3 - symbolic error code (e.g. NO_MATCH, DECL_FAILED,
+      BASE2TO36ALLOWED, UTF16_SURROGATE_CHAR_FOUND)
   4 - message text
-Context/source lines that follow each diagnostic do NOT match this pattern.")
+Context lines, source-excerpt lines, and ^ pointer lines do NOT match
+this pattern.")
+
+(defconst seed7--compiler-diagnostic-regexp
+  "^\\*\\*\\* \\([^(]+\\)(\\([0-9]+\\)):\\([0-9]+\\):[ \t]+\\(.*\\)"
+  "Regexp matching a Seed7 compiler (s7c) diagnostic line.
+Expected format produced by s7c:
+  *** FILENAME(LINE):COLUMN: message text
+Groups:
+  1 - absolute filename
+  2 - line number (integer string)
+  3 - column number (integer string)
+  4 - message text
+Unlike s7check, s7c does not emit a symbolic error code.
+Header lines (\"SEED7 COMPILER Version …\", \"Source: …\",
+\"Compiling the program …\") and the footer (\"N errors found\")
+do NOT match this pattern and are therefore skipped during parsing.")
 
 (defun seed7-check-file (file-name &optional compile)
   "Run static check or compilation on FILE-NAME without using the shell.
-If COMPILE is non-nil, use `seed7-compiler' to compile and generate an
-executable file if there are no errors; otherwise use `seed7-checker' to
-static check the file with no generation of executable file.
+If COMPILE is non-nil, use `seed7-compiler' (s7c) to compile the file;
+otherwise use `seed7-checker' (s7check) to perform a static check.
 
 Invokes the tool directly via `call-process' (no /bin/sh involved).
 Returns a cons cell (EXIT-CODE . DIAGNOSTICS) where:
-  EXIT-CODE   - integer exit status returned by the checker/compiler
-  DIAGNOSTICS - list (in source order) of plists, each with five keys:
+  EXIT-CODE   - integer exit status returned by the tool, or 1 when the
+                process was terminated by a signal.
+  DIAGNOSTICS - list (in source order) of plists, each with the keys:
     :file    - absolute source filename string
     :line    - line number as an integer
-    :code    - symbolic error code string (e.g. \"NO_MATCH\", \"DECL_FAILED\")
-    :message - first-line diagnostic message text string
-    :context - list of continuation/context strings (may be nil)
+    :column  - column number as an integer (s7c only; nil for s7check)
+    :code    - symbolic error code string (s7check only, e.g. \"NO_MATCH\");
+               nil when the compiler (s7c) is used
+    :message - diagnostic message text string
+    :context - list of continuation/context strings that followed the
+               diagnostic line in the tool's output (may be nil)
 
 The DIAGNOSTICS list is nil when no diagnostics are found.
+
+The regexp used for matching depends on the tool:
+  s7check: `seed7--checker-diagnostic-regexp'
+  s7c:     `seed7--compiler-diagnostic-regexp'
 
 Signals a `user-error' with an informative message if the executable
 identified by `seed7-checker' (or `seed7-compiler' when COMPILE is
@@ -6210,17 +6233,17 @@ value of the corresponding user-option."
          (cmd-parts  (split-string-and-unquote cmd-string))
          (program    (car cmd-parts))
          (args       (append (cdr cmd-parts) (list file-name)))
-         (default-directory (file-name-directory (expand-file-name file-name)))
+         (diag-re    (if compile
+                         seed7--compiler-diagnostic-regexp
+                       seed7--checker-diagnostic-regexp))
+         ;; Regexp to recognise (and discard) the s7c summary footer line.
+         ;; e.g. "64 errors found" — must not be accumulated as context.
+         (footer-re  "^[0-9]+ errors? found$")
          (out-buf    (generate-new-buffer " *seed7-check-output*"))
          results
          exit-code)
     (unwind-protect
         (progn
-          ;; call-process returns an integer exit code under normal conditions,
-          ;; or a string (e.g. "killed") when the process was terminated by a
-          ;; signal.  If the executable cannot be found or is not executable,
-          ;; call-process signals a file-error; catch that here and re-signal
-          ;; as a user-error so the caller gets a clear, actionable message.
           (setq exit-code
                 (condition-case err
                     (apply #'call-process program nil out-buf nil args)
@@ -6231,16 +6254,19 @@ value of the corresponding user-option."
                     (if compile "seed7-compiler" "seed7-checker")
                     cmd-string
                     (error-message-string err)))))
+          ;; Normalise: call-process returns a string when killed by a signal.
+          (unless (integerp exit-code)
+            (setq exit-code 1))
           (with-current-buffer out-buf
             (goto-char (point-min))
-            ;; --- accumulator state ---
-            (let (cur-file cur-line cur-code cur-message
+            (let (cur-file cur-line cur-col cur-code cur-message
                   context-lines in-error)
               (cl-flet ((flush-current ()
                           "Push the accumulated diagnostic (if any) onto results."
                           (when in-error
                             (push (list :file    cur-file
                                         :line    cur-line
+                                        :column  cur-col
                                         :code    cur-code
                                         :message cur-message
                                         :context (nreverse context-lines))
@@ -6251,21 +6277,31 @@ value of the corresponding user-option."
                   (let ((line (buffer-substring-no-properties
                                (line-beginning-position)
                                (line-end-position))))
-                    (if (string-match seed7--diagnostic-regexp line)
-                        ;; New diagnostic — flush previous, start fresh
-                        (progn
-                          (flush-current)
-                          (setq in-error      t
-                                cur-file      (match-string 1 line)
-                                cur-line      (string-to-number (match-string 2 line))
-                                cur-code      (match-string 3 line)
-                                cur-message   (match-string 4 line)
-                                context-lines nil))
-                      ;; Continuation line — accumulate when inside an error
-                      (when in-error
-                        (push line context-lines))))
+                    (cond
+                     ((string-match diag-re line)
+                      ;; New diagnostic — flush previous, start fresh.
+                      (flush-current)
+                      (setq in-error      t
+                            cur-file      (match-string 1 line)
+                            cur-line      (string-to-number (match-string 2 line))
+                            context-lines nil)
+                      (if compile
+                          ;; s7c: group 3 = column, group 4 = message, no code
+                          (setq cur-col     (string-to-number (match-string 3 line))
+                                cur-code    nil
+                                cur-message (match-string 4 line))
+                        ;; s7check: group 3 = code, group 4 = message, no column
+                        (setq cur-col     nil
+                              cur-code    (match-string 3 line)
+                              cur-message (match-string 4 line))))
+                     ((string-match footer-re line)
+                      ;; s7c summary footer ("N errors found") — skip entirely.
+                      nil)
+                     (in-error
+                      ;; Continuation / context line — accumulate.
+                      (push line context-lines))))
                   (forward-line 1))
-                ;; Flush the final diagnostic (if any)
+                ;; Flush the final diagnostic (if any).
                 (flush-current))))
           (cons exit-code (nreverse results)))
       (kill-buffer out-buf))))
@@ -6336,15 +6372,27 @@ or nil when no diagnostics are found."
           ;; -- Diagnostics -------------------------
           (if errors
               (dolist (e errors)
-                ;; GNU error format required for compilation-mode navigation
-                (insert (format "%s:%d: error: %s: %s\n"
-                                (plist-get e :file)
-                                (plist-get e :line)
-                                (plist-get e :code)
-                                (plist-get e :message)))
-                ;; Continuation / context lines verbatim
+                ;; Format the GNU-style anchor line according to the tool used.
+                ;; compilation-mode recognises both FILENAME:LINE: and
+                ;; FILENAME:LINE:COL: forms via its built-in `gnu' regexp entry.
+                (insert
+                 (if compile
+                     ;; s7c: include column, no symbolic code
+                     (format "%s:%d:%d: error: %s\n"
+                             (plist-get e :file)
+                             (plist-get e :line)
+                             (or (plist-get e :column) 0)
+                             (plist-get e :message))
+                   ;; s7check: include symbolic code, no column
+                   (format "%s:%d: error: %s: %s\n"
+                           (plist-get e :file)
+                           (plist-get e :line)
+                           (plist-get e :code)
+                           (plist-get e :message))))
+                ;; Continuation / context lines verbatim.
                 (dolist (ctx (plist-get e :context))
                   (insert ctx "\n"))
+                ;; Blank line between diagnostics for readability.
                 (insert "\n"))
             (insert "seed7: no errors found\n"))
           ;; -- Footer ------------------------------
