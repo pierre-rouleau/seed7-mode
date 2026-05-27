@@ -920,10 +920,10 @@ Compilation Command
 = ============================ =============== =============================================================
 . Function                     Key Binding     Description
 = ============================ =============== =============================================================
-. seed7-check-or-compile       ``C-c C-c``     Static check Seed7 file visited in current buffer.
+. seed7-check-or-compile       ``C-c C-c``     Statically check the Seed7 file visited in the current buffer.
                                                Show resulting errors in a compilation-mode buffer.
 
-. seed7-check-or-compile       ``C-u C-c C-c`` Compile Seed7 file visited in current buffer.
+. seed7-check-or-compile       ``C-u C-c C-c`` Compile the Seed7 file visited in the current buffer.
                                                Show resulting errors in a compilation-mode buffer.
 = ============================ =============== =============================================================
 
