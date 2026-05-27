@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260527.1350
+;; Package-Version: 20260527.1439
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -120,7 +120,7 @@
 ;;                                             width.
 ;;
 ;; Static checking/compilation                 Done.  `seed7-check-or-compile'
-;;                                             performs runs `seed7-checker' or
+;;                                             runs `seed7-checker' or
 ;;                                             `seed7-compiler' customizable
 ;;                                             user options.
 ;;
@@ -458,6 +458,7 @@
 (require 'outline)        ; use: `outline-minor-mode', `outline-regexp',
 ;;                        ;      `outline-heading-end-regexp',
 (require 'xref)           ; use: `xref-make', 'xref-make-file-location'
+(require 'cl-lib)         ; use: `cl-flet'
 
 ;;; --------------------------------------------------------------------------
 ;;; Code:
@@ -473,7 +474,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-27T17:50:21+0000 W22-3"
+(defconst seed7-mode-version-timestamp "2026-05-27T18:39:48+0000 W22-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6161,7 +6162,7 @@ struct       struct type definition
 ;;
 ;;  * `seed7-check-or-compile'
 ;;    - `seed7-check-file'
-;;      D `seed7--diagnostic-regexp'
+;;      D `seed7--diagnostic-regexp'  (D := data)
 ;;
 ;; The `seed7-check-file' function static checks or compiles a file and return
 ;; the resulting error data in a list.  It does not use the shell to execute
@@ -6171,7 +6172,8 @@ struct       struct type definition
 ;; information.
 
 (defconst seed7--diagnostic-regexp
-  "^\\(.+\\)(\\([0-9]+\\)):[ \t]+\\([A-Z_]+\\):[ \t]+\\(.*\\)"
+  "^\\([^(]+\\)(\\([0-9]+\\)):[ \t]+\\([A-Z_]+\\):[ \t]+\\(.*\\)"
+  ;;
   "Regexp matching a Seed7 compiler/checker diagnostic line.
 Expected format produced by s7check/s7c:
   FILENAME(LINE): ERROR_CODE: message text
@@ -6198,7 +6200,12 @@ Returns a cons cell (EXIT-CODE . DIAGNOSTICS) where:
     :message - first-line diagnostic message text string
     :context - list of continuation/context strings (may be nil)
 
-The DIAGNOSTICS list is nil when no diagnostics are found."
+The DIAGNOSTICS list is nil when no diagnostics are found.
+
+Signals a `user-error' with an informative message if the executable
+identified by `seed7-checker' (or `seed7-compiler' when COMPILE is
+non-nil) cannot be found or is not executable.  In that case verify the
+value of the corresponding user-option."
   (let* ((cmd-string (if compile seed7-compiler seed7-checker))
          (cmd-parts  (split-string-and-unquote cmd-string))
          (program    (car cmd-parts))
@@ -6209,9 +6216,21 @@ The DIAGNOSTICS list is nil when no diagnostics are found."
          exit-code)
     (unwind-protect
         (progn
-          ;; call-process returns the exit code as an integer (or a signal
-          ;; string if the process was killed).  Capture it here.
-          (setq exit-code (apply #'call-process program nil out-buf nil args))
+          ;; call-process returns an integer exit code under normal conditions,
+          ;; or a string (e.g. "killed") when the process was terminated by a
+          ;; signal.  If the executable cannot be found or is not executable,
+          ;; call-process signals a file-error; catch that here and re-signal
+          ;; as a user-error so the caller gets a clear, actionable message.
+          (setq exit-code
+                (condition-case err
+                    (apply #'call-process program nil out-buf nil args)
+                  (file-error
+                   (user-error
+                    "seed7: cannot run \"%s\" (from `%s' = %S): %s"
+                    program
+                    (if compile "seed7-compiler" "seed7-checker")
+                    cmd-string
+                    (error-message-string err)))))
           (with-current-buffer out-buf
             (goto-char (point-min))
             ;; --- accumulator state ---
@@ -6272,8 +6291,8 @@ The buffer is formatted to match a standard `*compilation*' buffer:
 - A `Compilation finished at DATE, duration N s' footer.
 - Mode-line showing exit code and error/warning/info counts.
 
-Returns the list of diagnostic plists (see `seed7-check-file'),
-or nil when no errors are found."
+Returns the DIAGNOSTICS list from `seed7-check-file' (a list of plists),
+or nil when no diagnostics are found."
   (interactive "P")
   (let ((file (buffer-file-name)))
     (unless file
@@ -6285,8 +6304,9 @@ or nil when no errors are found."
     ;; The checker/compiler reads from file system; the buffer must be saved
     ;; before invoking it.  Ask the user rather than saving silently.
     (when (buffer-modified-p)
-      (if (y-or-n-p (format "Buffer %s is modified.  Save before checking? "
-                            (buffer-name)))
+      (if (y-or-n-p (format "Buffer %s is modified.  Save before %s? "
+                            (buffer-name)
+                            (if compile "compiling" "checking")))
           (save-buffer)
         (user-error "Aborted: buffer not saved")))
     ;;
@@ -6335,36 +6355,41 @@ or nil when no errors are found."
         ;; This lets mode font-lock and regexp scanning run on the final text.
         (compilation-mode)
         ;; -- Mode-line: replicate what compilation-handle-exit produces
+        ;; NOTE: compilation-num-*-found are compile.el internals (not a public API).
         ;; Set the three count variables that compilation-mode uses.
         (setq-local compilation-num-errors-found   n-errors)
+        ;; The current Seed7 tools emit no warning and no information hints.
+        ;; If future versions of Seed7 emits them the following should be
+        ;; extracted.
         (setq-local compilation-num-warnings-found 0)
         (setq-local compilation-num-infos-found    0)
-        (setq mode-line-process
-              (list
-               ;; ":exit [N]" — green when 0, red when non-zero
-               (propertize (format ":exit [%d]" exit-code)
-                           'face (if (zerop exit-code)
-                                     'compilation-mode-line-exit
-                                   'compilation-mode-line-fail))
-               " ["
-               ;; error count — red bold (compilation-mode-line-fail)
-               (propertize (number-to-string n-errors)
-                           'face 'compilation-mode-line-fail)
-               ;; warning count — orange bold (compilation-mode-line-run
-               ;;                 inherits compilation-warning)
-               " "
-               (propertize "0" 'face 'compilation-mode-line-run)
-               ;; info count — green bold (compilation-mode-line-exit)
-               " "
-               (propertize "0" 'face 'compilation-mode-line-exit)
-               "]"))
+        (setq-local mode-line-process
+                    (list
+                     ;; ":exit [N]" — green when 0, red when non-zero
+                     (propertize (format ":exit [%d]" exit-code)
+                                 'face (if (zerop exit-code)
+                                           'compilation-mode-line-exit
+                                         'compilation-mode-line-fail))
+                     " ["
+                     ;; error count — red bold (compilation-mode-line-fail)
+                     (propertize (number-to-string n-errors)
+                                 'face 'compilation-mode-line-fail)
+                     ;; warning count — orange bold (compilation-mode-line-run
+                     ;;                 inherits compilation-warning)
+                     " "
+                     (propertize "0" 'face 'compilation-mode-line-run)
+                     ;; info count — green bold (compilation-mode-line-exit)
+                     " "
+                     (propertize "0" 'face 'compilation-mode-line-exit)
+                     "]"))
         (goto-char (point-min)))
       (display-buffer out-buf)
       ;; -- Show and return results -----------------------------------------
-      (when errors
-        (message "seed7: %d error%s found"
-                 n-errors
-                 (if (> n-errors 1) "s" "")))
+      (if errors
+          (message "seed7: %d error%s found"
+                   n-errors
+                   (if (> n-errors 1) "s" ""))
+        (message "seed7: no errors found"))
       errors)))
 
 ;; ---------------------------------------------------------------------------
