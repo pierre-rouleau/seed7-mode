@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260527.1658
+;; Package-Version: 20260527.1706
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -474,7 +474,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-27T20:58:39+0000 W22-3"
+(defconst seed7-mode-version-timestamp "2026-05-27T21:06:07+0000 W22-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6153,10 +6153,11 @@ struct       struct type definition
 ;;* Seed7 Compilation
 ;;  =================
 ;;
-;; This section provides the `seed7-check-or-compile' command which checks the
-;; validity of the Seed7 code in the current buffer with the Seed7 tool
-;; identified by the `seed7-checker' user-option by default or the
-;; `seed7-compiler' if its optional compile argument is non-nil.
+;; This section provides the `seed7-check-or-compile' command which either
+;; checks the validity of the Seed7 code (static check, no executable
+;; generated) or compiles it, using the Seed7 tool identified by the
+;; `seed7-checker' user-option by default or `seed7-compiler' if its optional
+;; compile argument is non-nil.
 ;;
 ;; The usage hierarchy is:
 ;;
@@ -6304,7 +6305,7 @@ See also: `seed7-check-or-compile'."
                       ;; s7c summary footer ("N errors found") — skip entirely.
                       nil)
                      (in-error
-                      ;; Continuation / context line — accumulate non empty
+                      ;; Continuation / context line — accumulate non blank
                       (unless (string-blank-p line)
                         (push line context-lines)))))
                   (forward-line 1))
