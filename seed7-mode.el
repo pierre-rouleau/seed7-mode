@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260527.1612
+;; Package-Version: 20260527.1625
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -474,7 +474,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-27T20:12:43+0000 W22-3"
+(defconst seed7-mode-version-timestamp "2026-05-27T20:25:05+0000 W22-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6165,11 +6165,11 @@ struct       struct type definition
 ;;      D `seed7--checker-diagnostic-regexp'   (D := data)
 ;;      D `seed7--compiler-diagnostic-regexp'  (D := data)
 ;;
-;; The `seed7-check-file' function static checks or compiles a file and return
-;; the resulting error data in a list.  It does not use the shell to execute
-;; the Seed7 commands specified by the `seed7-checker' or `seed7-compiler'
-;; user options.  It uses `seed7--checker-diagnostic-regexp' or
-;; `seed7--compiler-diagnostic-regexp' depending on which tool is invoked,
+;; The `seed7-check-file' function static checks or compiles a file and
+;; returns a cons cell `(EXIT-CODE . DIAGNOSTICS)`.  It does not use the shell
+;; to execute the Seed7 commands specified by the `seed7-checker' or
+;; `seed7-compiler' user options.  It uses `seed7--checker-diagnostic-regexp'
+;; or `seed7--compiler-diagnostic-regexp' depending on which tool is invoked,
 ;; to parse the messages output of either Seed7 tool to extract the
 ;; information.
 
