@@ -1276,21 +1276,21 @@ Any help, questions, suggestions are welcome!
 .. _s7xref.sd7:                                 https://github.com/pierre-rouleau/seed7-mode/blob/main/tools/s7xref.sd7
 .. _PEL project:                                https://github.com/pierre-rouleau/pel#readme
 .. _PEL Seed7 support:
-.. _PEL Seed7 PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/pl-seed7.pdf
-.. _PEL Index PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/-index.pdf
-.. _PEL Speedbar PDF:                           https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/speedbar.pdf
-.. _PEL align PDF:                              https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/align.pdf
-.. _PEL abbreviation PDF:                       https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/abbreviations.pdf
-.. _PEL PDFs:                                   https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/-index.pdf
-.. _PEL Outline PDF:                            https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/outline.pdf
-.. _PEL Menu & iMenu PDF:                       https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/menus.pdf
-.. _PEL xref PDF:                               https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/xref.pdf
-.. _PEL Navigation PDF:                         https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/navigation.pdf
-.. _PEL Comment PDF:                            https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/comments.pdf
-.. _PEL Marking PDF:                            https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/marking.pdf
+.. _PEL Seed7 PDF:                              https://pierre-rouleau.github.io/pel/pel-table-based-documentation1/pl-seed7.pdf
+.. _PEL Index PDF:                              https://pierre-rouleau.github.io/pel/pel-table-based-documentation1/-index.pdf
+.. _PEL Speedbar PDF:                           https://pierre-rouleau.github.io/pel/pel-table-based-documentation1/speedbar.pdf
+.. _PEL align PDF:                              https://pierre-rouleau.github.io/pel/pel-table-based-documentation1/align.pdf
+.. _PEL abbreviation PDF:                       https://pierre-rouleau.github.io/pel/pel-table-based-documentation1/abbreviations.pdf
+.. _PEL PDFs:                                   https://pierre-rouleau.github.io/pel/pel-table-based-documentation1/-index.pdf
+.. _PEL Outline PDF:                            https://pierre-rouleau.github.io/pel/pel-table-based-documentation1/outline.pdf
+.. _PEL Menu & iMenu PDF:                       https://pierre-rouleau.github.io/pel/pel-table-based-documentation1/menus.pdf
+.. _PEL xref PDF:                               https://pierre-rouleau.github.io/pel/pel-table-based-documentation1/xref.pdf
+.. _PEL Navigation PDF:                         https://pierre-rouleau.github.io/pel/pel-table-based-documentation1/navigation.pdf
+.. _PEL Comment PDF:                            https://pierre-rouleau.github.io/pel/pel-table-based-documentation1/comments.pdf
+.. _PEL Marking PDF:                            https://pierre-rouleau.github.io/pel/pel-table-based-documentation1/marking.pdf
 .. _etags-c-seed7:                              https://github.com/pierre-rouleau/seed7-mode/blob/main/tools/etags-c-seed7
 .. _etags-c:                                    https://github.com/pierre-rouleau/pel/blob/master/bin/etags-c
-.. _⅀ Xref PDF:                                 https://raw.githubusercontent.com/pierre-rouleau/pel/master/doc/pdf/xref.pdf
+.. _⅀ Xref PDF:                                 https://pierre-rouleau.github.io/pel/pel-table-based-documentation1/xref.pdf
 
 .. ---------------------------------------------------------------------------
 
