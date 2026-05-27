@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260527.1625
+;; Package-Version: 20260527.1637
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -474,7 +474,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-27T20:25:05+0000 W22-3"
+(defconst seed7-mode-version-timestamp "2026-05-27T20:37:05+0000 W22-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6368,6 +6368,7 @@ or nil when no diagnostics are found."
       ;; -- Format the output -----------------------------------------------
       (with-current-buffer out-buf
         (let ((inhibit-read-only t))
+          (setq-local default-directory dir)
           (erase-buffer)
           ;; -- Header ------------------------------
           ;; Matches what compilation-start inserts; tells Emacs the
@@ -6387,7 +6388,7 @@ or nil when no diagnostics are found."
                      (format "%s:%d:%d: error: %s\n"
                              (plist-get e :file)
                              (plist-get e :line)
-                             (or (plist-get e :column) 0)
+                             (or (plist-get e :column) 0) ; :column always non-nil for s7c; guard is defensive
                              (plist-get e :message))
                    ;; s7check: include symbolic code, no column
                    (format "%s:%d: error: %s: %s\n"
