@@ -3,6 +3,7 @@
 # Purpose   : Manual build using silex/emacs Docker images (Nix-free).
 # Created   : Wednesday, May 28 2026.
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
+
 # ----------------------------------------------------------------------------
 # Module Description
 # ------------------
@@ -14,8 +15,7 @@
 # Limitation: Docker containers are only supported on Linux runners; macOS
 # is not covered by this workflow.
 #
-# The workflow is triggered only manually (workflow_dispatch).
-#
+
 # ----------------------------------------------------------------------------
 # Dependencies
 # ------------
@@ -31,6 +31,20 @@ name: Build (Docker/silex - manual)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main # Run only on 'push' for the main branch.
+    paths-ignore:
+      - '**.pdf'
+      - '**.rst'
+      - '.gitignore'
+  pull_request:
+    branches:
+      - '**' # Run 'pull-request' for all branches.
+    paths-ignore:
+      - '**.pdf'
+      - '**.rst'
+      - '.gitignore'
 
 jobs:
   build:
