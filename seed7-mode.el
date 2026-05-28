@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260528.1512
+;; Package-Version: 20260528.1536
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -478,7 +478,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-28T19:12:42+0000 W22-4"
+(defconst seed7-mode-version-timestamp "2026-05-28T19:36:13+0000 W22-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7372,7 +7372,8 @@ Make sure you have no duplication of keywords if you edit the list."
   (setq-local end-of-defun-function
               #'seed7-nav-end-of-defun)
   (setq-local open-paren-in-column-0-is-defun-start nil)
-  (when (>= emacs-major-version 29)
+  (when (and (>= emacs-major-version 29)
+             (boundp 'end-of-defun-moves-to-eol))
     (setq-local end-of-defun-moves-to-eol nil))
 
   ;; Seed7 outline minor-mode support
