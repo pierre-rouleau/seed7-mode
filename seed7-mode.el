@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260528.1720
+;; Package-Version: 20260528.1727
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -157,7 +157,7 @@
 ;; =========================================== ===============================
 
 ;; Please report any problem you may notice by creating a bug report in the
-;; Github project: https://github.com/pierre-rouleau/seed7-mode
+;; GitHub project: https://github.com/pierre-rouleau/seed7-mode
 
 
 ;; Future:
@@ -217,7 +217,7 @@
 ;;   - Seed7 Pragmas
 ;;   - Seed7 include
 ;;   - Seed7 keywords used in statements
-;;   - Seed7 is-statemement keywords
+;;   - Seed7 is-statement keywords
 ;;   - Seed7 keywords used in middle of statements
 ;;   - Seed7 statement enclosing keywords
 ;;   - Seed7 declaration introduction keywords
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-28T21:20:25+0000 W22-4"
+(defconst seed7-mode-version-timestamp "2026-05-28T21:27:40+0000 W22-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -525,7 +525,7 @@ in the top menu and inside the Speedbar."
 (defcustom seed7-menu-list-functions-sorted t
   "When on, list menu entries in sorted order, otherwise in code order.
 
-This affects the way the callable are displayed in imenu commands,
+This affects the way the callables are displayed in imenu commands,
 in the top menu and inside the Speedbar."
   :group 'seed7
   :type 'boolean
@@ -619,7 +619,7 @@ version of the program will continue to work if you later update the
 Seed7 system.  If you use the compiled version, you will need to
 re-compile the s7xref.sd7 file each time you update Seed7.
 
-The name of the cross reference executable or the s7 Seed interpreter
+The name of the cross reference executable or the s7 Seed7 interpreter
 program must include their absolute path unless these programs can be
 found through the PATH environment variable accessible to Emacs.
 
@@ -651,7 +651,7 @@ and the default path is not appropriate."
 ;;
 ;; In the future, the private lists of keywords may be dynamically loaded for
 ;; specific Seed7 syntax and the constants will become variables to allow
-;; the mode to dynamically adapt to the Seed7 extended systax.
+;; the mode to dynamically adapt to the Seed7 extended syntax.
 ;;
 ;; See: https://seed7.net/faq.htm#add_syntax_highlighting
 ;;
@@ -3346,7 +3346,7 @@ The regexp has 2 or 3 groups:
            ((string= word1 "const")
             (cond
              ((member word2 '("varfunc" "func" "proc"))
-              nil)   ; use `seed7-end-of-defun' for function and procedures.
+              nil)   ; use `seed7-end-of-defun' for functions and procedures.
              ((string= word2 "type")
               (cond
                ((member last-word '("enum" "struct"))
@@ -3645,9 +3645,9 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
 
 (defvar-local seed7--menu-list-functions-and-procedures-together
     seed7-menu-list-functions-and-procedures-together
-  "When on, list function and procedures together, otherwise separately.
+  "When on, list functions and procedures together, otherwise separately.
 
-Dynamic value that affects the way the callable are displayed in imenu
+Dynamic value that affects the way the callables are displayed in imenu
 commands, in the top menu and inside the Speedbar.
 Initialized to `seed7-menu-list-functions-and-procedures-together' user-option
 value which can then be dynamically modified by the
@@ -3686,7 +3686,7 @@ value which can then be dynamically modified by the
 (defun seed7-toggle-menu-callable-list ()
   "Change the way callables are listed inside the current buffer menu.
 Toggles listing them together or separately.
-  When listed separately the function and procedures are listed inside
+  When listed separately the functions and procedures are listed inside
   their own group, otherwise they are listed together."
   (interactive)
   (if seed7--menu-list-functions-and-procedures-together
@@ -5012,7 +5012,7 @@ If the appropriate parens pair is found it returns a list of 4 elements:
      the inner-most nesting.
 - 1: string: parens pair found.
 - 2: position of the opening paren of the inner-most nesting.
-- 3: position of the end paren of the the inner-most nesting."
+- 3: position of the end paren of the inner-most nesting."
   (save-excursion
     (let ((inner-most-nesting-spec-list nil)
           (spec-list nil))
@@ -5049,7 +5049,7 @@ N is: - :dont-move to keep point at current position
 SCOPE-BEGIN-POS and SCOPE-END-POS are the search begin and end boundaries.
 If nothing is found it returns nil.
 If the appropriate parens pair is found it return the indentation column of
-the character after the opening parens of the the inner-most nesting."
+the character after the opening parens of the inner-most nesting."
   (car-safe (seed7-line-inside-nested-parens-pairs n nested-depth
                                                    scope-begin-pos
                                                    scope-end-pos
@@ -5262,7 +5262,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
            (not treat-comment-line-as-code))
       (setq indent-column (seed7-comment-column recurse-count)))
 
-     ;; In a array or set definition, indent 1 level unless the line is
+     ;; In an array or set definition, indent 1 level unless the line is
      ;; inside 2 nested parens.  In that case align with the inside of
      ;; the inner-most parens.
      ((or (seed7--set (seed7-line-inside-array-definition-block 0)
@@ -5386,7 +5386,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
       (setq indent-step 0))
 
      ((seed7-line-starts-with 0 "(")
-      ;; for block comment comments or code withing parentheses,
+      ;; for block comment comments or code within parentheses,
       ;; if did not find a rule report it.  For comment it will be
       ;; caught by `seed7-comment-column' and that will force indent to 0,
       ;; inside code it will leave the line unchanged and will print the
@@ -5455,7 +5455,7 @@ then deactivates it (to prevent the area to limit searches)."
 ;;  =============================
 
 (defun seed7--delete-char-and-mark ()
-  "Delete 1 character and put a tempo marker at it's position."
+  "Delete 1 character and put a tempo marker at its position."
   (delete-char 1)
   (tempo-insert-mark (point-marker)))
 
@@ -6491,7 +6491,7 @@ or nil when no diagnostics are found."
 ;;  =====================
 ;;
 ;; The `seed7-mode` supports the xref framework introduced in Emacs 25: the
-;; code implements a xref framework compliant back-end using the s7xref Seed7
+;; code implements an xref framework compliant back-end using the s7xref Seed7
 ;; program that parses Seed7 program and library files to extract all required
 ;; information about global variable, functions and procedures which includes
 ;; all operators (both word and special operators).
@@ -6503,7 +6503,7 @@ or nil when no diagnostics are found."
 ;; option must identify the appropriate information that will allow execution
 ;; of the program.
 ;;
-;; Once this is done, you will be able yo use the various xref commands with
+;; Once this is done, you will be able to use the various xref commands with
 ;; the xref front-end of your choice, the default being xref own front-end,
 ;; but also with the helm, ivy or other xref front-ends.
 
