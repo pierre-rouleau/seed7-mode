@@ -3,7 +3,6 @@
 # Purpose   : Run seed7-mode tests.
 # Created   : Friday, July 11 2025.
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
-# Time-stamp: <2026-05-27 22:51:18 EDT, updated by Pierre Rouleau>
 
 # ----------------------------------------------------------------------------
 # Module Description
@@ -55,8 +54,8 @@ EMACS_NATIVE_COMP_AVAILABLE := $(shell $(EMACS) --batch --eval '(when \
 
 EL_FILES := seed7-mode.el
 
-# ELC_FILES list the PEL .elc files
-ELC_FILES := $(subst .el,.elc,$(EL_FILES))
+# ELC_FILES used for this project.=
+ELC_FILES := $(subst .el,.elc,$(EL _FILES))=
 
 # ----------------------------------------------------------------------------
 # RULES:  to byte-compile the Emacs-Lisp source code files
