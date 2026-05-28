@@ -3,7 +3,7 @@
 # Purpose   : build for Windows.
 # Created   : Thursday, May 28 2026.
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
-# Time-stamp: <2026-05-28 09:06:54 EDT, updated by Pierre Rouleau>
+# Time-stamp: <2026-05-28 11:39:32 EDT, updated by Pierre Rouleau>
 # ----------------------------------------------------------------------------
 # Module Description
 # ------------------
@@ -12,6 +12,8 @@
 # - Uses jcs090218/setup-emacs which supports Linux, macOS, and Windows.
 # - Compilation step uses bash (Git Bash) so GNU Make POSIX shell recipes work.
 
+# This is currently not doing much, only compile the Emacs Lisp code to check
+# if that compiles in a Windows environment.
 # ----------------------------------------------------------------------------
 # Dependencies
 # ------------
@@ -42,10 +44,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@<40-char-commit-sha>
+        uses: actions/checkout@v5
 
       - name: Setup Emacs ${{ matrix.emacs_version }}
-        uses: jcs090218/setup-emacs@<40-char-commit-sha>
+        uses: actions/checkout@v5
         with:
           version: ${{ matrix.emacs_version }}
 
