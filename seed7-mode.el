@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260528.1536
+;; Package-Version: 20260528.1547
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -447,22 +447,23 @@
 ;;; Dependencies:
 ;;
 ;;
-(require 'simple)         ; use: `move-beginning-of-line'
-(require 'speedbar)       ; use: `speedbar-add-supported-extension'
-(require 'subr-x)         ; use: `string-trim', `string-blank-p'
-(require 'easymenu)       ; use: `easy-menu-define'
-(require 'tempo)          ; use: `tempo-forward-mark', `tempo-backward-mark'
-(require 'imenu)          ; use: `imenu--menubar-select', `imenu--rescan-item'
-;;                        ;      `imenu-update-menubar',
-;;                        ;      `imenu-generic-expression'
-(require 'outline)        ; use: `outline-minor-mode', `outline-regexp',
-;;                        ;      `outline-heading-end-regexp',
-(require 'xref)           ; use: `xref-make', 'xref-make-file-location'
-(require 'cl-lib)         ; use: `cl-flet'
-(require 'compile)        ; use: `compilation-num-warnings-found',
-;;                        ;      `compilation-num-infos-found'
-(require 'rx)             ; use: `rx-to-string'
-(require 'seq)            ; use: `seq-filter'
+(require 'simple)     ; use: `move-beginning-of-line'
+(require 'speedbar)   ; use: `speedbar-add-supported-extension'
+(require 'subr-x)     ; use: `string-trim', `string-blank-p'
+(require 'easymenu)   ; use: `easy-menu-define'
+(require 'tempo)      ; use: `tempo-forward-mark', `tempo-backward-mark'
+(require 'imenu)      ; use: `imenu--menubar-select', `imenu--rescan-item'
+;;                    ;      `imenu-update-menubar',
+;;                    ;      `imenu-generic-expression'
+(require 'outline)    ; use: `outline-minor-mode', `outline-regexp',
+;;                    ;      `outline-heading-end-regexp',
+(require 'xref)       ; use: `xref-make', 'xref-make-file-location'
+(require 'align)      ; use: `align-mode-rules-list', `align-region-separate'
+(require 'cl-lib)     ; use: `cl-flet'
+(require 'compile)    ; use: `compilation-num-warnings-found',
+;;                    ;      `compilation-num-infos-found'
+(require 'rx)         ; use: `rx-to-string'
+(require 'seq)        ; use: `seq-filter'
 
 ;;; --------------------------------------------------------------------------
 ;;; Code:
@@ -478,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-28T19:36:13+0000 W22-4"
+(defconst seed7-mode-version-timestamp "2026-05-28T19:47:02+0000 W22-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7400,6 +7401,7 @@ Make sure you have no duplication of keywords if you edit the list."
   ;; 'local)
 
   ;; Seed7 Source Code Alignment rules
+
   (setq-local align-mode-rules-list
               (list
                (list
