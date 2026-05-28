@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260527.1706
+;; Package-Version: 20260527.2255
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -474,7 +474,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-27T21:06:07+0000 W22-3"
+(defconst seed7-mode-version-timestamp "2026-05-28T02:55:37+0000 W22-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6313,6 +6313,11 @@ See also: `seed7-check-or-compile'."
                 (flush-current))))
           (cons exit-code (nreverse results)))
       (kill-buffer out-buf))))
+
+;; Declare variables to prevent warnings
+(defvar compilation-num-errors-found)
+(defvar compilation-num-warnings-found)
+(defvar mode-line-process)
 
 (defun seed7-check-or-compile (&optional compile)
   "Check or compile the current Seed7 buffer's file and show diagnostics.
