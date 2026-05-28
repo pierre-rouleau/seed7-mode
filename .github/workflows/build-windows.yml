@@ -3,7 +3,7 @@
 # Purpose   : build for Windows.
 # Created   : Thursday, May 28 2026.
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
-# Time-stamp: <2026-05-28 08:57:58 EDT, updated by Pierre Rouleau>
+# Time-stamp: <2026-05-28 09:06:54 EDT, updated by Pierre Rouleau>
 # ----------------------------------------------------------------------------
 # Module Description
 # ------------------
@@ -27,12 +27,7 @@ name: Build (Windows - manual)
 
 on:
   workflow_dispatch:
-    inputs:
-      run_tests:
-        description: 'Run ERT tests after compilation (may fail; see known issues)'
-        required: false
-        default: false
-        type: boolean
+
 
 jobs:
   build-windows:
@@ -47,10 +42,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@<40-char-commit-sha>
 
       - name: Setup Emacs ${{ matrix.emacs_version }}
-        uses: jcs090218/setup-emacs@master
+        uses: jcs090218/setup-emacs@<40-char-commit-sha>
         with:
           version: ${{ matrix.emacs_version }}
 
