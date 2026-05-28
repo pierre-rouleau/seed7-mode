@@ -41,8 +41,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Ubuntu — each image ships a different Emacs generation via apt-get
-          - os: ubuntu-20.04    # ships Emacs 26.3
+          # Ubuntu — use only supported hosted runner labels
+          # - os: ubuntu-20.04    # ships Emacs 26.3, but GitHub retired it on Apr 15.2025
           - os: ubuntu-22.04    # ships Emacs 27.1
           - os: ubuntu-24.04    # ships Emacs 29.x
           # macOS — Homebrew installs the latest stable Emacs
