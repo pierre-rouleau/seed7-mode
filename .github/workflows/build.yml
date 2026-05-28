@@ -1,0 +1,103 @@
+# YAML FILE: build.yml
+#
+# Purpose   : Automated build control.
+# Created   : Wednesday, May 27 2026.
+# Author    : Pierre Rouleau <prouleau001@gmail.com>
+# Time-stamp: <2026-05-27 22:48:57 EDT, updated by Pierre Rouleau>
+# ----------------------------------------------------------------------------
+# Module Description
+# ------------------
+#
+# This byte-compiles and native-compiles the seed7-mode code over several
+# versions of Emacs in several OS to ensure that the code builds without any
+# error and warnings in all supported versions.
+#
+# The build is controlled by a GNU Make script invoked by 'make all'.
+# The script byte-compiles the file and if Emasc supports native compilation
+# it native-compiles the file too.
+
+# ----------------------------------------------------------------------------
+# Dependencies
+# ------------
+#
+# - Github actions
+# - Github Action for Emacs: https://github.com/marketplace/actions/set-up-emacs
+#   - This uses Nix.  Since Nix does not support Windows, this prevents running
+#     the tests under Windows, unfortunately.
+#
+# Note that costly tests are currently disabled since I'm trying to only use
+# what is free from Github.
+
+
+# ----------------------------------------------------------------------------
+# Code
+# ----
+#
+#
+name: Build
+on:
+  push:
+    branches:
+      - master # Run only on 'push' for the main branch.
+    paths-ignore:
+      - '**.pdf'
+      - '**.rst'
+      - '.gitignore'
+  pull_request:
+    branches:
+      - '**' # Run 'pull-request' for all branches.
+    paths-ignore:
+      - '**.pdf'
+      - '**.rst'
+      - '.gitignore'
+
+
+jobs:
+  build:
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          # Ubuntu Linux runs several Emacs versions: 26,1 to 30.1
+          - os: ubuntu-latest
+            emacs_version: '26.1'
+          - os: ubuntu-latest
+            emacs_version: '26.2'
+          - os: ubuntu-latest
+            emacs_version: '26.3'
+          - os: ubuntu-latest
+            emacs_version: '27.1'
+          - os: ubuntu-latest
+            emacs_version: '28.1'
+          - os: ubuntu-latest
+            emacs_version: '29.4'
+          - os: ubuntu-latest
+            emacs_version: '30.1'
+          # On macOS, I did not find anything to test on Emacs 26 running on Intel-based macOS
+          # So the tests start at Emacs 27.1 running on the only Intel macOS I have found.
+          # However, the large costs too much and I am disabling it..
+          # I am currently testing Emacs 26.3 on a local image.
+          # - os: macos-14-large
+          #   emacs_version: '27.1'
+          - os: macos-latest
+            emacs_version: '28.1'
+          - os: macos-latest
+            emacs_version: '29.4'
+          - os: macos-latest
+            emacs_version: '30.1'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Emacs
+        uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs_version }}
+
+      - name: Run build
+        run: make all
+
+# ----------------------------------------------------------------------------
