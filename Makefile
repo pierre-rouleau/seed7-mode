@@ -55,7 +55,7 @@ EMACS_NATIVE_COMP_AVAILABLE := $(shell $(EMACS) --batch --eval '(when \
 EL_FILES := seed7-mode.el
 
 # ELC_FILES used for this project.
-ELC_FILES := $(subst .el,.elc,$(EL _FILES))
+ELC_FILES := $(subst .el,.elc,$(EL_FILES))
 
 # ----------------------------------------------------------------------------
 # RULES:  to byte-compile the Emacs-Lisp source code files
