@@ -7,9 +7,12 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
    :target: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build.yml
 
 .. image:: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build-docker.yml/badge.svg
-   :alt: Docker/silex Build State
+   :alt: Docker/silex Linux Build State
    :target: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build-docker.yml
 
+.. image:: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build-apt-brew.yml/badge.svg
+   :alt: Linux/apt-get macOS/Homebrew Build State
+   :target: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build-apt-brew.yml
 
 🚧 This is a **work-in-progress** version of seed7-mode, a major mode for the
 `Seed7 programming language`_.
