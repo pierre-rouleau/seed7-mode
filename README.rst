@@ -204,11 +204,11 @@ Support for imenu mode and Speedbar
 
 - Support `Emacs imenu mode`_ and `Emacs Speedbar`_ for:
 
-  - Seed7 procedures,
-  - Seed7 functions,
-  - Seed7 interfaces,
-  - Seed7 structures,
-  - Seed7 enums.
+  - `Seed7 procedures`_,
+  - `Seed7 functions`_,
+  - `Seed7 interfaces`_,
+  - `Seed7 structures`_,
+  - `Seed7 enums`_.
 
 See the following example screenshots:
 
@@ -1308,6 +1308,11 @@ Any help, questions, suggestions are welcome!
 .. _etags-c-seed7:                              https://github.com/pierre-rouleau/seed7-mode/blob/main/tools/etags-c-seed7
 .. _etags-c:                                    https://github.com/pierre-rouleau/pel/blob/master/bin/etags-c
 .. _⅀ Xref PDF:                                 https://pierre-rouleau.github.io/pel/pel-table-based-documentation1/xref.pdf
+.. _Seed7 procedures:                           https://seed7.net/manual/decls.htm#Procedure_declarations
+.. _Seed7 functions:                            https://seed7.net/manual/decls.htm#Function_declarations
+.. _Seed7 interfaces:                           https://seed7.net/manual/decls.htm#Interface_declarations
+.. _Seed7 structures:                           https://seed7.net/manual/types.htm#struct
+.. _Seed7 enums:                                https://seed7.net/manual/types.htm#enumeration
 
 .. ---------------------------------------------------------------------------
 
