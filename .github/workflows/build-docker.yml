@@ -1,0 +1,66 @@
+# YAML FILE: build-manual-docker.yml
+#
+# Purpose   : Manual build using silex/emacs Docker images (Nix-free).
+# Created   : Wednesday, May 28 2026.
+# Author    : Pierre Rouleau <prouleau001@gmail.com>
+# ----------------------------------------------------------------------------
+# Module Description
+# ------------------
+#
+# Runs each job inside a silex/emacs Docker container, one per Emacs version.
+# This approach is completely Nix-free and gives precise version control
+# (same versions as the Nix-based build.yml).
+#
+# Limitation: Docker containers are only supported on Linux runners; macOS
+# is not covered by this workflow.
+#
+# The workflow is triggered only manually (workflow_dispatch).
+#
+# ----------------------------------------------------------------------------
+# Dependencies
+# ------------
+#
+# - GitHub Actions (actions/checkout)
+# - Docker Hub image: silex/emacs  (https://hub.docker.com/r/silex/emacs)
+
+# ----------------------------------------------------------------------------
+# Code
+# ----
+
+name: Build (Docker/silex - manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: silex/emacs:${{ matrix.emacs_version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        emacs_version:
+          - '26.1'
+          - '26.3'
+          - '27.1'
+          - '28.1'
+          - '29.4'
+          - '30.1'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Verify Emacs version
+        run: emacs --version
+
+      - name: Install make
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends make
+
+      - name: Compile
+        run: make all
+
+# ----------------------------------------------------------------------------

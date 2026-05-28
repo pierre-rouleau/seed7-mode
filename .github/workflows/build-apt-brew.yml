@@ -1,0 +1,71 @@
+# YAML FILE: build-manual-apt-brew.yml
+#
+# Purpose   : Manual build using native package managers (apt-get / Homebrew).
+# Created   : Wednesday, May 28 2026.
+# Author    : Pierre Rouleau <prouleau001@gmail.com>
+# ----------------------------------------------------------------------------
+# Module Description
+# ------------------
+#
+# Installs Emacs via the OS native package manager — no Nix, no external
+# Emacs action.  Emacs versions obtained are those shipped by each distro
+# release:
+#
+#   ubuntu-20.04  → Emacs 26.3
+#   ubuntu-22.04  → Emacs 27.1
+#   ubuntu-24.04  → Emacs 29.x
+#   macos-latest  → Emacs via Homebrew (latest stable, currently 30.x)
+#
+# The workflow is triggered only manually (workflow_dispatch).
+#
+# ----------------------------------------------------------------------------
+# Dependencies
+# ------------
+#
+# - GitHub Actions (actions/checkout)
+# - apt-get (Ubuntu), Homebrew (macOS)
+
+# ----------------------------------------------------------------------------
+# Code
+# ----
+
+name: Build (apt-get / Homebrew - manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu — use only supported hosted runner labels
+          # - os: ubuntu-20.04    # ships Emacs 26.3, but GitHub retired it on Apr 15.2025
+          - os: ubuntu-22.04    # ships Emacs 27.1
+          - os: ubuntu-24.04    # ships Emacs 29.x
+          # macOS — Homebrew installs the latest stable Emacs
+          - os: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Emacs (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends emacs-nox
+          emacs --version
+
+      - name: Install Emacs (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install emacs
+          emacs --version
+
+      - name: Compile
+        run: make all
+
+# ----------------------------------------------------------------------------
