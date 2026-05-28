@@ -1,6 +1,6 @@
-# YAML FILE: build-manual-apt-brew.yml
+# YAML FILE: build-apt-brew.yml
 #
-# Purpose   : Manual build using native package managers (apt-get / Homebrew).
+# Purpose   : Build using native package managers (apt-get / Homebrew).
 # Created   : Wednesday, May 28 2026.
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
 # ----------------------------------------------------------------------------
@@ -29,10 +29,26 @@
 # Code
 # ----
 
-name: Build (apt-get / Homebrew - manual)
+name: Build (Linux/apt-get macOS/Homebrew)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main # Run only on 'push' for the main branch.
+    paths-ignore:
+      - '**.yml'
+      - '**.pdf'
+      - '**.rst'
+      - '.gitignore'
+  pull_request:
+    branches:
+      - '**' # Run 'pull-request' for all branches.
+    paths-ignore:
+      - '**.yml'
+      - '**.pdf'
+      - '**.rst'
+      - '.gitignore'
 
 jobs:
   build:
