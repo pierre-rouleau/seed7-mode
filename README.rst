@@ -1211,9 +1211,10 @@ it will download the new version of the files and byte-compile ``seed7-mode.el``
 Future
 ======
 
-Once this code is stable I will add the logic to make it an elpa-compliant Emacs
-package and probably will include it under MELPA.  But the code is not yet
-ready for that.
+This package is stable enough to be useful but is not perfect yet.
+It is not yet available under MELPA; I did not get enough feedback
+for potential areas to improve.
+However, you can easily install it as described above.
 
 Any help, questions, suggestions are welcome!
 
