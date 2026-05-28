@@ -3,7 +3,7 @@
 # Purpose   : Automated build control.
 # Created   : Wednesday, May 27 2026.
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
-# Time-stamp: <2026-05-28 11:57:43 EDT, updated by Pierre Rouleau>
+# Time-stamp: <2026-05-28 12:07:26 EDT, updated by Pierre Rouleau>
 # ----------------------------------------------------------------------------
 # Module Description
 # ------------------
@@ -41,6 +41,7 @@ on:
     branches:
       - main # Run only on 'push' for the main branch.
     paths-ignore:
+      - '**.yml'
       - '**.pdf'
       - '**.rst'
       - '.gitignore'
@@ -48,6 +49,7 @@ on:
     branches:
       - '**' # Run 'pull-request' for all branches.
     paths-ignore:
+      - '**.yml'
       - '**.pdf'
       - '**.rst'
       - '.gitignore'
