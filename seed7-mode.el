@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260528.1727
+;; Package-Version: 20260528.1734
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-28T21:27:40+0000 W22-4"
+(defconst seed7-mode-version-timestamp "2026-05-28T21:34:23+0000 W22-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -487,7 +487,7 @@ Please do not modify.")
 (defun seed7-mode-version ()
   "Print `seed7-mode' version UTC timestamp."
   (interactive)
-  (message "seed7-mode version UT timestamp: %s" seed7-mode-version-timestamp))
+  (message "seed7-mode version UTC timestamp: %s" seed7-mode-version-timestamp))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Customization
@@ -6771,8 +6771,8 @@ Return a list of 4-element lists, where each 4-element list has:
         (text-re (format seed7--xref-line-re-fmt (regexp-quote identifier))))
     (with-current-buffer seed7---xref-buffer
       (goto-char (point-min))
-      (while (and keep-searching)
-        (not (eobp))
+      (while (and keep-searching
+                  (not (eobp)))
         (if (seed7-re-search-forward text-re)
             (let ((filename (match-string 2))
                   (lineno (string-to-number (match-string 3))))
