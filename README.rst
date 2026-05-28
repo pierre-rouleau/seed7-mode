@@ -56,8 +56,8 @@ Currently Implemented Features
 ==============================
 
 
-Display seed-mode version information
--------------------------------------
+Display seed7-mode version information
+--------------------------------------
 
 The ``seed7-mode-version`` command, bound to ``C-c v`` in seed7-mode buffers,
 display the version UTC time stamp of the file in the message area, at bottom
