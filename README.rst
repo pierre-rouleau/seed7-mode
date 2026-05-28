@@ -18,6 +18,7 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
    :alt: Windows Build State
    :target: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build-windows.yml
 
+.. image:: https://img.shields.io/badge/Emacs_>=_25.1-teal
 
 
 🚧 This is a **work-in-progress** version of seed7-mode, a major mode for the
