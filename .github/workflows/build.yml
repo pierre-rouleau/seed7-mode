@@ -3,7 +3,7 @@
 # Purpose   : Automated build control.
 # Created   : Wednesday, May 27 2026.
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
-# Time-stamp: <2026-05-28 10:51:08 EDT, updated by Pierre Rouleau>
+# Time-stamp: <2026-05-28 11:57:43 EDT, updated by Pierre Rouleau>
 # ----------------------------------------------------------------------------
 # Module Description
 # ------------------
@@ -37,24 +37,20 @@
 name: Build
 on:
   workflow_dispatch:    # ← allows manual "Run workflow" button in the Actions UI
-
-  # Disable automatic execution until upstream issue is fixed
-  # (see https://github.com/purcell/setup-emacs/issues/58).
-  #
-  # push:
-  #   branches:
-  #     - main # Run only on 'push' for the main branch.
-  #   paths-ignore:
-  #     - '**.pdf'
-  #     - '**.rst'
-  #     - '.gitignore'
-  # pull_request:
-  #   branches:
-  #     - '**' # Run 'pull-request' for all branches.
-  #   paths-ignore:
-  #     - '**.pdf'
-  #     - '**.rst'
-  #     - '.gitignore'
+  push:
+    branches:
+      - main # Run only on 'push' for the main branch.
+    paths-ignore:
+      - '**.pdf'
+      - '**.rst'
+      - '.gitignore'
+  pull_request:
+    branches:
+      - '**' # Run 'pull-request' for all branches.
+    paths-ignore:
+      - '**.pdf'
+      - '**.rst'
+      - '.gitignore'
 
 
 jobs:
