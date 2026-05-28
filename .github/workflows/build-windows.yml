@@ -1,0 +1,66 @@
+# YAML FILE: build-windows.yml
+#
+# Purpose   : build for Windows.
+# Created   : Thursday, May 28 2026.
+# Author    : Pierre Rouleau <prouleau001@gmail.com>
+# Time-stamp: <2026-05-28 08:57:58 EDT, updated by Pierre Rouleau>
+# ----------------------------------------------------------------------------
+# Module Description
+# ------------------
+#
+# - This workflow is triggered only manually (workflow_dispatch).
+# - Uses jcs090218/setup-emacs which supports Linux, macOS, and Windows.
+# - Compilation step uses bash (Git Bash) so GNU Make POSIX shell recipes work.
+
+# ----------------------------------------------------------------------------
+# Dependencies
+# ------------
+#
+
+# ----------------------------------------------------------------------------
+# Code
+# ----
+#
+#
+
+name: Build (Windows - manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: 'Run ERT tests after compilation (may fail; see known issues)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        emacs_version:
+          - '28.1'
+          - '29.4'
+          - '30.1'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Emacs ${{ matrix.emacs_version }}
+        uses: jcs090218/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs_version }}
+
+      - name: Verify Emacs
+        shell: bash
+        run: emacs --version
+
+      - name: Compile
+        shell: bash
+        run: make all
+
+
+# ----------------------------------------------------------------------------
