@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260528.1553
+;; Package-Version: 20260528.1718
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-28T19:53:47+0000 W22-4"
+(defconst seed7-mode-version-timestamp "2026-05-28T21:18:26+0000 W22-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2053,8 +2053,8 @@ Allows selecting similar colours for various systems."
     (while list
       (or answer
           (if (or (color-defined-p (car list))
-		          (null (cdr list)))
-	          (setq answer (car list))))
+                          (null (cdr list)))
+                  (setq answer (car list))))
       (setq list (cdr list)))
     answer))
 
@@ -2416,7 +2416,7 @@ Allows selecting similar colours for various systems."
 - If ARG is negative, turn the state off,
 - If ARG is positive, turn the state on."
   (if (or (not arg)
-	      (zerop (setq arg (prefix-numeric-value arg))))
+              (zerop (setq arg (prefix-numeric-value arg))))
       (not prevstate)
     (> arg 0)))
 
@@ -2437,7 +2437,7 @@ Note: the default style for all Seed7 buffers is controlled by the
     (setq-local comment-start    (concat (if use-block
                                              cblock-start
                                            cline-start)
-		                         " "))
+                                         " "))
     (setq-local comment-end      (if use-block (concat " " cblock-end) ""))
     (setq-local comment-continue (if use-block
                                      (concat " " cblock-continue)
@@ -2462,10 +2462,10 @@ Note: the default style for all Seed7 buffers is controlled by the
 `seed7-uses-block-comment' customizable user-option."
   (interactive "P")
   (let ((use-block (cond
-	            ((and seed7-line-comment-starter seed7-block-comment-starter)
-	             (seed7--new-state-for arg seed7-uses-block-comment))
-	            (seed7-line-comment-starter nil)
-	            (t t))))
+                    ((and seed7-line-comment-starter seed7-block-comment-starter)
+                     (seed7--new-state-for arg seed7-uses-block-comment))
+                    (seed7-line-comment-starter nil)
+                    (t t))))
     (seed7--set-comment-style use-block 'verbose)))
 
 ;; ---------------------------------------------------------------------------
