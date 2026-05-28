@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260528.1547
+;; Package-Version: 20260528.1553
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-28T19:47:02+0000 W22-4"
+(defconst seed7-mode-version-timestamp "2026-05-28T19:53:47+0000 W22-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6443,36 +6443,39 @@ or nil when no diagnostics are found."
         ;; -- Activate compilation-mode AFTER inserting ---
         ;; This lets mode font-lock and regexp scanning run on the final text.
         (compilation-mode)
-        ;; -- Mode-line: replicate what compilation-handle-exit produces
-        ;; NOTE: compilation-num-*-found are compile.el internals (not a public API).
-        ;; Set the three count variables that compilation-mode uses.
-        (setq-local compilation-num-errors-found   n-errors)
-        ;; The current Seed7 tools emit no warning and no information hints.
-        ;; If future versions of Seed7 emits them the following should be
-        ;; extracted.
-        (when (boundp 'compilation-num-warnings-found)
-          (setq-local compilation-num-warnings-found 0))
-        (when (boundp 'compilation-num-infos-found)
-          (setq-local compilation-num-infos-found 0))
-        (setq-local mode-line-process
-                    (list
-                     ;; ":exit [N]" — green when 0, red when non-zero
-                     (propertize (format ":exit [%d]" exit-code)
-                                 'face (if (zerop exit-code)
-                                           'compilation-mode-line-exit
-                                         'compilation-mode-line-fail))
-                     " ["
-                     ;; error count — red bold (compilation-mode-line-fail)
-                     (propertize (number-to-string n-errors)
-                                 'face 'compilation-mode-line-fail)
-                     ;; warning count — orange bold (compilation-mode-line-run
-                     ;;                 inherits compilation-warning)
-                     " "
-                     (propertize "0" 'face 'compilation-mode-line-run)
-                     ;; info count — green bold (compilation-mode-line-exit)
-                     " "
-                     (propertize "0" 'face 'compilation-mode-line-exit)
-                     "]"))
+        ;; -- Mode-line: replicate what compilation-handle-exit produces if
+        ;;   possible.
+        ;;   NOTE: compilation-num-*-found are compile.el internals and older
+        ;;   versions of Emacs may not have them.  If they are defined, then
+        ;;   update the modeline, otherwise leave it alone.
+        (when (boundp 'compilation-num-errors-found)
+          (setq-local compilation-num-errors-found   n-errors)
+          ;; The current Seed7 tools emit no warning and no information hints.
+          ;; If future versions of Seed7 emits them the following should be
+          ;; extracted.
+          (when (boundp 'compilation-num-warnings-found)
+            (setq-local compilation-num-warnings-found 0))
+          (when (boundp 'compilation-num-infos-found)
+            (setq-local compilation-num-infos-found 0))
+          (setq-local mode-line-process
+                      (list
+                       ;; ":exit [N]" — green when 0, red when non-zero
+                       (propertize (format ":exit [%d]" exit-code)
+                                   'face (if (zerop exit-code)
+                                             'compilation-mode-line-exit
+                                           'compilation-mode-line-fail))
+                       " ["
+                       ;; error count — red bold (compilation-mode-line-fail)
+                       (propertize (number-to-string n-errors)
+                                   'face 'compilation-mode-line-fail)
+                       ;; warning count — orange bold (compilation-mode-line-run
+                       ;;                 inherits compilation-warning)
+                       " "
+                       (propertize "0" 'face 'compilation-mode-line-run)
+                       ;; info count — green bold (compilation-mode-line-exit)
+                       " "
+                       (propertize "0" 'face 'compilation-mode-line-exit)
+                       "]")))
         (goto-char (point-min)))
       (display-buffer out-buf)
       ;; -- Show and return results -----------------------------------------
@@ -7401,7 +7404,6 @@ Make sure you have no duplication of keywords if you edit the list."
   ;; 'local)
 
   ;; Seed7 Source Code Alignment rules
-
   (setq-local align-mode-rules-list
               (list
                (list
