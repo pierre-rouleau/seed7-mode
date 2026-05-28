@@ -1,0 +1,44 @@
+# SEED7 FILE: navigation-01.sd7
+#
+# Purpose   : Seed7 test code - navigation in seed7-mode.
+# Created   : Thursday, May 28 2026.
+# Author    : Pierre Rouleau <prouleau001@gmail.com>
+# ----------------------------------------------------------------------------
+# Module Description
+# ------------------
+#
+# The file holds Seed7 code that is used to test seed7-mode navigation
+# functionality.  The Seed7 code should compile but does not need to do
+# anything useful.
+#
+# DO NOT MODIFY the code.  It is used by seed7-mode test code which expects
+#                          lines to be at specific locations.
+
+# ----------------------------------------------------------------------------
+# Test Code
+# ---------
+
+$ include "seed7_05.s7i";
+
+const func integer: add (in integer: a, in integer: b) is func
+  local
+    var integer: result is 0;
+  begin
+    result := a + b;
+    return result;
+  end func;
+
+const func string: greet (in string: name) is func
+  local
+    var string: msg is "";
+  begin
+    msg := "Hello " <& name;
+    return msg;
+  end func;
+
+const proc: printValue (in integer: n) is func
+  begin
+    writeln(n);
+  end func;
+
+# ----------------------------------------------------------------------------
