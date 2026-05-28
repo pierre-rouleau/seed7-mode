@@ -14,6 +14,10 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
    :alt: Linux/apt-get macOS/Homebrew Build State
    :target: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build-apt-brew.yml
 
+.. image:: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build-windows.yml/badge.svg
+   :alt: Windows Build State
+   :target: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build-windows.yml
+
 🚧 This is a **work-in-progress** version of seed7-mode, a major mode for the
 `Seed7 programming language`_.
 
