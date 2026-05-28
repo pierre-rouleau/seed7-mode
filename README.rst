@@ -2,6 +2,10 @@
 Seed7-mode - Emacs support for the Seed7 Programming Language
 =============================================================
 
+.. image:: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build.yml/badge.svg
+   :alt: Build State
+   :target: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build.yml
+
 
 🚧 This is a **work-in-progress** version of seed7-mode, a major mode for the
 `Seed7 programming language`_.
