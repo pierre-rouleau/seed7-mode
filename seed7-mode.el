@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260528.1718
+;; Package-Version: 20260528.1720
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -292,11 +292,11 @@
 ;;          o `seed7-end-of-defun'
 ;;   - Seed7 Navigation by Block
 ;;     * `seed7-to-block-forward'
-;;       . `seed7--end-regxp-for'
+;;       . `seed7--end-regexp-for'
 ;;         . `seed7--type-regexp'
 ;;     * `seed7-to-block-backward'
 ;;       . `seed7--current-line-nth-word'
-;;       . `seed7--start-regxp-for'
+;;       . `seed7--start-regexp-for'
 ;;         . `seed7--type-regexp'
 ;; - Seed7 iMenu Support
 ;; - Seed7 Code Marking
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-28T21:18:26+0000 W22-4"
+(defconst seed7-mode-version-timestamp "2026-05-28T21:20:25+0000 W22-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1196,7 +1196,7 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
     "empty"))
 
 ;; Note: the < > are important to prevent detection of words inside other words.
-(defconst seed7-predefined-constants-regxp
+(defconst seed7-predefined-constants-regexp
   (format "%s\\(%s\\)%s"
           "\\<"
           (rx-to-string
@@ -1220,7 +1220,7 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
     "STD_OUT"))
 
 ;; Note: the < > are important to prevent detection of words inside other words.
-(defconst seed7-predefined-variables-regxp
+(defconst seed7-predefined-variables-regexp
   (format "%s\\(%s\\)%s"
           "\\<"
           (rx-to-string
@@ -1247,7 +1247,7 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
     "IN_ERROR"))
 
 ;; Note: the < > are important to prevent detection of words inside other words.
-(defconst seed7-errinfo-values-regxp
+(defconst seed7-errinfo-values-regexp
   (format "%s\\(%s\\)%s"
           "\\<"
           (rx-to-string
@@ -1325,7 +1325,7 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
     "><:="
     "@:="))
 
-(defconst seed7-predef-assignment-operator-regxp
+(defconst seed7-predef-assignment-operator-regexp
   (rx-to-string
    `(:  (or ,@seed7--assignment-operator-symbols)))
   "Seed7 assignment operator symbols.  Captured in Group 0.")
@@ -1338,7 +1338,7 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
 ;;
 ;; Predefined comparison operators are: = <> < <= > >=
 
-(defconst seed7-predef-comparison-operator-regxp
+(defconst seed7-predef-comparison-operator-regexp
   "\\(?:[=><]\\|\\(?:<>\\|<=\\|>=\\)\\)"
   "Symbol is in group 0.")
 
@@ -1350,7 +1350,7 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
 ;;
 ;; Other predefined operators are: + - * / ** ! << >> & | >< <& ?
 ;;                                            -------     -------
-(defconst seed7-other-predef-operator-regxp
+(defconst seed7-other-predef-operator-regexp
   "[!?]\\|<<\\|>>\\|><\\|<&"
   "Symbol is in group 0.")
 
@@ -1360,7 +1360,7 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
 ;;
 ;;   + - * / **
 ;;
-(defconst seed7-arithmetic-operator-regxp
+(defconst seed7-arithmetic-operator-regexp
   "[[:alnum:]_ )]\\([/*]\\)[[:alnum:]_ (]"
   "Arithmetic operator except the minus sign.
 Match group 1")
@@ -2356,17 +2356,17 @@ Allows selecting similar colours for various systems."
    (cons seed7-number-with-exponent-re               (list 0 ''seed7-integer-face))
    (cons seed7-integer-invalid-0x-re                 (list 1 ''font-lock-warning-face))
    ;; predefined constants (includes 'E'). Must be rendered after float numbers.
-   (cons seed7-predefined-constants-regxp            (list 1 ''font-lock-constant-face))
+   (cons seed7-predefined-constants-regexp           (list 1 ''font-lock-constant-face))
    ;; predefined variables
-   (cons seed7-predefined-variables-regxp            (list 1 ''seed7-predefined-variables-face))
+   (cons seed7-predefined-variables-regexp           (list 1 ''seed7-predefined-variables-face))
    ;; predefined errinfo values
-   (cons seed7-errinfo-values-regxp                  (list 1 ''seed7-errinfo-value-face))
+   (cons seed7-errinfo-values-regexp                 (list 1 ''seed7-errinfo-value-face))
    ;; operator symbols
    (cons seed7-operator-symbols-regexp               (list 1 ''font-lock-keyword-face))
-   (cons seed7-predef-assignment-operator-regxp      (list 0 ''font-lock-keyword-face))
-   (cons seed7-other-predef-operator-regxp           (list 0 ''font-lock-keyword-face)) ; before comparison because that has single char operators that are part of other predef
-   (cons seed7-predef-comparison-operator-regxp      (list 0 ''font-lock-keyword-face))
-   (cons seed7-arithmetic-operator-regxp             (list 1 ''font-lock-keyword-face))
+   (cons seed7-predef-assignment-operator-regexp     (list 0 ''font-lock-keyword-face))
+   (cons seed7-other-predef-operator-regexp          (list 0 ''font-lock-keyword-face)) ; before comparison because that has single char operators that are part of other predef
+   (cons seed7-predef-comparison-operator-regexp     (list 0 ''font-lock-keyword-face))
+   (cons seed7-arithmetic-operator-regexp            (list 1 ''font-lock-keyword-face))
    (cons "[[:alnum:] _)]\\(/\\)[[:alnum:] _(]"       (list 1 ''font-lock-keyword-face)) ; /
    (cons "[[:alnum:] _)]\\(\\*\\*\\)[[:alnum:] _(]"  (list 1 ''font-lock-keyword-face)) ; **
    ;; logic operator
@@ -3316,7 +3316,7 @@ The regexp has 2 capture groups:
           keyword keyword))
 
 ;; [:todo 2025-05-31, by Pierre Rouleau: Add support for hard tab after keyword
-(defun seed7--end-regxp-for (word1 word2 last-word)
+(defun seed7--end-regexp-for (word1 word2 last-word)
   "Return regexps for end and start of block for specified arguments.
 Used when searching forward.
 Where WORD1 is the first word, WORD2 the second word and LAST-WORD the last.
@@ -3408,7 +3408,7 @@ Return found position or nil if nothing found."
             (setq found-position (point)))
            ;; handle everything else
            (t
-            (let* ((regexp.start-pos (seed7--end-regxp-for
+            (let* ((regexp.start-pos (seed7--end-regexp-for
                                       word1 word2
                                       (seed7--current-line-nth-word -1)))
                    (regexp (car regexp.start-pos))
@@ -3479,7 +3479,7 @@ NO match.  From %d, at point  %d, nesting=%d, line %d for: %S"
 
 
 ;; [:todo 2025-05-31, by Pierre Rouleau: Add & test support for hard tab after keyword
-(defun seed7--start-regxp-for (word1 word2)
+(defun seed7--start-regexp-for (word1 word2)
   "Return a regexp to search the starting string block specified by the arguments.
 Used when searching backward.
 
@@ -3545,7 +3545,7 @@ Return found position if found, nil if nothing found."
       (save-excursion
         (let* ((first-word (seed7--current-line-nth-word 1))
                (second-word (seed7--current-line-nth-word 2))
-               (regexp.same-line (seed7--start-regxp-for first-word
+               (regexp.same-line (seed7--start-regexp-for first-word
                                                          second-word))
                (regexp (car regexp.same-line))
                (same-line (cdr regexp.same-line)))
@@ -3938,7 +3938,7 @@ Do not move point."
 Return nil if not found.
 Do not move point."
   (save-excursion
-    (when (seed7-re-search-backward seed7-predef-assignment-operator-regxp)
+    (when (seed7-re-search-backward seed7-predef-assignment-operator-regexp)
       (+ (point) (length (match-string 0))))))
 
 ;; [:todo 2025-05-30, by Pierre Rouleau: Add bound search limit]
@@ -5300,7 +5300,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
      ;; explicit purpose of allowing that manual alignment mechanism.
      ((seed7--set (seed7-line-starts-with
                    0
-                   seed7-predef-assignment-operator-regxp)
+                   seed7-predef-assignment-operator-regexp)
                   indent-column))
      ((and (seed7--set (seed7-line-inside-assign-statement-continuation 0)
                        indent-column2)
@@ -6881,9 +6881,9 @@ priority order:
 This function implements `xref-backend-identifier-at-point' for Seed7
 buffers."
   (cond
-   ((looking-at seed7-predef-assignment-operator-regxp)
+   ((looking-at seed7-predef-assignment-operator-regexp)
     (substring-no-properties (match-string 0)))
-   ((looking-at-p seed7-arithmetic-operator-regxp)
+   ((looking-at-p seed7-arithmetic-operator-regexp)
     (substring-no-properties (match-string 1)))
    ((looking-at seed7--very-special-char-re)
     (string (char-after)))
@@ -7419,7 +7419,7 @@ Make sure you have no duplication of keywords if you edit the list."
                  'regexp
                  ;; align on assignment operator and on text after it
                  (format "\\(\\s-+\\)%s\\(\\s-+\\)"
-                         seed7-predef-assignment-operator-regxp))
+                         seed7-predef-assignment-operator-regexp))
                 (list 'group 1 2)
                 (cons 'modes (quote 'seed7-mode)))))
   (setq-local align-region-separate 'group))
