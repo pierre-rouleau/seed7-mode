@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.1334
+;; Package-Version: 20260529.1348
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T17:34:29+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-29T17:48:30+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4690,7 +4690,7 @@ section, it returns the indentation column of the proc/func declaration.
 If it detects that it is outside, it returns nil."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
-    (error "seed7-line-inside-proc-argument-list-section: \
+    (error "seed7-line-inside-argument-list-section: \
 Invalid boundaries: begin=%S, end=%S"
            scope-begin-pos scope-end-pos))
   (save-excursion
