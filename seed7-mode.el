@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.1910
+;; Package-Version: 20260529.1924
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -480,7 +480,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T23:10:30+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-29T23:24:20+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2610,20 +2610,8 @@ Move point."
     (while (and keep-searching
                 (not (bobp)))
       (if (re-search-backward regexp bound :noerror)
-          (unless (save-excursion
-                    (forward-char) ; Protection. Prevent code following line-end comment as comment.
-                    ;;             ; This should not be necessary because the first char
-                    ;;             ; of a line will not be a comment or string, but it seems
-                    ;;             ; that the check invalidly reports code as comment when
-                    ;;             ; code is executed inside a keyboard macro that first inserts
-                    ;;             ; a space before a indented keyword that follows a line-end comment.
-                    ;;             ; The problem does not seem to happen under normal typing.
-                    ;;             ; This is very strange.  Perhaps I don't understand what is
-                    ;;             ; really happening here but tracing through this indicated that the
-                    ;;             ; forward-char solves the issue when it occurs.
-                    ;; [:todo 2025-06-04, by Pierre Rouleau: investigate: a bug in Emacs? Or in my code? ]
-                (or (seed7-inside-comment-p)
-                    (seed7-inside-string-p)))
+          (unless (or (seed7-inside-comment-p)
+                      (seed7-inside-string-p))
             ;; Found in code!
             (setq found-pos (point))
             (setq keep-searching nil))
