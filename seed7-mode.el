@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.1742
+;; Package-Version: 20260529.1754
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T21:42:12+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-29T21:54:50+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7289,7 +7289,7 @@ current Emacs session without restarting Emacs."
           (setq entry-number (1+ entry-number))
           (cond
            ;; Invalid: not a list of exactly 2 elements, both strings.
-           ((not (and (listp entry)
+           ((not (and (proper-list-p entry)
                       (= (length entry) 2)
                       (stringp (car entry))
                       (stringp (cadr entry))))
