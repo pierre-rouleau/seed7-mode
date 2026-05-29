@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.1348
+;; Package-Version: 20260529.1544
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T17:48:30+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-29T19:44:25+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3809,7 +3809,11 @@ If point is before or between 2 functions or procedure, mark the next one."
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (defcustom seed7-indent-width 2
-  "Number of columns used for Seed7 code indentation."
+  "Number of columns used for Seed7 code indentation.
+
+Only values in the range 2 to 8, inclusive, are used.
+If the value is smaller than 2, then 2 is used.
+If the value is larger than 8, 8 is used."
   :group 'seed7
   :type 'integer)
 
@@ -5003,10 +5007,10 @@ Invalid boundaries: begin=%S, end=%S"
         (when candidate-list
           ;; sort the list by distance between open paren and start of line
           (setq candidate-list (sort candidate-list
-                                     (lambda (e1 e2) ""
+                                     (lambda (e1 e2)
                                        (<
-                                        (- start-pos (nth 1 e1))
-                                        (- start-pos (nth 1 e2))))))
+                                        (- line-start (nth 1 e1))
+                                        (- line-start (nth 1 e2))))))
           ;; The inner block is in the first element of the candidate-list
           ;; Return the column position right after its opening paren.
           (goto-char (nth 1 (nth 0 candidate-list)))
@@ -7414,7 +7418,17 @@ Make sure you have no duplication of keywords if you edit the list."
   ;; the `indent-rigidly' command.
   ;; To ensure this is the case, the seed7-mode also forces `indent-tabs-mode'
   ;; to nil to prevent insertion of hard tabs.
-  (setq-local tab-width        seed7-indent-width)
+  ;; Prevent using a value of `seed7-indent-width' user-option that would be
+  ;; invalid.
+  (cond
+   ((not (integerp seed7-indent-width)) (setq-local seed7-indent-width 2))
+   ((< seed7-indent-width 2) (setq-local seed7-indent-width 2))
+   ((> seed7-indent-width 8) (setq-local seed7-indent-width 8)))
+  ;; Adjust tab width to the indentation; that's sometime useful to quickly
+  ;; change the visual rendering of the indentation by converting to tabs then
+  ;; changing the tab width.
+  (setq-local tab-width seed7-indent-width)
+  ;;
   (setq-local indent-tabs-mode nil)
 
   ;; Seed7 Code Navigation
