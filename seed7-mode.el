@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.1051
+;; Package-Version: 20260529.1308
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -348,7 +348,7 @@
 ;;       . `seed7--on-lineof'
 ;;     . `seed7-line-inside-until-logic-expression'
 ;;     . `seed7-line-inside-func-return-statement'
-;;     . `seed7-line-inside-proc-argument-list-section'
+;;     . `seed7-line-inside-argument-list-section'
 ;;     . `seed7-line-inside-array-definition-block'
 ;;     . `seed7-line-at-endof-array-definition-block'
 ;;     . `seed7-line-inside-set-definition-block'
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T14:51:35+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-29T17:08:01+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3954,14 +3954,19 @@ Do not move point."
   (save-excursion
     (seed7-re-search-backward (regexp-quote char) bound)))
 
-(defun seed7-forward-char-pos (char &optional bound)
+(defun seed7-forward-char-pos (char &optional bound point-after)
   "Forward search for CHAR in code, return its position or nil.
+Return the position of the CHAR unless POINT-AFTER is non-nil, in which case
+it returns the point after CHAR.
 CHAR is a string of 1 character.
 If BOUND is specified it bounds the search; it is a buffer position:
 the match found must not begin after that position.
-Do not move point."
+Does not move point."
   (save-excursion
-    (seed7-re-search-forward (regexp-quote char) bound)))
+    (when (seed7-re-search-forward (regexp-quote char) bound)
+      (if point-after
+          (match-end 0)
+        (match-beginning 0)))))
 
 
 ;;*** Seed7 Indentation Base Position Detection Utilities
@@ -3977,13 +3982,13 @@ Do not move point."
 
 ;; [:todo 2025-05-30, by Pierre Rouleau: Add bound search limit]
 (defun seed7-statement-end-pos (&optional start-pos)
-  "Position of next end of Seed7 statement if found, nil otherwise.
+  "Position right after next end of Seed7 statement if found, nil otherwise.
 Start searching at current point, unless START-POS is non-nil.
-Do not move point."
+Does not move point."
   (save-excursion
     (when start-pos
       (goto-char start-pos))
-    (seed7-forward-char-pos ";")))
+    (seed7-forward-char-pos ";" nil 'point-after)))
 
 
 ;;*** Seed7 Indentation Base Line Navigation
@@ -4661,7 +4666,8 @@ If it detects that it is outside, it returns nil."
                 (seed7-to-indent)
                 (setq start-pos (point))
                 (setq found-column (+  (current-column) 5))
-                (setq end-pos (seed7-forward-char-pos ";" scope-end-pos))
+                (setq end-pos (seed7-forward-char-pos ";" scope-end-pos
+                                                      'point-after))
                 (unless (and end-pos
                              (< start-pos current-pos end-pos)
                              (or (not scope-end-pos)
@@ -4672,19 +4678,20 @@ If it detects that it is outside, it returns nil."
             (setq keep-searching nil)))
         found-column))))
 
-(defun seed7-line-inside-proc-argument-list-section (n &optional
-                                                       scope-begin-pos
-                                                       scope-end-pos
-                                                       dont-skip-comment-start)
-  "Check if line N is inside a Seed7 procedure argument list section.
+(defun seed7-line-inside-argument-list-section (n &optional
+                                                  scope-begin-pos
+                                                  scope-end-pos
+                                                  dont-skip-comment-start)
+  "Check if line N is inside a Seed7 action argument list section.
+A Seed7 action is a function or a procedure.
 N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
 SCOPE-BEGIN-POS and SCOPE-END-POS are the search begin and end boundaries.
-If it finds that the line is inside the procedure list section it
-returns the indentation column of the procedure.
+If it finds that the line is inside the procedure or function argument list
+section, it returns the indentation column of the proc/func declaration.
 If it detects that it is outside, it returns nil."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
@@ -4692,36 +4699,46 @@ If it detects that it is outside, it returns nil."
 Invalid boundaries: begin=%S, end=%S"
            scope-begin-pos scope-end-pos))
   (save-excursion
-    (when (seed7-move-to-line n dont-skip-comment-start)
-      (let ((current-pos (point))
-            (start-pos nil)
-            (end-pos nil)
-            (found-column nil)
-            (keep-searching t))
-        (while (and keep-searching
-                    (not (bobp)))
-          (if (seed7-re-search-backward
-               "^[[:blank:]]*const[[:blank:]
-]+proc[[:blank:]
-]*:[[:blank:]
-]" scope-begin-pos)
+    (let ((current-pos (point))
+          (found-column nil))
+      (when (seed7-move-to-line n dont-skip-comment-start)
+        ;; STEP 1 — Locate the owning proc/func declaration.
+        ;;
+        ;; If the current line IS a proc/func declaration start, use it
+        ;; directly.  Searching backward from here would skip past the
+        ;; current declaration and land on the previous one.
+        (if (seed7-line-is-procfunc-beg-of-decl 0 dont-skip-comment-start)
+            (progn
               (seed7-to-indent)
-            (setq start-pos (point))
-            (setq found-column (current-column))
-            (setq keep-searching nil)
-            (if (seed7-re-search-forward " is func" scope-end-pos)
+              (setq found-column (current-column)))
+          ;; Current line is a continuation line (or unrelated) — search
+          ;; backward for the nearest proc/func declaration start.
+          (when (seed7-re-search-backward seed7-procfunc-beg-of-decl-nc-re
+                                          scope-begin-pos)
+            ;; store the function/procedure indented column
+            (seed7-to-indent)
+            (setq found-column (current-column))))
+        ;;
+        ;; STEP 2 — Validate that current-pos is strictly inside the '(…)'
+        ;; argument list of the declaration we just found.
+        ;;
+        ;; This also correctly returns nil when line N is the declaration
+        ;; line itself (current-pos is before '(', so the range check fails).
+        (when found-column
+          (let ((open-paren-pos (seed7-forward-char-pos "(" scope-end-pos)))
+            (if open-paren-pos
                 (progn
-                  (setq end-pos (point))
-                  (unless (< start-pos current-pos end-pos)
+                  (goto-char open-paren-pos)
+                  (if (ignore-errors (forward-sexp) t)
+                      ;; Point is now one past ')'.
+                      (let ((close-paren-pos (1- (point))))
+                        (unless (< open-paren-pos current-pos close-paren-pos)
+                          (setq found-column nil)))
+                    ;; forward-sexp failed — closing paren not found in scope.
                     (setq found-column nil)))
-              ;; not finding the end: nothing found and stop.
-              (setq found-column nil)
-              (setq keep-searching nil))
-            ;; not finding beginning: stop
-            (setq found-column nil)
-            (setq keep-searching nil)))
+              ;; No opening '(' within scope.
+              (setq found-column nil))))
         found-column))))
-
 
 (defun seed7-line-inside-array-definition-block (n &optional
                                                    dont-skip-comment-start)
@@ -5242,7 +5259,7 @@ recursive call."
 Issue error if not found.
 In either case do not move point.
 N is: - :previous-non-empty for the previous non-empty line,
-        skipping lines with starting comments unless DONT-SKIP-COMMENT-START
+        skipping lines with starting comments unless DONT-SKIP-COMMENT
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
@@ -5261,7 +5278,7 @@ Skip comment unless DONT-SKIP-COMMENT is non-nil."
 Issue error if not found.
 Do not move point.
 N is: - :previous-non-empty for the previous non-empty line,
-        skipping lines with starting comments unless DONT-SKIP-COMMENT-START
+        skipping lines with starting comments unless DONT-SKIP-COMMENT
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
@@ -5381,7 +5398,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
            (seed7-line-inside-logic-check-expression 0 begin-pos end-pos)
            indent-column))
          ((seed7--set                   ; inside argument list?
-           (seed7-line-inside-proc-argument-list-section 0 begin-pos end-pos)
+           (seed7-line-inside-argument-list-section 0 begin-pos end-pos)
            indent-column)
           (setq indent-column (+ indent-column seed7-indent-width)))
          ((seed7--set                   ; inside until  ...; area?
