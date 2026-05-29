@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.0754
+;; Package-Version: 20260529.0827
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T11:54:59+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-29T12:27:04+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2649,11 +2649,11 @@ caller."
     ;; position
     (when closest-position-beg.end.regexp
       ;; restore match start pos
-      (goto-char  (nth 1 closest-position-beg.end.regexp))
+      (goto-char  (nth 0 closest-position-beg.end.regexp))
       ;; restore the match data by searching again without moving
-      (looking-at (nth 3 closest-position-beg.end.regexp))
+      (looking-at (nth 2 closest-position-beg.end.regexp))
       ;; set point and return position of the requested end
-      (goto-char  (nth (if get-start-pos 1 2)
+      (goto-char  (nth (if get-start-pos 0 1)
                        closest-position-beg.end.regexp)))))
 
 
