@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.0827
+;; Package-Version: 20260529.0834
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T12:27:04+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-29T12:34:14+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2624,7 +2624,8 @@ Move point."
         (setq keep-searching nil)))
     found-pos))
 
-(defun seed7-re-search-backward-closest (regexps &optional get-start-pos)
+(defun seed7-re-search-backward-closest
+                    (regexps &optional get-start-pos)
   "Search for all specified regexp in REGEXPS and stop at the closest found.
 
 If nothing is found, return nil and do not move point.
@@ -2976,11 +2977,12 @@ Arguments:
             (end-of-line))
           (dotimes (_ n)
             (setq found-pos nil)
-            (when (seed7-re-search-backward-closest (list
-                                                     seed7-procfunc-regexp
-                                                     seed7-procfunc-start-regexp
-                                                     seed7-proc-forward-or-action-declaration-re
-                                                     seed7-procfunc-forward-or-action-declaration-re))
+            (when (seed7-re-search-backward-closest
+                   (list
+                    seed7-procfunc-regexp
+                    seed7-procfunc-start-regexp
+                    seed7-proc-forward-or-action-declaration-re
+                    seed7-procfunc-forward-or-action-declaration-re))
               (setq found-pos (point)
                     item-type (substring-no-properties (or (match-string seed7-procfunc-regexp-item-type-group) "?"))
                     item-name (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group) "?"))
@@ -6896,17 +6898,21 @@ priority order:
 6. If `thing-at-point' returns nil (e.g. point is in whitespace or at a buffer
    boundary), falls back to `seed7-operator-at-point'.
 
-This function implements `xref-backend-identifier-at-point' for Seed7
-buffers."
+This implements `xref-backend-identifier-at-point' for Seed7 buffers."
   (cond
+   ;;
    ((looking-at seed7-predef-assignment-operator-regexp)
     (substring-no-properties (match-string 0)))
-   ((looking-at-p seed7-arithmetic-operator-regexp)
+   ;;
+   ((looking-at seed7-arithmetic-operator-regexp)
     (substring-no-properties (match-string 1)))
+   ;;
    ((looking-at seed7--very-special-char-re)
     (string (char-after)))
+   ;;
    ((looking-at seed7--special-char-re)
     (seed7-operator-at-point))
+   ;;
    (t (or (thing-at-point 'symbol t)
           (seed7-operator-at-point)))))
 
