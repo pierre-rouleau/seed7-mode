@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260528.1734
+;; Package-Version: 20260529.0754
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-28T21:34:23+0000 W22-4"
+(defconst seed7-mode-version-timestamp "2026-05-29T11:54:59+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2624,19 +2624,37 @@ Move point."
         (setq keep-searching nil)))
     found-pos))
 
-(defun seed7-re-search-backward-closest (regexps)
+(defun seed7-re-search-backward-closest (regexps &optional get-start-pos)
   "Search for all specified regexp in REGEXPS and stop at the closest found.
-Return position of the closest found, nil if nothing found."
-  (let* ((positions nil)
-         (closest-position
+
+If nothing is found, return nil and do not move point.
+
+If something is found it returns the position just after the closest found,
+or just before if the GET-START-POS is non-nil.  The global match data
+corresponds to the closest found searched element and can be re-used by the
+caller."
+  ;; search with all regexp in the regexps list.
+  (let* ((candidates nil)
+         (closest-position-beg.end.regexp
           (dolist (regexp regexps (car-safe
                                    (sort
-                                    (seq-filter #'identity positions)
-                                    (function >))))
+                                    (seq-filter #'identity candidates)
+                                    (lambda (a b) (> (nth 1 a) (nth 1 b))))))
+            ;; For each search, store the begin/end positions and the regexp
             (save-excursion
-              (push (seed7-re-search-backward regexp) positions)))))
-    (when closest-position
-      (goto-char closest-position))))
+              (when-let ((end (seed7-re-search-backward regexp)))
+                (push (list (match-beginning 0) end regexp) candidates))))))
+    ;; If something is found, restore the global match data that corresponds
+    ;; to the regexp that finds the closest position and return the requested
+    ;; position
+    (when closest-position-beg.end.regexp
+      ;; restore match start pos
+      (goto-char  (nth 1 closest-position-beg.end.regexp))
+      ;; restore the match data by searching again without moving
+      (looking-at (nth 3 closest-position-beg.end.regexp))
+      ;; set point and return position of the requested end
+      (goto-char  (nth (if get-start-pos 1 2)
+                       closest-position-beg.end.regexp)))))
 
 
 ;;** Seed7 Skipping Comments
