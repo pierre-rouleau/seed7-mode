@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.0924
+;; Package-Version: 20260529.1051
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T13:24:28+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-29T14:51:35+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2637,11 +2637,10 @@ Move point."
         (setq keep-searching nil)))
     found-pos))
 
-(defun seed7-re-search-backward-closest
-    (regexps &optional get-start-pos)
+(defun seed7-re-search-backward-closest (regexps &optional get-end-pos)
   "Search for all specified regexp in REGEXPS and stop at the closest found.
 
-Return position of the closest match end (or start when GET-START-POS is
+Return position of the closest match start (or end when GET-END-POS is
 non-nil), nil if nothing found.
 
 After returning, match data reflects the regexp that produced the closest
@@ -2657,7 +2656,7 @@ match."
             ;; For each search, store the begin/end positions and the regexp
             (save-excursion
               (when-let ((end (seed7-re-search-backward regexp)))
-                (push (list (match-beginning 0) end regexp) candidates))))))
+                (push (list (match-beginning 0) (match-end 0) regexp) candidates))))))
     ;; If something is found, restore the global match data that corresponds
     ;; to the regexp that finds the closest position and return the requested
     ;; position
@@ -2667,8 +2666,8 @@ match."
       ;; restore the match data by searching again without moving
       (looking-at (nth 2 closest-position-beg.end.regexp))
       ;; set point and return position of the requested end
-      (goto-char  (nth (if get-start-pos 0 1)
-                       closest-position-beg.end.regexp)))))
+      (goto-char (nth (if get-end-pos 1 0)
+                      closest-position-beg.end.regexp)))))
 
 
 ;;** Seed7 Skipping Comments
@@ -4018,7 +4017,7 @@ Return nil if nothing found, but do not move point."
 (defun seed7-move-to-line (n &optional dont-skip-comment-start)
   "Move point to the beginning of text of line N.
 N is: - :dont-move : do not move point
-      - :previous-non-empty for the previous non empty line,
+      - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -4043,7 +4042,7 @@ Return the column number of point if appropriate line found."
 
 (defun seed7-line-indent-step (n &optional dont-skip-comment-start)
   "Return indentation of line N in indent-steps if found, 0 otherwise.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -4102,7 +4101,7 @@ When something is found, leave point at the found position, if nothing
 If REGEXP starts with \"^\" the comparison is done from the beginning of the
 line, otherwise the string comparison is done after the indent whitespace.
 Return nil otherwise.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -4123,7 +4122,7 @@ If END-POS is non-nil, it identifies the limit for the string."
                                      &optional dont-skip-comment-start end-pos)
   "Return indent column when line N non-white space begins with any of REGEXPS.
 Return nil otherwise.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -4165,7 +4164,7 @@ otherwise return nil."
   "Return non-nil when line N non-white space code ends with REGEXP.
 When found it returns the position of the string found.
 Return nil otherwise.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -4194,14 +4193,14 @@ N is: - :previous-non-empty for the previous non empty line,
 
 (defun seed7-line-isa-string (n)
   "Return non-nil indent column if line N is a string, nil otherwise.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before..."
   (seed7-line-starts-with n "\""))
 
 (defun seed7-line-is-block-end (n &optional dont-skip-comment-start)
   "Return t if line N is a block end, nil otherwise.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -4395,7 +4394,7 @@ Does not move point, does not modify search match data."
 ;;                    and pass it to seed7--indent-offset-for ]
 (defun seed7-line-inside-a-block (n &optional dont-skip-comment-start)
   "Check if line N is inside a Seed7 block.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -4583,7 +4582,7 @@ If it finds something it returns a list that holds the following information:
                                                    scope-end-pos
                                                    dont-skip-comment-start)
   "Check if line N is inside a Seed7 until logic expression.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -4632,7 +4631,7 @@ Invalid boundaries: begin=%S, end=%S"
                                                   scope-end-pos
                                                   dont-skip-comment-start)
   "Check if line N is inside a Seed7 func return statement.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -4678,7 +4677,7 @@ If it detects that it is outside, it returns nil."
                                                        scope-end-pos
                                                        dont-skip-comment-start)
   "Check if line N is inside a Seed7 procedure argument list section.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -4727,7 +4726,7 @@ Invalid boundaries: begin=%S, end=%S"
 (defun seed7-line-inside-array-definition-block (n &optional
                                                    dont-skip-comment-start)
   "Check if line N is inside an array definition block.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -4767,7 +4766,7 @@ information:
   "Check if line N is the end of an array definition block.
 Return the indentation column of the array definition block statement
 if line N is the end of an array block, nil otherwise.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -4795,7 +4794,7 @@ N is: - :previous-non-empty for the previous non empty line,
 (defun seed7-line-inside-set-definition-block (n &optional
                                                  dont-skip-comment-start)
   "Check if line N is inside a set definition block.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
         is non-nil,
       - 0 for the current line,
@@ -4837,7 +4836,7 @@ following information:
   "Check if line N is inside a logic check expression.
 Return the indentation column of the space following the check keyword
 if line N is inside an array block, nil otherwise.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
         is non-nil,
       - 0 for the current line,
@@ -4878,7 +4877,7 @@ Invalid boundaries: begin=%S, end=%S"
 Return the indentation column of the code following the statement
 operator on the assignment statement if line N is inside a statement
 continuation line, nil otherwise.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
         is non-nil,
       - 0 for the current line,
@@ -4901,7 +4900,7 @@ N is: - :previous-non-empty for the previous non empty line,
   "Check if line N is the end of a set definition block.
 Return the indentation column of the set definition block statement
 if line N is the end of an array block, nil otherwise.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
         is non-nil,
       - 0 for the current line,
@@ -4932,7 +4931,7 @@ N is: - :previous-non-empty for the previous non empty line,
                                         dont-skip-comment-start)
   "Check if line N is inside a parens pair.
 N is: - :dont-move to keep point at current position
-      - :previous-non-empty for the previous non empty line,
+      - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -5011,7 +5010,7 @@ Invalid boundaries: begin=%S, end=%S"
                                                dont-skip-comment-start)
   "Check if line N is inside a parens pair.
 N is: - :dont-move to keep point at current position
-      - :previous-non-empty for the previous non empty line,
+      - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -5035,7 +5034,7 @@ of the character after the opening parens."
                                                 dont-skip-comment-start)
   "Check if line N is inside NESTED-DEPTH levels of parens pairs.
 N is: - :dont-move to keep point at current position
-      - :previous-non-empty for the previous non empty line,
+      - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -5076,7 +5075,7 @@ If the appropriate parens pair is found it returns a list of 4 elements:
                                                        dont-skip-comment-start)
   "Check if line N is inside NESTED-DEPTH levels of parens pairs.
 N is: - :dont-move to keep point at current position
-      - :previous-non-empty for the previous non empty line,
+      - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -5118,7 +5117,7 @@ Skip comment start unless DONT-SKIP-COMMENT-START is non nil."
 If that is the case, return the indentation column of the func, proc, struct
 or enum definition, otherwise return nil.
 if line N is below the end of a func definition block, nil otherwise.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -5242,7 +5241,7 @@ recursive call."
   "Return position of the end of statement semicolon for line N statement.
 Issue error if not found.
 In either case do not move point.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
@@ -5261,7 +5260,7 @@ Skip comment unless DONT-SKIP-COMMENT is non-nil."
   "Return position of the beginning of line N.
 Issue error if not found.
 Do not move point.
-N is: - :previous-non-empty for the previous non empty line,
+N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
