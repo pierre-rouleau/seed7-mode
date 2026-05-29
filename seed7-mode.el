@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.1428
+;; Package-Version: 20260529.1531
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T18:28:07+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-29T19:31:33+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5007,10 +5007,10 @@ Invalid boundaries: begin=%S, end=%S"
         (when candidate-list
           ;; sort the list by distance between open paren and start of line
           (setq candidate-list (sort candidate-list
-                                     (lambda (e1 e2) ""
+                                     (lambda (e1 e2)
                                        (<
-                                        (- start-pos (nth 1 e1))
-                                        (- start-pos (nth 1 e2))))))
+                                        (- line-start (nth 1 e1))
+                                        (- line-start (nth 1 e2))))))
           ;; The inner block is in the first element of the candidate-list
           ;; Return the column position right after its opening paren.
           (goto-char (nth 1 (nth 0 candidate-list)))
