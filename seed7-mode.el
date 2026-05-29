@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.1801
+;; Package-Version: 20260529.1924
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -459,6 +459,7 @@
 ;;                    ;      `outline-heading-end-regexp',
 (require 'xref)       ; use: `xref-make', 'xref-make-file-location'
 (require 'align)      ; use: `align-mode-rules-list', `align-region-separate'
+(require 'abbrev)     ; use: `clear-abbrev-table', `abbrev-table-p', ...
 (require 'cl-lib)     ; use: `cl-flet'
 (require 'compile)    ; use: `compilation-num-warnings-found',
 ;;                    ;      `compilation-num-infos-found'
@@ -479,7 +480,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T22:01:42+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-29T23:24:20+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -496,7 +497,7 @@ Please do not modify.")
 (defun seed7-mode-customize ()
   "Open the `seed7-mode' customization buffer."
   (interactive)
-  (customize-group "seed7"))
+  (customize-group 'seed7))
 
 (defgroup seed7 nil
   "Seed7 Programming Language support configuration."
@@ -534,7 +535,7 @@ in the top menu and inside the Speedbar."
 ;;** Seed7 Code Template Expansion
 
 (defcustom seed7-template-expansion-disables-overwrite-mode t
-  "When on, `overwrite-mode' is forced off when code template is expanded.
+  "When non-nil `overwrite-mode' is forced off when code template is expanded.
 
 When `seed7-complete-statement-or-indent' performs code expansion and
 `seed7-template-expansion-disables-overwrite-mode' is on, it forces
@@ -549,7 +550,7 @@ To disable this behaviour turn this user-option off."
 ;;** Seed7 Code Navigation
 
 (defcustom seed7-verbose-navigation t
-  "Seed7 navigation commands print message on success when t.
+  "When non-nil, Seed7 navigation commands print a success message.
 If you do not want these navigation success messages printed set this to
 nil.  Setting it to nil does not prevent user error messages to show up
 when the navigation commands fails."
@@ -1958,7 +1959,6 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
 ;;           # this is a line comment
 ;;
 ;;  Note that '#' is also used as a number base separator.
-;;  For the moment the mode requires '##' as the line comment starter.
 ;;  So it's not always a comment.  For now require a space after '#' to consider it a comment.
 
 (defvar seed7-mode-syntax-table
@@ -2246,7 +2246,7 @@ Allows selecting similar colours for various systems."
                   :weight bold))
 
     (t (:weight bold)))
-  "Font Lock mode face that highlights errinfo values."
+  "Font Lock mode face that highlights float values."
   :group 'seed7-faces)
 
 (defface seed7-integer-face
@@ -2262,7 +2262,7 @@ Allows selecting similar colours for various systems."
                   :weight bold))
 
     (t (:weight bold)))
-  "Font Lock mode face that highlights errinfo values."
+  "Font Lock mode face that highlights integer values."
   :group 'seed7-faces)
 
 (defface seed7-number-face
@@ -2278,7 +2278,7 @@ Allows selecting similar colours for various systems."
                   :weight bold))
 
     (t (:weight bold)))
-  "Font Lock mode face that highlights errinfo values."
+  "Font Lock mode face that highlights number values."
   :group 'seed7-faces)
 
 ;; --
@@ -2295,7 +2295,7 @@ Allows selecting similar colours for various systems."
                   :weight bold))
 
     (t (:weight bold)))
-  "Font Lock mode face that highlights errinfo values."
+  "Font Lock mode face that highlights identifiers."
   :group 'seed7-faces)
 
 ;; (defface seed7-spec-name-identifier-face
@@ -2559,11 +2559,8 @@ Move point."
     (while (and keep-searching
                 (not (eobp)))
       (if (re-search-forward regexp bound :noerror)
-          (if (or (seed7-inside-comment-p)
-                  (seed7-inside-string-p))
-              ;; found in comment or string.  Skip and keep searching
-              (forward-char (length
-                             (substring-no-properties (match-string 0))))
+          (unless (or (seed7-inside-comment-p)
+                      (seed7-inside-string-p))
             ;; Found in code!
             (setq found-pos (point)
                   keep-searching nil))
@@ -2613,23 +2610,8 @@ Move point."
     (while (and keep-searching
                 (not (bobp)))
       (if (re-search-backward regexp bound :noerror)
-          (if (save-excursion
-                (forward-char) ; Protection. Prevent code following line-end comment as comment.
-                ;;             ; This should not be necessary because the first char
-                ;;             ; of a line will not be a comment or string, but it seems
-                ;;             ; that the check invalidly reports code as comment when
-                ;;             ; code is executed inside a keyboard macro that first inserts
-                ;;             ; a space before a indented keyword that follows a line-end comment.
-                ;;             ; The problem does not seem to happen under normal typing.
-                ;;             ; This is very strange.  Perhaps I don't understand what is
-                ;;             ; really happening here but tracing through this indicated that the
-                ;;             ; forward-char solves the issue when it occurs.
-                ;; [:todo 2025-06-04, by Pierre Rouleau: investigate: a bug in Emacs? Or in my code? ]
-                (or (seed7-inside-comment-p)
-                    (seed7-inside-string-p)))
-              ;; found in comment or string.  Skip and keep searching
-              (backward-char (length
-                              (substring-no-properties (match-string 0))))
+          (unless (or (seed7-inside-comment-p)
+                      (seed7-inside-string-p))
             ;; Found in code!
             (setq found-pos (point))
             (setq keep-searching nil))
@@ -3708,7 +3690,7 @@ value which can then be dynamically modified by the
 
 (defun seed7--refresh-imenu ()
   "Force re-display of the imenu."
-  (if (boundp 'imenu--menubar-select)
+  (if (fboundp 'imenu--menubar-select)
       (progn
         (imenu--menubar-select imenu--rescan-item)
         (imenu-update-menubar))
@@ -5110,7 +5092,8 @@ the character after the opening parens of the inner-most nesting."
   "Return indentation of previous line that is not starting with a string."
   (save-excursion
     (let ((found nil))
-      (while (not found)
+      (while (and (not found)
+                  (not (bobp)))
         (forward-line -1)
         (when (and (not (seed7-line-starts-with 0 "\""))
                    (not (seed7-inside-comment-p (point)))
@@ -7081,7 +7064,10 @@ The list has no duplicate and is unsorted."
 ;;  ==========================
 
 (defcustom  seed7-support-abbrev-mode t
-  "When non-nil, support Seed7-specific `abbrev-mode' abbreviations.
+  "When non-nil, install Seed7’s local abbrev table in seed7-mode buffers.
+
+This does not enable `abbrev-mode'; enable `abbrev-mode' separately to expand
+abbreviations
 
 NOTE: After changing in a session execute `seed7-rebuild-abbrev-table'
 to activate the change."
@@ -7233,14 +7219,25 @@ to activate the change."
                                  ;; "times"
                                  ;; "varConv"
                                  )
-  "List of Seed7-specific abbreviation to expansion.
+  "List of Seed7-specific abbrev/expansion pairs.
 
 These abbreviations are made available to the `abbrev-mode' when the
 `seed7-support-abbrev-mode' user option is on.
 
 The list included here corresponds to what is documented.
 Each entry shows the `abbrev' and its expanded text.
+
 You can add, delete or modify any of these.
+
+All built-in abbreviations use \";\" as a prefix (e.g. \";ra\" for \"raise\").
+This prefix prevents accidental expansion of bare Seed7 keywords while you
+type: an abbreviation like \"and\" would expand every time you type that word.
+If you add custom entries, it is strongly recommended to use the \";\" prefix
+for the same reason.  The commented-out operator-symbol entries at the end of
+the default list are intentionally left without the prefix to show what they
+would look like, but they are disabled because bare-word abbreviations expand
+too aggressively in normal editing.
+
 Make sure you have no duplication of keywords if you edit the list.
 
 NOTE: After changing in a session execute `seed7-rebuild-abbrev-table'
@@ -7567,7 +7564,7 @@ current Emacs session without restarting Emacs."
                 ;; align on 'is' keyword
                 (cons 'regexp (format ":\\(\\s-+\\)%s+?\\(\\s-+\\)is\\>"
                                       seed7-name-identifier-nc-re))
-                (cons 'modes (quote 'seed7-mode))
+                (cons 'modes '(seed7-mode))
                 (list 'group 1 2))
                (list
                 'seed7-mode-assignment
@@ -7577,7 +7574,7 @@ current Emacs session without restarting Emacs."
                  (format "\\(\\s-+\\)%s\\(\\s-+\\)"
                          seed7-predef-assignment-operator-regexp))
                 (list 'group 1 2)
-                (cons 'modes (quote 'seed7-mode)))))
+                (cons 'modes '(seed7-mode)))))
   (setq-local align-region-separate 'group))
 
 ;;;###autoload
