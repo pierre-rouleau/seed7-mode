@@ -1,0 +1,32 @@
+# SEED7 FILE: ex-01.sd7
+#
+# Purpose   : Test seed7-end-of-defun.
+# Created   : Friday, May 29 2026.
+# Author    : Pierre Rouleau <prouleau001@gmail.com>
+# Time-stamp: <2026-05-29 09:47:21 EDT, updated by Pierre Rouleau>
+# ----------------------------------------------------------------------------
+# Module Description
+# ------------------
+#
+# Use the following code to check if the function seed7-end-of-defun issued
+# from anywhere inside the following code reaches the end of the function as
+# expected.
+
+# ----------------------------------------------------------------------------
+# Code
+# ----
+#
+#
+
+const func aesState: setAesKey (in string: aesKey, in string: initializationVector) is func
+  result
+    var aesState: state is aesState.value;
+  begin
+    state.rounds := length(aesKey) mdiv 4 + 6;
+    state.encryptionSubKey := setAesKey(aesKey);
+    state.decryptionSubKey := genAesDecryptKey(state.encryptionSubKey, state.rounds);
+    state.cipherBlock := initializationVector;
+  end func;
+
+
+# ------------------------------------------------------------------------------
