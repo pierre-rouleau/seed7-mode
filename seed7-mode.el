@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.1308
+;; Package-Version: 20260529.1334
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T17:08:01+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-29T17:34:29+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4678,17 +4678,12 @@ If it detects that it is outside, it returns nil."
             (setq keep-searching nil)))
         found-column))))
 
-(defun seed7-line-inside-argument-list-section (n &optional
-                                                  scope-begin-pos
-                                                  scope-end-pos
-                                                  dont-skip-comment-start)
-  "Check if line N is inside a Seed7 action argument list section.
+(defun seed7-line-inside-argument-list-section (&optional
+                                                scope-begin-pos
+                                                scope-end-pos)
+  "Check if point is inside a Seed7 action argument list section.
 A Seed7 action is a function or a procedure.
-N is: - :previous-non-empty for the previous non-empty line,
-        skipping lines with starting comments unless DONT-SKIP-COMMENT-START
-         is non-nil,
-      - 0 for the current line,
-      - A negative number for previous lines: -1 previous, -2 line before...
+
 SCOPE-BEGIN-POS and SCOPE-END-POS are the search begin and end boundaries.
 If it finds that the line is inside the procedure or function argument list
 section, it returns the indentation column of the proc/func declaration.
@@ -4701,13 +4696,13 @@ Invalid boundaries: begin=%S, end=%S"
   (save-excursion
     (let ((current-pos (point))
           (found-column nil))
-      (when (seed7-move-to-line n dont-skip-comment-start)
+      (when (seed7-move-to-line 0)
         ;; STEP 1 — Locate the owning proc/func declaration.
         ;;
         ;; If the current line IS a proc/func declaration start, use it
         ;; directly.  Searching backward from here would skip past the
         ;; current declaration and land on the previous one.
-        (if (seed7-line-is-procfunc-beg-of-decl 0 dont-skip-comment-start)
+        (if (seed7-line-is-procfunc-beg-of-decl 0)
             (progn
               (seed7-to-indent)
               (setq found-column (current-column)))
@@ -5398,7 +5393,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
            (seed7-line-inside-logic-check-expression 0 begin-pos end-pos)
            indent-column))
          ((seed7--set                   ; inside argument list?
-           (seed7-line-inside-argument-list-section 0 begin-pos end-pos)
+           (seed7-line-inside-argument-list-section begin-pos end-pos)
            indent-column)
           (setq indent-column (+ indent-column seed7-indent-width)))
          ((seed7--set                   ; inside until  ...; area?
