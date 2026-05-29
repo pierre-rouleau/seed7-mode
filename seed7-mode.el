@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.1531
+;; Package-Version: 20260529.1544
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T19:31:33+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-29T19:44:25+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7421,8 +7421,12 @@ Make sure you have no duplication of keywords if you edit the list."
   ;; Prevent using a value of `seed7-indent-width' user-option that would be
   ;; invalid.
   (cond
+   ((not (integerp seed7-indent-width)) (setq-local seed7-indent-width 2))
    ((< seed7-indent-width 2) (setq-local seed7-indent-width 2))
    ((> seed7-indent-width 8) (setq-local seed7-indent-width 8)))
+  ;; Adjust tab width to the indentation; that's sometime useful to quickly
+  ;; change the visual rendering of the indentation by converting to tabs then
+  ;; changing the tab width.
   (setq-local tab-width seed7-indent-width)
   ;;
   (setq-local indent-tabs-mode nil)
