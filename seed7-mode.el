@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.1544
+;; Package-Version: 20260529.1801
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T19:44:25+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-29T22:01:42+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6331,6 +6331,10 @@ See also: `seed7-check-or-compile'."
          (default-directory (file-name-directory (expand-file-name file-name)))
          results
          exit-code)
+    (unless (executable-find program)
+      (user-error "Program specified by `%s' not found: %s"
+                  (if compile "seed7-compiler" "seed7-checker")
+                  program))
     (unwind-protect
         (progn
           (setq exit-code
@@ -7048,7 +7052,7 @@ The list has no duplicate and is unsorted."
           (param-var-end nil))
       (seed7--to-top)
       (setq callable-start (point))
-      (seed7-end-of-defun)
+      (seed7-end-of-defun 1 :silent :dont-push-mark)
       (setq callable-end (point))
       (goto-char callable-start)
       (setq param-var-end
@@ -7077,7 +7081,10 @@ The list has no duplicate and is unsorted."
 ;;  ==========================
 
 (defcustom  seed7-support-abbrev-mode t
-  "When non-nil, support Seed7-specific `abbrev-mode' abbreviations."
+  "When non-nil, support Seed7-specific `abbrev-mode' abbreviations.
+
+NOTE: After changing in a session execute `seed7-rebuild-abbrev-table'
+to activate the change."
   :group 'seed7
   :type 'boolean
   :safe #'booleanp)
@@ -7234,7 +7241,10 @@ These abbreviations are made available to the `abbrev-mode' when the
 The list included here corresponds to what is documented.
 Each entry shows the `abbrev' and its expanded text.
 You can add, delete or modify any of these.
-Make sure you have no duplication of keywords if you edit the list."
+Make sure you have no duplication of keywords if you edit the list.
+
+NOTE: After changing in a session execute `seed7-rebuild-abbrev-table'
+to activate the change."
   :group 'seed7
   :type '(repeat
           (list
@@ -7244,15 +7254,95 @@ Make sure you have no duplication of keywords if you edit the list."
 (defvar seed7-mode-abbrev-table nil
   "Abbrev table in use in Seed7 mode buffers.")
 
+(defun seed7-rebuild-abbrev-table (&optional quietly)
+  "Rebuild the Seed7 abbrev table from the current option values.
 
-(when seed7-support-abbrev-mode
-  (define-abbrev-table 'seed7-mode-abbrev-table
-    (mapcar
-     (lambda (e) (list (car e) (cadr e) nil :system t))
-     seed7-abbreviations)
-    "Abbrev table for Seed7 mode."
-    ;; Accept ; as the first char of an abbrev.  Also allow _ in abbrevs.
-    :regexp "\\(?:[^[:word:]_;]\\|^\\)\\(;?[[:word:]_]+\\)[^[:word:]_]*"))
+Print a completion message at the end unless optional QUIETLY argument
+is non-nil.
+
+Validates `seed7-abbreviations' before building the table:
+- Entries that are not a list of exactly 2 strings are skipped with a warning.
+- Entries whose abbrev key is an empty string are skipped with a warning.
+- Duplicate abbrev keys are skipped (first occurrence wins) with a warning.
+
+Warnings are emitted via `display-warning' with category \\='seed7 and
+can be reviewed in the *Warnings* buffer.
+
+Call this command after customizing `seed7-support-abbrev-mode' or
+`seed7-abbreviations' if you want the changes to take effect in the
+current Emacs session without restarting Emacs."
+  (interactive)
+  (let ((abbrevs-changed abbrevs-changed)) ; prevent spurious "Save abbrevs?" prompt
+    (when (abbrev-table-p seed7-mode-abbrev-table)
+      (clear-abbrev-table seed7-mode-abbrev-table))
+    (when seed7-support-abbrev-mode
+      (unless (abbrev-table-p seed7-mode-abbrev-table)
+        (define-abbrev-table 'seed7-mode-abbrev-table nil
+          "Abbrev table for Seed7 mode."
+          :regexp "\\(?:[^[:word:]_;]\\|^\\)\\(;?[[:word:]_]+\\)[^[:word:]_]*"))
+      ;; --- Validate entries and collect clean ones -------------------------
+      (let ((seen-abbrevs (make-hash-table :test #'equal))
+            (entry-number 0)
+            (invalid-count 0)
+            (duplicate-count 0))
+        (dolist (entry seed7-abbreviations)
+          (setq entry-number (1+ entry-number))
+          (cond
+           ;; Invalid: not a list of exactly 2 elements, both strings.
+           ((not (and (listp entry)
+                      (= (length entry) 2)
+                      (stringp (car entry))
+                      (stringp (cadr entry))))
+            (setq invalid-count (1+ invalid-count))
+            (display-warning
+             'seed7
+             (format "seed7-abbreviations entry #%d is invalid and was skipped: %S\n\
+  Expected a list of 2 strings: (\"abbrev\" \"expansion\")."
+                     entry-number entry)
+             :warning))
+           ;; Invalid: empty abbrev key.
+           ((string-empty-p (car entry))
+            (setq invalid-count (1+ invalid-count))
+            (display-warning
+             'seed7
+             (format "seed7-abbreviations entry #%d has an empty abbrev key and was skipped: %S."
+                     entry-number entry)
+             :warning))
+           ;; Duplicate: same abbrev key was already registered.
+           ((gethash (car entry) seen-abbrevs)
+            (setq duplicate-count (1+ duplicate-count))
+            (display-warning
+             'seed7
+             (format "seed7-abbreviations entry #%d is a duplicate abbrev \"%s\" and was skipped.\n\
+  First occurrence expands to: \"%s\"."
+                     entry-number
+                     (car entry)
+                     (gethash (car entry) seen-abbrevs))
+             :warning))
+           ;; Valid: register the abbrev.
+           (t
+            (puthash (car entry) (cadr entry) seen-abbrevs)
+            (define-abbrev seed7-mode-abbrev-table
+              (car entry) (cadr entry) nil :system t))))
+        ;; --- Summary message -----------------------------------------------
+        (let ((registered (hash-table-count seen-abbrevs)))
+          (if (or (> invalid-count 0) (> duplicate-count 0))
+              (display-warning
+               'seed7
+               (format "seed7-mode abbrev table rebuilt: %d registered, %d invalid, %d duplicate%s skipped.\n\
+  See individual warnings above for details. Run M-x seed7-rebuild-abbrev-table after fixing."
+                       registered
+                       invalid-count
+                       duplicate-count
+                       (if (= 1 (+ invalid-count duplicate-count)) "" "s"))
+               :warning)
+            (unless quietly
+              (message "seed7-mode: abbrev table rebuilt — %d abbreviation%s registered."
+                       registered
+                       (if (= registered 1) "" "s")))))))))
+
+;; Build the table once at package load time using the initial values.
+(seed7-rebuild-abbrev-table 'quietly)
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Key Map
@@ -7296,6 +7386,8 @@ Make sure you have no duplication of keywords if you edit the list."
     "---"
     ["Toggle abbrev-mode"   abbrev-mode]
     ["List abbreviations"   list-abbrevs]
+    ["Reload abbreviations table" seed7-rebuild-abbrev-table]
+
     "---"
     ("Align"
      ["Align current section" align-current]
