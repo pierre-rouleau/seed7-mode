@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.0912
+;; Package-Version: 20260529.0924
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -479,7 +479,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T13:12:21+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-29T13:24:28+0000 W22-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3252,6 +3252,7 @@ or whitespace.
   ;; (message ":seed7-nav-beginning-of-defun: n=%S, called from point:%d, line %d" n
   ;;            (point)
   ;;            (seed7-current-line-number))
+  (unless n (setq n 1))
   (condition-case nil
       (progn
         (if (> n 0)
@@ -3266,6 +3267,7 @@ or whitespace.
 Move once, unless N specifies a different count.
 Operate silently; do not issue an error when nothing is found.
 Return t if point moved to the beginning of function, nil if nothing found."
+  (unless n (setq n 1))
   (condition-case nil
       (progn
         (seed7-end-of-defun n :silent)
