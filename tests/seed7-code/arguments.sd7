@@ -1,0 +1,102 @@
+# SEED7 FILE: arguments.sd7
+#
+# Purpose   : EXample of See7 procedures and funcitons with arguments.
+# Created   : Friday, May 29 2026.
+# Author    : Pierre Rouleau <prouleau001@gmail.com>
+# Time-stamp: <2026-05-29 10:50:42 EDT, updated by Pierre Rouleau>
+# ----------------------------------------------------------------------------
+# Module Description
+# ------------------
+#
+# See7 code of functions and procedures with arguments, used to test
+# seed7-mode ability to detect point inside an argument list.
+#
+# The code samples have been taken from the Seed7 project in the prg files.
+# These are all Copyright Thomas Mertes and published with the same GNU
+# license.
+
+# Various copies of the same function with different names and format are
+# placed here for test purposes.
+
+# ----------------------------------------------------------------------------
+# Code
+# ----
+#
+#
+
+const proc: comp_move (in integer: max_step, inout integer: sum, in integer: goal) is func
+  local
+    var string: answer is " ";
+    var integer: comp_step is 0;
+  begin
+    comp_step := (goal - sum) rem (max_step + 1);
+    if comp_step = 0 then
+      comp_step := rand(1, max_step);
+    end if;
+    writeln("The sum is " <& sum <& " My number is " <& comp_step <& ".");
+    sum +:= comp_step;
+  end func;
+
+
+
+const proc: comp_move_1 (in integer: max_step,
+                         inout integer: sum,
+                         in integer: goal) is func
+  local
+    var string: answer is " ";
+    var integer: comp_step is 0;
+  begin
+    comp_step := (goal - sum) rem (max_step + 1);
+    if comp_step = 0 then
+      comp_step := rand(1, max_step);
+    end if;
+    writeln("The sum is " <& sum <& " My number is " <& comp_step <& ".");
+    sum +:= comp_step;
+  end func;
+
+
+const func boolean: isDoubleVar (in string: symbol) is
+  return symbol in double_var_name or
+         symbol <> "" and
+        (symbol[1] in defdbl_var or
+         symbol[length(symbol)] = '#');
+
+
+const func boolean: doLoopHeaderPresent (in integer: tailLine,
+                                         in integer: tailColumn,
+    inout integer: headLine, inout integer: headColumn) is func
+  result
+    var boolean: headerIsPresent is FALSE;
+  begin
+    if tailLine in doLoopHeaders then
+      if tailColumn in doLoopHeaders[tailLine] then
+        headerIsPresent := TRUE;
+        headLine := doLoopHeaders[tailLine][tailColumn].headLine;
+        headColumn := doLoopHeaders[tailLine][tailColumn].headColumn;
+      end if;
+    end if;
+  end func;
+
+const func string: getStringVar (in string: varName) is func
+  result
+    var string: stringValue is "";
+  begin
+    if varName in string_var then
+      stringValue := string_var[varName];
+    end if;
+  end func;
+
+
+const func integer: varptr (in string: variable_name) is func
+  result
+    var integer: address is 0;
+  begin
+    if variable_name not in varptr_value then
+      varptr_value @:= [variable_name] succ(length(varptr_value));
+    end if;
+    address := varptr_value[variable_name];
+    varname_value @:= [address] variable_name;
+  end func;
+
+
+# ----------------------------------------------------------------------------
