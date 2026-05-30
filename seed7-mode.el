@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260530.0942
+;; Package-Version: 20260530.1015
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -480,7 +480,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-30T13:42:41+0000 W22-6"
+(defconst seed7-mode-version-timestamp "2026-05-30T14:15:33+0000 W22-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -553,7 +553,7 @@ To disable this behaviour turn this user-option off."
   "When non-nil, Seed7 navigation commands print a success message.
 If you do not want these navigation success messages printed set this to
 nil.  Setting it to nil does not prevent user error messages to show up
-when the navigation commands fails."
+when the navigation commands fail."
   :group 'seed7
   :type 'boolean
   :safe #'booleanp)
@@ -5479,7 +5479,7 @@ then deactivates it (to prevent the area to limit searches)."
     (seed7-indent-line)))
 
 (defun seed7-fill ()
-  "Refill/justify comment and string paragraph, re-indent current code block."
+  "Refill/justify comment or string paragraph, or re-indent current code block."
   (interactive)
   (if (or (seed7-inside-comment-p)
           (seed7-inside-string-p))
@@ -5534,7 +5534,7 @@ Also add tempo marker at each of these locations."
   "Insert the code template for a procedure declaration.
 Leave point at first position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   ;; insert a template with a temporary name N to allow auto-indent to work.
   (insert "const proc: N (A) is func\n local\n V\n begin\n C\n end func;")
@@ -5551,7 +5551,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert the code template for a function declaration.
 Leave point at first position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   ;; Insert template with N & T markers for name and type to allow auto-indent
   ;; to work, then remove them and leave point at the function name.
@@ -5569,7 +5569,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert the code template for a short function declaration.
 Leave point at first position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "const func T: N (A) is\n return R;")
   (forward-line -1)
@@ -5584,7 +5584,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert the code template for an enumeration declaration.
 Leave point at first position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "const type: T is new enum\n V,\n end enum;")
   (forward-line -2)
@@ -5600,7 +5600,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert the code template for a structure declaration.
 Leave point at first position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "const type: T is new struct\n var V: N is v;\n end struct;")
   (forward-line -2)
@@ -5616,7 +5616,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert an if statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "if C then\n A\n end if;" )
   (forward-line -2)
@@ -5632,7 +5632,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert an if statement with an else clause.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "if C then\n A\n else\n B\n end if;" )
   (forward-line -4)
@@ -5650,7 +5650,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert an if statement with an elsif clause.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "if C then\n A\n elsif C then\n B\n end if;" )
   (forward-line -4)
@@ -5670,7 +5670,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert an if statement with an elsif and an else clause.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "if C then\n A\n elsif C then\n B\n else\n C\n end if;")
   (forward-line -6)
@@ -5692,7 +5692,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a case statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "case V of\n when C:\n E\n end case;")
   (forward-line -3)
@@ -5710,7 +5710,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a for statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "for I range N to M do\n E\n end for;")
   (forward-line -2)
@@ -5726,7 +5726,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a for-until statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "for V range N to N until C do\n E\n end for;")
   (forward-line -2)
@@ -5742,7 +5742,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a for-step statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "for V range N to N step N do\n E\n end for;")
   (forward-line -2)
@@ -5758,7 +5758,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a for-each statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "for V range L do\n E\n end for;")
   (forward-line -2)
@@ -5774,7 +5774,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a for-each-until statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "for V range L until C do\n E\n end for;")
   (forward-line -2)
@@ -5790,7 +5790,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a for-each-key statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "for V key I range L do\n E\n end for;")
   (forward-line -2)
@@ -5806,7 +5806,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a for-each-key-until statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "for V key I range L until C do\n E\n end for;")
   (forward-line -2)
@@ -5822,7 +5822,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a for-key statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "for key I range L do\n E\n end for;")
   (forward-line -2)
@@ -5838,7 +5838,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a for-key-until statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "for key I range L until C do\n E\n end for;")
   (forward-line -2)
@@ -5854,7 +5854,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a repeat statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "repeat\n E\n until C;")
   (seed7-to-indent)
@@ -5871,7 +5871,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a while statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "while C do\n E\n end while;")
   (forward-line -2)
@@ -5888,7 +5888,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a block handler statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "block\n E\n exception\n catch X:\n H\n end block;")
   (forward-line -4)
@@ -5908,7 +5908,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a global block statement.
 Leave point at condition position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "global\n E\n end global;")
   (forward-line -1)
@@ -5924,7 +5924,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a variable declaration.
 Leave point at first position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "var T: N is V;")
   (seed7-to-indent)
@@ -5937,7 +5937,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert a constant declaration.
 Leave point at first position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "const T: N is V;")
   (seed7-to-indent)
@@ -5950,7 +5950,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert declaration of in parameter.
 Leave point at first position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "in T: N")
   (backward-char 1)
@@ -5962,7 +5962,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert declaration of invar parameter.
 Leave point at first position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "in var T: N")
   (backward-char 1)
@@ -5974,7 +5974,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert declaration of inout parameter.
 Leave point at first position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "inout T: N")
   (backward-char 1)
@@ -5986,7 +5986,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert declaration of ref parameter.
 Leave point at first position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "ref T: N")
   (backward-char 1)
@@ -5998,7 +5998,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert declaration of value parameter.
 Leave point at first position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "val T: N")
   (backward-char 1)
@@ -6010,7 +6010,7 @@ and \\[tempo-forward-mark] to move to previous one."
   "Insert declaration of call by name parameter.
 Leave point at first position to fill.
 Use \\[tempo-forward-mark] to move to next position to fill,
-and \\[tempo-forward-mark] to move to previous one."
+and \\[tempo-backward-mark] to move to previous one."
   (interactive "*")
   (insert "in func T: N")
   (backward-char 1)
@@ -6544,7 +6544,7 @@ or nil when no diagnostics are found."
 ;; of the program.
 ;;
 ;; Once this is done, you will be able to use the various xref commands with
-;; the xref front-end of your choice, the default being xref own front-end,
+;; the xref front-end of your choice, the default being xref's own front-end,
 ;; but also with the helm, ivy or other xref front-ends.
 
 (defvar-local seed7---xref-buffer nil
@@ -6572,7 +6572,9 @@ user-option."
          (xref-cmd (car-safe xref-uo-list))
          (xref-executable-name (and
                                 xref-cmd
-                                (executable-find (expand-file-name xref-cmd)))))
+                                (if (file-name-directory xref-cmd)
+                                    (executable-find (expand-file-name xref-cmd))
+                                  (executable-find xref-cmd)))))
     (if (and xref-executable-name
              (file-executable-p xref-executable-name))
         (let* ((sd7-source-fname-with-path
@@ -6638,7 +6640,7 @@ user-option."
                                seed7-xref))))
                       ;; The command is not a s7 command but something else.
                       ;; We know the first word is a valid executable, just
-                      ;; proceed by setting pre-pending the cdr of seed7-xref
+                      ;; proceed by setting prepending the cdr of seed7-xref
                       ;; list.
                       (when (> (length xref-uo-list) 1)
                         (setq args (append (cdr xref-uo-list) args))))
@@ -6647,12 +6649,19 @@ user-option."
                            xref-executable-name
                            nil outbuf nil
                            args)))))
-            (unless (zerop exit-code)
+            (cond
+             ((not (integerp exit-code))
+              (user-error
+               "seed7-xref tool was terminated: %s.\nCommand: %s\nOutput:\n%s"
+               exit-code
+               seed7-xref
+               (with-current-buffer outbuf (buffer-string))))
+             ((not (zerop exit-code))
               (user-error
                "seed7-xref tool exited with status %d.\nCommand: %s\nOutput:\n%s"
                exit-code
                seed7-xref
-               (with-current-buffer outbuf (buffer-string))))))
+               (with-current-buffer outbuf (buffer-string)))))))
       (user-error "\
 The seed7-xref user-option does not identify an executable file: %s
 Please update!"
@@ -6958,9 +6967,8 @@ This implements `xref-backend-identifier-at-point' for Seed7 buffers."
 
 (defun seed7--make-xref-from-file-loc (elems)
   "Create an xref object pointing to the given file location.
-ELEMS is a list holding: file, line, and column point to the location of
-the xref, desc, the last element,  describes it."
-  (xref-make (nth 3 elems)               ; desc
+ELEMS is a list (FILE LINE COLUMN DESC), where DESC describes the xref target."
+  (xref-make (nth 3 elems)              ; desc
              (xref-make-file-location (nth 0 elems)
                                       (nth 1 elems)
                                       (nth 2 elems))))
@@ -7050,7 +7058,7 @@ The list has no duplicate and is unsorted."
     identifiers))
 
 (defun seed7--procfun-identifiers ()
-  "Return (unsorted) list of all identifiers of function or procedure."
+  "Return (unsorted) list of all identifiers of current function or procedure."
   (save-excursion
     (let ((identifiers nil)
           (callable-start nil)
@@ -7090,7 +7098,7 @@ The list has no duplicate and is unsorted."
   "When non-nil, install Seed7’s local abbrev table in seed7-mode buffers.
 
 This does not enable `abbrev-mode'; enable `abbrev-mode' separately to expand
-abbreviations
+abbreviations.
 
 NOTE: After changing in a session execute `seed7-rebuild-abbrev-table'
 to activate the change."
@@ -7261,7 +7269,7 @@ the default list are intentionally left without the prefix to show what they
 would look like, but they are disabled because bare-word abbreviations expand
 too aggressively in normal editing.
 
-Make sure you have no duplication of keywords if you edit the list.
+Make sure you have no duplication of abbreviation keys if you edit the list.
 
 NOTE: After changing in a session execute `seed7-rebuild-abbrev-table'
 to activate the change."
