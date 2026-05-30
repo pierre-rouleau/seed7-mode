@@ -6565,11 +6565,11 @@ Each line holds 3 tab-separated elements:
 
 This uses the Seed7 cross reference tool identified by the `seed7-xref'
 user-option."
-  (let* ((xref-uo-list (split-string seed7-xref))
+  (let* ((xref-uo-list (split-string-and-unquote seed7-xref))
          (xref-executable-name (executable-find (car-safe xref-uo-list))))
     (if (and xref-executable-name
              (file-executable-p xref-executable-name))
-        (let* ((sd7-source-fname-with-path
+
                 (expand-file-name buffer-file-truename))
                (fbasename (file-name-sans-extension
                            (file-name-nondirectory
