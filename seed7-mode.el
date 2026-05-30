@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260530.1113
+;; Package-Version: 20260530.1223
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -480,7 +480,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-30T15:13:11+0000 W22-6"
+(defconst seed7-mode-version-timestamp "2026-05-30T16:23:58+0000 W22-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -592,17 +592,15 @@ The name of the source code file is appended to the end of that line."
 ;;** Seed7 Cross Reference
 
 (defcustom seed7-xref
-  (format "s7 %stools/s7xref.sd7"
+  (combine-and-quote-strings
+   (list "s7"
+         (expand-file-name
+          "tools/s7xref.sd7"
           (file-name-directory
-           (or
-            ;; normal case: seed7-mode is on load path
-            (locate-library "seed7-mode")
-            ;; if user is just editing it, and it's in a buffer use that.
-            ;; Note that in that case the s7xref.sd7 may not be installed.
-            (when-let (buf (get-buffer "seed7-mode.el"))
-              (buffer-file-name buf))
-            ;; otherwise use a default
-            (format "%s/utils/" user-emacs-directory))))
+           (or (locate-library "seed7-mode")
+               (when-let (buf (get-buffer "seed7-mode.el"))
+                 (buffer-file-name buf))
+               (expand-file-name "utils/" user-emacs-directory))))))
   "Seed7 cross reference builder command line.
 
 The command line must identify the Seed7 cross reference builder,
@@ -629,8 +627,9 @@ The ~ character, if you use it, is expanded to identify your HOME
 directory.
 
 The default value attempts to locate `seed7-mode' from Emacs
-`load-path'.  If this fails it uses the utils directory inside your
-`user-emacs-directory'.
+`load-path'.  If this fails it uses the utils/tools directory inside
+your `user-emacs-directory'.
+
 Modify this value if `seed7-mode' is not in your Emacs load path
 and the default path is not appropriate."
   :group 'seed7
@@ -6532,18 +6531,17 @@ or nil when no diagnostics are found."
 ;;* Seed7 Cross Reference
 ;;  =====================
 ;;
-;; The `seed7-mode` supports the xref framework introduced in Emacs 25: the
-;; code implements an xref framework compliant back-end using the s7xref Seed7
-;; program that parses Seed7 program and library files to extract all required
-;; information about global variable, functions and procedures which includes
-;; all operators (both word and special operators).
+;; The `seed7-mode' supports the xref framework introduced in Emacs 25: the
+;; code implements an xref-framework-compliant backend using the s7xref Seed7
+;; program that parses Seed7 program files and library files to extract all
+;; required information about global variables, functions and procedures which
+;; includes all operators (both word and special operators).
 ;;
 ;; Therefore to use this feature you must have the Seed7 compiler and
-;; interpreter installed in your system and the s7xref.sd7 file available in
+;; interpreter installed on your system and the s7xref.sd7 file available in
 ;; the seed7-mode/tools directory installed.  You can use it as is with the s7
 ;; interpreter or compile it with the s7c compiler.  The `seed7-xref' user
-;; option must identify the appropriate information that will allow execution
-;; of the program.
+;; option must identify the command used to execute the program.
 ;;
 ;; Once this is done, you will be able to use the various xref commands with
 ;; the xref front-end of your choice, the default being xref's own front-end,
@@ -6570,6 +6568,8 @@ Each line holds 3 tab-separated elements:
 
 This uses the Seed7 cross reference tool identified by the `seed7-xref'
 user-option."
+  (unless buffer-file-name
+    (user-error "Buffer is not visiting a file"))
   (let* ((xref-uo-list (split-string-and-unquote seed7-xref))
          (xref-cmd (car-safe xref-uo-list))
          (xref-executable-name (and
@@ -6620,30 +6620,33 @@ user-option."
                         ;; file name to args.
                         (progn
                           (setq xref-uo-list (cdr xref-uo-list))
-                          (let ((sd7-script-fn
-                                 (expand-file-name (car-safe xref-uo-list))))
-                            (if (and sd7-script-fn
-                                     (file-exists-p sd7-script-fn))
-                                (progn
-                                  ;; remove script filename from the list
-                                  (setq xref-uo-list (cdr-safe xref-uo-list))
-                                  ;; prepend scripts args if any
-                                  (when xref-uo-list
-                                    (setq args (append xref-uo-list args)))
-                                  ;; then prepend script file-name
-                                  (setq args
-                                        (append (list sd7-script-fn) args)))
-                              (user-error
-                               "Invalid seed7-xref: %s\nseed7-xref = %s"
-                               (if sd7-script-fn
-                                   (format "Can't find script: %s"
-                                           sd7-script-fn)
-                                 "No Seed7 file identified after s7 interpreter.")
-                               seed7-xref))))
+                          (let ((script (car-safe xref-uo-list)))
+                            (unless script
+                              (user-error "\
+Invalid seed7-xref: No Seed7 file identified after s7 interpreter.
+seed7-xref = %s"
+                                          seed7-xref))
+                            (let ((sd7-script-fn
+                                   (expand-file-name script)))
+                              (if (and sd7-script-fn
+                                       (file-exists-p sd7-script-fn))
+                                  (progn
+                                    ;; remove script filename from the list
+                                    (setq xref-uo-list (cdr-safe xref-uo-list))
+                                    ;; prepend scripts args if any
+                                    (when xref-uo-list
+                                      (setq args (append xref-uo-list args)))
+                                    ;; then prepend script file-name
+                                    (setq args
+                                          (append (list sd7-script-fn) args)))
+                                (user-error
+                                 "Invalid seed7-xref: %s\nseed7-xref = %s"
+                                 (format "Can't find script: %s"
+                                         sd7-script-fn)
+                                 seed7-xref)))))
                       ;; The command is not a s7 command but something else.
                       ;; We know the first word is a valid executable, just
-                      ;; proceed by setting prepending the cdr of seed7-xref
-                      ;; list.
+                      ;; proceed by prepending the cdr of seed7-uo-xref list.
                       (when (> (length xref-uo-list) 1)
                         (setq args (append (cdr xref-uo-list) args))))
                     ;; Execute the command with appropriate arguments.
@@ -6663,7 +6666,11 @@ user-option."
                "seed7-xref tool exited with status %d.\nCommand: %s\nOutput:\n%s"
                exit-code
                seed7-xref
-               (with-current-buffer outbuf (buffer-string)))))))
+               (with-current-buffer outbuf (buffer-string))))
+             (t
+              (when (buffer-modified-p)
+                (message "\
+seed7-xref: buffer has unsaved changes; xref results may be stale"))))))
       (user-error "\
 The seed7-xref user-option does not identify an executable file: %s
 Please update!"
