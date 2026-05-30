@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260530.1440
+;; Package-Version: 20260530.1619
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -480,7 +480,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-30T18:40:32+0000 W22-6"
+(defconst seed7-mode-version-timestamp "2026-05-30T20:19:17+0000 W22-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -706,9 +706,6 @@ and the default path is not appropriate."
   "Any sequence of whitespace followed by non-whitespace.
 Inside a non-capturing group.")
 
-(defconst seed7--bracket-re
-  "[])(}{[]")
-
 ;; --
 ;; Note: Ensure that something like 0_ is not matched by seed7-name-identifier-nc-re
 (defconst seed7-name-identifier-nc-re
@@ -750,6 +747,7 @@ Group 1: type identifier (1 or 2 words).")
 (defconst seed7--very-special-char-re
   "[];:)(}{.,[]"
   "Regexp for special characters to extract.
+
 Some of those characters, but not all, are not implemented as callable,
 but used in Seed7 syntax via different mechanisms.  Some may be implemented
 by Seed7 code, but if s7xref does not create a reference for them it's because
@@ -2910,7 +2908,7 @@ Arguments:
   match group `seed7-procfunc-regexp-item-name-group' (group 3) of
   `seed7-procfunc-regexp'.
 
-- TYPE: the definition keyword — one of \"proc\", \"varfunc\", or \"func \",
+- TYPE: the definition keyword: one of \"proc\", \"varfunc\", or \"func \",
   extracted from match group `seed7-procfunc-regexp-item-type-group'
   (group 1) of `seed7-procfunc-regexp'.  Used as the qualifier label
   in the message.
@@ -4687,7 +4685,7 @@ Invalid boundaries: begin=%S, end=%S"
     (let ((current-pos (point))
           (found-column nil))
       (when (seed7-move-to-line 0)
-        ;; STEP 1 — Locate the owning proc/func declaration.
+        ;; STEP 1: Locate the owning proc/func declaration.
         ;;
         ;; If the current line IS a proc/func declaration start, use it
         ;; directly.  Searching backward from here would skip past the
@@ -4696,7 +4694,7 @@ Invalid boundaries: begin=%S, end=%S"
             (progn
               (seed7-to-indent)
               (setq found-column (current-column)))
-          ;; Current line is a continuation line (or unrelated) — search
+          ;; Current line is a continuation line (or unrelated);  search
           ;; backward for the nearest proc/func declaration start.
           (when (seed7-re-search-backward seed7-procfunc-beg-of-decl-nc-re
                                           scope-begin-pos)
@@ -4704,7 +4702,7 @@ Invalid boundaries: begin=%S, end=%S"
             (seed7-to-indent)
             (setq found-column (current-column))))
         ;;
-        ;; STEP 2 — Validate that current-pos is strictly inside the '(…)'
+        ;; STEP 2: Validate that current-pos is strictly inside the '(...)'
         ;; argument list of the declaration we just found.
         ;;
         ;; This also correctly returns nil when line N is the declaration
@@ -4719,7 +4717,7 @@ Invalid boundaries: begin=%S, end=%S"
                       (let ((close-paren-pos (1- (point))))
                         (unless (< open-paren-pos current-pos close-paren-pos)
                           (setq found-column nil)))
-                    ;; forward-sexp failed — closing paren not found in scope.
+                    ;; forward-sexp failed - closing paren not found in scope.
                     (setq found-column nil)))
               ;; No opening '(' within scope.
               (setq found-column nil))))
@@ -6268,8 +6266,8 @@ Groups:
   3 - column number (integer string, 1-based)
   4 - message text
 Unlike s7check, s7c does not emit a symbolic error code.
-Header lines (\"SEED7 COMPILER Version …\", \"Source: …\",
-\"Compiling the program …\") and the footer (\"N errors found\")
+Header lines (\"SEED7 COMPILER Version ...\", \"Source: ...\",
+\"Compiling the program ...\") and the footer (\"N errors found\")
 do NOT match this pattern and are therefore skipped during parsing.")
 
 (defun seed7-check-file (file-name &optional compile)
@@ -6305,27 +6303,40 @@ value of the corresponding user-option.
 See also: `seed7-check-or-compile'."
   (let* ((cmd-string (if compile seed7-compiler seed7-checker))
          (cmd-parts  (split-string-and-unquote cmd-string))
-         (program    (car cmd-parts))
-         (args       (append (cdr cmd-parts) (list file-name)))
+         (raw-program (car cmd-parts))
+         ;; Resolve the executable: when a directory component is present
+         ;; (e.g. "~/bin/s7check"), ;; expand ~ before searching exec-path
+         ;; so tilde paths are honoured.
+         (program     (and raw-program
+                           (if (file-name-directory raw-program)
+                               (executable-find (expand-file-name raw-program))
+                             (executable-find raw-program))))
+         (args        (append (cdr cmd-parts) (list file-name)))
          (diag-re    (if compile
                          seed7--compiler-diagnostic-regexp
                        seed7--checker-diagnostic-regexp))
          ;; Regexp to recognise (and discard) the s7c summary footer line.
-         ;; e.g. "64 errors found" — must not be accumulated as context.
+         ;; e.g. "64 errors found" - must not be accumulated as context.
          ;; Only relevant for s7c output; s7check produces no such footer.
          (footer-re  "^[0-9]+ errors? found$")
          (out-buf    (generate-new-buffer " *seed7-check-output*"))
          (default-directory (file-name-directory (expand-file-name file-name)))
          results
          exit-code)
-    (unless (executable-find program)
-      (user-error "Program specified by `%s' not found: %s"
+    (unless (and program (file-executable-p program))
+      (user-error "\
+Program specified by `%s' not found or not executable: %s
+Verify the value of `%s'."
                   (if compile "seed7-compiler" "seed7-checker")
-                  program))
+                  raw-program
+                  (if compile "seed7-compiler" "seed7-checker")))
     (unwind-protect
         (progn
           (setq exit-code
                 (condition-case err
+                   ;; `program' is the fully resolved executable path, so
+                   ;; tilde paths and symlinks are handled correctly and no
+                   ;; shell is involved.
                     (apply #'call-process program nil out-buf nil args)
                   (file-error
                    (user-error
@@ -6359,7 +6370,7 @@ See also: `seed7-check-or-compile'."
                                (line-end-position))))
                     (cond
                      ((string-match diag-re line)
-                      ;; New diagnostic — flush previous, start fresh.
+                      ;; New diagnostic - flush previous, start fresh.
                       (flush-current)
                       (setq in-error      t
                             cur-file      (match-string 1 line)
@@ -6375,10 +6386,10 @@ See also: `seed7-check-or-compile'."
                               cur-code    (match-string 3 line)
                               cur-message (match-string 4 line))))
                      ((and compile (string-match footer-re line))
-                      ;; s7c summary footer ("N errors found") — skip entirely.
+                      ;; s7c summary footer ("N errors found") - skip entirely.
                       nil)
                      (in-error
-                      ;; Continuation / context line — accumulate non blank
+                      ;; Continuation / context line - accumulate non blank
                       (unless (string-blank-p line)
                         (push line context-lines)))))
                   (forward-line 1))
@@ -6500,20 +6511,20 @@ or nil when no diagnostics are found."
             (setq-local compilation-num-infos-found 0))
           (setq-local mode-line-process
                       (list
-                       ;; ":exit [N]" — green when 0, red when non-zero
+                       ;; ":exit [N]" - green when 0, red when non-zero
                        (propertize (format ":exit [%d]" exit-code)
                                    'face (if (zerop exit-code)
                                              'compilation-mode-line-exit
                                            'compilation-mode-line-fail))
                        " ["
-                       ;; error count — red bold (compilation-mode-line-fail)
+                       ;; error count - red bold (compilation-mode-line-fail)
                        (propertize (number-to-string n-errors)
                                    'face 'compilation-mode-line-fail)
-                       ;; warning count — orange bold (compilation-mode-line-run
+                       ;; warning count - orange bold (compilation-mode-line-run
                        ;;                 inherits compilation-warning)
                        " "
                        (propertize "0" 'face 'compilation-mode-line-run)
-                       ;; info count — green bold (compilation-mode-line-exit)
+                       ;; info count - green bold (compilation-mode-line-exit)
                        " "
                        (propertize "0" 'face 'compilation-mode-line-exit)
                        "]")))
@@ -6551,7 +6562,7 @@ or nil when no diagnostics are found."
   "Internal/hidden buffer holding cross-reference info for visited Seed7 file.")
 
 (defconst seed7--xref-line-re-fmt
-  "^\\(%s\\)\t\\(.+?\\)\t\\(.+?\\)$"
+  "^\\(%s\\)\t\\(.+?\\)\t\\([0-9]+\\)$"
   "Regexp format extracting the 3 elements of the s7xref output line.
 Requires 1 format %s argument for the identifier.
 - Group 1: identifier,
@@ -6568,7 +6579,7 @@ Each line holds 3 tab-separated elements:
 
 This uses the Seed7 cross reference tool identified by the `seed7-xref'
 user-option."
-  (unless buffer-file-name
+  (unless (or buffer-file-truename buffer-file-name)
     (user-error "Buffer is not visiting a file"))
   (let* ((xref-uo-list (split-string-and-unquote seed7-xref))
          (xref-cmd (car-safe xref-uo-list))
@@ -6647,7 +6658,7 @@ seed7-xref = %s"
                                  seed7-xref)))))
                       ;; The command is not a s7 command but something else.
                       ;; We know the first word is a valid executable, just
-                      ;; proceed by prepending the cdr of xref-uo-list list.
+                      ;; proceed by prepending the cdr of xref-uo-list.
                       (when (> (length xref-uo-list) 1)
                         (setq args (append (cdr xref-uo-list) args))))
                     ;; Execute the command with appropriate arguments.
@@ -6682,7 +6693,8 @@ Please update!"
 (defun seed7--signature-at (&optional pos)
   "Return Seed7 element signature for element at point or POS."
   (when pos (goto-char pos))
-  (substring-no-properties (buffer-substring (line-beginning-position) (line-end-position)))
+  (substring-no-properties
+   (buffer-substring (line-beginning-position) (line-end-position)))
 
   ;; previous failed attempt at multi-line signatures:
   ;;
@@ -6701,15 +6713,22 @@ Please update!"
 (defun seed7--signature-from (filename line column)
   "Return Seed7 element signature for element in FILENAME at LINE, COLUMN."
   (condition-case err
-      (with-temp-buffer
-        (insert-file-contents filename)
-        (goto-char (point-min))
-        (forward-line (1- line))
-        (forward-char column)
-        (seed7--signature-at))
-    (file-error
-     (format "<xref: cannot read %s: %s>"
-             filename (error-message-string err)))))
+      (if (and (stringp filename)
+               (integerp line)
+               (> line 0)
+               (integerp column)
+               (>= column 0))
+          (with-temp-buffer
+            (insert-file-contents filename)
+            (goto-char (point-min))
+            (forward-line (1- line))
+            (forward-char column)
+            (seed7--signature-at))
+        (format "<xref: invalid location %S:%S:%S>"
+                filename line column))
+    (error
+     (format "<xref: cannot read signature at %s:%S:%S: %s>"
+             filename line column (error-message-string err)))))
 
 (defun seed7--xref-in-list (entries filename lineno)
   "Return t if FILENAME @ LINENO is inside list of ENTRIES.
@@ -6846,35 +6865,38 @@ Return a list of 4-element lists, where each 4-element list has:
                (buffer-live-p seed7---xref-buffer))
     (seed7--build-xref))
   ;; Then search the identifier references in the `seed7---xref-buffer'.
-  ;; There may be several entries for a specific identifier and some of them
-  ;; may be duplicated.  Filter the duplicate return a list of all candidates.
-  ;; Each line of the xref buffer hold a tab-separated set of 3 values: the
+  ;; There may be several entries for a specific identifier, and some of them
+  ;; may be duplicated.  Filter duplicates and  return all candidates.
+  ;; Each line of the xref buffer holds a tab-separated set of 3 values: the
   ;; identifier string, the file name and the line number.
-  (let ((entries nil)
-        (keep-searching t)
-        ;; Capture buffer-file-truename from the SOURCE buffer NOW, before
-        ;; `with-current-buffer' switches context to the internal xref buffer
-        ;; (which has no associated file and therefore a nil buffer-file-truename).
-        (source-file-truename buffer-file-truename)
-        (text-re (format seed7--xref-line-re-fmt (regexp-quote identifier))))
+  (let* ((entries nil)
+         (keep-searching t)
+         ;; Capture buffer-file-truename and default-directory from the source
+         ;; buffer now, before `with-current-buffer' switches context to the
+         ;; internal xref buffer.
+         (source-file-truename buffer-file-truename)
+         (expanded-source-fname (expand-file-name source-file-truename))
+         (source-default-directory default-directory)
+         (text-re (format seed7--xref-line-re-fmt (regexp-quote identifier))))
     (with-current-buffer seed7---xref-buffer
       (goto-char (point-min))
       (while (and keep-searching
                   (not (eobp)))
         (if (re-search-forward text-re nil :noerror)
-            (let ((filename (match-string 2))
-                  (lineno (string-to-number (match-string 3))))
-              (unless (or (and source-file-truename  ; guard: nil if buffer is unsaved
-                               (string= (expand-file-name filename)
-                                        (expand-file-name source-file-truename))
+            (let* ((xref-identifier (match-string 1))
+                   (raw-filename    (match-string 2))
+                   (filename (expand-file-name raw-filename source-default-directory))
+                   (lineno (string-to-number (match-string 3))))
+              (unless (or (and source-file-truename ; guard: nil if buffer is unsaved
+                               (string= filename expanded-source-fname)
                                (= lineno from-line))
-                       (seed7--xref-in-list entries filename lineno))
-                (push (list filename
-                            lineno
-                            0      ; column not identified by s7xref: set to 0
-                            (or  (seed7--signature-from filename lineno 0)
-                                 (format "No signature for: %s"
-                                         (match-string 1))))
+                          (seed7--xref-in-list entries filename lineno))
+                (push (list
+                       filename
+                       lineno
+                       0   ; column not identified by s7xref: use 0
+                       (or (seed7--signature-from filename lineno 0)
+                           (format "No signature for: %s" xref-identifier)))
                       entries)))
           (setq keep-searching nil))))
     entries))
@@ -6962,7 +6984,7 @@ priority order:
 1. A predefined assignment operator (e.g. `:='), if one starts at point.
 2. An arithmetic operator string (capture group 1), if one starts at point.
 3. A single-character string, if point is at a \"very special\" punctuation
-   character (one of \"];)(}{.[\").
+   character (specified in `seed7--very-special-char-re').
 4. The operator token spanning point, via `seed7-operator-at-point', if point
    is at a character matched by `seed7--special-char-re'.
 5. The word symbol at point, as returned by `thing-at-point' with DEREF t.
@@ -7073,7 +7095,7 @@ The list has no duplicate and is unsorted."
                   seed7-name-identifier-nc-re)))
     (with-current-buffer seed7---xref-buffer
       (goto-char (point-min))
-      (while (seed7-re-search-forward text-re)
+      (while (re-search-forward text-re nil :noerror)
         (setq identifier (match-string 1))
         (unless (member identifier identifiers)
           (push identifier identifiers))))
@@ -7117,7 +7139,7 @@ The list has no duplicate and is unsorted."
 ;;  ==========================
 
 (defcustom seed7-support-abbrev-mode t
-  "When non-nil, install Seed7’s local abbrev table in seed7-mode buffers.
+  "When non-nil, install Seed7's local abbrev table in seed7-mode buffers.
 
 This does not enable `abbrev-mode'; enable `abbrev-mode' separately to expand
 abbreviations.
@@ -7387,7 +7409,7 @@ current Emacs session without restarting Emacs."
                        (if (= 1 (+ invalid-count duplicate-count)) "" "s"))
                :warning)
             (unless quietly
-              (message "seed7-mode: abbrev table rebuilt — %d abbreviation%s registered."
+              (message "seed7-mode: abbrev table rebuilt: %d abbreviation%s registered."
                        registered
                        (if (= registered 1) "" "s")))))))))
 
