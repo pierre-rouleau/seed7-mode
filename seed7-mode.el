@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260530.1310
+;; Package-Version: 20260530.1440
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -480,7 +480,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-30T17:10:42+0000 W22-6"
+(defconst seed7-mode-version-timestamp "2026-05-30T18:40:32+0000 W22-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6852,6 +6852,10 @@ Return a list of 4-element lists, where each 4-element list has:
   ;; identifier string, the file name and the line number.
   (let ((entries nil)
         (keep-searching t)
+        ;; Capture buffer-file-truename from the SOURCE buffer NOW, before
+        ;; `with-current-buffer' switches context to the internal xref buffer
+        ;; (which has no associated file and therefore a nil buffer-file-truename).
+        (source-file-truename buffer-file-truename)
         (text-re (format seed7--xref-line-re-fmt (regexp-quote identifier))))
     (with-current-buffer seed7---xref-buffer
       (goto-char (point-min))
@@ -6860,8 +6864,9 @@ Return a list of 4-element lists, where each 4-element list has:
         (if (re-search-forward text-re nil :noerror)
             (let ((filename (match-string 2))
                   (lineno (string-to-number (match-string 3))))
-              (unless (or (and (string= (expand-file-name filename)
-                                        (expand-file-name buffer-file-truename))
+              (unless (or (and source-file-truename  ; guard: nil if buffer is unsaved
+                               (string= (expand-file-name filename)
+                                        (expand-file-name source-file-truename))
                                (= lineno from-line))
                        (seed7--xref-in-list entries filename lineno))
                 (push (list filename
