@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260529.1924
+;; Package-Version: 20260530.0942
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -480,7 +480,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-29T23:24:20+0000 W22-5"
+(defconst seed7-mode-version-timestamp "2026-05-30T13:42:41+0000 W22-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -599,7 +599,8 @@ The name of the source code file is appended to the end of that line."
             (locate-library "seed7-mode")
             ;; if user is just editing it, and it's in a buffer use that.
             ;; Note that in that case the s7xref.sd7 may not be installed.
-            (buffer-file-name (get-buffer "seed7-mode.el"))
+            (when-let (buf (get-buffer "seed7-mode.el"))
+              (buffer-file-name buf))
             ;; otherwise use a default
             (format "%s/utils/" user-emacs-directory))))
   "Seed7 cross reference builder command line.
@@ -2598,9 +2599,11 @@ match."
 (defun seed7-re-search-backward (regexp &optional bound)
   "Search for REGEXP inside code.  Skip comment and strings.
 The optional second argument BOUND is a buffer position that bounds
-  the search.  The match found must not end after that position.  A
-  value of nil means search to the end of the accessible portion of
-  the buffer.
+the search.
+
+The match found must not begin before that position. A nil value means
+search to the beginning of the accessible portion of the buffer.
+
 Return found position or nil if nothing found.
 Move point."
   (let ((found-pos nil)
@@ -6565,8 +6568,11 @@ Each line holds 3 tab-separated elements:
 
 This uses the Seed7 cross reference tool identified by the `seed7-xref'
 user-option."
-  (let* ((xref-uo-list (split-string seed7-xref))
-         (xref-executable-name (executable-find (car-safe xref-uo-list))))
+  (let* ((xref-uo-list (split-string-and-unquote seed7-xref))
+         (xref-cmd (car-safe xref-uo-list))
+         (xref-executable-name (and
+                                xref-cmd
+                                (executable-find (expand-file-name xref-cmd)))))
     (if (and xref-executable-name
              (file-executable-p xref-executable-name))
         (let* ((sd7-source-fname-with-path
@@ -6585,51 +6591,68 @@ user-option."
           ;; In case the command was executed before, erase prior content
           (with-current-buffer outbuf
             (erase-buffer))
-          (if (eq (length xref-uo-list) 1)
-              ;; seed7-xref is just 1 word, the name of the xref program
-              (call-process xref-executable-name
-                            nil outbuf nil
-                            sd7-source-fname-with-path)
-            ;; seed7-xref has more than 1 word.  The first word is the program,
-            ;; and the following words are its arguments.  For instance the
-            ;; program name could be s7 and the next word a Seed7 source file to
-            ;; interpret.  And there could be other options.  Pass them all to
-            ;; the `call-process' as args.
-            ;; Since we do not use the shell, the file paths *must* be expanded.
-            (let ((args (list sd7-source-fname-with-path)))
-              (if (string= (file-name-nondirectory (car xref-uo-list)) "s7")
-                  ;; If Seed7 interpreter is used, ensure that the second element
-                  ;; is a fully expanded file name that exists.  If it exists
-                  ;; prepend the fully expanded file name to args.
-                  (progn
-                    (setq xref-uo-list (cdr xref-uo-list))
-                    (let ((sd7-script-fn
-                           (expand-file-name (car-safe xref-uo-list))))
-                      (if (and sd7-script-fn (file-exists-p sd7-script-fn))
-                          (progn
-                            ;; remove script filename from the list
-                            (setq xref-uo-list (cdr-safe xref-uo-list))
-                            ;; prepend scripts args if any
-                            (when xref-uo-list
-                              (setq args (append xref-uo-list args)))
-                            ;; then prepend script file-name
-                            (setq args (append (list sd7-script-fn) args)))
-                        (user-error
-                         "Invalid seed7-xref: %s\nseed7-xref = %s"
-                         (if sd7-script-fn
-                             (format "Can't find script: %s" sd7-script-fn)
-                           "No Seed7 file identified after s7 interpreter.")
-                         seed7-xref))))
-                ;; The command is not a s7 command but something else.
-                ;; We know the first word is a valid executable, just proceed
-                ;; by setting pre-pending the cdr of seed7-xref list.
-                (when (> (length xref-uo-list) 1)
-                  (setq args (append (cdr xref-uo-list) args))))
-              ;; Execute the command with appropriate arguments.
-              (apply #'call-process
-                     xref-executable-name
-                     nil outbuf nil
-                     args))))
+          (let
+              ((exit-code
+                (if (eq (length xref-uo-list) 1)
+                    ;; seed7-xref is just 1 word, the name of the xref program
+                    (call-process xref-executable-name
+                                  nil outbuf nil
+                                  sd7-source-fname-with-path)
+                  ;; seed7-xref has more than 1 word.  The first word is the
+                  ;; program, and the following words are its arguments.  For
+                  ;; instance the program name could be s7 and the next word a
+                  ;; Seed7 source file to interpret.  And there could be other
+                  ;; options.  Pass them all to the `call-process' as args.
+                  ;;
+                  ;; Since we do not use the shell, the file paths *must* be
+                  ;; expanded.
+                  (let ((args (list sd7-source-fname-with-path)))
+                    (if (string= (file-name-nondirectory
+                                  (car xref-uo-list))
+                                 "s7")
+                        ;; If Seed7 interpreter is used, ensure that the
+                        ;; second element is a fully expanded file name that
+                        ;; exists.  If it exists prepend the fully expanded
+                        ;; file name to args.
+                        (progn
+                          (setq xref-uo-list (cdr xref-uo-list))
+                          (let ((sd7-script-fn
+                                 (expand-file-name (car-safe xref-uo-list))))
+                            (if (and sd7-script-fn
+                                     (file-exists-p sd7-script-fn))
+                                (progn
+                                  ;; remove script filename from the list
+                                  (setq xref-uo-list (cdr-safe xref-uo-list))
+                                  ;; prepend scripts args if any
+                                  (when xref-uo-list
+                                    (setq args (append xref-uo-list args)))
+                                  ;; then prepend script file-name
+                                  (setq args
+                                        (append (list sd7-script-fn) args)))
+                              (user-error
+                               "Invalid seed7-xref: %s\nseed7-xref = %s"
+                               (if sd7-script-fn
+                                   (format "Can't find script: %s"
+                                           sd7-script-fn)
+                                 "No Seed7 file identified after s7 interpreter.")
+                               seed7-xref))))
+                      ;; The command is not a s7 command but something else.
+                      ;; We know the first word is a valid executable, just
+                      ;; proceed by setting pre-pending the cdr of seed7-xref
+                      ;; list.
+                      (when (> (length xref-uo-list) 1)
+                        (setq args (append (cdr xref-uo-list) args))))
+                    ;; Execute the command with appropriate arguments.
+                    (apply #'call-process
+                           xref-executable-name
+                           nil outbuf nil
+                           args)))))
+            (unless (zerop exit-code)
+              (user-error
+               "seed7-xref tool exited with status %d.\nCommand: %s\nOutput:\n%s"
+               exit-code
+               seed7-xref
+               (with-current-buffer outbuf (buffer-string))))))
       (user-error "\
 The seed7-xref user-option does not identify an executable file: %s
 Please update!"
