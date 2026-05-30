@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260530.1704
+;; Package-Version: 20260530.1833
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -480,7 +480,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-30T21:04:45+0000 W22-6"
+(defconst seed7-mode-version-timestamp "2026-05-30T22:33:52+0000 W22-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6311,7 +6311,12 @@ See also: `seed7-check-or-compile'."
                            (if (file-name-directory raw-program)
                                (executable-find (expand-file-name raw-program))
                              (executable-find raw-program))))
-         (args        (append (cdr cmd-parts) (list file-name)))
+         (args        (append (mapcar (lambda (a)
+                                       (if (string-prefix-p "~" a)
+                                           (expand-file-name a)
+                                         a))
+                                      (cdr cmd-parts))
+                              (list (expand-file-name file-name))))
          (diag-re    (if compile
                          seed7--compiler-diagnostic-regexp
                        seed7--checker-diagnostic-regexp))
