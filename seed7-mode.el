@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260530.1619
+;; Package-Version: 20260530.1704
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -480,7 +480,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-30T20:19:17+0000 W22-6"
+(defconst seed7-mode-version-timestamp "2026-05-30T21:04:45+0000 W22-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2934,7 +2934,7 @@ Arguments:
 (defun seed7--no-defun-found-msg-for (n direction)
   "Return formatted error message for failure to search N defun in DIRECTION.
 
-- DIRECTION: symbol: either forward to backward."
+- DIRECTION: symbol: either forward or backward."
   (format "There's no %sSeed7 function%s or procedure%s found %s!"
           (if (= n 1) "" (format "%d " n))
           (if (= n 1) "" "s")
@@ -6422,7 +6422,7 @@ Returns the DIAGNOSTICS list from `seed7-check-file' (a list of plists;
 see that function's docstring for the plist keys),
 or nil when no diagnostics are found."
   (interactive "P")
-  (let ((file (buffer-file-name)))
+  (let ((file (or buffer-file-truename buffer-file-name)))
     (unless file
       (user-error "Buffer is not visiting a file"))
     (unless (eq major-mode 'seed7-mode)
@@ -6503,7 +6503,7 @@ or nil when no diagnostics are found."
         (when (boundp 'compilation-num-errors-found)
           (setq-local compilation-num-errors-found   n-errors)
           ;; The current Seed7 tools emit no warning and no information hints.
-          ;; If future versions of Seed7 emits them the following should be
+          ;; If future versions of Seed7 emit them the following should be
           ;; extracted.
           (when (boundp 'compilation-num-warnings-found)
             (setq-local compilation-num-warnings-found 0))
@@ -6800,14 +6800,17 @@ Return a list of 4-elements:
   (save-excursion
     (goto-char (or start-pos (point-min)))
     ;; search for a isolated identifier (don't match partial identifiers)
-    (when (seed7-re-search-forward (format "\\<%s\\>" identifier) end-pos)
+    (when (seed7-re-search-forward
+           (format "\\<%s\\>" (regexp-quote identifier)) end-pos)
       (let ((specs nil)
             (found-lineno (seed7-current-line-number)))
         (when (and (not (eq from-line found-lineno))
                    (or (seed7--set (seed7-line-inside-a-block 0)
                                    specs)
                        (not block-spec)))
-          (list (expand-file-name buffer-file-truename)
+          (list (expand-file-name (or buffer-file-truename
+                                      buffer-file-name
+                                      ""))
                 found-lineno
                 (- (current-column) (length identifier))
                 (seed7--signature-at
@@ -6866,7 +6869,7 @@ Return a list of 4-element lists, where each 4-element list has:
     (seed7--build-xref))
   ;; Then search the identifier references in the `seed7---xref-buffer'.
   ;; There may be several entries for a specific identifier, and some of them
-  ;; may be duplicated.  Filter duplicates and  return all candidates.
+  ;; may be duplicated.  Filter duplicates and return all candidates.
   ;; Each line of the xref buffer holds a tab-separated set of 3 values: the
   ;; identifier string, the file name and the line number.
   (let* ((entries nil)
