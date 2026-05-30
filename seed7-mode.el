@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260530.1015
+;; Package-Version: 20260530.1113
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -480,7 +480,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-30T14:15:33+0000 W22-6"
+(defconst seed7-mode-version-timestamp "2026-05-30T15:13:11+0000 W22-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2576,25 +2576,26 @@ Return position of the closest match end, nil if nothing found.
 After returning, match data reflects the regexp that produced the closest
 match."
   (let* ((candidates nil)
-         (closest-position-beg.end.regexp
+         (closest-beg.end.match-data
           (dolist (regexp regexps (car-safe
                                    (sort
                                     (seq-filter #'identity candidates)
                                     ;; sort by start position (the nearest)
                                     (lambda (a b) (< (nth 0 a) (nth 0 b))))))
             (save-excursion
-              (when-let ((end (seed7-re-search-forward regexp)))
-                ;; Store (start-of-match end-of-match regexp).
-                ;; seed7-re-search-forward returns point-after-match (end);
+              (when (seed7-re-search-forward regexp)
+                ;; Store (start-of-match-pos end-of-match-pos match-data).
+                ;; seed7-re-search-forward returns end-of-match-pos
                 ;; match-beginning 0 is the true match start.
-                (push (list (match-beginning 0) end regexp) candidates))))))
-    (when closest-position-beg.end.regexp
+                (push (list (match-beginning 0) (match-end 0) (match-data))
+                      candidates))))))
+    (when closest-beg.end.match-data
       ;; restore match start pos
-      (goto-char  (nth 0 closest-position-beg.end.regexp))
+      (goto-char  (nth 0 closest-beg.end.match-data))
       ;; restore the match data by searching again without moving
-      (looking-at (nth 2 closest-position-beg.end.regexp))
+      (set-match-data (nth 2 closest-beg.end.match-data))
       ;; set point to end of match and return it
-      (goto-char (nth 1 closest-position-beg.end.regexp)))))
+      (goto-char (nth 1 closest-beg.end.match-data)))))
 
 (defun seed7-re-search-backward (regexp &optional bound)
   "Search for REGEXP inside code.  Skip comment and strings.
@@ -2632,7 +2633,7 @@ After returning, match data reflects the regexp that produced the closest
 match."
   ;; search with all regexp in the regexps list.
   (let* ((candidates nil)
-         (closest-position-beg.end.regexp
+         (closest-beg.end.match-data
           (dolist (regexp regexps (car-safe
                                    (sort
                                     (seq-filter #'identity candidates)
@@ -2640,19 +2641,20 @@ match."
                                     (lambda (a b) (> (nth 1 a) (nth 1 b))))))
             ;; For each search, store the begin/end positions and the regexp
             (save-excursion
-              (when-let ((end (seed7-re-search-backward regexp)))
-                (push (list (match-beginning 0) (match-end 0) regexp) candidates))))))
+              (when (seed7-re-search-backward regexp)
+                (push (list (match-beginning 0) (match-end 0) (match-data))
+                      candidates))))))
     ;; If something is found, restore the global match data that corresponds
     ;; to the regexp that finds the closest position and return the requested
     ;; position
-    (when closest-position-beg.end.regexp
+    (when closest-beg.end.match-data
       ;; restore match start pos
-      (goto-char  (nth 0 closest-position-beg.end.regexp))
+      (goto-char  (nth 0 closest-beg.end.match-data))
       ;; restore the match data by searching again without moving
-      (looking-at (nth 2 closest-position-beg.end.regexp))
+      (set-match-data (nth 2 closest-beg.end.match-data))
       ;; set point and return position of the requested end
       (goto-char (nth (if get-end-pos 1 0)
-                      closest-position-beg.end.regexp)))))
+                      closest-beg.end.match-data)))))
 
 
 ;;** Seed7 Skipping Comments
@@ -6690,24 +6692,29 @@ Please update!"
 
 (defun seed7--signature-from (filename line column)
   "Return Seed7 element signature for element in FILENAME at LINE, COLUMN."
-  (with-temp-buffer
-    (insert-file-contents filename)
-    (goto-char (point-min))
-    (forward-line (1- line))
-    (forward-char column)
-    (seed7--signature-at)))
+  (condition-case err
+      (with-temp-buffer
+        (insert-file-contents filename)
+        (goto-char (point-min))
+        (forward-line (1- line))
+        (forward-char column)
+        (seed7--signature-at))
+    (file-error
+     (format "<xref: cannot read %s: %s>"
+             filename (error-message-string err)))))
 
-(defun seed7--xref-in-list (list filename lineno)
-  "Return t if FILENAME @ LINENO is inside LIST.  Return nil otherwise."
+(defun seed7--xref-in-list (entries filename lineno)
+  "Return t if FILENAME @ LINENO is inside list of ENTRIES.
+Return nil otherwise."
   (let ((found nil)
-        (entry (car-safe list)))
+        (entry (car-safe entries)))
     (while (and entry
                 (not found))
       (when (and (string= (nth 0 entry) filename)
                  (eq (nth 1 entry) lineno))
         (setq found t))
-      (setq list (cdr-safe list))
-      (setq entry (car-safe list)))
+      (setq entries (cdr-safe entries))
+      (setq entry (car-safe entries)))
     found))
 
 (defun seed7--symbol-definition-areas-for-block (block-spec)
@@ -7094,7 +7101,7 @@ The list has no duplicate and is unsorted."
 ;;* Seed7 Abbreviation Support
 ;;  ==========================
 
-(defcustom  seed7-support-abbrev-mode t
+(defcustom seed7-support-abbrev-mode t
   "When non-nil, install Seed7’s local abbrev table in seed7-mode buffers.
 
 This does not enable `abbrev-mode'; enable `abbrev-mode' separately to expand
