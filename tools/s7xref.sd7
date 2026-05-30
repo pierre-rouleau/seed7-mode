@@ -27,8 +27,6 @@
 #  Compile this file with s7c to create the s7xref executable,
 #  or use the s7 interpreter to run it from source.
 
-# [:todo 2025-06-14, by Pierre Rouleau: Add command line help and protection checks.]
-
 $ include "seed7_05.s7i";
   include "progs.s7i";
   include "osfiles.s7i";
@@ -39,18 +37,18 @@ const type: entry_presence_hash is hash [string] integer;
 
 const proc: printHelp is func
   begin
-    writeln("Usage: s7xref <file>");
+    writeln("Usage:  s7xref <file>");
+    writeln("        s7xref -h | --help");
     writeln;
-    writeln("  <file>  A Seed7 source file (.sd7 or .s7i) to cross-reference.");
+    writeln("*  s7xref <file>");
+    writeln("   - <file>  A Seed7 source file (.sd7 or .s7i) to cross-reference.");
+    writeln("   - Output (written to standard output):");
+    writeln("      One tab-separated line per identifier:");
+    writeln("        <identifier> TAB <filename> TAB <lineno>");
+    writeln("   - Identifiers whose filename is \"?\" are silently excluded.");
     writeln;
-    writeln("Output (written to standard output):");
-    writeln("  One tab-separated line per identifier:");
-    writeln("    <identifier> TAB <filename> TAB <lineno>");
-    writeln;
-    writeln("Identifiers whose filename is \"?\" are silently excluded.");
-    writeln;
-    writeln("Options:");
-    writeln("  -h, --help  Show this help and exit with status 0.");
+    writeln("*  s7xref -h | --help");
+    writeln("   -  Show this help and exit with status 0.");
     writeln;
     writeln("Exit status:");
     writeln("  0  Success (including --help).");
@@ -73,10 +71,12 @@ const proc: main is func
   begin
 
     # --- Argument validation -------------------------------------------------
-
-    if length(argv(PROGRAM)) = 0 or
-       argv(PROGRAM)[1] = "-h" or
-       argv(PROGRAM)[1] = "--help" then
+    if length(argv(PROGRAM)) = 0 then
+      writeln(STD_ERR, "s7xref: error: missing argument <file>.");
+      writeln(STD_ERR, "Run 's7xref --help' for usage information.");
+      exit(1);
+    end if;
+    if argv(PROGRAM)[1] = "-h" or argv(PROGRAM)[1] = "--help" then
       printHelp;
       exit(0);
     end if;
@@ -105,7 +105,7 @@ const proc: main is func
     # --- Cross-reference extraction -----------------------------------------
 
     if endsWith(fileName, ".s7i") then
-      # For a .s7i file parsing the file fails; instead create a small
+      # For a .s7i file, parsing the file fails; instead create a small
       # program in a string that includes that .s7i file and parse that.
       pgmCode := "$ include \"seed7_05.s7i\";\n\
                  \  include " <& literal(fileName) <& ";\n";
