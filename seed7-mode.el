@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260530.1223
+;; Package-Version: 20260530.1310
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -480,7 +480,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-30T16:23:58+0000 W22-6"
+(defconst seed7-mode-version-timestamp "2026-05-30T17:10:42+0000 W22-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2590,7 +2590,7 @@ match."
                       candidates))))))
     (when closest-beg.end.match-data
       ;; restore match start pos
-      (goto-char  (nth 0 closest-beg.end.match-data))
+      (goto-char (nth 0 closest-beg.end.match-data))
       ;; restore the match data by searching again without moving
       (set-match-data (nth 2 closest-beg.end.match-data))
       ;; set point to end of match and return it
@@ -2648,7 +2648,7 @@ match."
     ;; position
     (when closest-beg.end.match-data
       ;; restore match start pos
-      (goto-char  (nth 0 closest-beg.end.match-data))
+      (goto-char (nth 0 closest-beg.end.match-data))
       ;; restore the match data by searching again without moving
       (set-match-data (nth 2 closest-beg.end.match-data))
       ;; set point and return position of the requested end
@@ -6585,7 +6585,8 @@ user-option."
                            (file-name-nondirectory
                             buffer-file-truename)))
                (outbuf (or (and seed7---xref-buffer
-                                (buffer-live-p seed7---xref-buffer))
+                                (buffer-live-p seed7---xref-buffer)
+                                seed7---xref-buffer)
                            (setq-local
                             seed7---xref-buffer
                             (get-buffer-create
@@ -6646,7 +6647,7 @@ seed7-xref = %s"
                                  seed7-xref)))))
                       ;; The command is not a s7 command but something else.
                       ;; We know the first word is a valid executable, just
-                      ;; proceed by prepending the cdr of seed7-uo-xref list.
+                      ;; proceed by prepending the cdr of xref-uo-list list.
                       (when (> (length xref-uo-list) 1)
                         (setq args (append (cdr xref-uo-list) args))))
                     ;; Execute the command with appropriate arguments.
@@ -6856,11 +6857,13 @@ Return a list of 4-element lists, where each 4-element list has:
       (goto-char (point-min))
       (while (and keep-searching
                   (not (eobp)))
-        (if (seed7-re-search-forward text-re)
+        (if (re-search-forward text-re nil :noerror)
             (let ((filename (match-string 2))
                   (lineno (string-to-number (match-string 3))))
-              (unless (or (eq lineno from-line)
-                          (seed7--xref-in-list entries filename lineno))
+              (unless (or (and (string= (expand-file-name filename)
+                                        (expand-file-name buffer-file-truename))
+                               (= lineno from-line))
+                       (seed7--xref-in-list entries filename lineno))
                 (push (list filename
                             lineno
                             0      ; column not identified by s7xref: set to 0
