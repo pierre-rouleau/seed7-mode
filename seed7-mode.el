@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260530.1833
+;; Package-Version: 20260530.1704
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -480,7 +480,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-30T22:33:52+0000 W22-6"
+(defconst seed7-mode-version-timestamp "2026-05-30T21:04:45+0000 W22-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6276,7 +6276,7 @@ If COMPILE is non-nil, use `seed7-compiler' (s7c) to compile the file;
 otherwise use `seed7-checker' (s7check) to perform a static check.
 
 Invokes the tool directly via `call-process' (no /bin/sh involved).
-Returns a cons cell (EXIT-CODE . DIAGNOSTICS) where:
+Returns a list (EXIT-CODE DIAGNOSTICS RAW-OUTPUT) where:
   EXIT-CODE   - integer exit status returned by the tool, or 1 when the
                 process was terminated by a signal.
   DIAGNOSTICS - list (in source order) of plists, each with the keys:
@@ -6288,6 +6288,9 @@ Returns a cons cell (EXIT-CODE . DIAGNOSTICS) where:
     :message - diagnostic message text string
     :context - list of continuation/context strings that followed the
                diagnostic line in the tool's output (may be nil)
+  RAW-OUTPUT  - the verbatim tool output string when EXIT-CODE is non-zero
+                and DIAGNOSTICS is nil (i.e. the tool failed but produced no
+                parseable diagnostics); nil in all other cases.
 
 The DIAGNOSTICS list is nil when no diagnostics are found.
 
@@ -6311,12 +6314,7 @@ See also: `seed7-check-or-compile'."
                            (if (file-name-directory raw-program)
                                (executable-find (expand-file-name raw-program))
                              (executable-find raw-program))))
-         (args        (append (mapcar (lambda (a)
-                                       (if (string-prefix-p "~" a)
-                                           (expand-file-name a)
-                                         a))
-                                      (cdr cmd-parts))
-                              (list (expand-file-name file-name))))
+         (args        (append (cdr cmd-parts) (list file-name)))
          (diag-re    (if compile
                          seed7--compiler-diagnostic-regexp
                        seed7--checker-diagnostic-regexp))
@@ -6327,7 +6325,8 @@ See also: `seed7-check-or-compile'."
          (out-buf    (generate-new-buffer " *seed7-check-output*"))
          (default-directory (file-name-directory (expand-file-name file-name)))
          results
-         exit-code)
+         exit-code
+         raw-output)
     (unless (and program (file-executable-p program))
       (user-error "\
 Program specified by `%s' not found or not executable: %s
@@ -6400,7 +6399,13 @@ Verify the value of `%s'."
                   (forward-line 1))
                 ;; Flush the final diagnostic (if any).
                 (flush-current))))
-          (cons exit-code (nreverse results)))
+          ;; When the tool exits non-zero but produced no parseable
+          ;; diagnostics, capture the raw output so the caller can
+          ;; display it instead of falsely reporting "no errors found".
+          (when (and (not (zerop exit-code)) (null results))
+            (with-current-buffer out-buf
+              (setq raw-output (buffer-string))))
+          (list exit-code (nreverse results) raw-output))
       (kill-buffer out-buf))))
 
 (defun seed7-check-or-compile (&optional compile)
@@ -6449,8 +6454,9 @@ or nil when no diagnostics are found."
            ;; Record time *around* the checker invocation
            (t0         (current-time))
            (result     (seed7-check-file file compile))
-           (exit-code  (car result))
-           (errors     (cdr result))
+           (exit-code  (nth 0 result))
+           (errors     (nth 1 result))
+           (raw-output (nth 2 result))
            (t1         (current-time))
            (duration   (float-time (time-subtract t1 t0)))
            (n-errors   (length errors))
@@ -6492,7 +6498,15 @@ or nil when no diagnostics are found."
                   (insert ctx "\n"))
                 ;; Blank line between diagnostics for readability.
                 (insert "\n"))
-            (insert "seed7: no errors found\n"))
+            (if (and (not (zerop exit-code)) raw-output)
+                ;; Tool exited non-zero but produced no parseable diagnostics:
+                ;; show the raw output so the user can see what went wrong.
+                (progn
+                  (insert (format "seed7: tool exited with code %d \
+but no diagnostics were parsed.\n" exit-code))
+                  (insert "Raw tool output:\n")
+                  (insert raw-output))
+              (insert "seed7: no errors found\n"))))
           ;; -- Footer ------------------------------
           (insert (format "\nCompilation finished at %s, duration %.2f s\n"
                           (format-time-string "%a %b %e %H:%M:%S" t1)
@@ -6536,15 +6550,20 @@ or nil when no diagnostics are found."
         (goto-char (point-min)))
       (display-buffer out-buf)
       ;; -- Show and return results -----------------------------------------
-      (if errors
-          (message "seed7: %d error%s found"
-                   n-errors
-                   (if (> n-errors 1) "s" ""))
-        (message "seed7: no errors found"))
+      (cond
+       (errors
+        (message "seed7: %d error%s found"
+                 n-errors
+                 (if (> n-errors 1) "s" "")))
+       ((and (not (zerop exit-code)) raw-output)
+        (message "seed7: tool exited with code %d but no diagnostics were parsed \
+(see *seed7-errors* for raw output)" exit-code))
+       (t
+        (message "seed7: no errors found")))
       errors)))
 
 ;; ---------------------------------------------------------------------------
-;;* Seed7 Cross Reference
+
 ;;  =====================
 ;;
 ;; The `seed7-mode' supports the xref framework introduced in Emacs 25: the
