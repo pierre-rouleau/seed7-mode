@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260530.1833
+;; Package-Version: 20260601.0955
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -480,7 +480,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-05-30T22:33:52+0000 W22-6"
+(defconst seed7-mode-version-timestamp "2026-06-01T13:55:08+0000 W23-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1957,7 +1957,8 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
 ;;           # this is a line comment
 ;;
 ;;  Note that '#' is also used as a number base separator.
-;;  So it's not always a comment.  For now require a space after '#' to consider it a comment.
+;;  - The `seed7-mode-syntax-propertize' neutralizes '3' as comment when used
+;;    as a number base separator.
 
 (defvar seed7-mode-syntax-table
   (let ((st (make-syntax-table)))
@@ -1993,7 +1994,9 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
    seed7-any-valid-char-integer-semicolon-re))
 
 (defun seed7-mode-syntax-propertize (start end)
-  "Apply syntax property between START and END to # character in number."
+  "Apply syntax property between START and END to # character.
+Used when # is used as a number base separator and in single quoted
+character expression."
   ;; (info "(elisp)Syntax Properties")
   ;;
   ;; called from `syntax-propertize', inside save-excursion with-silent-modifications
@@ -4454,25 +4457,26 @@ If it finds something it returns a list that holds the following information:
                   ;; Allow modification of a read-only buffer and ensure that
                   ;; the undo history is not modified by the insertion and
                   ;; removal operations.
-                  (with-silent-modifications
-                    (setq keep-searching nil
-                          result (list (save-excursion
-                                         (forward-line 0)
-                                         (insert " noop;\n")
-                                         (forward-line -1)
-                                         (prog1
-                                             ;; compute indentation with noop
-                                             (seed7-calc-indent)
-                                           ;; then delete the inserted noop
-                                           (delete-region
-                                            (point)
-                                            (progn
-                                              (forward-line 1)
-                                              (point)))))
-                                       match-text
-                                       enclosing-block-start-pos
-                                       enclosing-block-end-pos
-                                       block-start-indent-column)))))
+                  (let ((inhibit-read-only t))
+                    (with-silent-modifications
+                      (setq keep-searching nil
+                            result (list (save-excursion
+                                           (forward-line 0)
+                                           (insert " noop;\n")
+                                           (forward-line -1)
+                                           (prog1
+                                               ;; compute indentation with noop
+                                               (seed7-calc-indent)
+                                             ;; then delete the inserted noop
+                                             (delete-region
+                                              (point)
+                                              (progn
+                                                (forward-line 1)
+                                                (point)))))
+                                         match-text
+                                         enclosing-block-start-pos
+                                         enclosing-block-end-pos
+                                         block-start-indent-column))))))
                ;;
                ;; Case 2: point is on an internal block start line.
                ((seed7--on-lineof block-start-pos current-pos)
