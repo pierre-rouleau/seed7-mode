@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260601.0955
+;; Package-Version: 20260601.1032
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -480,7 +480,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-01T13:55:08+0000 W23-1"
+(defconst seed7-mode-version-timestamp "2026-06-01T14:32:25+0000 W23-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1957,7 +1957,7 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
 ;;           # this is a line comment
 ;;
 ;;  Note that '#' is also used as a number base separator.
-;;  - The `seed7-mode-syntax-propertize' neutralizes '3' as comment when used
+;;  - The `seed7-mode-syntax-propertize' neutralizes '#' as comment when used
 ;;    as a number base separator.
 
 (defvar seed7-mode-syntax-table
@@ -4460,23 +4460,23 @@ If it finds something it returns a list that holds the following information:
                   (let ((inhibit-read-only t))
                     (with-silent-modifications
                       (setq keep-searching nil
-                            result (list (save-excursion
-                                           (forward-line 0)
-                                           (insert " noop;\n")
-                                           (forward-line -1)
-                                           (prog1
-                                               ;; compute indentation with noop
-                                               (seed7-calc-indent)
-                                             ;; then delete the inserted noop
-                                             (delete-region
-                                              (point)
-                                              (progn
-                                                (forward-line 1)
-                                                (point)))))
-                                         match-text
-                                         enclosing-block-start-pos
-                                         enclosing-block-end-pos
-                                         block-start-indent-column))))))
+                            result (list
+                                    (save-excursion
+                                      (forward-line 0)
+                                      (let ((noop-start (point))
+                                            (noop-end nil))
+                                        (insert " noop;\n")
+                                        (setq noop-end (point))
+                                        (forward-line -1)
+                                        (unwind-protect
+                                            ;; compute indentation with noop
+                                            (seed7-calc-indent)
+                                          ;; always delete inserted noop
+                                          (delete-region noop-start noop-end))))
+                                    match-text
+                                    enclosing-block-start-pos
+                                    enclosing-block-end-pos
+                                    block-start-indent-column))))))
                ;;
                ;; Case 2: point is on an internal block start line.
                ((seed7--on-lineof block-start-pos current-pos)
