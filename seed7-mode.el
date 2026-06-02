@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1420
+;; Package-Version: 20260602.1500
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -482,7 +482,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T18:20:34+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T19:00:06+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6412,6 +6412,14 @@ Return a list (in source order) of plists, each with the keys:
         (flush-current))
       (nreverse diagnostics))))
 
+(defun seed7--expand-args (args)
+  "Expand any leading ~ from the arguments."
+  (mapcar (lambda (a)
+            (if (string-prefix-p "~" a)
+                (expand-file-name a)
+              a))
+          args))
+
 (defun seed7-check-file (file-name &optional compile)
   "Run static check or compilation on FILE-NAME without using the shell.
 
@@ -6456,11 +6464,7 @@ See also: `seed7-check-or-compile'."
                        (if (file-name-directory raw-program)
                            (executable-find (expand-file-name raw-program))
                          (executable-find raw-program))))
-         (args    (append (mapcar (lambda (a)
-                                    (if (string-prefix-p "~" a)
-                                        (expand-file-name a)
-                                      a))
-                                  (cdr cmd-parts))
+         (args    (append (seed7--expand-args (cdr cmd-parts))
                           (list (expand-file-name file-name)))))
     ;; Guard: fail fast before allocating any buffers.
     (unless program
