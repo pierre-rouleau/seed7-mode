@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1704
+;; Package-Version: 20260602.1712
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -505,7 +505,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T21:04:18+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T21:12:17+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6427,7 +6427,7 @@ Return a list (in source order) of plists, each with the keys:
               ;; s7c summary footer ("N errors found") - skip entirely.
               nil)
              (in-error
-              ;; Continuation / context line - accumulate non blank
+              ;; Continuation / context line - accumulate non-blank
               (unless (string-blank-p line)
                 (push line context-lines)))))
           (forward-line 1))
@@ -6475,8 +6475,7 @@ used to set `default-directory' for the subprocess."
           (setq diagnostics
                 (seed7--parse-diagnostics compile stdout-buf)))
       ;; Cleanup: always kill scratch buffers.
-      (unless compile
-        (when (buffer-live-p stderr-buf) (kill-buffer stderr-buf)))
+      (when (buffer-live-p stderr-buf) (kill-buffer stderr-buf))
       (when (buffer-live-p stdout-buf) (kill-buffer stdout-buf)))
     (list exit-code diagnostics stderr-text)))
 
