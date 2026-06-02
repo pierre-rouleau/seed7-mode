@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1818
+;; Package-Version: 20260602.1826
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -505,7 +505,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T22:18:09+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T22:26:54+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2540,7 +2540,8 @@ error message; when nil the message ends with the OS error description.
 Return the exit code of the PROGRAM execution as an integer.
 When the process is killed by a signal, `call-process' returns a string;
 this function normalises it to 1."
-  ;; Create a temporary file to hold the stderr output safely
+  ;; When stderr capture is required, create a temporary file to hold the
+  ;; output.
   (let ((temp-stderr-file (when stderr-buffer
                             (make-temp-file "emacs-seed7-mode-stderr-"))))
     ;; Clear previous contents of both buffers
