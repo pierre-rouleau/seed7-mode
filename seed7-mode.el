@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1747
+;; Package-Version: 20260602.1800
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -505,7 +505,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T21:47:04+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T22:00:05+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2533,9 +2533,9 @@ Use inside a `cond' clause to emphasize the check FCT."
 - If STDERR-BUFFER is non-nil, it must be a buffer; the stdout and stderr
   streams of PROGRAM are collected separately.
 
-+If execution of PROGRAM fails (e.g. the OS cannot start it), the function
-+issues a `user-error'.  When CONTEXT-MSG is non-nil it is appended to the
-+error message; when nil the message ends with the OS error description.
+If execution of PROGRAM fails (e.g. the OS cannot start it), the function
+issues a `user-error'.  When CONTEXT-MSG is non-nil it is appended to the
+error message; when nil the message ends with the OS error description.
 
 Return the exit code of the PROGRAM execution."
   ;; Create a temporary file to hold the stderr output safely
@@ -6384,10 +6384,6 @@ Return a list (in source order) of plists, each with the keys:
     (let ((diag-re    (if compile
                           seed7--compiler-diagnostic-regexp
                         seed7--checker-diagnostic-regexp))
-          ;; Regexp to recognise (and discard) the s7c summary footer line.
-          ;; e.g. "64 errors found" - must not be accumulated as context.
-          ;; Only relevant for s7c output; s7check produces no such footer.
-          (footer-re  "^[0-9]+ errors? found$")
           ;; other local variables that are all initialized to nil
           diagnostics cur-file cur-line cur-col cur-code cur-message
           context-lines in-error)
@@ -6408,6 +6404,7 @@ Return a list (in source order) of plists, each with the keys:
                        (line-beginning-position)
                        (line-end-position))))
             (cond
+             ;;
              ((string-match diag-re line)
               ;; New diagnostic - flush previous, start fresh.
               (flush-current)
@@ -6424,9 +6421,14 @@ Return a list (in source order) of plists, each with the keys:
                 (setq cur-col     nil
                       cur-code    (match-string 3 line)
                       cur-message (match-string 4 line))))
-             ((and compile (string-match footer-re line))
+             ;;
+             ;; Regexp to recognise (and discard) the s7c summary footer line.
+             ;; e.g. "64 errors found" - must not be accumulated as context.
+             ;; Only relevant for s7c output; s7check produces no such footer.
+             ((and compile (string-match "^[0-9]+ errors? found$"  line))
               ;; s7c summary footer ("N errors found") - skip entirely.
               nil)
+             ;;
              (in-error
               ;; Continuation / context line - accumulate non-blank
               (unless (string-blank-p line)
