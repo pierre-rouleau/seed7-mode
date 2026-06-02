@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1727
+;; Package-Version: 20260602.1747
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -505,7 +505,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T21:27:25+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T21:47:04+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -592,7 +592,7 @@ by default.
 You may:
 - Specify the program name without a path if it is in the PATH of your shell.
 - Specify the program name with an absolute path.
-- Specify compiler options after the program name if necessary.
+- Specify static checker options after the program name if necessary.
 
 IMPORTANT NOTE: seed7-mode expects this tool to print diagnostics on stdout.
 
@@ -2533,8 +2533,9 @@ Use inside a `cond' clause to emphasize the check FCT."
 - If STDERR-BUFFER is non-nil, it must be a buffer; the stdout and stderr
   streams of PROGRAM are collected separately.
 
-If execution of PROGRAM fails (e.g. the OS cannot start it), the
-function issues a user-error that ends with the CONTEXT-MSG.
++If execution of PROGRAM fails (e.g. the OS cannot start it), the function
++issues a `user-error'.  When CONTEXT-MSG is non-nil it is appended to the
++error message; when nil the message ends with the OS error description.
 
 Return the exit code of the PROGRAM execution."
   ;; Create a temporary file to hold the stderr output safely
@@ -6363,8 +6364,8 @@ Header lines (\"SEED7 COMPILER Version ...\", \"Source: ...\",
 do NOT match this pattern and are therefore skipped during parsing.")
 
 
-(defun seed7--parse-diagnostics (compile s7c-out-buf)
-  "Parse s7c/s7check diagnostics from text in S7C-OUT-BUF.
+(defun seed7--parse-diagnostics (compile out-buf)
+  "Parse s7c/s7check diagnostics from text in OUT-BUF.
 
 If COMPILE is non-nil, parse `seed7-compiler' (s7c) output;
 otherwise parse `seed7-checker' (s7check) output.
@@ -6378,7 +6379,7 @@ Return a list (in source order) of plists, each with the keys:
     :message - diagnostic message text string
     :context - list of continuation/context strings that followed the
                diagnostic line in the tool's output (may be nil)."
-  (with-current-buffer s7c-out-buf
+  (with-current-buffer out-buf
     (goto-char (point-min))
     (let ((diag-re    (if compile
                           seed7--compiler-diagnostic-regexp
@@ -6436,13 +6437,13 @@ Return a list (in source order) of plists, each with the keys:
       (nreverse diagnostics))))
 
 (defun seed7--expand-args (args)
-  "Expand any leading ~ from the arguments."
-  (let ((updated-args nil))
-    (dolist (arg args (nreverse updated-args))
-      (push (if (string-prefix-p "~" arg)
+  "Return a copy of ARGS with any element whose name starts with `~' expanded.
+Other elements are returned unchanged."
+  (mapcar (lambda (arg)
+            (if (string-prefix-p "~" arg)
                 (expand-file-name arg)
-              arg)
-            updated-args))))
+              arg))
+          args))
 
 (defun seed7--run-and-parse (program args cmd-string compile file-name)
   "Run PROGRAM with ARGS and return (EXIT-CODE DIAGNOSTICS STDERR-TEXT).
@@ -6607,7 +6608,7 @@ or nil when no diagnostics are found."
                              (err-msg (format "%s with exit code %d%s"
                                               operation
                                               exit-code
-                                              (or err-msg "")))
+                                              err-msg))
                              ((not (zerop exit-code))
                               (format "%s with exit code %d"
                                       operation
