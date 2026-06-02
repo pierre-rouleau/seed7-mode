@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1500
+;; Package-Version: 20260602.1514
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -482,7 +482,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T19:00:06+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T19:14:14+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6414,11 +6414,11 @@ Return a list (in source order) of plists, each with the keys:
 
 (defun seed7--expand-args (args)
   "Expand any leading ~ from the arguments."
-  (mapcar (lambda (a)
-            (if (string-prefix-p "~" a)
-                (expand-file-name a)
-              a))
-          args))
+  (let ((updated-args nil))
+    (dolist (arg args (nreverse updated-args))
+      (if (string-prefix-p "~" arg)
+          (push (expand-file-name arg) updated-args)
+        arg))))
 
 (defun seed7-check-file (file-name &optional compile)
   "Run static check or compilation on FILE-NAME without using the shell.
