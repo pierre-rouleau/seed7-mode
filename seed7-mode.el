@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1550
+;; Package-Version: 20260602.1617
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -485,7 +485,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T19:50:02+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T20:17:53+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2502,7 +2502,7 @@ Use inside a `cond' clause to emphasize the check FCT."
 
 (defun seed7--plural-s (n)
   "Return \"s\" if N is larger than 1, \"\" otherwise."
-  (if (> n 1) "s" ""))
+  (if (= n 1) "" "s"))
 
 (defun seed7--run (program args stdout-buffer
                            &optional stderr-buffer context-msg)
@@ -2516,7 +2516,7 @@ Use inside a `cond' clause to emphasize the check FCT."
 If execution of PROGRAM signals fails, the function issues a user-error that
 ends with the CONTEXT-MSG.
 
-Return the exit code of the PROGRAM execution.."
+Return the exit code of the PROGRAM execution."
   ;; Create a temporary file to hold the stderr output safely
   (let ((temp-stderr-file (when stderr-buffer
                             (make-temp-file "emacs-seed7-mode-stderr-"))))
@@ -2535,7 +2535,7 @@ Return the exit code of the PROGRAM execution.."
                    (user-error "\
 seed7: cannot run \"%s\"%s: %s"
                                program
-                               (if  context-msg
+                               (if context-msg
                                    (format "  with %s" context-msg)
                                  "")
                                (error-message-string err))))))
@@ -6426,19 +6426,20 @@ Return a list (in source order) of plists, each with the keys:
 
 (defun seed7--run-and-parse (program args cmd-string compile file-name)
   "Run PROGRAM with ARGS and return (EXIT-CODE DIAGNOSTICS STDERR-TEXT).
-CMD-STRING is the original command string (for error messages).
-COMPILE and FILE-NAME are passed to `seed7--parse-diagnostics'.
-Buffers are allocated locally and always freed via `unwind-protect'."
+
+If COMPILE is non-nil, use `seed7-compiler' (s7c) to compile the file
+specified by FILE-NAME; otherwise use `seed7-checker' (s7check) to perform a
+static check."
   (let* ((stdout-buf        (generate-new-buffer " *seed7-check-output*"))
-         (stderr-buf        (generate-new-buffer " *seed7-check-stderr*"))
+         (stderr-buf        (unless compile
+                              (generate-new-buffer " *seed7-check-stderr*")))
          (default-directory (file-name-directory (expand-file-name file-name)))
          stderr-text diagnostics exit-code)
     (unwind-protect
         ;; Run compiler/checker
         (progn
           (setq exit-code
-                (seed7--run program args stdout-buf
-                            (unless compile stderr-buf)
+                (seed7--run program args stdout-buf stderr-buf
                             (format "(from `%s' = %S)"
                                     (if compile "seed7-compiler" "seed7-checker")
                                     cmd-string)))
@@ -6450,7 +6451,8 @@ Buffers are allocated locally and always freed via `unwind-protect'."
           (setq diagnostics
                 (seed7--parse-diagnostics compile stdout-buf)))
       ;; Cleanup: always kill scratch buffers.
-      (when (buffer-live-p stderr-buf) (kill-buffer stderr-buf))
+      (unless compile
+        (when (buffer-live-p stderr-buf) (kill-buffer stderr-buf)))
       (when (buffer-live-p stdout-buf) (kill-buffer stdout-buf)))
     (list exit-code diagnostics stderr-text)))
 
@@ -6473,7 +6475,9 @@ Returns a (EXIT-CODE DIAGNOSTICS STDERR) where:
     :message - diagnostic message text string
     :context - list of continuation/context strings that followed the
                diagnostic line in the tool's output (may be nil).
-  STDERR     - a string corresponding to the program stderr.
+  STDERR     - a string corresponding to the program stderr, or an empty
+               string when COMPILE is non-nil (the compiler's stderr is
+               merged into the parsed diagnostic stream instead).
 
 The DIAGNOSTICS list is nil when no diagnostics are found.
 
@@ -6665,7 +6669,7 @@ or nil when no diagnostics are found."
         (goto-char (point-min)))
       (display-buffer out-buf)
       ;; -- Show and return diagnostics count ----------------------
-      (message end-msg)
+      (message "%s" end-msg)
       diags)))
 
 ;; ---------------------------------------------------------------------------
