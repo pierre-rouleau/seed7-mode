@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1523
+;; Package-Version: 20260602.1550
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -420,6 +420,9 @@
 ;;       . `seed7--indent-lines'
 ;; - Seed7 Compilation
 ;;   * `seed7-check-or-compile'
+;;     . `seed7-check-file'
+;;       . `seed7--expand-args'
+;;       . `seed7--run-and-parse'
 ;; - Seed7 Cross Reference
 ;;    > `seed7--xref-backend'
 ;;    + `xref-backend-identifier-at-point'
@@ -482,7 +485,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T19:23:26+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T19:50:02+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6416,9 +6419,10 @@ Return a list (in source order) of plists, each with the keys:
   "Expand any leading ~ from the arguments."
   (let ((updated-args nil))
     (dolist (arg args (nreverse updated-args))
-      (if (string-prefix-p "~" arg)
-          (push (expand-file-name arg) updated-args)
-        arg))))
+      (push (if (string-prefix-p "~" arg)
+                (expand-file-name arg)
+              arg)
+            updated-args))))
 
 (defun seed7--run-and-parse (program args cmd-string compile file-name)
   "Run PROGRAM with ARGS and return (EXIT-CODE DIAGNOSTICS STDERR-TEXT).
@@ -6563,7 +6567,7 @@ or nil when no diagnostics are found."
            ;; Format result message
            (err-msg     (when (and stderr-text
                                    (not (string-blank-p stderr-text)))
-                          (format "\nSTDERR:\n%s\n" stderr-text)))
+                          (format "\nSTDERR: %s" stderr-text)))
            (end-msg (format "%s: %s"
                             pgm
                             (cond
