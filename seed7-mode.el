@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1024
+;; Package-Version: 20260602.1146
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -482,7 +482,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T14:24:49+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T15:46:59+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -571,6 +571,8 @@ You may:
 - Specify the program name with an absolute path.
 - Specify compiler options after the program name if necessary.
 
+IMPORTANT NOTE: see7-mode expects this tool to print diagnostics on stdout.
+
 The name of the source code file is appended to the end of that line.
 Note that the s7check is part of the example programs located inside
 the Seed7 prg directory.  Compile the prg/s7check.sd7 with s7c to create
@@ -586,6 +588,8 @@ You may:
 - Specify the program name without a path if it is in the PATH of your shell.
 - Specify the program name with an absolute path.
 - Specify compiler options after the program name if necessary.
+
+IMPORTANT NOTE: see7-mode expects this tool to print diagnostics on stderr.
 
 The name of the source code file is appended to the end of that line."
   :group 'seed7
@@ -6451,26 +6455,43 @@ See also: `seed7-check-or-compile'."
          stderr-text
          diagnostics
          exit-code)
-    (unless (and program (file-executable-p program))
-      (user-error "\
+    (unwind-protect
+        (progn
+          (unless (and program (file-executable-p program))
+            (user-error "\
 Program specified by `%s' not found or not executable: %s
 Verify the value of `%s'."
-                  (if compile "seed7-compiler" "seed7-checker")
-                  raw-program
-                  (if compile "seed7-compiler" "seed7-checker")))
-    ;; Execute program - get exit code
-    (setq exit-code (seed7--run program args stdout-buf stderr-buf
-                                (format "(from `%s' = %S"
-                                        (if compile "seed7-compiler"
-                                          "seed7-checker")
-                                        cmd-string)))
-    ;; - remember stderr text
-    (with-current-buffer stderr-buf
-      (setq stderr-text (buffer-string)))
-    (kill-buffer stderr-buf)
-    ;; - extract diagnostics from stdout
-    (setq diagnostics (seed7--parse-diagnostics compile stdout-buf))
-    (kill-buffer stdout-buf)
+                        (if compile "seed7-compiler" "seed7-checker")
+                        raw-program
+                        (if compile "seed7-compiler" "seed7-checker")))
+          ;; Execute program - get exit code
+          (setq exit-code (seed7--run program args stdout-buf stderr-buf
+                                      (format "(from `%s' = %S)"
+                                              (if compile "seed7-compiler"
+                                                "seed7-checker")
+                                              cmd-string)))
+          ;; The s7c compiler program emits diagnostics on stderr.
+          ;; The s7check static checker emits diagnostics on stdout.
+          ;; - Extract stderr text
+          (with-current-buffer stderr-buf
+            (setq stderr-text (buffer-string)))
+          ;; - When analyzing keep the stdout as is: the content of
+          ;;   stderr in stderr-text.
+          (when compile
+            ;; - When compiling append the content of stderr to stdout,
+            ;;   analyze that and set the stderr-text to empty string.
+            (with-current-buffer stdout-buf
+              (goto-char (point-max))
+              (insert stderr-text))
+            (setq stderr-text ""))
+          ;; - extract diagnostics from stdout
+          (setq diagnostics (seed7--parse-diagnostics compile stdout-buf))
+          ;; - return exit code, diagnostics and stderr text
+          (list exit-code diagnostics stderr-text))
+      (when (buffer-live-p stderr-buf)
+        (kill-buffer stderr-buf))
+      (when (buffer-live-p stdout-buf)
+        (kill-buffer stdout-buf)))
     ;; - return exit code, diagnostics and stderr text
     (list exit-code diagnostics stderr-text)))
 
