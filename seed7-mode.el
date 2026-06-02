@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1826
+;; Package-Version: 20260602.1846
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -505,7 +505,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T22:26:54+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T22:46:23+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3364,7 +3364,8 @@ Return t if point moved to the beginning of function, nil if nothing found."
 For the first word N must be 1.
 Negative N starts counting from the end of the line: -1 is the last word."
   (save-excursion
-    (let ((line-number-str (format-mode-line "%l")))
+    (let ((line-start (line-beginning-position))
+          (line-end (line-end-position)))
       (if (< n 0)
           ;; Count from end of line
           (progn
@@ -3378,7 +3379,8 @@ Negative N starts counting from the end of the line: -1 is the last word."
           (forward-word))
         (backward-word))
       ;; Return the identified word or nil if found on a different line
-      (when (string= line-number-str (format-mode-line "%l"))
+      (when (and (>= (point) line-start)
+                 (<= (point) line-end))
         (thing-at-point 'word :no-properties)))))
 
 ;; [:todo 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
@@ -4271,10 +4273,8 @@ N is: - :previous-non-empty for the previous non-empty line,
           (setq line-code-end-pos (point))
           (when (seed7--set (seed7-re-search-backward regexp line-start-pos)
                           found-pos)
-          (when (eq (+ found-pos
-                       (length (substring-no-properties (match-string 0))))
-                    line-code-end-pos)
-            found-pos)))))))
+            (when (= (match-end 0) line-code-end-pos)
+              found-pos)))))))
 
 ;;** Seed7 Indentation Line Type Checking Functions
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
