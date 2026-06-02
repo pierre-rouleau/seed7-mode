@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1640
+;; Package-Version: 20260602.1704
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -205,6 +205,8 @@
 ;; of sections.
 ;;
 ;; - Version Info
+;;   . `seed7-mode-version'
+;;   * `seed7-mode-customize'
 ;; - Seed7 Customization
 ;; - Seed7 Keyword Regexp
 ;;   - Seed7 Tokens
@@ -234,6 +236,8 @@
 ;;   - Seed7 Block Processing Regexp
 ;;   - Seed7 Procedure/Function Parameters Regexp
 ;;   - Seed7 Procedure/Function Regexp
+;;     . `seed7-func-beg-of-decl-re-fmt'
+;;     . `seed7--procfunc-beg-of-decl-re-fmt'
 ;; - Seed7 iMenu Support Regexp
 ;;   - Seed7 Procedure/Function iMenu Regexp
 ;;   - Seed7 Enum/Structure iMenu Regexp
@@ -264,7 +268,9 @@
 ;;       . `seed7--inside-string-p'
 ;;   - Seed7 Code Search Functions
 ;;     . `seed7-re-search-forward'
+;;     . `seed7-re-search-forward-closest'
 ;;     . `seed7-re-search-backward'
+;;     . `seed7-re-search-backward-closest'
 ;;   - Seed7 Skipping Comments
 ;;     . `seed7-skip-comment-backward'
 ;;     . `seed7-skip-comment-forward'
@@ -302,8 +308,13 @@
 ;;       . `seed7--start-regexp-for'
 ;;         . `seed7--type-regexp'
 ;; - Seed7 iMenu Support
+;;   . `seed7--setup-imenu'
+;;   . `seed7--refresh-imenu'
+;;   * `seed7-toggle-menu-callable-list'
+;;   * `seed7-toggle-menu-sorting'
 ;; - Seed7 Code Marking
 ;;   * `seed7-mark-defun'
+;;   . `seed7-lines-in-defun'
 ;; - Seed7 Indentation
 ;;   - Seed7 Indentation Customization
 ;;   - Seed7 Indentation Utility Macros
@@ -312,6 +323,7 @@
 ;;     - Seed7 Indentation Base utilities
 ;;       . `seed7-blank-line-p'
 ;;       . `seed7-indent-step-for-column'
+;;       . `seed7-current-line-number'
 ;;       . `seed7-current-line-start-inside-comment-p'
 ;;         o `seed7-inside-comment-p'
 ;;         . `seed7-to-indent'
@@ -363,6 +375,7 @@
 ;;     . `seed7-line-inside-nested-parens-pairs'
 ;;     . `seed7-line-inside-nested-parens-pairs-column'
 ;;     . `seed7-indentation-of-previous-non-string-line'
+;;     . `seed7-line-is-procfunc-beg-of-decl'
 ;;     . `seed7-line-is-defun-end'
 ;;       o `seed7-line-starts-with-any'
 ;;         o `seed7-line-starts-with'
@@ -424,6 +437,7 @@
 ;;     . `seed7-check-file'
 ;;       . `seed7--expand-args'
 ;;       . `seed7--run-and-parse'
+;;         . `seed7--parse-diagnostics'
 ;; - Seed7 Cross Reference
 ;;    > `seed7--xref-backend'
 ;;    + `xref-backend-identifier-at-point'
@@ -441,9 +455,14 @@
 ;;            . `seed7--xref-in-list'
 ;;            . `seed7--signature-from'
 ;;              . `seed7--signature-at'
+;;    + `xref-backend-completions'
+;;      . `seed7--xref-identifiers'
+;;        . `seed7--procfun-identifiers'
+;;        . `seed7--list-of-terms'
 ;;        . `seed7--make-xref-from-file-loc'
 ;; - Seed7 Completion Support
 ;; - Seed7 Abbreviation Support
+;;   * `seed7-rebuild-abbrev-table'
 ;; - Seed7 Key Map
 ;; - Seed7 Menu
 ;; - Seed7 Major Mode
@@ -486,7 +505,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T20:40:33+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T21:04:18+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6347,7 +6366,7 @@ do NOT match this pattern and are therefore skipped during parsing.")
 (defun seed7--parse-diagnostics (compile s7c-out-buf)
   "Parse s7c/s7check diagnostics from text in S7C-OUT-BUF.
 
-If COMPILE is non-nil, parse  `seed7-compiler' (s7c) output;
+If COMPILE is non-nil, parse `seed7-compiler' (s7c) output;
 otherwise parse `seed7-checker' (s7check) output.
 
 Return a list (in source order) of plists, each with the keys:
@@ -6428,11 +6447,13 @@ Return a list (in source order) of plists, each with the keys:
 (defun seed7--run-and-parse (program args cmd-string compile file-name)
   "Run PROGRAM with ARGS and return (EXIT-CODE DIAGNOSTICS STDERR-TEXT).
 
-CMD-STRING is the original command string used in error messages.
-COMPILE no-nil identifies a compilation operation, nil identifies a static
-check operation.
-The FILE-NAME identifies the name of the file to compile or static check by
-PROGRAM."
+COMPILE non-nil identifies a compilation operation (s7c); nil identifies
+a static check (s7check).  When COMPILE is non-nil, STDERR-TEXT in the
+result is always \"\", because s7c emits diagnostics on stderr and they
+are parsed directly from the combined stdout+stderr stream.  When COMPILE
+is nil, STDERR-TEXT holds any text the checker emitted on stderr.
+FILE-NAME is the path of the source file passed to PROGRAM; it is also
+used to set `default-directory' for the subprocess."
   (let* ((stdout-buf        (generate-new-buffer " *seed7-check-output*"))
          (stderr-buf        (unless compile
                               (generate-new-buffer " *seed7-check-stderr*")))
@@ -6662,10 +6683,9 @@ or nil when no diagnostics are found."
                        ;; error count - red bold (compilation-mode-line-fail)
                        (propertize (number-to-string n-diags)
                                    'face 'compilation-mode-line-fail)
-                       ;; warning count - orange bold (compilation-mode-line-run
-                       ;;                 inherits compilation-warning)
+                       ;; warning count
                        " "
-                       (propertize "0" 'face 'compilation-mode-line-run)
+                       (propertize "0" 'face 'compilation-warning)
                        ;; info count - green bold (compilation-mode-line-exit)
                        " "
                        (propertize "0" 'face 'compilation-mode-line-exit)
