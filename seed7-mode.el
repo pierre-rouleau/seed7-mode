@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1617
+;; Package-Version: 20260602.1640
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -252,6 +252,7 @@
 ;; - Seed7 Low-level Macros
 ;;   . `seed7--set'
 ;; - Seed7 Utilities
+;;   . `seed7--plural-s'
 ;;   . `seed7--run'
 ;; - Seed7 Code Navigation
 ;;   - Seed7 Comment and String Identification Macros and Functions
@@ -485,7 +486,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T20:17:53+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T20:40:33+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -574,7 +575,7 @@ You may:
 - Specify the program name with an absolute path.
 - Specify compiler options after the program name if necessary.
 
-IMPORTANT NOTE: see7-mode expects this tool to print diagnostics on stdout.
+IMPORTANT NOTE: seed7-mode expects this tool to print diagnostics on stdout.
 
 The name of the source code file is appended to the end of that line.
 Note that the s7check is part of the example programs located inside
@@ -592,7 +593,7 @@ You may:
 - Specify the program name with an absolute path.
 - Specify compiler options after the program name if necessary.
 
-IMPORTANT NOTE: see7-mode expects this tool to print diagnostics on stderr.
+IMPORTANT NOTE: seed7-mode expects this tool to print diagnostics on stderr.
 
 The name of the source code file is appended to the end of that line."
   :group 'seed7
@@ -2501,7 +2502,7 @@ Use inside a `cond' clause to emphasize the check FCT."
 ;;  ===============
 
 (defun seed7--plural-s (n)
-  "Return \"s\" if N is larger than 1, \"\" otherwise."
+  "Return \"s\" if N is not equal to 1, \"\" otherwise."
   (if (= n 1) "" "s"))
 
 (defun seed7--run (program args stdout-buffer
@@ -2513,8 +2514,8 @@ Use inside a `cond' clause to emphasize the check FCT."
 - if STDERR-BUFFER is non-nil it must be a buffer; the stdout and stderr
   streams of PROGRAM are collected separately.
 
-If execution of PROGRAM signals fails, the function issues a user-error that
-ends with the CONTEXT-MSG.
+If execution of PROGRAM fails (e.g. the OS cannot start it), the
+function issues a user-error that ends with the CONTEXT-MSG.
 
 Return the exit code of the PROGRAM execution."
   ;; Create a temporary file to hold the stderr output safely
@@ -6427,9 +6428,11 @@ Return a list (in source order) of plists, each with the keys:
 (defun seed7--run-and-parse (program args cmd-string compile file-name)
   "Run PROGRAM with ARGS and return (EXIT-CODE DIAGNOSTICS STDERR-TEXT).
 
-If COMPILE is non-nil, use `seed7-compiler' (s7c) to compile the file
-specified by FILE-NAME; otherwise use `seed7-checker' (s7check) to perform a
-static check."
+CMD-STRING is the original command string used in error messages.
+COMPILE no-nil identifies a compilation operation, nil identifies a static
+check operation.
+The FILE-NAME identifies the name of the file to compile or static check by
+PROGRAM."
   (let* ((stdout-buf        (generate-new-buffer " *seed7-check-output*"))
          (stderr-buf        (unless compile
                               (generate-new-buffer " *seed7-check-stderr*")))
@@ -6496,7 +6499,7 @@ See also: `seed7-check-or-compile'."
          (cmd-parts  (split-string-and-unquote cmd-string))
          (raw-program (car cmd-parts))
          ;; Resolve the executable: when a directory component is present
-         ;; (e.g. "~/bin/s7check"), ;; expand ~ before searching exec-path
+         ;; (e.g. "~/bin/s7check"), expand ~ before searching exec-path
          ;; so tilde paths are honoured.
          (program (and raw-program
                        (if (file-name-directory raw-program)
@@ -6555,7 +6558,8 @@ or nil when no diagnostics are found."
     ;;
     ;; -- Build command, execute and extract result information
     (let* ((cmd        (if compile seed7-compiler seed7-checker))
-           (pgm        (file-name-nondirectory (car (split-string cmd))))
+           (pgm        (file-name-nondirectory
+                        (car (split-string-and-unquote cmd))))
            (operation  (if compile "compilation" "check"))
            (dir        (file-name-directory file))
            ;; Record time *around* the checker invocation
