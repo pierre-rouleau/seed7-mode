@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1146
+;; Package-Version: 20260602.1420
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -482,7 +482,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T15:46:59+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T18:20:34+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2501,19 +2501,30 @@ Use inside a `cond' clause to emphasize the check FCT."
   "Return \"s\" if N is larger than 1, \"\" otherwise."
   (if (> n 1) "s" ""))
 
-(defun seed7--run (program args stdout-buffer stderr-buffer
-                           &optional context-msg)
+(defun seed7--run (program args stdout-buffer
+                           &optional stderr-buffer context-msg)
   "Run PROGRAM with ARGS synchronously.
 
-Directs stdout to STDOUT-BUFFER and stderr to STDERR-BUFFER.
-Return the exit code."
+- If STDERR-BUFFER is nil: collect PROGRAM output from stdout and stderr in
+  STDOUT-BUFFER.
+- if STDERR-BUFFER is non-nil it must be a buffer; the stdout and stderr
+  streams of PROGRAM are collected separately.
+
+If execution of PROGRAM signals fails, the function issues a user-error that
+ends with the CONTEXT-MSG.
+
+Return the exit code of the PROGRAM execution.."
   ;; Create a temporary file to hold the stderr output safely
-  (let ((temp-stderr-file (make-temp-file "emacs-seed7-mode-stderr-")))
+  (let ((temp-stderr-file (when stderr-buffer
+                            (make-temp-file "emacs-seed7-mode-stderr-"))))
     ;; Clear previous contents of both buffers
     (with-current-buffer stdout-buffer (erase-buffer))
-    (with-current-buffer stderr-buffer (erase-buffer))
+    (when stderr-buffer
+      (with-current-buffer stderr-buffer (erase-buffer)))
     (unwind-protect
-        (let* ((dest (list stdout-buffer temp-stderr-file))
+        (let* ((dest (if stderr-buffer
+                         (list stdout-buffer temp-stderr-file)
+                       stdout-buffer))
                (exit-code
                 (condition-case err
                     (apply #'call-process program nil dest nil args)
@@ -2525,19 +2536,20 @@ seed7: cannot run \"%s\"%s: %s"
                                    (format "  with %s" context-msg)
                                  "")
                                (error-message-string err))))))
-
-          ;; Read the collected stderr file back into the target stderr buffer
-          (with-current-buffer stderr-buffer
-            (unless (integerp exit-code)
-              (insert (format "Error: %S\n" exit-code)))
-            (insert-file-contents temp-stderr-file))
+          ;; When used, read the collected stderr file back into the target
+          ;; stderr buffer.
+          (when stderr-buffer
+            (with-current-buffer stderr-buffer
+              (unless (integerp exit-code)
+                (insert (format "Error: %S\n" exit-code)))
+              (insert-file-contents temp-stderr-file)))
           ;; Normalise: call-process returns a string when killed by a signal.
           (unless (integerp exit-code)
             (setq exit-code 1))
           ;; Return the exit code of the process
           exit-code)
-      ;; delete temp file even if the process or insertion fails
-      (when (file-exists-p temp-stderr-file)
+      ;; When used, delete temp file even if the process or insertion fails.
+      (when (and stderr-buffer (file-exists-p temp-stderr-file))
         (delete-file temp-stderr-file)))))
 
 ;; ---------------------------------------------------------------------------
@@ -6433,67 +6445,67 @@ non-nil) cannot be found or is not executable.  In that case verify the
 value of the corresponding user-option.
 
 See also: `seed7-check-or-compile'."
-  (let* ((cmd-string (if compile seed7-compiler seed7-checker))
+  (let* ((cmd-string         (if compile seed7-compiler seed7-checker))
+         (user-option-name   (if compile "seed7-compiler" "seed7-checker"))
          (cmd-parts  (split-string-and-unquote cmd-string))
          (raw-program (car cmd-parts))
          ;; Resolve the executable: when a directory component is present
          ;; (e.g. "~/bin/s7check"), ;; expand ~ before searching exec-path
          ;; so tilde paths are honoured.
-         (program     (and raw-program
-                           (if (file-name-directory raw-program)
-                               (executable-find (expand-file-name raw-program))
-                             (executable-find raw-program))))
-         (args        (append (mapcar (lambda (a)
-                                        (if (string-prefix-p "~" a)
-                                            (expand-file-name a)
-                                          a))
-                                      (cdr cmd-parts))
-                              (list (expand-file-name file-name))))
-         (stdout-buf    (generate-new-buffer " *seed7-check-output*"))
-         (stderr-buf    (generate-new-buffer " *seed7-check-stderr*"))
-         (default-directory (file-name-directory (expand-file-name file-name)))
-         stderr-text
-         diagnostics
-         exit-code)
-    (unwind-protect
-        (progn
-          (unless (and program (file-executable-p program))
-            (user-error "\
-Program specified by `%s' not found or not executable: %s
+         (program (and raw-program
+                       (if (file-name-directory raw-program)
+                           (executable-find (expand-file-name raw-program))
+                         (executable-find raw-program))))
+         (args    (append (mapcar (lambda (a)
+                                    (if (string-prefix-p "~" a)
+                                        (expand-file-name a)
+                                      a))
+                                  (cdr cmd-parts))
+                          (list (expand-file-name file-name)))))
+    ;; Guard: fail fast before allocating any buffers.
+    (unless program
+      (user-error "Program specified by `%s' not found or not executable: %s
 Verify the value of `%s'."
-                        (if compile "seed7-compiler" "seed7-checker")
-                        raw-program
-                        (if compile "seed7-compiler" "seed7-checker")))
-          ;; Execute program - get exit code
-          (setq exit-code (seed7--run program args stdout-buf stderr-buf
-                                      (format "(from `%s' = %S)"
-                                              (if compile "seed7-compiler"
-                                                "seed7-checker")
-                                              cmd-string)))
-          ;; The s7c compiler program emits diagnostics on stderr.
-          ;; The s7check static checker emits diagnostics on stdout.
-          ;; - Extract stderr text
-          (with-current-buffer stderr-buf
-            (setq stderr-text (buffer-string)))
-          ;; - When analyzing keep the stdout as is: the content of
-          ;;   stderr in stderr-text.
-          (when compile
-            ;; - When compiling append the content of stderr to stdout,
-            ;;   analyze that and set the stderr-text to empty string.
-            (with-current-buffer stdout-buf
-              (goto-char (point-max))
-              (insert stderr-text))
-            (setq stderr-text ""))
-          ;; - extract diagnostics from stdout
-          (setq diagnostics (seed7--parse-diagnostics compile stdout-buf))
-          ;; - return exit code, diagnostics and stderr text
-          (list exit-code diagnostics stderr-text))
-      (when (buffer-live-p stderr-buf)
-        (kill-buffer stderr-buf))
-      (when (buffer-live-p stdout-buf)
-        (kill-buffer stdout-buf)))
-    ;; - return exit code, diagnostics and stderr text
-    (list exit-code diagnostics stderr-text)))
+                  user-option-name raw-program user-option-name))
+    (let* ((stdout-buf (generate-new-buffer " *seed7-check-output*"))
+           (stderr-buf (generate-new-buffer " *seed7-check-stderr*"))
+           stderr-text
+           diagnostics
+           exit-code
+           (default-directory (file-name-directory (expand-file-name
+                                                    file-name))))
+      (unwind-protect
+          (progn
+            ;; Execute program - get exit code
+            ;; - The s7c compiler program emits diagnostics on stderr;
+            ;;   - accumulate everything in the stdout-buf.
+            ;; - The s7check static checker emits diagnostics on stdout;
+            ;;   - accumulate diagnostics in stdout-buffer and errors in a
+            ;;     separate stderr-buffer.
+            (setq exit-code (seed7--run program args stdout-buf
+                                        (unless compile stderr-buf)
+                                        (format "(from `%s' = %S)"
+                                                (if compile "seed7-compiler"
+                                                  "seed7-checker")
+                                                cmd-string)))
+            (if compile
+                ;; when compiling all output is in stdout-buffer
+                (setq stderr-text "")
+              ;; when analyzing the stdout holds only diagnostics and stderr
+              ;; holds the error stream; stores it in stderr-text
+              (with-current-buffer stderr-buf
+                (setq stderr-text (buffer-string))))
+            ;; - extract diagnostics from stdout
+            (setq diagnostics (seed7--parse-diagnostics compile stdout-buf))
+            ;; - return exit code, diagnostics and stderr text
+            (list exit-code diagnostics stderr-text))
+        ;; Cleanup: always kill scratch buffers.
+        (when (buffer-live-p stderr-buf)
+          (kill-buffer stderr-buf))
+        (when (buffer-live-p stdout-buf)
+          (kill-buffer stdout-buf)))
+      ;; - return exit code, diagnostics and stderr text
+      (list exit-code diagnostics stderr-text))))
 
 (defun seed7-check-or-compile (&optional compile)
   "Check or compile the current Seed7 buffer's file and show diagnostics.
