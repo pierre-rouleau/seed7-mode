@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1800
+;; Package-Version: 20260602.1818
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -505,7 +505,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T22:00:05+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T22:18:09+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2537,7 +2537,9 @@ If execution of PROGRAM fails (e.g. the OS cannot start it), the function
 issues a `user-error'.  When CONTEXT-MSG is non-nil it is appended to the
 error message; when nil the message ends with the OS error description.
 
-Return the exit code of the PROGRAM execution."
+Return the exit code of the PROGRAM execution as an integer.
+When the process is killed by a signal, `call-process' returns a string;
+this function normalises it to 1."
   ;; Create a temporary file to hold the stderr output safely
   (let ((temp-stderr-file (when stderr-buffer
                             (make-temp-file "emacs-seed7-mode-stderr-"))))
@@ -6475,7 +6477,6 @@ used to set `default-directory' for the subprocess."
               (setq stderr-text "")
             (with-current-buffer stderr-buf
               (setq stderr-text (buffer-string))))
-          ;; End with setq — value of unwind-protect is discarded anyway.
           (setq diagnostics
                 (seed7--parse-diagnostics compile stdout-buf)))
       ;; Cleanup: always kill scratch buffers.
