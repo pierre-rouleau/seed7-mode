@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1014
+;; Package-Version: 20260602.1024
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -482,7 +482,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T14:14:37+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T14:24:49+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6516,7 +6516,7 @@ or nil when no diagnostics are found."
     ;;
     ;; -- Build command, execute and extract result information
     (let* ((cmd        (if compile seed7-compiler seed7-checker))
-           (pgm        (file-name-nondirectory (car (string-split cmd))))
+           (pgm        (file-name-nondirectory (car (split-string cmd))))
            (operation  (if compile "compilation" "check"))
            (dir        (file-name-directory file))
            ;; Record time *around* the checker invocation
