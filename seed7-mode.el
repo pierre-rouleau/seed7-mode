@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260601.1817
+;; Package-Version: 20260602.1014
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -482,7 +482,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-01T22:17:30+0000 W23-1"
+(defconst seed7-mode-version-timestamp "2026-06-02T14:14:37+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2493,6 +2493,10 @@ Use inside a `cond' clause to emphasize the check FCT."
 ;;* Seed7 Utilities
 ;;  ===============
 
+(defun seed7--plural-s (n)
+  "Return \"s\" if N is larger than 1, \"\" otherwise."
+  (if (> n 1) "s" ""))
+
 (defun seed7--run (program args stdout-buffer stderr-buffer
                            &optional context-msg)
   "Run PROGRAM with ARGS synchronously.
@@ -2525,7 +2529,7 @@ seed7: cannot run \"%s\"%s: %s"
             (insert-file-contents temp-stderr-file))
           ;; Normalise: call-process returns a string when killed by a signal.
           (unless (integerp exit-code)
-              (setq exit-code 1))
+            (setq exit-code 1))
           ;; Return the exit code of the process
           exit-code)
       ;; delete temp file even if the process or insertion fails
@@ -2985,8 +2989,8 @@ Arguments:
 - DIRECTION: symbol: either forward or backward."
   (format "There's no %sSeed7 function%s or procedure%s found %s!"
           (if (= n 1) "" (format "%d " n))
-          (if (= n 1) "" "s")
-          (if (= n 1) "" "s")
+          (seed7--plural-s n)
+          (seed7--plural-s n)
           (if (eq direction 'forward) "below" "above")))
 
 
@@ -6512,17 +6516,39 @@ or nil when no diagnostics are found."
     ;;
     ;; -- Build command, execute and extract result information
     (let* ((cmd        (if compile seed7-compiler seed7-checker))
+           (pgm        (file-name-nondirectory (car (string-split cmd))))
+           (operation  (if compile "compilation" "check"))
            (dir        (file-name-directory file))
            ;; Record time *around* the checker invocation
            (t0          (current-time))
            (result      (seed7-check-file file compile))
            (exit-code   (nth 0 result))
-           (errors      (nth 1 result))
+           (diags       (nth 1 result))
            (stderr-text (nth 2 result))
            (t1          (current-time))
            (duration    (float-time (time-subtract t1 t0)))
-           (n-errors    (length errors))
-           (out-buf     (get-buffer-create "*seed7-errors*")))
+           (n-diags     (length diags))
+           (out-buf     (get-buffer-create "*seed7-errors*"))
+           ;; Format result message
+           (err-msg     (when (and stderr-text
+                                   (not (string-blank-p stderr-text)))
+                          (format "\nSTDERR:\n%s\n" stderr-text)))
+           (end-msg (format "%s: %s"
+                            pgm
+                            (cond
+                             (diags (format "%d error%s found%s"
+                                            n-diags
+                                            (seed7--plural-s n-diags)
+                                            (or err-msg "")))
+                             (err-msg (format "%s with exit code %d%s"
+                                              operation
+                                              exit-code
+                                              (or err-msg "")))
+                             ((not (zerop exit-code))
+                              (format "%s with exit code %d"
+                                      operation
+                                      exit-code))
+                             (t "no errors found")))))
       ;;
       ;; -- Format the output -----------------------------------------------
       (with-current-buffer out-buf
@@ -6535,13 +6561,9 @@ or nil when no diagnostics are found."
           (insert (format "-*- mode: compilation; default-directory: %S -*-\n"
                           dir))
           (insert (format "%s %s\n\n" cmd file))
-          ;; -- stderr-text -------------------------
-          (when (and stderr-text
-                     (not (string-blank-p stderr-text)))
-            (insert (format "\nSTDERR:\n%s\n" stderr-text)))
           ;; -- Diagnostics -------------------------
-          (if errors
-              (dolist (e errors)
+          (if diags
+              (dolist (e diags)
                 ;; Format the GNU-style anchor line according to the tool used.
                 ;; compilation-mode recognises both FILENAME:LINE: and
                 ;; FILENAME:LINE:COL: forms via its built-in `gnu' regexp entry.
@@ -6564,7 +6586,7 @@ or nil when no diagnostics are found."
                   (insert ctx "\n"))
                 ;; Blank line between diagnostics for readability.
                 (insert "\n"))
-            (insert "seed7: no errors found\n"))
+            (insert end-msg))
           ;; -- Footer ------------------------------
           (insert (format "\nCompilation finished at %s, duration %.2f s\n"
                           (format-time-string "%a %b %e %H:%M:%S" t1)
@@ -6578,7 +6600,7 @@ or nil when no diagnostics are found."
         ;;   versions of Emacs may not have them.  If they are defined, then
         ;;   update the modeline, otherwise leave it alone.
         (when (boundp 'compilation-num-errors-found)
-          (setq-local compilation-num-errors-found   n-errors)
+          (setq-local compilation-num-errors-found n-diags)
           ;; The current Seed7 tools emit no warning and no information hints.
           ;; If future versions of Seed7 emit them the following should be
           ;; extracted.
@@ -6595,7 +6617,7 @@ or nil when no diagnostics are found."
                                            'compilation-mode-line-fail))
                        " ["
                        ;; error count - red bold (compilation-mode-line-fail)
-                       (propertize (number-to-string n-errors)
+                       (propertize (number-to-string n-diags)
                                    'face 'compilation-mode-line-fail)
                        ;; warning count - orange bold (compilation-mode-line-run
                        ;;                 inherits compilation-warning)
@@ -6607,13 +6629,9 @@ or nil when no diagnostics are found."
                        "]")))
         (goto-char (point-min)))
       (display-buffer out-buf)
-      ;; -- Show and return diagnostics -------------------------------------
-      (if errors
-          (message "seed7: %d error%s found"
-                   n-errors
-                   (if (> n-errors 1) "s" ""))
-        (message "seed7: no errors found"))
-      errors)))
+      ;; -- Show and return diagnostics count ----------------------
+      (message end-msg)
+      diags)))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Cross Reference
@@ -7486,12 +7504,12 @@ current Emacs session without restarting Emacs."
                        registered
                        invalid-count
                        duplicate-count
-                       (if (= 1 (+ invalid-count duplicate-count)) "" "s"))
+                       (seed7--plural-s (+ invalid-count duplicate-count)))
                :warning)
             (unless quietly
               (message "seed7-mode: abbrev table rebuilt: %d abbreviation%s registered."
                        registered
-                       (if (= registered 1) "" "s")))))))))
+                       (seed7--plural-s registered)))))))))
 
 ;; Build the table once at package load time using the initial values.
 (seed7-rebuild-abbrev-table 'quietly)
