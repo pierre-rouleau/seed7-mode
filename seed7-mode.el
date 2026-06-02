@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1712
+;; Package-Version: 20260602.1727
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -505,7 +505,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T21:12:17+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T21:27:25+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2530,7 +2530,7 @@ Use inside a `cond' clause to emphasize the check FCT."
 
 - If STDERR-BUFFER is nil: collect PROGRAM output from stdout and stderr in
   STDOUT-BUFFER.
-- if STDERR-BUFFER is non-nil it must be a buffer; the stdout and stderr
+- If STDERR-BUFFER is non-nil, it must be a buffer; the stdout and stderr
   streams of PROGRAM are collected separately.
 
 If execution of PROGRAM fails (e.g. the OS cannot start it), the
@@ -6447,6 +6447,7 @@ Return a list (in source order) of plists, each with the keys:
 (defun seed7--run-and-parse (program args cmd-string compile file-name)
   "Run PROGRAM with ARGS and return (EXIT-CODE DIAGNOSTICS STDERR-TEXT).
 
+CMD-STRING is the original command string (used verbatim in error messages).
 COMPILE non-nil identifies a compilation operation (s7c); nil identifies
 a static check (s7check).  When COMPILE is non-nil, STDERR-TEXT in the
 result is always \"\", because s7c emits diagnostics on stderr and they
@@ -6486,7 +6487,7 @@ If COMPILE is non-nil, use `seed7-compiler' (s7c) to compile the file;
 otherwise use `seed7-checker' (s7check) to perform a static check.
 
 Invokes the tool directly via `call-process' (no /bin/sh involved).
-Returns a (EXIT-CODE DIAGNOSTICS STDERR) where:
+Returns a list (EXIT-CODE DIAGNOSTICS STDERR) where:
   EXIT-CODE   - integer exit status returned by the tool, or 1 when the
                 process was terminated by a signal.
   DIAGNOSTICS - list (in source order) of plists, each with the keys:
