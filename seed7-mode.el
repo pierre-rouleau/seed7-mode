@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1514
+;; Package-Version: 20260602.1523
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -482,7 +482,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T19:14:14+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-02T19:23:26+0000 W23-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6420,6 +6420,36 @@ Return a list (in source order) of plists, each with the keys:
           (push (expand-file-name arg) updated-args)
         arg))))
 
+(defun seed7--run-and-parse (program args cmd-string compile file-name)
+  "Run PROGRAM with ARGS and return (EXIT-CODE DIAGNOSTICS STDERR-TEXT).
+CMD-STRING is the original command string (for error messages).
+COMPILE and FILE-NAME are passed to `seed7--parse-diagnostics'.
+Buffers are allocated locally and always freed via `unwind-protect'."
+  (let* ((stdout-buf        (generate-new-buffer " *seed7-check-output*"))
+         (stderr-buf        (generate-new-buffer " *seed7-check-stderr*"))
+         (default-directory (file-name-directory (expand-file-name file-name)))
+         stderr-text diagnostics exit-code)
+    (unwind-protect
+        ;; Run compiler/checker
+        (progn
+          (setq exit-code
+                (seed7--run program args stdout-buf
+                            (unless compile stderr-buf)
+                            (format "(from `%s' = %S)"
+                                    (if compile "seed7-compiler" "seed7-checker")
+                                    cmd-string)))
+          (if compile
+              (setq stderr-text "")
+            (with-current-buffer stderr-buf
+              (setq stderr-text (buffer-string))))
+          ;; End with setq — value of unwind-protect is discarded anyway.
+          (setq diagnostics
+                (seed7--parse-diagnostics compile stdout-buf)))
+      ;; Cleanup: always kill scratch buffers.
+      (when (buffer-live-p stderr-buf) (kill-buffer stderr-buf))
+      (when (buffer-live-p stdout-buf) (kill-buffer stdout-buf)))
+    (list exit-code diagnostics stderr-text)))
+
 (defun seed7-check-file (file-name &optional compile)
   "Run static check or compilation on FILE-NAME without using the shell.
 
@@ -6463,53 +6493,17 @@ See also: `seed7-check-or-compile'."
          (program (and raw-program
                        (if (file-name-directory raw-program)
                            (executable-find (expand-file-name raw-program))
-                         (executable-find raw-program))))
-         (args    (append (seed7--expand-args (cdr cmd-parts))
-                          (list (expand-file-name file-name)))))
+                         (executable-find raw-program)))))
     ;; Guard: fail fast before allocating any buffers.
     (unless program
       (user-error "Program specified by `%s' not found or not executable: %s
 Verify the value of `%s'."
                   user-option-name raw-program user-option-name))
-    (let* ((stdout-buf (generate-new-buffer " *seed7-check-output*"))
-           (stderr-buf (generate-new-buffer " *seed7-check-stderr*"))
-           stderr-text
-           diagnostics
-           exit-code
-           (default-directory (file-name-directory (expand-file-name
-                                                    file-name))))
-      (unwind-protect
-          (progn
-            ;; Execute program - get exit code
-            ;; - The s7c compiler program emits diagnostics on stderr;
-            ;;   - accumulate everything in the stdout-buf.
-            ;; - The s7check static checker emits diagnostics on stdout;
-            ;;   - accumulate diagnostics in stdout-buffer and errors in a
-            ;;     separate stderr-buffer.
-            (setq exit-code (seed7--run program args stdout-buf
-                                        (unless compile stderr-buf)
-                                        (format "(from `%s' = %S)"
-                                                (if compile "seed7-compiler"
-                                                  "seed7-checker")
-                                                cmd-string)))
-            (if compile
-                ;; when compiling all output is in stdout-buffer
-                (setq stderr-text "")
-              ;; when analyzing the stdout holds only diagnostics and stderr
-              ;; holds the error stream; stores it in stderr-text
-              (with-current-buffer stderr-buf
-                (setq stderr-text (buffer-string))))
-            ;; - extract diagnostics from stdout
-            (setq diagnostics (seed7--parse-diagnostics compile stdout-buf))
-            ;; - return exit code, diagnostics and stderr text
-            (list exit-code diagnostics stderr-text))
-        ;; Cleanup: always kill scratch buffers.
-        (when (buffer-live-p stderr-buf)
-          (kill-buffer stderr-buf))
-        (when (buffer-live-p stdout-buf)
-          (kill-buffer stdout-buf)))
-      ;; - return exit code, diagnostics and stderr text
-      (list exit-code diagnostics stderr-text))))
+    ;; Run compiler or checker and return results
+    (seed7--run-and-parse program
+                          (append (seed7--expand-args (cdr cmd-parts))
+                                  (list (expand-file-name file-name)))
+                          cmd-string compile file-name)))
 
 (defun seed7-check-or-compile (&optional compile)
   "Check or compile the current Seed7 buffer's file and show diagnostics.
