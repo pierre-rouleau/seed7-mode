@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, June  3 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-03 11:14:45 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-03 11:39:22 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -28,6 +28,13 @@
 ;;  This file is a developer tool used to measure execution time of the
 ;;  seed7-mode code.  It is not meant to be used normally as it injects code
 ;;  in the system.
+;;
+;; Timing harness for seed7-calc-indent:
+;;
+;;   - Activate:   M-x seed7-timing-start
+;;   - Deactivate: M-x seed7-timing-stop
+;;   - Report:     M-x seed7-timing-report
+;;   - Reset:      M-x seed7-timing-reset
 ;;
 ;; Simple Workflow
 ;; ===============
@@ -64,17 +71,12 @@
 ;;; Dependencies:
 ;;
 ;;
+(require 'cl-lib)   ; use: `cl-incf'
 
 ;;; --------------------------------------------------------------------------
 ;;; Code:
 ;;
 
-;;; Timing harness for seed7-calc-indent
-;;; ======================================
-;;; Activate:   M-x seed7-timing-start
-;;; Deactivate: M-x seed7-timing-stop
-;;; Report:     M-x seed7-timing-report
-;;; Reset:      M-x seed7-timing-reset
 
 (defvar seed7--timing-calls 0 "Number of calls timed.")
 (defvar seed7--timing-total 0.0 "Total elapsed time in seconds.")
