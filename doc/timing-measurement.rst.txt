@@ -1,0 +1,51 @@
+=================
+Development Notes
+=================
+
+:Home URL: https://github.com/pierre-rouleau/seed7-mode
+:Project:  Major Mode for Seed7 Programming Language
+:Created:  Wednesday, June  3 2026.
+:Author:  Pierre Rouleau <prouleau001@gmail.com>
+:Modified: 2026-06-03 11:01:38, by Pierre Rouleau.
+:Copyright: © 2026, Pierre Rouleau
+
+
+.. contents::  **Table of Contents**
+.. sectnum::
+
+.. ---------------------------------------------------------------------------
+
+
+Speed Improvements
+==================
+
+Indentation speed
+-----------------
+
+seed7-calc-indent in prg/chkbig.sd7
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Measured in macStudio1
+
+= ======================================== ===============================================================================
+. Commit                                   Stats
+= ======================================== ===============================================================================
+. bdd10d74b8ae7ccc3e1d26ec827ade13a129d67e ``10 calls  | total=1.6654s  | mean=166.5363ms | min=0.0079ms   | max=338.4309ms``
+.                                          ``86 calls  | total=16.3318s | mean=189.9041ms | min=0.0060ms   | max=1176.1169ms``
+
+. Without the unless white line check      ``106 calls | total=36.9454s | mean=348.5413ms | min=303.5409ms | max=1175.5240ms``
+======================================== =================================================================================
+
+
+.. ---------------------------------------------------------------------------
+.. links:
+
+
+.. ---------------------------------------------------------------------------
+
+..
+       Local Variables:
+       time-stamp-line-limit: 10
+       time-stamp-start: "^:Modified:[ \t]+\\\\?"
+       time-stamp-end:   "\\.$"
+       End:
