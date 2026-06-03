@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260602.1846
+;; Package-Version: 20260603.1010
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -505,7 +505,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-02T22:46:23+0000 W23-2"
+(defconst seed7-mode-version-timestamp "2026-06-03T14:10:15+0000 W23-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1669,6 +1669,7 @@ When optional CAPTURE is non-nil, The returned regexp captures
 - Group 1: \"proc\", \"varfunc \" or \"func \"
 - Group 2: The func return type.
 Otherwise the returned regexp captures nothing."
+  (declare (side-effect-free t))
   (format
    ;;    const     (varfunc| func          )RT    :
    ;;              (-----------------------)
@@ -1705,6 +1706,7 @@ If CAPTURE is non-nil the returned regexp has 2 capture groups:
 - Group 1: \"proc\", \"varfunc \" or \"func \"
 - Group 2: The func return type.  May be empty.
 If CAPTURE is nil, the regexp has no capture group."
+  (declare (side-effect-free t))
   (format
    ;;    const     (varfunc| func       | proc) RT?     :
    ;;              (--------------------------)
@@ -2445,8 +2447,9 @@ Allows selecting similar colours for various systems."
 - If ARG is nil or zero, toggle the state,
 - If ARG is negative, turn the state off,
 - If ARG is positive, turn the state on."
+  (declare (side-effect-free t))
   (if (or (not arg)
-              (zerop (setq arg (prefix-numeric-value arg))))
+          (zerop (setq arg (prefix-numeric-value arg))))
       (not prevstate)
     (> arg 0)))
 
@@ -2522,6 +2525,7 @@ Use inside a `cond' clause to emphasize the check FCT."
 
 (defun seed7--plural-s (n)
   "Return \"s\" if N is not equal to 1, \"\" otherwise."
+  (declare (pure t) (side-effect-free t))
   (if (= n 1) "" "s"))
 
 (defun seed7--run (program args stdout-buffer
@@ -2609,6 +2613,7 @@ Inside a comment, the returned value is:
   ;; Using the face instead of the syntax, as I found the syntax
   ;; not reliable enough when looking at some edge cases: the open block
   ;; comment characters are not recognized as comment syntax.
+  (declare (side-effect-free t))
   (let ((pos (or pos (point))))
     ;; deal with comment-dwim that passes 0 to pos when trying to write a line
     ;; comment when issued at the beginning of an empty line.
@@ -2981,6 +2986,7 @@ If END-POS is specified it specifies the last possible position."
 (defun seed7--pos-msg (position qualifier name)
   "Return formatted message for start/end of NAME depending on POSITION.
 The QUALIFIER is a string that identifies if it is a function or procedure."
+  (declare (side-effect-free t))
   (if (eq position 'at-start-of)
       (format "@ start of %s: '%s'" qualifier name)
     (format "@ end of %s : '%s'" qualifier name)))
@@ -3427,6 +3433,7 @@ Negative N starts counting from the end of the line: -1 is the last word."
 The regexp has 2 capture groups:
 - group1 for the starting expression,
 - group2 for then end part."
+  (declare (side-effect-free t))
   (format "^\\(?:[[:space:]]*?\\(const[[:space:]]+?type:.+?[[:space:]]%s\\)\\|[[:space:]]*?\\(end %s;\\)\\)"
           keyword keyword))
 
@@ -3921,11 +3928,13 @@ buffers using the `seed7-mode'."
 
 (defun seed7-blank-line-p ()
   "Return non-nil when current line is a blank line, nil otherwise."
+  (declare (side-effect-free t))
   (= (current-indentation)
      (- (line-end-position) (line-beginning-position))))
 
 (defun seed7-indent-step-for-column (column)
   "Return indentation step for COLUMN number."
+  (declare (pure t) (side-effect-free t))
   (/ column seed7-indent-width))
 
 (defun seed7-current-line-number ()
@@ -5385,148 +5394,147 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
         (indent-column nil)
         (indent-column2 nil)
         (spec-list nil))
-    (cond
-     ((> recurse-count 1)
-      (error "Recursion done more than once: implementation logic error!"))
-
-     ((and (seed7-current-line-start-inside-comment-p)
-           (not treat-comment-line-as-code))
-      (setq indent-column (seed7-comment-column recurse-count)))
-
-     ;; In an array or set definition, indent 1 level unless the line is
-     ;; inside 2 nested parens.  In that case align with the inside of
-     ;; the inner-most parens.
-     ((or (seed7--set (seed7-line-inside-array-definition-block 0)
-                      spec-list)
-          (seed7--set (seed7-line-inside-set-definition-block 0)
-                      spec-list))
-      (if (seed7--set (seed7-line-inside-nested-parens-pairs-column
-                       0 2
-                       (nth 2 spec-list)
-                       (nth 3 spec-list))
-                      indent-column2)
-          (setq indent-column indent-column2)
-        (setq indent-column (+ (nth 0 spec-list)
-                               seed7-indent-width))))
-
-     ((seed7-line-isa-string 0)
-      (save-excursion
-        ;; if previous line starts with a string, align the string to it.
-        (cond
-         ((seed7--set (seed7-line-inside-parens-pair-column 0)
-                      indent-column))
-         ((seed7-line-isa-string :previous-non-empty)
-          (forward-line -1)
-          (search-forward "\"")
-          (setq indent-column (1- (current-column))))
-         (t
-          (message
-           "At line %d: string line syntax not yet supported! Please report."
-           (seed7-current-line-number))))))
-
-     ;; Special rule: if a line starts with a Seed7 assignment operator,
-     ;; consider that line manually indented and keep it where it is.
-     ;; This allows a long multi-line statement to be lined up on the
-     ;; assignment operator placed on the line after its rvalue for the
-     ;; explicit purpose of allowing that manual alignment mechanism.
-     ((seed7--set (seed7-line-starts-with
-                   0
-                   seed7-predef-assignment-operator-regexp)
-                  indent-column))
-     ((and (seed7--set (seed7-line-inside-assign-statement-continuation 0)
-                       indent-column2)
-           (not (seed7-line-inside-parens-pair-column
-                 0
-                 (seed7-bol-position -1)
-                 (seed7-position-of-end-of-statement -1))))
-      (setq indent-column indent-column2))
-
-     ;; Handle special cases before checking if line is inside a block
-     ;; --------------------------------------------------------------
-     ;; Check if line is below end of func|struct|enum before checking if it
-     ;; is inside a block and is not itself a 'end func|struct|enum;' line.
-     ;; This ensures it handles the next line properly.
-     ((and (or (not (seed7-line-is-defun-end 0))
-               (seed7-line-is-procfunc-beg-of-decl 0))
-           (seed7--set (seed7-line-is-defun-end :previous-non-empty)
-                       indent-column)))
-
-     ;; Also perform some tests that are fast to execute.
-     ((string= first-word-on-line "$")
-      (setq indent-step 0))
-     ((string= first-word-on-line "include")
+    ;; don't indent blank lines
+    (unless (and (not first-word-on-line)
+                 (seed7-blank-line-p))
       (cond
+       ((> recurse-count 1)
+        (error "Recursion done more than once: implementation logic error!"))
+
+       ((and (seed7-current-line-start-inside-comment-p)
+             (not treat-comment-line-as-code))
+        (setq indent-column (seed7-comment-column recurse-count)))
+
+       ;; In an array or set definition, indent 1 level unless the line is
+       ;; inside 2 nested parens.  In that case align with the inside of
+       ;; the inner-most parens.
+       ((or (seed7--set (seed7-line-inside-array-definition-block 0)
+                        spec-list)
+            (seed7--set (seed7-line-inside-set-definition-block 0)
+                        spec-list))
+        (if (seed7--set (seed7-line-inside-nested-parens-pairs-column
+                         0 2
+                         (nth 2 spec-list)
+                         (nth 3 spec-list))
+                        indent-column2)
+            (setq indent-column indent-column2)
+          (setq indent-column (+ (nth 0 spec-list)
+                                 seed7-indent-width))))
+
+       ((seed7-line-isa-string 0)
+        (save-excursion
+          ;; if previous line starts with a string, align the string to it.
+          (cond
+           ((seed7--set (seed7-line-inside-parens-pair-column 0)
+                        indent-column))
+           ((seed7-line-isa-string :previous-non-empty)
+            (forward-line -1)
+            (search-forward "\"")
+            (setq indent-column (1- (current-column))))
+           (t
+            (message
+             "At line %d: string line syntax not yet supported! Please report."
+             (seed7-current-line-number))))))
+
+       ;; Special rule: if a line starts with a Seed7 assignment operator,
+       ;; consider that line manually indented and keep it where it is.
+       ;; This allows a long multi-line statement to be lined up on the
+       ;; assignment operator placed on the line after its rvalue for the
+       ;; explicit purpose of allowing that manual alignment mechanism.
        ((seed7--set (seed7-line-starts-with
-                     :previous-non-empty "include ")
+                     0
+                     seed7-predef-assignment-operator-regexp)
                     indent-column))
-       ((seed7-line-starts-with :previous-non-empty "$ include ")
-        (setq indent-step 1))
-       (t (setq indent-step 0))))
+       ((and (seed7--set (seed7-line-inside-assign-statement-continuation 0)
+                         indent-column2)
+             (not (seed7-line-inside-parens-pair-column
+                   0
+                   (seed7-bol-position -1)
+                   (seed7-position-of-end-of-statement -1))))
+        (setq indent-column indent-column2))
 
-     ((seed7--set (seed7-line-inside-a-block 0) spec-list)
-      ;; Inside a block.  Check if inside any special zones first.
-      ;; For all of those extra checks limit the zone to the scope of the
-      ;; current block to improve efficiency. Extend the boundary by 1
-      ;; character to allow searches to succeed if they match at the edges.
-      (let ((begin-pos (1- (nth 2 spec-list)))
-            (end-pos   (1+  (nth 3 spec-list))))
+       ;; Handle special cases before checking if line is inside a block
+       ;; --------------------------------------------------------------
+       ;; Check if line is below end of func|struct|enum before checking if it
+       ;; is inside a block and is not itself a 'end func|struct|enum;' line.
+       ;; This ensures it handles the next line properly.
+       ((and (or (not (seed7-line-is-defun-end 0))
+                 (seed7-line-is-procfunc-beg-of-decl 0))
+             (seed7--set (seed7-line-is-defun-end :previous-non-empty)
+                         indent-column)))
+
+       ;; Also perform some tests that are fast to execute.
+       ((string= first-word-on-line "$")
+        (setq indent-step 0))
+       ((string= first-word-on-line "include")
         (cond
-         ((seed7--set                   ; inside parens pair?
-           (seed7-line-inside-parens-pair-column 0 begin-pos end-pos)
-           indent-column))
-         ((seed7--set                   ; inside logic expression?
-           (seed7-line-inside-logic-check-expression 0 begin-pos end-pos)
-           indent-column))
-         ((seed7--set                   ; inside argument list?
-           (seed7-line-inside-argument-list-section begin-pos end-pos)
-           indent-column)
-          (setq indent-column (+ indent-column seed7-indent-width)))
-         ((seed7--set                   ; inside until  ...; area?
-           (seed7-line-inside-until-logic-expression 0 begin-pos end-pos)
-           indent-column))
-         ((seed7--set                   ; inside func return?
-           (seed7-line-inside-func-return-statement 0 begin-pos end-pos)
-           indent-column)
-          (setq indent-column (+ indent-column seed7-indent-width)))
-         ;; Not inside any special zones.
-         ;; Use indentation identified by `seed7-line-inside-a-block'.
-         (t (setq indent-column (nth 0 spec-list))))))
-     ;; Outside of block.
-
-     ;; Just after end of array or set definition blocks.
-     ((or (seed7--set (seed7-line-at-endof-array-definition-block
-                       :previous-non-empty)
-                      indent-column)
-          (seed7--set (seed7-line-at-endof-set-definition-block
-                       :previous-non-empty)
+         ((seed7--set (seed7-line-starts-with
+                       :previous-non-empty "include ")
                       indent-column))
-      (setq indent-column (- indent-column seed7-indent-width)))
+         ((seed7-line-starts-with :previous-non-empty "$ include ")
+          (setq indent-step 1))
+         (t (setq indent-step 0))))
 
-     ;; When inside a paren block, adjust indent to the column
-     ;; following the open paren; any of: ( { [ <
-     ((seed7--set (seed7-line-inside-parens-pair-column 0)
-                  indent-column))
-     ((and (string= first-word-on-line "end")
-           (string= (seed7--current-line-nth-word 2) "block"))
-      (setq indent-step (- indent-step 2)))
-     ((string= first-word-on-line "until")
-      (setq indent-step (1- indent-step)))
+       ((seed7--set (seed7-line-inside-a-block 0) spec-list)
+        ;; Inside a block.  Check if inside any special zones first.
+        ;; For all of those extra checks limit the zone to the scope of the
+        ;; current block to improve efficiency. Extend the boundary by 1
+        ;; character to allow searches to succeed if they match at the edges.
+        (let ((begin-pos (1- (nth 2 spec-list)))
+              (end-pos   (1+  (nth 3 spec-list))))
+          (cond
+           ((seed7--set                 ; inside parens pair?
+             (seed7-line-inside-parens-pair-column 0 begin-pos end-pos)
+             indent-column))
+           ((seed7--set                 ; inside logic expression?
+             (seed7-line-inside-logic-check-expression 0 begin-pos end-pos)
+             indent-column))
+           ((seed7--set                 ; inside argument list?
+             (seed7-line-inside-argument-list-section begin-pos end-pos)
+             indent-column)
+            (setq indent-column (+ indent-column seed7-indent-width)))
+           ((seed7--set                 ; inside until  ...; area?
+             (seed7-line-inside-until-logic-expression 0 begin-pos end-pos)
+             indent-column))
+           ((seed7--set                 ; inside func return?
+             (seed7-line-inside-func-return-statement 0 begin-pos end-pos)
+             indent-column)
+            (setq indent-column (+ indent-column seed7-indent-width)))
+           ;; Not inside any special zones.
+           ;; Use indentation identified by `seed7-line-inside-a-block'.
+           (t (setq indent-column (nth 0 spec-list))))))
+       ;; Outside of block.
 
-     ((and (string= first-word-on-line "var")
-           (seed7-line-starts-with :previous-non-empty "include "))
-      (setq indent-step 0))
+       ;; Just after end of array or set definition blocks.
+       ((or (seed7--set (seed7-line-at-endof-array-definition-block
+                         :previous-non-empty)
+                        indent-column)
+            (seed7--set (seed7-line-at-endof-set-definition-block
+                         :previous-non-empty)
+                        indent-column))
+        (setq indent-column (- indent-column seed7-indent-width)))
 
-     ((seed7-line-starts-with 0 "(")
-      ;; for block comment comments or code within parentheses,
-      ;; if did not find a rule report it.  For comment it will be
-      ;; caught by `seed7-comment-column' and that will force indent to 0,
-      ;; inside code it will leave the line unchanged and will print the
-      ;; error.
-      (error "No rule yet to indent line %d" (seed7-current-line-number)))
+       ;; When inside a paren block, adjust indent to the column
+       ;; following the open paren; any of: ( { [ <
+       ((seed7--set (seed7-line-inside-parens-pair-column 0)
+                    indent-column))
+       ((and (string= first-word-on-line "end")
+             (string= (seed7--current-line-nth-word 2) "block"))
+        (setq indent-step (- indent-step 2)))
+       ((string= first-word-on-line "until")
+        (setq indent-step (1- indent-step)))
 
-     ;; don't indent blank lines
-     ((and (not first-word-on-line)
-           (seed7-blank-line-p))))
+       ((and (string= first-word-on-line "var")
+             (seed7-line-starts-with :previous-non-empty "include "))
+        (setq indent-step 0))
+
+       ((seed7-line-starts-with 0 "(")
+        ;; for block comment comments or code within parentheses,
+        ;; if did not find a rule report it.  For comment it will be
+        ;; caught by `seed7-comment-column' and that will force indent to 0,
+        ;; inside code it will leave the line unchanged and will print the
+        ;; error.
+        (error "No rule yet to indent line %d" (seed7-current-line-number)))))
     (if indent-column
         indent-column
       (* indent-step seed7-indent-width))))
@@ -6896,6 +6904,7 @@ Please update!"
 (defun seed7--xref-in-list (entries filename lineno)
   "Return t if FILENAME @ LINENO is inside list of ENTRIES.
 Return nil otherwise."
+  (declare (pure t) (side-effect-free t))
   (let ((found nil)
         (entry (car-safe entries)))
     (while (and entry
@@ -7177,7 +7186,10 @@ This implements `xref-backend-identifier-at-point' for Seed7 buffers."
 
 (defun seed7--make-xref-from-file-loc (elems)
   "Create an xref object pointing to the given file location.
-ELEMS is a list (FILE LINE COLUMN DESC), where DESC describes the xref target."
+
+ELEMS is a list (FILE LINE COLUMN DESC), where DESC describes the xref
+target."
+  (declare (side-effect-free t))
   (xref-make (nth 3 elems)              ; desc
              (xref-make-file-location (nth 0 elems)
                                       (nth 1 elems)
