@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, June  3 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-03 10:57:29 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-03 11:14:45 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -29,7 +29,8 @@
 ;;  seed7-mode code.  It is not meant to be used normally as it injects code
 ;;  in the system.
 ;;
-;; Workflow:
+;; Simple Workflow
+;; ===============
 ;;
 ;; - Open a Seed7 file
 ;; - Open this file and byte compile it
@@ -39,6 +40,25 @@
 ;; - edit a representative file for a while (press RET, TAB, etc.),
 ;; - M-x seed7-timing-report.
 ;;
+;;
+;; Micro Benchmark
+;; ===============
+;;
+;; - Visit a Seed7 file buffer, position to the location to indent.
+;; - M-x seed7-benchmark-calc-indent
+
+;; Using The Emacs Profiler
+;; ========================
+;;
+;; Start profiling
+;;    (profiler-start 'cpu)
+;;
+;; ... edit the .s7d or .s7i file for 30-60 seconds, press RET many times ...
+;;
+;; Stop and display
+;;
+;;    (profiler-stop)
+;;    (profiler-report)
 
 ;;; --------------------------------------------------------------------------
 ;;; Dependencies:
@@ -108,6 +128,22 @@
      (* 1000.0 (/ seed7--timing-total seed7--timing-calls))
      (* 1000.0 seed7--timing-min)
      (* 1000.0 seed7--timing-max))))
+
+
+;; ---------------------------------------------------------------------------
+;;; Adjust N to taste (1000 is usually enough for stable numbers).
+
+(defun seed7-benchmark-calc-indent (n)
+  "Benchmark N calls to `seed7-calc-indent' at point."
+  (interactive "nNumber of iterations: ")
+  (require 'benchmark)
+  (let* ((result (benchmark-run n (seed7-calc-indent)))
+         (total  (car result))
+         (gc     (nth 1 result))
+         (gc-t   (nth 2 result)))
+    (message "seed7-calc-indent x%d: %.4fs total (%.4fms/call) | GC: %d runs, %.4fs"
+             n total (* 1000.0 (/ total n)) gc gc-t)))
+
 
 ;;; --------------------------------------------------------------------------
 (provide 'seed7-mode-time)
