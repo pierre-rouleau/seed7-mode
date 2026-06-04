@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260603.1010
+;; Package-Version: 20260604.1031
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -505,7 +505,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-03T14:10:15+0000 W23-3"
+(defconst seed7-mode-version-timestamp "2026-06-04T14:31:23+0000 W23-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -600,6 +600,23 @@ The name of the source code file is appended to the end of that line.
 Note that the s7check is part of the example programs located inside
 the Seed7 prg directory.  Compile the prg/s7check.sd7 with s7c to create
 the executable you can use for this."
+  :group 'seed7
+  :type 'string)
+
+(defcustom seed7-interpreter "s7"
+  "Seed7 interpreter command line.
+
+The command line must identify the Seed7 interpreter, s7, by default.
+You may:
+- Specify the program name without a path if it is in the PATH of your shell.
+- Specify the program name with an absolute path.
+- Specify interpreter options after the program name if necessary.
+
+The name of the Seed7 source file and any user-supplied arguments are
+appended at the end of the command line at run time.
+
+The ~ character, if you use it, is expanded to identify your HOME
+directory."
   :group 'seed7
   :type 'string)
 
@@ -6710,6 +6727,261 @@ or nil when no diagnostics are found."
       diags)))
 
 ;; ---------------------------------------------------------------------------
+;;* Seed7 Run Program
+;;  =================
+;;
+;; The `seed7-run-program' command first performs a static check using
+;; `seed7-checker' (s7check).  If the code is clean it then launches the
+;; program using `seed7-interpreter' (s7).
+;;
+;; stdout is displayed in real time in a `*seed7-run: BASENAME*' buffer.
+;; The buffer accepts stdin: type at the end of the buffer and press RET
+;; to send a line to the running program.  C-c C-c interrupts the process.
+;;
+;; stderr is captured in real time in a separate
+;; `*seed7-run-stderr: BASENAME*' buffer.
+;;
+;;  * `seed7-run-program'
+;;    - `seed7--run-program-filter'
+;;    - `seed7--run-stderr-filter'
+;;    - `seed7--run-sentinel'
+;;    - `seed7-run-send-input'
+;;    - `seed7-run-interrupt'
+
+;;** Seed7 Run – process filters and sentinel
+
+(defun seed7--run-program-filter (proc string)
+  "Process filter for `seed7-run-program': insert STRING into PROC's buffer.
+Text is inserted at the process mark so that any user input typed at the
+end of the buffer is not disturbed."
+  (when (buffer-live-p (process-buffer proc))
+    (with-current-buffer (process-buffer proc)
+      (let ((inhibit-read-only t)
+            (moving (= (point) (process-mark proc))))
+        (save-excursion
+          (goto-char (process-mark proc))
+          (insert string)
+          (set-marker (process-mark proc) (point)))
+        (when moving
+          (goto-char (process-mark proc)))))))
+
+(defun seed7--run-sentinel (proc event)
+  "Sentinel for the Seed7 run process PROC; appends EVENT to its buffer."
+  (when (buffer-live-p (process-buffer proc))
+    (with-current-buffer (process-buffer proc)
+      (let ((inhibit-read-only t))
+        (goto-char (point-max))
+        (insert (format "\n\nProcess %s %s"
+                        (process-name proc)
+                        (string-trim-right event)))))))
+
+;;** Seed7 Run – interactive input commands
+
+(defun seed7-run-send-input ()
+  "Send the text typed after the last program output to the Seed7 process.
+The text is taken from the current process mark to the end of the buffer.
+A newline is appended automatically.  Bound to RET in `*seed7-run*' buffers."
+  (interactive)
+  (let ((proc (get-buffer-process (current-buffer))))
+    (unless (and proc (process-live-p proc))
+      (user-error "No running Seed7 process in this buffer"))
+    (let* ((input (buffer-substring-no-properties
+                   (process-mark proc) (point-max)))
+           (inhibit-read-only t))
+      (goto-char (point-max))
+      (insert "\n")
+      (set-marker (process-mark proc) (point))
+      (process-send-string proc (concat input "\n")))))
+
+(defun seed7-run-interrupt ()
+  "Interrupt the Seed7 program running in the current buffer.
+Sends SIGINT to the associated process.  Bound to C-c C-c in
+`*seed7-run*' buffers."
+  (interactive)
+  (if-let ((proc (get-buffer-process (current-buffer))))
+      (if (process-live-p proc)
+          (progn
+            (interrupt-process proc)
+            (message "seed7: process interrupted"))
+        (message "seed7: process is not running"))
+    (message "seed7: no process associated with this buffer")))
+
+;;** Seed7 Run – run-buffer major mode
+
+(defvar seed7-run-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "RET")   #'seed7-run-send-input)
+    (define-key map (kbd "C-c C-c") #'seed7-run-interrupt)
+    map)
+  "Keymap used in `*seed7-run*' output/input buffers.")
+
+(define-derived-mode seed7-run-mode fundamental-mode "seed7-run"
+  "Major mode for Seed7 program stdout/stdin buffers.
+
+Program output is inserted at the process mark.  You may type input
+after the last output line and press \\[seed7-run-send-input] to send
+it to the running program.  Use \\[seed7-run-interrupt] to send SIGINT."
+  (use-local-map seed7-run-mode-map)
+  (setq-local scroll-conservatively 1000))
+
+;; ---------------------------------------------------------------------------
+;;** Seed7 Run – main command
+
+(defun seed7-run-program (args)
+  "Statically check, then run, the Seed7 program in the current buffer.
+
+Prompts for ARGS: a string of space-separated arguments to pass to the
+program (leave empty if none are required).
+
+Step 1 – Static check
+  Runs `seed7-checker' (s7check) on the visited file, exactly as
+  `seed7-check-or-compile' does.  If any diagnostics are found they are
+  displayed in `*seed7-errors*' and the run is aborted.
+
+Step 2 – Interpreter launch
+  If the code is clean, runs the program with `seed7-interpreter' (s7).
+
+  stdout is shown in real time in `*seed7-run: BASENAME*'.
+  The buffer accepts stdin: type at the end of the buffer and press RET
+  \\[seed7-run-send-input] to send a line to the program.  Press
+  \\[seed7-run-interrupt] (C-c C-c) to send SIGINT.
+
+  stderr is captured in real time in `*seed7-run-stderr: BASENAME*'.
+
+If a previous run process is still alive in the stdout buffer the
+command asks whether to kill it before launching a new one.
+
+See also: `seed7-check-or-compile', `seed7-interpreter'."
+  (interactive
+   (list (read-string "Program arguments (empty for none): ")))
+  ;;
+  ;; -- Validate current buffer
+  (let ((file (expand-file-name (or buffer-file-truename buffer-file-name))))
+    (unless file
+      (user-error "Buffer is not visiting a file"))
+    (unless (eq major-mode 'seed7-mode)
+      (user-error "%s is not a Seed7 buffer" (buffer-name)))
+    ;;
+    ;; -- Prompted save (checker reads from disk)
+    (when (buffer-modified-p)
+      (if (y-or-n-p (format "Buffer %s is modified.  Save before running? "
+                            (buffer-name)))
+          (save-buffer)
+        (user-error "Aborted: buffer not saved")))
+    ;;
+    ;; -- Step 1: static check -----------------------------------------------
+    (message "seed7: checking %s..." (file-name-nondirectory file))
+    (let* ((check-result (seed7-check-file file nil))   ; nil = s7check, not s7c
+           (exit-code    (nth 0 check-result))
+           (diags        (nth 1 check-result))
+           (stderr-text  (nth 2 check-result))
+           (n-diags      (length diags))
+           (dir          (file-name-directory file))
+           (pgm          (file-name-nondirectory
+                          (car (split-string-and-unquote seed7-checker)))))
+      ;;
+      (when (or diags (not (zerop exit-code)))
+        ;; Build the errors buffer the same way seed7-check-or-compile does.
+        (let* ((err-msg  (when (and stderr-text
+                                    (not (string-blank-p stderr-text)))
+                           (format "\nSTDERR: %s" stderr-text)))
+               (end-msg  (format "%s: %d error%s found%s"
+                                 pgm n-diags
+                                 (seed7--plural-s n-diags)
+                                 (or err-msg "")))
+               (out-buf  (get-buffer-create "*seed7-errors*")))
+          (with-current-buffer out-buf
+            (let ((inhibit-read-only t))
+              (setq-local default-directory dir)
+              (erase-buffer)
+              (insert (format "-*- mode: compilation; default-directory: %S -*-\n"
+                              dir))
+              (insert (format "%s %s\n\n" seed7-checker file))
+              (if diags
+                  (dolist (e diags)
+                    (insert (format "%s:%d: error: %s: %s\n"
+                                    (plist-get e :file)
+                                    (plist-get e :line)
+                                    (plist-get e :code)
+                                    (plist-get e :message)))
+                    (dolist (ctx (plist-get e :context))
+                      (insert ctx "\n"))
+                    (insert "\n"))
+                (insert end-msg))
+              (insert "\nCompilation finished\n"))
+            (compilation-mode)
+            (goto-char (point-min)))
+          (display-buffer out-buf)
+          (user-error "%s" end-msg)))
+      ;;
+      ;; -- Step 2: launch interpreter -----------------------------------------
+      (let* ((basename   (file-name-nondirectory file))
+             (buf-name   (format "*seed7-run: %s*" basename))
+             (err-name   (format "*seed7-run-stderr: %s*" basename))
+             (stdout-buf (get-buffer-create buf-name))
+             (stderr-buf (get-buffer-create err-name))
+             (interp-cmd (split-string-and-unquote seed7-interpreter))
+             (interp-pgm (expand-file-name (car interp-cmd)))
+             (interp-pgm (or (executable-find interp-pgm) interp-pgm))
+             (interp-opts (cdr interp-cmd))
+             (prog-args  (unless (string-blank-p args)
+                           (split-string-and-unquote args)))
+             (cmd-list   (append (list interp-pgm)
+                                 interp-opts
+                                 (list file)
+                                 prog-args)))
+        ;;
+        ;; Kill any leftover process in the stdout buffer
+        (when-let ((old (get-buffer-process stdout-buf)))
+          (when (process-live-p old)
+            (if (y-or-n-p
+                 (format "A Seed7 process is already running in %s.  Kill it? "
+                         buf-name))
+                (delete-process old)
+              (user-error "Aborted: existing process still running"))))
+        ;;
+        ;; Prepare stdout buffer
+        (with-current-buffer stdout-buf
+          (let ((inhibit-read-only t))
+            (erase-buffer))
+          (seed7-run-mode)
+          (setq-local default-directory dir)
+          (insert (format "Running: %s\n\n"
+                          (mapconcat #'identity cmd-list " "))))
+        ;;
+        ;; Prepare stderr buffer
+        (with-current-buffer stderr-buf
+          (let ((inhibit-read-only t))
+            (erase-buffer))
+          (special-mode)
+          (setq-local default-directory dir))
+        ;;
+        ;; Launch with separate stderr pipe
+        (make-process
+         :name     "seed7-run"
+         :buffer   stdout-buf
+         :command  cmd-list
+         :filter   #'seed7--run-program-filter
+         :sentinel #'seed7--run-sentinel
+         :stderr   stderr-buf          ; Emacs routes stderr here in real time
+         :noquery  t)
+        ;;
+        ;; Always show stdout and stderr in separate windows.
+        ;; Display stdout first; then split its window to show stderr below,
+        ;; unless stderr is already visible somewhere (avoids duplicate splits
+        ;; on re-runs).
+        (let ((stdout-win (display-buffer stdout-buf)))
+          (unless (get-buffer-window stderr-buf)
+            (when stdout-win
+              (set-window-buffer
+               (split-window stdout-win nil 'below)
+               stderr-buf))))
+        (message "seed7: running %s %s %s"
+                 (file-name-nondirectory interp-pgm)
+                 basename
+                 (if prog-args (mapconcat #'identity prog-args " ") ""))))))
+
+;; ---------------------------------------------------------------------------
 ;;* Seed7 Cross Reference
 ;;  =====================
 ;;
@@ -7618,6 +7890,7 @@ current Emacs session without restarting Emacs."
     (define-key map (kbd "C-c ?")   'seed7-mode-version)
     (define-key map (kbd "C-c <f3>") 'seed7-mode-customize)
     (define-key map (kbd "C-c C-c") 'seed7-check-or-compile)
+    (define-key map (kbd "C-c C-r") 'seed7-run-program)
     map)
   "Keymap used in `seed7-mode'.")
 
@@ -7725,6 +7998,8 @@ current Emacs session without restarting Emacs."
      :help "Perform static analysis of Seed7 code in visited file."]
     ["Compile"       (seed7-check-or-compile t)
      :help "Compile Seed7 visited file. Key binding is: C-u C-c C-c"]
+    ["Run"         seed7-run-program
+     :help "Check and run the Seed7 program in the visited file. Key: C-c C-r"]
     "---"
     ["Customize Mode" (customize-group 'seed7)
      :help "Open the seed7 customization buffer"]))
