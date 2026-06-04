@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260604.1000
+;; Package-Version: 20260604.1031
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -505,7 +505,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-04T14:00:12+0000 W23-4"
+(defconst seed7-mode-version-timestamp "2026-06-04T14:31:23+0000 W23-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6856,7 +6856,7 @@ See also: `seed7-check-or-compile', `seed7-interpreter'."
    (list (read-string "Program arguments (empty for none): ")))
   ;;
   ;; -- Validate current buffer
-  (let ((file (or buffer-file-truename buffer-file-name)))
+  (let ((file (expand-file-name (or buffer-file-truename buffer-file-name))))
     (unless file
       (user-error "Buffer is not visiting a file"))
     (unless (eq major-mode 'seed7-mode)
@@ -6963,11 +6963,19 @@ See also: `seed7-check-or-compile', `seed7-interpreter'."
          :command  cmd-list
          :filter   #'seed7--run-program-filter
          :sentinel #'seed7--run-sentinel
-         :stderr   stderr-buf         ; Emacs routes stderr here in real time
+         :stderr   stderr-buf          ; Emacs routes stderr here in real time
          :noquery  t)
         ;;
-        (display-buffer stdout-buf)
-        (display-buffer stderr-buf)
+        ;; Always show stdout and stderr in separate windows.
+        ;; Display stdout first; then split its window to show stderr below,
+        ;; unless stderr is already visible somewhere (avoids duplicate splits
+        ;; on re-runs).
+        (let ((stdout-win (display-buffer stdout-buf)))
+          (unless (get-buffer-window stderr-buf)
+            (when stdout-win
+              (set-window-buffer
+               (split-window stdout-win nil 'below)
+               stderr-buf))))
         (message "seed7: running %s %s %s"
                  (file-name-nondirectory interp-pgm)
                  basename
