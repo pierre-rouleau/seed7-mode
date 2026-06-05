@@ -1,4 +1,4 @@
-============================================================
+=============================================================
 Seed7-mode - Emacs support for the Seed7 Programming Language
 =============================================================
 
@@ -431,7 +431,7 @@ With Emacs and seed7-mode you can:
 - expand a Seed7 keywords by typing its (*system*) abbreviation followed by a word-separating
   character such as ``<space>``, ``<RET>`` or ``;`` and others.
 
-  - All Seed7 *system*  abbreviations are short mnemonic character sequences
+  - All Seed7 *system* abbreviations are short mnemonic character sequences
     that start with ``;``.
 
 - Dynamically enable or disable the ``abbrev-mode`` with the ``M-x abbrev-mode``

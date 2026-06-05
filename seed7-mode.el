@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.1420
+;; Package-Version: 20260605.1430
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -518,7 +518,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-05T18:20:00+0000 W23-5"
+(defconst seed7-mode-version-timestamp "2026-06-05T18:30:30+0000 W23-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6752,7 +6752,7 @@ or nil when no diagnostics are found."
 ;; commands are accumulated and sent to the Seed7 program when you type the
 ;; RET key.  In raw mode every key (with the exception of C-c C-c and C-c C-j)
 ;; is sent directly to the Seed7 program.
-;; In both modes C-c C-c interrupts the Seed7 program.
+;; In both modes, C-c C-c interrupts the Seed7 program.
 ;;
 ;; stderr is captured in real time in a separate
 ;; `*seed7-run-stderr: BASENAME*' buffer.
@@ -6856,7 +6856,7 @@ ignored because there is no universal byte encoding for them."
     (define-key map (kbd "C-c C-c") #'seed7-run-interrupt)
     (define-key map (kbd "C-c C-k") #'seed7-run-enter-raw-mode)
     map)
-  "Keymap used in `*seed7-run*' output/input buffers.")
+  "Keymap used in `*seed7-run*: BASENAME' output/input buffers.")
 
 (defvar seed7-run-raw-mode-map
   (let ((map (make-sparse-keymap)))
@@ -6916,7 +6916,9 @@ Raw-input mode
   Every character key is forwarded immediately to the running program.
   Press \\[seed7-run-exit-raw-mode] (C-c C-j) to return to buffered mode.
 
-In both modes, \\[seed7-run-interrupt] (C-c C-c) sends SIGINT."
+In both modes, \\[seed7-run-interrupt] (C-c C-c) sends SIGINT.
+
+stderr output appears in the companion `*seed7-run-stderr: BASENAME*' buffer."
   (use-local-map seed7-run-mode-map)
   (setq-local scroll-conservatively 1000))
 
