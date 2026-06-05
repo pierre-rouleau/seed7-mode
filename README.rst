@@ -25,16 +25,16 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 **Highlights**
 
 - Syntax highlighting
-- Context aware indentation
-- Intelligent keyword expansion
+- Context-aware indentation
 - Context-aware navigation
-- Cross-reference integration with xref with Seed7 code analysis
+- Cross-reference integration with xref support that uses a Seed7 code analyzer back-end
+- Intelligent template and keyword expansion
 - Context-aware marking
 - Deep integration with iMenu and Speedbar
 - Static analysis, compilation and execution of Seed7 programs
 - Seed7 top-level menu
 
-There's still some areas that need improvements or fixes, mainly for the
+There are some areas that need improvements or fixes, mainly for the
 complete support of .s7i files.
 Please create a bug report for any problem you detect.
 

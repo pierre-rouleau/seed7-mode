@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.1441
+;; Package-Version: 20260605.1451
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -518,7 +518,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-05T18:41:36+0000 W23-5"
+(defconst seed7-mode-version-timestamp "2026-06-05T18:51:58+0000 W23-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6748,10 +6748,14 @@ or nil when no diagnostics are found."
 ;; program using `seed7-interpreter' (s7).
 ;;
 ;; stdout is displayed in real time in a `*seed7-run: BASENAME*' buffer.  The
-;; buffer accepts input.  In buffered mode all keys not bound to Emacs
-;; commands are accumulated and sent to the Seed7 program when you type the
-;; RET key.  In raw mode every key (with the exception of C-c C-c and C-c C-j)
+;; buffer accepts input.
+;;
+;; In buffered mode, text is typed and edited normally at the end of the
+;; buffer and sent to the Seed7 program by pressing the RET key.
+;;
+;; In raw mode every key (with the exception of C-c C-c and C-c C-j)
 ;; is sent directly to the Seed7 program.
+;;
 ;; In both modes, C-c C-c interrupts the Seed7 program.
 ;;
 ;; stderr is captured in real time in a separate
