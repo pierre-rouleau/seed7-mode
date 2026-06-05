@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.1047
+;; Package-Version: 20260605.1501
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -518,7 +518,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-05T14:47:23+0000 W23-5"
+(defconst seed7-mode-version-timestamp "2026-06-05T19:01:36+0000 W23-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6747,18 +6747,29 @@ or nil when no diagnostics are found."
 ;; `seed7-checker' (s7check).  If the code is clean it then launches the
 ;; program using `seed7-interpreter' (s7).
 ;;
-;; stdout is displayed in real time in a `*seed7-run: BASENAME*' buffer.
-;; The buffer accepts stdin: type at the end of the buffer and press RET
-;; to send a line to the running program.  C-c C-c interrupts the process.
+;; stdout is displayed in real time in a `*seed7-run: BASENAME*' buffer.  The
+;; buffer accepts input.
+;;
+;; In buffered mode, text is typed and edited normally at the end of the
+;; buffer and sent to the Seed7 program by pressing the RET key.
+;;
+;; In raw mode every key (with the exception of C-c C-c and C-c C-j)
+;; is sent directly to the Seed7 program.
+;;
+;; In both modes, C-c C-c interrupts the Seed7 program.
 ;;
 ;; stderr is captured in real time in a separate
 ;; `*seed7-run-stderr: BASENAME*' buffer.
 ;;
 ;;  * `seed7-run-program'
-;;    - `seed7--run-program-filter'
-;;    - `seed7--run-sentinel'
-;;    - `seed7-run-send-input'
-;;    - `seed7-run-interrupt'
+;;    . `seed7--run-program-filter'
+;;    . `seed7--run-sentinel'
+;;    . `seed7-run-send-input'
+;;    . `seed7-run-interrupt'
+;;    . `seed7-run-raw-send-key'
+;;    * `seed7-run-mode'
+;;  * `seed7-run-enter-raw-mode'
+;;  * `seed7-run-exit-raw-mode'
 
 ;;** Seed7 Run – process filters and sentinel
 
@@ -6790,7 +6801,7 @@ end of the buffer is not disturbed."
 ;;** Seed7 Run – interactive input commands
 
 (defvar-local seed7-run--raw-mode nil
-  "Non-nil when the `*seed7-run*' buffer is in raw-input mode.
+  "Non-nil when the `*seed7-run: BASENAME*' buffer is in raw-input mode.
 In raw mode every character key press is forwarded directly to the
 running Seed7 process without local buffering.
 Switch modes with `seed7-run-enter-raw-mode' / `seed7-run-exit-raw-mode'.")
@@ -6798,7 +6809,8 @@ Switch modes with `seed7-run-enter-raw-mode' / `seed7-run-exit-raw-mode'.")
 (defun seed7-run-send-input ()
   "Send the text typed after the last program output to the Seed7 process.
 The text is taken from the current process mark to the end of the buffer.
-A newline is appended automatically.  Bound to RET in `*seed7-run*' buffers."
+A newline is appended automatically.
+Bound to RET in `*seed7-run: BASENAME*' buffers."
   (interactive)
   (let ((proc (get-buffer-process (current-buffer))))
     (unless (and proc (process-live-p proc))
@@ -6814,7 +6826,7 @@ A newline is appended automatically.  Bound to RET in `*seed7-run*' buffers."
 (defun seed7-run-interrupt ()
   "Interrupt the Seed7 program running in the current buffer.
 Sends SIGINT to the associated process.  Bound to C-c C-c in
-`*seed7-run*' buffers."
+`*seed7-run: BASENAME*' buffers."
   (interactive)
   (if-let ((proc (get-buffer-process (current-buffer))))
       (if (process-live-p proc)
@@ -6848,7 +6860,7 @@ ignored because there is no universal byte encoding for them."
     (define-key map (kbd "C-c C-c") #'seed7-run-interrupt)
     (define-key map (kbd "C-c C-k") #'seed7-run-enter-raw-mode)
     map)
-  "Keymap used in `*seed7-run*' output/input buffers.")
+  "Keymap used in `*seed7-run: BASENAME*' output/input buffers.")
 
 (defvar seed7-run-raw-mode-map
   (let ((map (make-sparse-keymap)))
@@ -6859,7 +6871,7 @@ ignored because there is no universal byte encoding for them."
     ;; C-c C-j exits raw mode and returns to buffered mode.
     (define-key map (kbd "C-c C-j") #'seed7-run-exit-raw-mode)
     map)
-  "Keymap used in `*seed7-run*' buffers while in raw-input mode.
+  "Keymap used in `*seed7-run: BASENAME*' buffers while in raw-input mode.
 Every key that is a character is forwarded directly to the running
 Seed7 process.  Use \\[seed7-run-exit-raw-mode] (C-c C-j) to return
 to buffered mode, or \\[seed7-run-interrupt] (C-c C-c) to send SIGINT.")
@@ -6867,7 +6879,7 @@ to buffered mode, or \\[seed7-run-interrupt] (C-c C-c) to send SIGINT.")
 ;; --
 
 (defun seed7-run-enter-raw-mode ()
-  "Switch the current `*seed7-run*' buffer to raw-input mode.
+  "Switch the current `*seed7-run: BASENAME*' buffer to raw-input mode.
 In raw mode every character key is sent immediately to the running
 Seed7 process, bypassing Emacs editing.
 
@@ -6883,7 +6895,7 @@ Seed7 process, bypassing Emacs editing.
   (message "seed7-run: raw-input mode  (C-c C-j → buffered,  C-c C-c → SIGINT)"))
 
 (defun seed7-run-exit-raw-mode ()
-  "Return the current `*seed7-run*' buffer to buffered-input mode.
+  "Return the current `*seed7-run: BASENAME*' buffer to buffered-input mode.
 Type your input at the end of the buffer and press \\[seed7-run-send-input]
 (RET) to send it.  Use \\[seed7-run-enter-raw-mode] (C-c C-k) to switch
 back to raw mode."
@@ -6908,7 +6920,9 @@ Raw-input mode
   Every character key is forwarded immediately to the running program.
   Press \\[seed7-run-exit-raw-mode] (C-c C-j) to return to buffered mode.
 
-In both modes, \\[seed7-run-interrupt] (C-c C-c) sends SIGINT."
+In both modes, \\[seed7-run-interrupt] (C-c C-c) sends SIGINT.
+
+stderr output appears in the companion `*seed7-run-stderr: BASENAME*' buffer."
   (use-local-map seed7-run-mode-map)
   (setq-local scroll-conservatively 1000))
 
@@ -6930,8 +6944,8 @@ Step 2 – Interpreter launch
   If the code is clean, runs the program with `seed7-interpreter' (s7).
 
   stdout is shown in real time in `*seed7-run: BASENAME*'.
-  The buffer accepts stdin: type at the end of the buffer and press RET
-  \\[seed7-run-send-input] to send a line to the program.  Press
+  The buffer accepts stdin: type at the end of the buffer and press
+  \\[seed7-run-send-input] (RET) to send a line to the program.  Press
   \\[seed7-run-interrupt] (C-c C-c) to send SIGINT.
 
   stderr is captured in real time in `*seed7-run-stderr: BASENAME*'.
