@@ -227,7 +227,7 @@ Screenshot                  Description
                             the `PEL Speedbar PDF`_.
 
 `GUI Emacs menu`_           Using macOS GUI Emacs with iMenu to list the
-                            functions is the Seed7 file.  Unlike Windows
+                            functions in the Seed7 file.  Unlike Windows
                             and most Linux desktops,
                             the Emacs menu shows up inside the macOS
                             top screen menu.
@@ -308,7 +308,7 @@ The following customizable user-option variables control Seed7 code indentation.
                           used to render a hard tab (as specified by **tab-width**).
 
                           For Seed7 code, the convention is to avoid hard TAB
-                          characters in the code, therefore the **indent-tab-mode**
+                          characters in the code, therefore the **indent-tabs-mode**
                           should be turned off to prevent seed7-mode auto-indentation
                           to insert hard TAB characters.
 
@@ -821,7 +821,7 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                             enum_, array_, set_.
 = ============================ ============ =============================================================
 
-Note that when issuing the ``seed7-end-of-defun`` or ``seed7-to-block-forward``
+Note that issuing the ``seed7-end-of-defun`` or ``seed7-to-block-forward``
 command from the end of a procedure or function moves the point to the end of
 the next function or procedure if there is one.  Issuing the
 ``seed7-end-of-defun`` or ``seed7-to-block-backward`` from the beginning of a
@@ -835,7 +835,7 @@ Cross Reference Code Navigation Through Xref
 
 :PEL Ref: `PEL xref PDF`_
 
-The seed7-mode supports `Emacs xref framework`_ supports:
+The seed7-mode supports `Emacs xref framework`_:
 
 - Searches in the current buffer to find the definition of local variables and
   constants, and file global variables and constants.
@@ -855,7 +855,7 @@ The seed7-mode supports `Emacs xref framework`_ supports:
 
 The **seed7-xref** user option identifies the program that should be used to
 parse the visited Seed7 file and extract information about all identifiers and
-operators used by the Seed7n program or library file.  See the **seed7-xref**
+operators used by the Seed7 program or library file.  See the **seed7-xref**
 docstring for more information.  It defaults to ``s7 path/to/s7xref.sd7``,
 where the path is adjusted to the location where the ``s7xref.sd7`` file is
 stored.  This uses the ``s7`` Seed7 interpreter.
@@ -1031,7 +1031,7 @@ Running Seed7 Program inside Emacs
 
                                                **Raw-input mode**:
 
-                                               - Every key (except ``C-c C-c`` and `C-c C-j``)
+                                               - Every key (except ``C-c C-c`` and ``C-c C-j``)
                                                  is sent directly to the Seed7 program.
                                                - Press ``C-c C-j`` to return to
                                                  buffered-input mode.
@@ -1041,7 +1041,7 @@ Running Seed7 Program inside Emacs
                                                  To use other Emacs commands via their global key
                                                  bindings, you must return to the buffered mode first.
 
-                                             - A special mode window  showing the
+                                             - A special mode window showing the
                                                ``*seed7-run-stderr: <BASENAME>*`` buffer that displays
                                                what the program prints to the stderr stream.
 
