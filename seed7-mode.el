@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.1430
+;; Package-Version: 20260605.1441
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -518,7 +518,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-05T18:30:30+0000 W23-5"
+(defconst seed7-mode-version-timestamp "2026-06-05T18:41:36+0000 W23-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6856,7 +6856,7 @@ ignored because there is no universal byte encoding for them."
     (define-key map (kbd "C-c C-c") #'seed7-run-interrupt)
     (define-key map (kbd "C-c C-k") #'seed7-run-enter-raw-mode)
     map)
-  "Keymap used in `*seed7-run*: BASENAME' output/input buffers.")
+  "Keymap used in `*seed7-run: BASENAME*' output/input buffers.")
 
 (defvar seed7-run-raw-mode-map
   (let ((map (make-sparse-keymap)))
@@ -6940,8 +6940,8 @@ Step 2 – Interpreter launch
   If the code is clean, runs the program with `seed7-interpreter' (s7).
 
   stdout is shown in real time in `*seed7-run: BASENAME*'.
-  The buffer accepts stdin: type at the end of the buffer and press RET
-  \\[seed7-run-send-input] to send a line to the program.  Press
+  The buffer accepts stdin: type at the end of the buffer and press
+  \\[seed7-run-send-input] (RET) to send a line to the program.  Press
   \\[seed7-run-interrupt] (C-c C-c) to send SIGINT.
 
   stderr is captured in real time in `*seed7-run-stderr: BASENAME*'.

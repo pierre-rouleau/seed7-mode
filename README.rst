@@ -22,12 +22,20 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
    :alt: Emacs >= 25.1
    :target: https://www.gnu.org/software/emacs/
 
+**Highlights**
 
-🚧 This is a **work-in-progress** version of seed7-mode, a major mode for the
-`Seed7 programming language`_.
+- Syntax highlighting
+- Context aware indentation
+- Intelligent keyword expansion
+- Context-aware navigation
+- Cross-reference integration with xref with Seed7 code analysis
+- Context-aware marking
+- Deep integration with iMenu and Speedbar
+- Static analysis, compilation and execution of Seed7 programs
+- Seed7 top-level menu
 
-A lot of features are implemented but there's still some areas that need
-improvements or fixes, mainly for the complete support of .s7i files.
+There's still some areas that need improvements or fixes, mainly for the
+complete support of .s7i files.
 Please create a bug report for any problem you detect.
 
    **Note:**
