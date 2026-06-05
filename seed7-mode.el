@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260604.1031
+;; Package-Version: 20260605.0938
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -438,6 +438,16 @@
 ;;       . `seed7--expand-args'
 ;;       . `seed7--run-and-parse'
 ;;         . `seed7--parse-diagnostics'
+;; - Seed7 Run Program
+;;   - Seed7 Run – process filters and sentinel
+;;   * `seed7-run-program'
+;;     . `seed7--run-program-filter'
+;;     . `seed7--run-sentinel'
+;;   - Seed7 Run – interactive input commands
+;;     . `seed7-run-send-input'
+;;     . `seed7-run-interrupt'
+;;   - Seed7 Run – run-buffer major mode
+;;     * `seed7-run-mode'
 ;; - Seed7 Cross Reference
 ;;    > `seed7--xref-backend'
 ;;    + `xref-backend-identifier-at-point'
@@ -505,7 +515,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-04T14:31:23+0000 W23-4"
+(defconst seed7-mode-version-timestamp "2026-06-05T13:38:02+0000 W23-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6743,7 +6753,6 @@ or nil when no diagnostics are found."
 ;;
 ;;  * `seed7-run-program'
 ;;    - `seed7--run-program-filter'
-;;    - `seed7--run-stderr-filter'
 ;;    - `seed7--run-sentinel'
 ;;    - `seed7-run-send-input'
 ;;    - `seed7-run-interrupt'
