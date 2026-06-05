@@ -1012,6 +1012,7 @@ Running Seed7 Program inside Emacs
                                                - Takes input when you type the ``RET`` key.
                                                - Stop the program by typing ``C-c C-c``.
 = ============================ =========== =============================================================
+
 .. ---------------------------------------------------------------------------
 
 Compatibility
