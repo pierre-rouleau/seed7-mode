@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.1712
+;; Package-Version: 20260605.1723
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -519,7 +519,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-05T21:12:37+0000 W23-5"
+(defconst seed7-mode-version-timestamp "2026-06-05T21:23:31+0000 W23-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3460,8 +3460,9 @@ Negative N starts counting from the end of the line: -1 is the last word."
 
 
 ;; -- Compilation Behaviour Control for forward-sexp/backward-sexp protection
-(defconst seed7--debug-sexp-scan nil
-  "Forward/Backward Sexp debug control.  For DEVELOPMENT ONLY!
+(eval-and-compile
+  (defconst seed7--debug-sexp-scan nil
+    "Forward/Backward Sexp debug control.  For DEVELOPMENT ONLY!
 
 When non-nil at byte-compile time, `seed7--with-forward-sexp' and
 `seed7--with-backward-sexp' expand to bare calls without any
@@ -3469,14 +3470,14 @@ When non-nil at byte-compile time, `seed7--with-forward-sexp' and
 To use: set this to t before byte-compiling seed7-mode.el.
 Has no effect at runtime on already-compiled code.")
 
-(defconst seed7--log-sexp-scan-errors nil
-  "Forward/Backward Sexp error log control.  For DEVELOPMENT ONLY!
+  (defconst seed7--log-sexp-scan-errors nil
+    "Forward/Backward Sexp error log control.  For DEVELOPMENT ONLY!
 
 When non-nil at byte-compile time (and `seed7--debug-sexp-scan' is nil),
 `seed7--with-forward-sexp' and `seed7--with-backward-sexp' expand with a
 `message' call inside the scan-error handler.
 To use: set this to t before byte-compiling seed7-mode.el.
-Has no effect at runtime on already-compiled code.")
+Has no effect at runtime on already-compiled code."))
 
 ;; -- Protective macros
 (defmacro seed7--with-forward-sexp (&rest body)
