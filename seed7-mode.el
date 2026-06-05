@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.1029
+;; Package-Version: 20260605.1047
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -518,7 +518,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-05T14:29:49+0000 W23-5"
+(defconst seed7-mode-version-timestamp "2026-06-05T14:47:23+0000 W23-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6842,6 +6842,30 @@ ignored because there is no universal byte encoding for them."
 
 ;;** Seed7 Run – run-buffer major mode
 
+(defvar seed7-run-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "RET")   #'seed7-run-send-input)
+    (define-key map (kbd "C-c C-c") #'seed7-run-interrupt)
+    (define-key map (kbd "C-c C-k") #'seed7-run-enter-raw-mode)
+    map)
+  "Keymap used in `*seed7-run*' output/input buffers.")
+
+(defvar seed7-run-raw-mode-map
+  (let ((map (make-sparse-keymap)))
+    ;; Catch-all: forward every key that is a character to the process.
+    (define-key map [t]             #'seed7-run-raw-send-key)
+    ;; Keep SIGINT reachable even in raw mode.
+    (define-key map (kbd "C-c C-c") #'seed7-run-interrupt)
+    ;; C-c C-j exits raw mode and returns to buffered mode.
+    (define-key map (kbd "C-c C-j") #'seed7-run-exit-raw-mode)
+    map)
+  "Keymap used in `*seed7-run*' buffers while in raw-input mode.
+Every key that is a character is forwarded directly to the running
+Seed7 process.  Use \\[seed7-run-exit-raw-mode] (C-c C-j) to return
+to buffered mode, or \\[seed7-run-interrupt] (C-c C-c) to send SIGINT.")
+
+;; --
+
 (defun seed7-run-enter-raw-mode ()
   "Switch the current `*seed7-run*' buffer to raw-input mode.
 In raw mode every character key is sent immediately to the running
@@ -6869,28 +6893,6 @@ back to raw mode."
   (force-mode-line-update)
   (use-local-map seed7-run-mode-map)
   (message "seed7-run: buffered-input mode  (RET → send,  C-c C-k → raw)"))
-
-(defvar seed7-run-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "RET")   #'seed7-run-send-input)
-    (define-key map (kbd "C-c C-c") #'seed7-run-interrupt)
-    (define-key map (kbd "C-c C-k") #'seed7-run-enter-raw-mode)
-    map)
-  "Keymap used in `*seed7-run*' output/input buffers.")
-
-(defvar seed7-run-raw-mode-map
-  (let ((map (make-sparse-keymap)))
-    ;; Catch-all: forward every key that is a character to the process.
-    (define-key map [t]             #'seed7-run-raw-send-key)
-    ;; Keep SIGINT reachable even in raw mode.
-    (define-key map (kbd "C-c C-c") #'seed7-run-interrupt)
-    ;; C-c C-j exits raw mode and returns to buffered mode.
-    (define-key map (kbd "C-c C-j") #'seed7-run-exit-raw-mode)
-    map)
-  "Keymap used in `*seed7-run*' buffers while in raw-input mode.
-Every key that is a character is forwarded directly to the running
-Seed7 process.  Use \\[seed7-run-exit-raw-mode] (C-c C-j) to return
-to buffered mode, or \\[seed7-run-interrupt] (C-c C-c) to send SIGINT.")
 
 (define-derived-mode seed7-run-mode fundamental-mode "seed7-run"
   "Major mode for Seed7 program stdout/stdin buffers.
