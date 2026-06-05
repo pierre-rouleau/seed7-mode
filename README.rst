@@ -993,7 +993,7 @@ Running Seed7 Program inside Emacs
 
                                            - Prompt you for the program's command line arguments.
                                              Type them followed by ``RET``.
-                                           - If the current Seed7 buffer is not saved prompts for saving
+                                           - If the current Seed7 buffer is not saved, it prompts for saving
                                              the latest changes to the file.
                                            - Perform static analysis of the content of the file. Display
                                              all errors found inside a ``*seed7-errors*`` buffer which
@@ -1006,11 +1006,19 @@ Running Seed7 Program inside Emacs
 
                                              - The interactive window showing the
                                                ``*seed7-run: <BASENAME>*`` buffer and operating in the
-                                               ``seed7-run-mode``..
+                                               ``seed7-run-mode``.
 
                                                - This shows the program's stdout stream.
                                                - Takes input when you type the ``RET`` key.
                                                - Stop the program by typing ``C-c C-c``.
+
+                                             - A special mode window  showing the
+                                               ``*seed7-run-stderr <BASENAME>*`` buffer that displays
+                                               what the program prints to the stderr stream.
+
+                                           The ``<BASENAME>`` part of the buffer name corresponds to the
+                                           basename of the Seed7 file.  You may run several See7
+                                           programs simultaneously, the window name identifies each one.
 = ============================ =========== =============================================================
 
 .. ---------------------------------------------------------------------------
