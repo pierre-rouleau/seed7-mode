@@ -24,7 +24,7 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 
 **Highlights**
 
-- Syntax highlighting
+- Extensive and precise syntax highlighting
 - Context-aware indentation
 - Context-aware navigation
 - Cross-reference integration with xref support that uses a Seed7 code analyzer back-end
