@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.1501
+;; Package-Version: 20260605.1525
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -473,6 +473,7 @@
 ;;        . `seed7--procfun-identifiers'
 ;;        . `seed7--list-of-terms'
 ;;        . `seed7--make-xref-from-file-loc'
+;;    . `seed7--invalidate-xref-cache'
 ;; - Seed7 Completion Support
 ;; - Seed7 Abbreviation Support
 ;;   * `seed7-rebuild-abbrev-table'
@@ -518,7 +519,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-05T19:01:36+0000 W23-5"
+(defconst seed7-mode-version-timestamp "2026-06-05T19:25:10+0000 W23-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7624,6 +7625,11 @@ Is point at its definition? Is this file compiling?"
 ;;   (seed7-find-symbol-apropos symbol))
 ;;
 
+(defun seed7--invalidate-xref-cache ()
+  "Invalidate cached Seed7 xref data for the current buffer."
+  (when (buffer-live-p seed7---xref-buffer)
+    (kill-buffer seed7---xref-buffer))
+  (setq-local seed7---xref-buffer nil))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Completion Support
@@ -8180,6 +8186,8 @@ current Emacs session without restarting Emacs."
   ;; Seed7 Cross Reference
   ;; - Use the xref framework : implement a backend for Seed7 here. See above.
   (add-hook 'xref-backend-functions #'seed7--xref-backend nil t)
+  ;; - Invalidate the cache on file save to force a rebuild on next change
+  (add-hook 'after-save-hook #'seed7--invalidate-xref-cache nil t)
 
   ;; Seed7 Completion [:todo 2025-07-08, by Pierre Rouleau: find the proper way to hook it]
   ;; (add-hook 'completion-at-point-functions #'seed7--xref-backend nil t)
