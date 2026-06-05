@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.1451
+;; Package-Version: 20260605.1501
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -518,7 +518,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-05T18:51:58+0000 W23-5"
+(defconst seed7-mode-version-timestamp "2026-06-05T19:01:36+0000 W23-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6768,8 +6768,8 @@ or nil when no diagnostics are found."
 ;;    . `seed7-run-interrupt'
 ;;    . `seed7-run-raw-send-key'
 ;;    * `seed7-run-mode'
-;;    * `seed7-run-enter-raw-mode'
-;;    * `seed7-run-exit-raw-mode'
+;;  * `seed7-run-enter-raw-mode'
+;;  * `seed7-run-exit-raw-mode'
 
 ;;** Seed7 Run – process filters and sentinel
 

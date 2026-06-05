@@ -68,7 +68,7 @@ Display seed7-mode version information
 --------------------------------------
 
 The ``seed7-mode-version`` command, bound to ``C-c v`` in seed7-mode
-buffers, displays the version UTC time stamp of the file in Emacs echo area
+buffers, displays the version UTC time stamp of the file in the Emacs echo area
 at the bottom of the screen.  Use this to verify the version of the
 seed7-mode.el code you are using.
 
