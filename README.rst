@@ -1009,7 +1009,7 @@ Running Seed7 Program inside Emacs
                                                ``seed7-run-mode``.
 
                                                - This shows the program's stdout stream.
-                                               - Takes input when you type the ``RET`` key.
+                                               - The buffer starts in **buffered input mode** (see below).
                                                - Stop the program by typing ``C-c C-c``.
 
                                              - A special mode window  showing the
@@ -1020,6 +1020,35 @@ Running Seed7 Program inside Emacs
                                            basename of the Seed7 file.  You may run several See7
                                            programs simultaneously, the window name identifies each one.
 = ============================ =========== =============================================================
+
+The ``*seed7-run: <BASENAME>*`` buffer supports two input modes:
+
+**Buffered input mode** (default)
+  Type your input text at the end of the buffer and press ``RET`` to send
+  the whole line to the running Seed7 program.
+
+  = ========= =================================================================
+  . Key       Action
+  = ========= =================================================================
+  . ``RET``   Send the typed line to the Seed7 program.
+  . ``C-c C-k`` Switch to **raw input mode**.
+  . ``C-c C-c`` Send SIGINT to interrupt the running program.
+  = ========= =================================================================
+
+**Raw input mode**
+  Every key you press is forwarded directly to the Seed7 program without
+  any line buffering.  This is useful for programs that read individual
+  characters (e.g. menus, games, terminal-style interfaces).
+
+  Switch to raw mode from buffered mode by pressing ``C-c C-k``.
+
+  = ========= =================================================================
+  . Key       Action
+  = ========= =================================================================
+  . ``C-c C-j`` Return to **buffered input mode**.
+  . ``C-c C-c`` Send SIGINT to interrupt the running program.
+  . *any other key* Forward the key directly to the Seed7 program.
+  = ========= =================================================================
 
 .. ---------------------------------------------------------------------------
 

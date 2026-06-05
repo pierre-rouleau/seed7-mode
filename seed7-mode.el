@@ -446,6 +446,10 @@
 ;;   - Seed7 Run – interactive input commands
 ;;     . `seed7-run-send-input'
 ;;     . `seed7-run-interrupt'
+;;   - Seed7 Run – raw input mode
+;;     . `seed7-run-raw-send-key'
+;;     . `seed7-run-enter-raw-mode'
+;;     . `seed7-run-enter-buffered-mode'
 ;;   - Seed7 Run – run-buffer major mode
 ;;     * `seed7-run-mode'
 ;; - Seed7 Cross Reference
@@ -6815,25 +6819,85 @@ Sends SIGINT to the associated process.  Bound to C-c C-c in
         (message "seed7: process is not running"))
     (message "seed7: no process associated with this buffer")))
 
+;;** Seed7 Run – raw input mode
+
+(defvar-local seed7--run-in-raw-mode nil
+  "Non-nil when the `seed7-run-mode' buffer is in raw input mode.")
+
+(defun seed7-run-raw-send-key ()
+  "Forward the last key event directly to the running Seed7 process.
+Used as the catch-all binding in `seed7-run-raw-mode-map'."
+  (interactive)
+  (let ((proc (get-buffer-process (current-buffer))))
+    (unless (and proc (process-live-p proc))
+      (user-error "No running Seed7 process in this buffer"))
+    (process-send-string proc (this-command-keys))))
+
+(defun seed7-run-enter-raw-mode ()
+  "Switch the current `seed7-run-mode' buffer to raw input mode.
+In raw mode every key press is forwarded directly to the Seed7 process.
+Use \\[seed7-run-enter-buffered-mode] (C-c C-j) to return to buffered
+mode, or \\[seed7-run-interrupt] (C-c C-c) to send SIGINT."
+  (interactive)
+  (unless (derived-mode-p 'seed7-run-mode)
+    (user-error "Not in a seed7-run-mode buffer"))
+  (setq-local seed7--run-in-raw-mode t)
+  (use-local-map seed7-run-raw-mode-map)
+  (message "seed7-run: raw mode  (C-c C-j = buffered mode, C-c C-c = interrupt)"))
+
+(defun seed7-run-enter-buffered-mode ()
+  "Switch the current `seed7-run-mode' buffer to buffered input mode.
+In buffered mode you type text and press RET to send a line to the Seed7
+process.  Use \\[seed7-run-enter-raw-mode] (C-c C-k) to enter raw mode."
+  (interactive)
+  (unless (derived-mode-p 'seed7-run-mode)
+    (user-error "Not in a seed7-run-mode buffer"))
+  (setq-local seed7--run-in-raw-mode nil)
+  (use-local-map seed7-run-mode-map)
+  (message "seed7-run: buffered mode  (RET = send line, C-c C-k = raw mode)"))
+
 ;;** Seed7 Run – run-buffer major mode
 
 (defvar seed7-run-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "RET")   #'seed7-run-send-input)
+    (define-key map (kbd "RET")     #'seed7-run-send-input)
     (define-key map (kbd "C-c C-c") #'seed7-run-interrupt)
+    (define-key map (kbd "C-c C-k") #'seed7-run-enter-raw-mode)
     map)
-  "Keymap used in `*seed7-run*' output/input buffers.")
+  "Keymap used in `*seed7-run*' output/input buffers (buffered mode).")
+
+(defvar seed7-run-raw-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-c") #'seed7-run-interrupt)
+    (define-key map (kbd "C-c C-j") #'seed7-run-enter-buffered-mode)
+    (define-key map [t]             #'seed7-run-raw-send-key)
+    map)
+  "Keymap used in raw input mode in `*seed7-run*' buffers.
+Every key not explicitly bound here is forwarded to the Seed7 process.")
 
 (define-derived-mode seed7-run-mode fundamental-mode "seed7-run"
   "Major mode for Seed7 program stdout/stdin buffers.
 
-Program output is inserted at the process mark.  You may type input
-after the last output line and press \\[seed7-run-send-input] to send
-it to the running program.  Use \\[seed7-run-interrupt] to send SIGINT."
+The buffer starts in buffered input mode.  Program output is inserted at
+the process mark.  You may type input after the last output line and press
+\\[seed7-run-send-input] to send a line to the running program.
+
+Two input modes are available:
+
+Buffered mode (default)
+  Type text at the end of the buffer and press \\[seed7-run-send-input]
+  (RET) to send the whole line to the Seed7 process.
+  Press \\[seed7-run-enter-raw-mode] (C-c C-k) to switch to raw mode.
+  Press \\[seed7-run-interrupt] (C-c C-c) to send SIGINT.
+
+Raw mode
+  Every key you press is forwarded directly to the Seed7 process without
+  buffering.  Press \\[seed7-run-enter-buffered-mode] (C-c C-j) to return
+  to buffered mode.  Press \\[seed7-run-interrupt] (C-c C-c) to send SIGINT."
   (use-local-map seed7-run-mode-map)
   (setq-local scroll-conservatively 1000))
 
-;; ---------------------------------------------------------------------------
+
 ;;** Seed7 Run – main command
 
 (defun seed7-run-program (args)
