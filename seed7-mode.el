@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.1544
+;; Package-Version: 20260605.1607
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -519,7 +519,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-05T19:44:09+0000 W23-5"
+(defconst seed7-mode-version-timestamp "2026-06-05T20:07:17+0000 W23-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4013,10 +4013,9 @@ Return nil otherwise."
 ;; --
 
 (defun seed7-inside-line-end-comment-p ()
-  "Return non-nil if point is inside a line-end comment, nil otherwise.
-Specifically, it returns the position of the # character that starts the line
-comment if point is inside a block comment or nil if point is inside a block
-comment or not inside comment."
+  "Return the position of the # starting a line-end comment at point.
+Return nil if point is not inside a line-end comment, including when point
+is inside a block comment."
   (when (seed7-inside-comment-p)
     (save-excursion
       (let ((end-pos (1+ (point)))
@@ -4444,7 +4443,7 @@ Does not move point, does not modify search match data."
    ;;-- global - end global
    ((string= header "global")
     (if (seed7--at-pos-looking-at-p line-n-indent-pos "end global;")
-        ;; until lines up with global
+        ;; 'end global' lines up with 'global'
         0
       ;; Other lines are indented
       seed7-indent-width))
@@ -4452,7 +4451,7 @@ Does not move point, does not modify search match data."
    ;;-- for - end for
    ((string= header "for ")
     (if (seed7--at-pos-looking-at-p line-n-indent-pos "end for;?")
-        ;; until lines up with for
+        ;; 'end for' lines up with 'for'
         0
       ;; Other lines are indented
       seed7-indent-width))
@@ -4460,7 +4459,7 @@ Does not move point, does not modify search match data."
    ;;-- while - end while - elsif - end while
    ((string= header "while ")
     (if (seed7--at-pos-looking-at-p line-n-indent-pos "end while;?")
-        ;; until lines up with for
+        ;; 'end while' lines up with 'while'
         0
       ;; Other lines are indented
       seed7-indent-width))
@@ -4468,7 +4467,7 @@ Does not move point, does not modify search match data."
    ;;-- case - end case;
    ((string= header "case ")
     (if (seed7--at-pos-looking-at-p line-n-indent-pos "end case;?")
-        ;; until lines up with for
+        ;; 'end case' lines up with 'case'
         0
       ;; Other lines are indented
       (if (or (seed7--at-pos-looking-at-p line-n-indent-pos "when ")
@@ -4936,7 +4935,7 @@ N is: - :previous-non-empty for the previous non-empty line,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
 If nothing found it returns nil.
-If line N is inside a set set definition block, it returns a list with the
+If line N is inside a set definition block, it returns a list with the
 following information:
 - 0: indent column : indentation column the line N should use,
 - 1: string: \"set\"
@@ -4971,7 +4970,7 @@ following information:
                                                    dont-skip-comment-start)
   "Check if line N is inside a logic check expression.
 Return the indentation column of the space following the check keyword
-if line N is inside an array block, nil otherwise.
+if line N is inside a logic check expression, nil otherwise.
 N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
         is non-nil,
@@ -5035,7 +5034,7 @@ N is: - :previous-non-empty for the previous non-empty line,
                                                    dont-skip-comment-start)
   "Check if line N is the end of a set definition block.
 Return the indentation column of the set definition block statement
-if line N is the end of an array block, nil otherwise.
+if line N is the end of a set definition array block, nil otherwise.
 N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
         is non-nil,
@@ -5250,10 +5249,10 @@ Skip comment start unless DONT-SKIP-COMMENT-START is non nil."
                           dont-skip-comment-start))
 
 (defun seed7-line-is-defun-end (n &optional dont-skip-comment-start)
-  "Check if line N is below the end of a func, proc, struc or enum block.
-If that is the case, return the indentation column of the func, proc, struct
-or enum definition, otherwise return nil.
-if line N is below the end of a func definition block, nil otherwise.
+  "Return the defining-line indentation when line N ends a definition.
+Recognizes func, proc, struct, enum, forward, and native/action declaration
+forms. Return nil when line N is not such an end/declaration line.
+
 N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
@@ -7626,7 +7625,7 @@ Is point at its definition? Is this file compiling?"
 ;;
 
 (defun seed7--invalidate-xref-cache ()
-"Invalidate cached Seed7 xref data for the current buffer.
+  "Invalidate cached Seed7 xref data for the current buffer.
 Called from `after-save-hook' and `after-revert-hook'
 to ensure stale data is not used for the next xref lookup."
   (when (buffer-live-p seed7---xref-buffer)
