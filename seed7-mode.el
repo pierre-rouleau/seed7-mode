@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.1328
+;; Package-Version: 20260605.1402
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -518,7 +518,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-05T17:28:36+0000 W23-5"
+(defconst seed7-mode-version-timestamp "2026-06-05T18:02:44+0000 W23-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6751,7 +6751,7 @@ or nil when no diagnostics are found."
 ;; The buffer accepts input.  In buffered mode all keys not bound to Emacs
 ;; commands are accumulated and sent to the Seed7 program when you type the
 ;; RET key.  In raw mode every key (with the exception of C-c C-c and
-;; C-c C-j) all keys are sent directly to the Seed7 program.  In both modes
+;; C-c C-j) every key is sent directly to the Seed7 program.  In both modes
 ;; C-c C-c interrupts the Seed7 program.
 ;;
 ;; stderr is captured in real time in a separate
@@ -6822,7 +6822,7 @@ Bound to RET in `*seed7-run: BASENAME*' buffers."
 (defun seed7-run-interrupt ()
   "Interrupt the Seed7 program running in the current buffer.
 Sends SIGINT to the associated process.  Bound to C-c C-c in
-`*seed7-run*' buffers."
+`*seed7-run: BASENAME*' buffers."
   (interactive)
   (if-let ((proc (get-buffer-process (current-buffer))))
       (if (process-live-p proc)
@@ -6867,7 +6867,7 @@ ignored because there is no universal byte encoding for them."
     ;; C-c C-j exits raw mode and returns to buffered mode.
     (define-key map (kbd "C-c C-j") #'seed7-run-exit-raw-mode)
     map)
-  "Keymap used in `*seed7-run*' buffers while in raw-input mode.
+  "Keymap used in `*seed7-run: BASENAME*' buffers while in raw-input mode.
 Every key that is a character is forwarded directly to the running
 Seed7 process.  Use \\[seed7-run-exit-raw-mode] (C-c C-j) to return
 to buffered mode, or \\[seed7-run-interrupt] (C-c C-c) to send SIGINT.")
@@ -6875,7 +6875,7 @@ to buffered mode, or \\[seed7-run-interrupt] (C-c C-c) to send SIGINT.")
 ;; --
 
 (defun seed7-run-enter-raw-mode ()
-  "Switch the current `*seed7-run*' buffer to raw-input mode.
+  "Switch the current `*seed7-run: BASENAME*' buffer to raw-input mode.
 In raw mode every character key is sent immediately to the running
 Seed7 process, bypassing Emacs editing.
 
@@ -6891,7 +6891,7 @@ Seed7 process, bypassing Emacs editing.
   (message "seed7-run: raw-input mode  (C-c C-j → buffered,  C-c C-c → SIGINT)"))
 
 (defun seed7-run-exit-raw-mode ()
-  "Return the current `*seed7-run*' buffer to buffered-input mode.
+  "Return the current `*seed7-run: BASENAME*' buffer to buffered-input mode.
 Type your input at the end of the buffer and press \\[seed7-run-send-input]
 (RET) to send it.  Use \\[seed7-run-enter-raw-mode] (C-c C-k) to switch
 back to raw mode."

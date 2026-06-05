@@ -1,4 +1,4 @@
-=============================================================
+============================================================
 Seed7-mode - Emacs support for the Seed7 Programming Language
 =============================================================
 
@@ -60,7 +60,7 @@ Display seed7-mode version information
 --------------------------------------
 
 The ``seed7-mode-version`` command, bound to ``C-c v`` in seed7-mode
-buffers, display the version UTC time stamp of the file in Emacs echo area
+buffers, displays the version UTC time stamp of the file in Emacs echo area
 at the bottom of the screen.  Use this to verify the version of the
 seed7-mode.el code you are using.
 
@@ -73,7 +73,7 @@ Several features of the ``seed7-mode`` are customizable.
 Use the ``seed7-mode-customize`` command, bound to ``C-c C`` to quickly open the
 ``seed7-mode`` customization buffer.
 
-The command is also accessible from the top menu as can be see
+The command is also accessible from the top menu as can be seen
 `here <screenshots/menu-customize.png>`_. Once issued it opens the
 `seed7-mode customization buffer <screenshots/seed7-customize.png>`_.
 
@@ -171,7 +171,7 @@ Screenshot                            Description
                                       in the menu using a terminal Emacs.
 
 `GUI Emacs menu`_                     Using macOS GUI Emacs with iMenu to list the
-                                      functions is the Seed7 file.  Unlike Windows
+                                      functions in the Seed7 file.  Unlike Windows
                                       and most Linux desktops,
                                       the Emacs menu shows up inside the macOS
                                       top screen menu by default but it's also
@@ -315,7 +315,7 @@ The following customizable user-option variables control Seed7 code indentation.
                           Use the **untabify** command to replace all hard TAB characters
                           in the buffer by the equivalent number of SPACE characters.
 
-. **tab-width**           Controls the the column width of a hard TAB on display.
+. **tab-width**           Controls the column width of a hard TAB on display.
 = ======================= =================================================
 
 
@@ -325,8 +325,7 @@ Notes:
   the name of procedure and functions and the return type of the function.
   The auto-indentation will only work properly once these are identified.
   This acts as a reminder to fill in the missing parts.
-- 🚧 As this code is still under early development please report any problem you
-  may encounter.
+- 🚧 Please report any problem you may encounter.
 
 
 Code Template Insertion
@@ -430,7 +429,7 @@ expanded when the **abbrev-mode** is active.
 With Emacs and seed7-mode you can:
 
 - expand a Seed7 keywords by typing its (*system*) abbreviation followed by a word-separating
-  character such as ``<space>``, ``<RET>` or ``;`` and others.
+  character such as ``<space>``, ``<RET>`` or ``;`` and others.
 
   - All Seed7 *system*  abbreviations are short mnemonic character sequences
     that start with ``;``.
@@ -452,7 +451,7 @@ While **abbrev-mode** is active, you can explicitly prevent expansion of the
 keyword type ``C-q`` after the keyword before any white-space or punctuation
 character.
 
-To prevent expansion of Seed7-specific *system* abbreviations< do the
+To prevent expansion of Seed7-specific *system* abbreviations do the
 following:
 
 - Change the customization of this user-variable with ``M-x customize-option RET
@@ -778,7 +777,7 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
 = ============================ ============ =============================================================
 . seed7-beg-of-defun           ``C-M-a``    Move point backward to beginning of function or procedure.
                                             With optional repeat argument.
-. seed7-end-of-defun           ``C-M-e``    Move point backward to beginning of function or procedure.
+. seed7-end-of-defun           ``C-M-e``    Move point forward to the end of the current function or procedure.
                                             With optional repeat argument.
 . seed7-beg-of-next-defun      ``C-c C-n``  Move point forward to beginning of next function or procedure.
                                             With optional repeat argument.
@@ -1032,14 +1031,13 @@ Running Seed7 Program inside Emacs
 
                                                **Raw-input mode**:
 
-                                               - Every character key you press is sent
-                                                 immediately to the running program,
-                                                 without local Emacs editing or buffering.
+                                               - Every key (except ``C-c C-c`` and `C-c C-j``)
+                                                 is sent directly to the Seed7 program.
                                                - Press ``C-c C-j`` to return to
                                                  buffered-input mode.
                                                - Press ``C-c C-c`` to send SIGINT and
                                                  stop the program.
-                                               - In raw mode no other Emacs key bindings is available.
+                                               - In raw mode no other Emacs key binding is available.
                                                  To use other Emacs commands via their global key
                                                  bindings, you must return to the buffered mode first.
 
@@ -1048,7 +1046,7 @@ Running Seed7 Program inside Emacs
                                                what the program prints to the stderr stream.
 
                                            The ``<BASENAME>`` part of the buffer name corresponds to the
-                                           basename of the Seed7 file.  You may run several See7
+                                           basename of the Seed7 file.  You may run several Seed7
                                            programs simultaneously, the window name identifies each one.
 = ============================ =========== =============================================================
 
