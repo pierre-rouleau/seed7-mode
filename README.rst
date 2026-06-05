@@ -979,12 +979,48 @@ Comment Management Commands
                                              customizable user-options.
 = ============================ =========== =============================================================
 
+Running Seed7 Program inside Emacs
+----------------------------------
+
+= ============================ =========== =============================================================
+. Function                     Key Binding Description
+= ============================ =========== =============================================================
+. seed7-run-program            ``C-c C-r`` Run the Seed7 program visited in the current buffer.
+
+                                           Execute this command in a ``seed7-mode`` buffer to run the
+                                           Seed7 program via the Seed7 interpreter.
+                                           This does the following:
+
+                                           - Prompt you for the program's command line arguments.
+                                             Type them followed by ``RET``.
+                                           - If the current Seed7 buffer is not saved prompts for saving
+                                             the latest changes to the file.
+                                           - Perform static analysis of the content of the file. Display
+                                             all errors found inside a ``*seed7-errors*`` buffer which
+                                             allows you to jump to the location of each error.
+                                           - If no error is found then it runs the program with the
+                                             Seed7 interpreter using the command line identified by the
+                                             **seed7-interpreter** customizable user-option which defaults
+                                             to "s7".
+                                           - Open 2 windows:
+
+                                             - The interactive window showing the
+                                               ``*seed7-run: <BASENAME>*`` buffer and operating in the
+                                               ``seed7-run-mode``..
+
+                                               - This shows the program's stdout stream.
+                                               - Takes input when you type the ``RET`` key.
+                                               - Stop the program by typing ``C-c C-c``.
+= ============================ =========== =============================================================
+.. ---------------------------------------------------------------------------
+
 Compatibility
 =============
 
 The seed7-mode is compatible with:
 
-- Emacs 25.1 and later.
+- Emacs 25.1 and later on any platform supported by Seed7 (including Linux,
+  macOS and Windows).
 - Emacs `comment-dwim`_ command.  The recommended key binding for it is ``M-;``
 - Emacs `which-function-mode`_, when active shows the name of the current Seed7 function or procedure in the
   mode line. It also works with Seed7 actions and forward declarations.
