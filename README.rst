@@ -1051,6 +1051,11 @@ Running Seed7 Program inside Emacs
                                            programs simultaneously, the window name identifies each one.
 = ============================ =========== =============================================================
 
+**Example screen-shot:**
+
+.. image:: doc/res/running-seed7.png
+   :scale: 50%
+
 .. ---------------------------------------------------------------------------
 
 Compatibility
