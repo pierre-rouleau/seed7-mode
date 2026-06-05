@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.1607
+;; Package-Version: 20260605.1712
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -519,7 +519,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-05T20:07:17+0000 W23-5"
+(defconst seed7-mode-version-timestamp "2026-06-05T21:12:37+0000 W23-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3458,6 +3458,79 @@ Negative N starts counting from the end of the line: -1 is the last word."
 - group 2: function/procedure end,
 - group 3: action or forward function declaration.")
 
+
+;; -- Compilation Behaviour Control for forward-sexp/backward-sexp protection
+(defconst seed7--debug-sexp-scan nil
+  "Forward/Backward Sexp debug control.  For DEVELOPMENT ONLY!
+
+When non-nil at byte-compile time, `seed7--with-forward-sexp' and
+`seed7--with-backward-sexp' expand to bare calls without any
+`condition-case' wrapper, so scan-errors surface immediately.
+To use: set this to t before byte-compiling seed7-mode.el.
+Has no effect at runtime on already-compiled code.")
+
+(defconst seed7--log-sexp-scan-errors nil
+  "Forward/Backward Sexp error log control.  For DEVELOPMENT ONLY!
+
+When non-nil at byte-compile time (and `seed7--debug-sexp-scan' is nil),
+`seed7--with-forward-sexp' and `seed7--with-backward-sexp' expand with a
+`message' call inside the scan-error handler.
+To use: set this to t before byte-compiling seed7-mode.el.
+Has no effect at runtime on already-compiled code.")
+
+;; -- Protective macros
+(defmacro seed7--with-forward-sexp (&rest body)
+  "Call `forward-sexp' then evaluate BODY, returning the last value.
+
+The expansion is chosen once, at byte-compile time, based on
+`seed7--debug-sexp-scan' and `seed7--log-sexp-scan-errors':
+- Both nil (production): `scan-error' is caught silently; BODY is
+  skipped and the form returns nil if the delimiter is unmatched.
+- `seed7--log-sexp-scan-errors' non-nil: same as production but
+  also emits a `message' for each caught scan-error.
+- `seed7--debug-sexp-scan' non-nil: bare `forward-sexp' with no
+  handler; scan-errors propagate normally for interactive debugging.
+Changing either constant at runtime has no effect on compiled code."
+  (declare (indent 0) (debug t))
+  (cond
+   ;; -- Debug build: no protection, scan-errors propagate
+   (seed7--debug-sexp-scan
+    `(progn (forward-sexp) ,@body))
+   ;; -- Logging build: catch scan-error and report it
+   (seed7--log-sexp-scan-errors
+    `(condition-case nil
+         (progn (forward-sexp) ,@body)
+       (scan-error
+        (message "seed7-mode: forward-sexp scan-error at pos %d" (point))
+        nil)))
+   ;; -- Production build: catch scan-error silently
+   (t
+    `(condition-case nil
+         (progn (forward-sexp) ,@body)
+       (scan-error nil)))))
+
+(defmacro seed7--with-backward-sexp (&rest body)
+  "Call `backward-sexp' then evaluate BODY, returning the last value.
+
+Expansion rules are identical to `seed7--with-forward-sexp': the
+guard/log/debug mode is selected once at byte-compile time."
+  (declare (indent 0) (debug t))
+  (cond
+   (seed7--debug-sexp-scan
+    `(progn (backward-sexp) ,@body))
+   (seed7--log-sexp-scan-errors
+    `(condition-case nil
+         (progn (backward-sexp) ,@body)
+       (scan-error
+        (message "seed7-mode: backward-sexp scan-error at pos %d" (point))
+        nil)))
+   (t
+    `(condition-case nil
+         (progn (backward-sexp) ,@body)
+       (scan-error nil)))))
+
+;; --
+
 (defun seed7--type-regexp (keyword)
   "Return a regexp to search for the start/end of KEYWORD type block.
 
@@ -3542,17 +3615,17 @@ Return found position or nil if nothing found."
                  (member word1 '("const" "var")))
             (seed7-re-search-forward "(")
             (backward-char)
-            (forward-sexp)
-            (seed7-re-search-forward ";")
-            (setq found-position (point)))
+            (seed7--with-forward-sexp
+              (seed7-re-search-forward ";")
+              (setq found-position (point))))
            ;; handle set
            ((and (string= word2 "set")
                  (member word1 '("const" "var")))
             (seed7-re-search-forward "{")
             (backward-char)
-            (forward-sexp)
-            (seed7-re-search-forward ";")
-            (setq found-position (point)))
+            (seed7--with-forward-sexp
+              (seed7-re-search-forward ";")
+              (setq found-position (point))))
            ;; handle type
            ((and (string= word2 "type")
                  (member word1 '("const" "var"))
@@ -3758,25 +3831,25 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
               (cond
                ((seed7--set (seed7-line-code-ends-with 0 ");") pos)
                 (goto-char (1+ pos))
-                (backward-sexp)
-                (seed7-to-indent)
-                ;; in case we were at the return statement of a short function
-                ;; check if we land before a const keyword.  If not, we're not
-                ;; at the beginning of the block and most probably inside a
-                ;; function return statement so use `seed7-beg-of-defun' to
-                ;; find it.
-                (unless (looking-at "const ")
-                  (seed7-beg-of-defun nil dont-push-mark dont-push-mark))
-                (setq found-position (point)))
+                (seed7--with-backward-sexp
+                  (seed7-to-indent)
+                  ;; in case we were at the return statement of a short function
+                  ;; check if we land before a const keyword.  If not, we're not
+                  ;; at the beginning of the block and most probably inside a
+                  ;; function return statement so use `seed7-beg-of-defun' to
+                  ;; find it.
+                  (unless (looking-at "const ")
+                    (seed7-beg-of-defun nil dont-push-mark dont-push-mark))
+                  (setq found-position (point))))
                ;;
                ;; same logic for {} hash blocks
                ((seed7--set (seed7-line-code-ends-with 0 "};") pos)
                 (goto-char (1+ pos))
-                (backward-sexp)
-                (seed7-to-indent)
-                (unless (looking-at "const ")
-                  (seed7-beg-of-defun nil dont-push-mark dont-push-mark))
-                (setq found-position (point)))
+                (seed7--with-backward-sexp
+                  (seed7-to-indent)
+                  (unless (looking-at "const ")
+                    (seed7-beg-of-defun nil dont-push-mark dont-push-mark))
+                  (setq found-position (point))))
                ;;
                (t
                 ;; search for beginning of function or procedure.
@@ -4887,13 +4960,13 @@ information:
           (setq block-indent-column (current-column))
           (when (seed7-re-search-forward "(")
             (backward-char)
-            (forward-sexp)
-            ;; point is at block end
-            (when (< block-start-pos original-pos (point))
-              (list block-indent-column
-                    "array"
-                    block-start-pos
-                    (point)))))))))
+            (seed7--with-forward-sexp
+              ;; point is at block end
+              (when (< block-start-pos original-pos (point))
+                (list block-indent-column
+                      "array"
+                      block-start-pos
+                      (point))))))))))
 
 
 (defun seed7-line-at-endof-array-definition-block (n &optional
@@ -4919,12 +4992,12 @@ N is: - :previous-non-empty for the previous non-empty line,
         (when (seed7-re-search-backward ");")
           (forward-char)
           (setq enclosing-block-end-pos (point))
-          (backward-sexp)
-          (seed7-to-indent)
-          (when (looking-at-p "\\(?:const\\|var\\) +?array +?.+?:.+?(")
-            (setq block-start-pos (point))
-            (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
-              block-indent-column)))))))
+          (seed7--with-backward-sexp
+            (seed7-to-indent)
+            (when (looking-at-p "\\(?:const\\|var\\) +?array +?.+?:.+?(")
+              (setq block-start-pos (point))
+              (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
+                block-indent-column))))))))
 
 (defun seed7-line-inside-set-definition-block (n &optional
                                                  dont-skip-comment-start)
@@ -4955,13 +5028,13 @@ following information:
           (setq block-indent-column (current-column))
           (when (seed7-re-search-forward "{")
             (backward-char)
-            (forward-sexp)
-            ;; point should be at block end
-            (when (< block-start-pos original-pos (point))
-              (list block-indent-column
-                    "set"
-                    block-start-pos
-                    (point)))))))))
+            (seed7--with-forward-sexp
+              ;; point should be at block end
+              (when (< block-start-pos original-pos (point))
+                (list block-indent-column
+                      "set"
+                      block-start-pos
+                      (point))))))))))
 
 
 (defun seed7-line-inside-logic-check-expression (n &optional
@@ -5053,12 +5126,12 @@ N is: - :previous-non-empty for the previous non-empty line,
         (when (seed7-re-search-backward "};")
           (forward-char)
           (setq enclosing-block-end-pos (point))
-          (backward-sexp)
-          (seed7-to-indent)
-          (when (looking-at-p "\\(?:const\\|var\\) +?set +?.+?:.+?{")
-            (setq block-start-pos (point))
-            (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
-              block-indent-column)))))))
+          (seed7--with-backward-sexp
+            (seed7-to-indent)
+            (when (looking-at-p "\\(?:const\\|var\\) +?set +?.+?:.+?{")
+              (setq block-start-pos (point))
+              (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
+                block-indent-column))))))))
 
 (defun seed7-line-inside-parens-pair (n &optional
                                         scope-begin-pos
@@ -5103,24 +5176,24 @@ Invalid boundaries: begin=%S, end=%S"
               (if start-pos
                   (progn
                     (goto-char start-pos)
-                    (forward-sexp)
-                    (backward-char)
-                    (setq end-pos (point))
-                    (if (< start-pos end-pos line-start)
-                        ;; found a pair that is closed above current position
-                        ;; move to its opening paren and keep searching
-                        (goto-char start-pos)
-                      (if (and (< (or scope-begin-pos 0)
-                                  start-pos line-start end-pos)
-                               (or (not scope-end-pos)
-                                   (< end-pos scope-end-pos)))
-                          ;; found a candidate
-                          (progn
-                            (setq candidate-list
-                                  (push (list op start-pos end-pos) candidate-list))
-                            (setq keep-searching-this-paren nil))
-                        ;; nothing found. Stop searching this paren
-                        (setq keep-searching-this-paren nil))))
+                    (seed7--with-forward-sexp
+                      (backward-char)
+                      (setq end-pos (point))
+                      (if (< start-pos end-pos line-start)
+                          ;; found a pair that is closed above current position
+                          ;; move to its opening paren and keep searching
+                          (goto-char start-pos)
+                        (if (and (< (or scope-begin-pos 0)
+                                    start-pos line-start end-pos)
+                                 (or (not scope-end-pos)
+                                     (< end-pos scope-end-pos)))
+                            ;; found a candidate
+                            (progn
+                              (setq candidate-list
+                                    (push (list op start-pos end-pos) candidate-list))
+                              (setq keep-searching-this-paren nil))
+                          ;; nothing found. Stop searching this paren
+                          (setq keep-searching-this-paren nil)))))
                 ;;
                 (setq keep-searching-this-paren nil)))))
         (when candidate-list
@@ -7308,9 +7381,9 @@ procedure.  It's a list returned by the function `seed7-line-inside-a-block'."
       (when (seed7-re-search-forward "(" enclosing-block-end-pos)
         (setq area-start (point))
         (backward-char)
-        (forward-sexp)
-        (setq area-end (1- (point)))
-        (push (cons area-start area-end) areas))
+        (seed7--with-forward-sexp
+          (setq area-end (1- (point)))
+          (push (cons area-start area-end) areas)))
       ;;
       ;; Identify variable definition area: local-begin or result-begin block
       (goto-char block-start-pos)
