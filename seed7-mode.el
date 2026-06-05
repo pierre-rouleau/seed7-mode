@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.0938
+;; Package-Version: 20260605.1047
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -446,8 +446,11 @@
 ;;   - Seed7 Run – interactive input commands
 ;;     . `seed7-run-send-input'
 ;;     . `seed7-run-interrupt'
+;;     . `seed7-run-raw-send-key'
 ;;   - Seed7 Run – run-buffer major mode
 ;;     * `seed7-run-mode'
+;;     * `seed7-run-enter-raw-mode'
+;;     * `seed7-run-exit-raw-mode'
 ;; - Seed7 Cross Reference
 ;;    > `seed7--xref-backend'
 ;;    + `xref-backend-identifier-at-point'
@@ -515,7 +518,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-05T13:38:02+0000 W23-5"
+(defconst seed7-mode-version-timestamp "2026-06-05T14:47:23+0000 W23-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6786,6 +6789,12 @@ end of the buffer is not disturbed."
 
 ;;** Seed7 Run – interactive input commands
 
+(defvar-local seed7-run--raw-mode nil
+  "Non-nil when the `*seed7-run*' buffer is in raw-input mode.
+In raw mode every character key press is forwarded directly to the
+running Seed7 process without local buffering.
+Switch modes with `seed7-run-enter-raw-mode' / `seed7-run-exit-raw-mode'.")
+
 (defun seed7-run-send-input ()
   "Send the text typed after the last program output to the Seed7 process.
 The text is taken from the current process mark to the end of the buffer.
@@ -6815,21 +6824,91 @@ Sends SIGINT to the associated process.  Bound to C-c C-c in
         (message "seed7: process is not running"))
     (message "seed7: no process associated with this buffer")))
 
+(defun seed7-run-raw-send-key ()
+  "Forward the key just pressed directly to the running Seed7 process.
+This is the catch-all binding used in raw-input mode.
+Non-character events (e.g. function keys, mouse events) are silently
+ignored because there is no universal byte encoding for them."
+  (interactive)
+  (let ((proc (get-buffer-process (current-buffer))))
+    (unless (and proc (process-live-p proc))
+      (user-error "No running Seed7 process in this buffer"))
+    (if (characterp last-input-event)
+        (process-send-string proc (char-to-string last-input-event))
+      ;; Non-character events (arrows, F-keys, mouse, …) cannot be
+      ;; forwarded as raw bytes without a terminal-encoding layer.
+      (message "seed7-run[RAW]: cannot forward non-character event: %s"
+               (key-description (vector last-input-event))))))
+
 ;;** Seed7 Run – run-buffer major mode
 
 (defvar seed7-run-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET")   #'seed7-run-send-input)
     (define-key map (kbd "C-c C-c") #'seed7-run-interrupt)
+    (define-key map (kbd "C-c C-k") #'seed7-run-enter-raw-mode)
     map)
   "Keymap used in `*seed7-run*' output/input buffers.")
+
+(defvar seed7-run-raw-mode-map
+  (let ((map (make-sparse-keymap)))
+    ;; Catch-all: forward every key that is a character to the process.
+    (define-key map [t]             #'seed7-run-raw-send-key)
+    ;; Keep SIGINT reachable even in raw mode.
+    (define-key map (kbd "C-c C-c") #'seed7-run-interrupt)
+    ;; C-c C-j exits raw mode and returns to buffered mode.
+    (define-key map (kbd "C-c C-j") #'seed7-run-exit-raw-mode)
+    map)
+  "Keymap used in `*seed7-run*' buffers while in raw-input mode.
+Every key that is a character is forwarded directly to the running
+Seed7 process.  Use \\[seed7-run-exit-raw-mode] (C-c C-j) to return
+to buffered mode, or \\[seed7-run-interrupt] (C-c C-c) to send SIGINT.")
+
+;; --
+
+(defun seed7-run-enter-raw-mode ()
+  "Switch the current `*seed7-run*' buffer to raw-input mode.
+In raw mode every character key is sent immediately to the running
+Seed7 process, bypassing Emacs editing.
+
+  \\[seed7-run-interrupt] (C-c C-c) still sends SIGINT.
+  \\[seed7-run-exit-raw-mode] (C-c C-j) returns to buffered mode."
+  (interactive)
+  (unless (derived-mode-p 'seed7-run-mode)
+    (user-error "Not in a seed7-run buffer"))
+  (setq seed7-run--raw-mode t)
+  (setq mode-name "seed7-run[RAW]")
+  (force-mode-line-update)
+  (use-local-map seed7-run-raw-mode-map)
+  (message "seed7-run: raw-input mode  (C-c C-j → buffered,  C-c C-c → SIGINT)"))
+
+(defun seed7-run-exit-raw-mode ()
+  "Return the current `*seed7-run*' buffer to buffered-input mode.
+Type your input at the end of the buffer and press \\[seed7-run-send-input]
+(RET) to send it.  Use \\[seed7-run-enter-raw-mode] (C-c C-k) to switch
+back to raw mode."
+  (interactive)
+  (setq seed7-run--raw-mode nil)
+  (setq mode-name "seed7-run")
+  (force-mode-line-update)
+  (use-local-map seed7-run-mode-map)
+  (message "seed7-run: buffered-input mode  (RET → send,  C-c C-k → raw)"))
 
 (define-derived-mode seed7-run-mode fundamental-mode "seed7-run"
   "Major mode for Seed7 program stdout/stdin buffers.
 
-Program output is inserted at the process mark.  You may type input
-after the last output line and press \\[seed7-run-send-input] to send
-it to the running program.  Use \\[seed7-run-interrupt] to send SIGINT."
+Program output is inserted at the process mark.
+
+Buffered-input mode (default)
+  Type input after the last output line and press
+  \\[seed7-run-send-input] (RET) to send it to the running program.
+  Press \\[seed7-run-enter-raw-mode] (C-c C-k) to switch to raw mode.
+
+Raw-input mode
+  Every character key is forwarded immediately to the running program.
+  Press \\[seed7-run-exit-raw-mode] (C-c C-j) to return to buffered mode.
+
+In both modes, \\[seed7-run-interrupt] (C-c C-c) sends SIGINT."
   (use-local-map seed7-run-mode-map)
   (setq-local scroll-conservatively 1000))
 

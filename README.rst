@@ -1012,6 +1012,36 @@ Running Seed7 Program inside Emacs
                                                - Takes input when you type the ``RET`` key.
                                                - Stop the program by typing ``C-c C-c``.
 
+                                               The buffer supports two input modes.
+                                               The current mode is shown in the mode line
+                                               (``seed7-run`` for buffered,
+                                               ``seed7-run[RAW]`` for raw).
+
+                                               **Buffered-input mode** (default):
+
+                                               - Type your input after the last line of
+                                                 output and press ``RET`` to send it to
+                                                 the program.
+                                               - Press ``C-c C-k`` to switch to
+                                                 raw-input mode.
+                                               - Press ``C-c C-c`` to send SIGINT and
+                                                 stop the program.
+                                               - Other Emacs key bindings are available to perform
+                                                 Emacs commands.
+
+                                               **Raw-input mode**:
+
+                                               - Every character key you press is sent
+                                                 immediately to the running program,
+                                                 without local Emacs editing or buffering.
+                                               - Press ``C-c C-j`` to return to
+                                                 buffered-input mode.
+                                               - Press ``C-c C-c`` to send SIGINT and
+                                                 stop the program.
+                                               - In raw mode no other Emacs key bindings is available.
+                                                 To use other Emacs commands via their global key
+                                                 bindings, you must return to the buffered mode first.
+
                                              - A special mode window  showing the
                                                ``*seed7-run-stderr <BASENAME>*`` buffer that displays
                                                what the program prints to the stderr stream.
