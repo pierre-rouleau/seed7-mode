@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.1047
+;; Package-Version: 20260605.1328
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -518,7 +518,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-05T14:47:23+0000 W23-5"
+(defconst seed7-mode-version-timestamp "2026-06-05T17:28:36+0000 W23-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6748,17 +6748,24 @@ or nil when no diagnostics are found."
 ;; program using `seed7-interpreter' (s7).
 ;;
 ;; stdout is displayed in real time in a `*seed7-run: BASENAME*' buffer.
-;; The buffer accepts stdin: type at the end of the buffer and press RET
-;; to send a line to the running program.  C-c C-c interrupts the process.
+;; The buffer accepts input.  In buffered mode all keys not bound to Emacs
+;; commands are accumulated and sent to the Seed7 program when you type the
+;; RET key.  In raw mode every key (with the exception of C-c C-c and
+;; C-c C-j) all keys are sent directly to the Seed7 program.  In both modes
+;; C-c C-c interrupts the Seed7 program.
 ;;
 ;; stderr is captured in real time in a separate
 ;; `*seed7-run-stderr: BASENAME*' buffer.
 ;;
 ;;  * `seed7-run-program'
-;;    - `seed7--run-program-filter'
-;;    - `seed7--run-sentinel'
-;;    - `seed7-run-send-input'
-;;    - `seed7-run-interrupt'
+;;    . `seed7--run-program-filter'
+;;    . `seed7--run-sentinel'
+;;    . `seed7-run-send-input'
+;;    . `seed7-run-interrupt'
+;;    . `seed7-run-raw-send-key'
+;;    * `seed7-run-mode'
+;;    * `seed7-run-enter-raw-mode'
+;;    * `seed7-run-exit-raw-mode'
 
 ;;** Seed7 Run – process filters and sentinel
 
@@ -6798,7 +6805,8 @@ Switch modes with `seed7-run-enter-raw-mode' / `seed7-run-exit-raw-mode'.")
 (defun seed7-run-send-input ()
   "Send the text typed after the last program output to the Seed7 process.
 The text is taken from the current process mark to the end of the buffer.
-A newline is appended automatically.  Bound to RET in `*seed7-run*' buffers."
+A newline is appended automatically.
+Bound to RET in `*seed7-run: BASENAME*' buffers."
   (interactive)
   (let ((proc (get-buffer-process (current-buffer))))
     (unless (and proc (process-live-p proc))

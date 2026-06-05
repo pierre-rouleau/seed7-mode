@@ -59,10 +59,10 @@ Currently Implemented Features
 Display seed7-mode version information
 --------------------------------------
 
-The ``seed7-mode-version`` command, bound to ``C-c v`` in seed7-mode buffers,
-display the version UTC time stamp of the file in the message area, at bottom
-of the screen.  Use this to verify the version of the seed7-mode.el code you
-are using.
+The ``seed7-mode-version`` command, bound to ``C-c v`` in seed7-mode
+buffers, display the version UTC time stamp of the file in Emacs echo area
+at the bottom of the screen.  Use this to verify the version of the
+seed7-mode.el code you are using.
 
 Please include this information in bug reports.
 
@@ -1009,7 +1009,8 @@ Running Seed7 Program inside Emacs
                                                ``seed7-run-mode``.
 
                                                - This shows the program's stdout stream.
-                                               - Takes input when you type the ``RET`` key.
+                                               - Type at the end of the buffer and press ``RET`` to send a
+                                                 line to the program.
                                                - Stop the program by typing ``C-c C-c``.
 
                                                The buffer supports two input modes.
@@ -1043,7 +1044,7 @@ Running Seed7 Program inside Emacs
                                                  bindings, you must return to the buffered mode first.
 
                                              - A special mode window  showing the
-                                               ``*seed7-run-stderr <BASENAME>*`` buffer that displays
+                                               ``*seed7-run-stderr: <BASENAME>*`` buffer that displays
                                                what the program prints to the stderr stream.
 
                                            The ``<BASENAME>`` part of the buffer name corresponds to the
@@ -1081,8 +1082,8 @@ More commands will be implemented.
 
 .. ---------------------------------------------------------------------------
 
-Installing/Upgrading  seed7-mode
-================================
+Installing/Upgrading seed7-mode
+===============================
 
 To install it with use-package skip to
 `How To Install with use-package`_ section.
