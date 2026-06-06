@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260606.1152
+;; Package-Version: 20260606.1459
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -164,14 +164,14 @@
 
 ;;
 ;; [:todo 2025-04-06, by Pierre Rouleau: Fix following problems:
-;;  Known problems:
-;;  # 01  Complete defface definitions:
+;;  Known problems and improvements:
+;;  # 01  Problem: Complete defface definitions:
 ;;        - Complete the dark backgrounds coloring.
 ;;        - Maybe add ability to reduce number of faces used (or re-use the
 ;;          same face for various elements).  It would allow dual use: one
 ;;          with lots of different renderings and another with not that many,
 ;;          a more conservative approach.
-;;  # 02  The '#' used as base separator is not detected as a comment
+;;  # 02  Problem: The '#' used as base separator is not detected as a comment
 ;;        BUT a comment that follows a digit will not render as a comment
 ;;        unless a non alphanumeric character follows it.
 ;;        The 'seed7-mode-syntax-propertize' uses a simple regexp to prevent
@@ -179,17 +179,22 @@
 ;;        one could be used, similar to what `seed7-base-x-big-number-re' does
 ;;        but by only capturing the '#'.  This however might be too processing
 ;;        expensive.  I will only try it once everything else is done.
-;;  # 03  Escaped single and double quote in strings are now recognized.
+;;  # 03  Problem: Escaped single and double quote in strings are now recognized.
 ;;        However a string continuation that ends with a backslash just before
 ;;        the terminating quote is not supported.
-;;  # 04  The `seed7-to-block-backward' and `seed7-to-block-forward' can
+;;  # 04  Problem: The `seed7-to-block-backward' and `seed7-to-block-forward' can
 ;;        detect the other end when point is on the beginning or end line,
 ;;        but they fail when point is inside the block.
 ;;        I will fix that once I get the auto indentation working properly
 ;;        for all code.  I will then have to decide if that's considered a
 ;;        defun to allow marking the block just like procedure and functions.
-;;  # 05  Check if following Emacs functions can help reduce code size:
-;;        `indent-line-to', `indent-next-tab-stop'
+;;  # 05  Improvement: Check if following Emacs functions can help reduce code
+;;        size: `indent-line-to', `indent-next-tab-stop'
+;;  # 06  Improvement: The <f12><left> should move to the top of current block,
+;;        <f12><right> to the end of current block. <f12><<left> several times
+;;        would move toward the top of the current function or procedure.
+;;        And <f12><right?> several time would move toward the end of the
+;;        current function/procedure.
 ;; ]
 ;;
 ;;
@@ -517,7 +522,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-06T15:52:25+0000 W23-6"
+(defconst seed7-mode-version-timestamp "2026-06-06T18:59:05+0000 W23-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3691,10 +3696,10 @@ Return found position or nil if nothing found."
                           (if (seed7-re-search-forward regexp)
                               (cond
                                ;; found another block start: nesting deeper.
-                               ((match-string 1)
+                               ((match-beginning 1)
                                 (setq nesting (1+ nesting)))
                                ;; found block end: exiting one nesting level.
-                               ((match-string 2)
+                               ((match-beginning 2)
                                 (if (eq nesting 0)
                                     (progn
                                       (setq searching nil)
@@ -3702,7 +3707,7 @@ Return found position or nil if nothing found."
                                   (setq nesting (1- nesting))))
                                ;; Found a peer level clause: stop if at
                                ;; nesting level 0
-                               ((match-string 3)
+                               ((match-beginning 3)
                                 (when (and (not (string= word2 "func"))
                                            (eq nesting 0))
                                   (setq searching nil)
@@ -3825,7 +3830,7 @@ Return found position if found, nil if nothing found."
                       (cond
                        ;; Found another block start text: exiting a nested
                        ;; level.
-                       ((match-string 1)
+                       ((match-beginning 1)
                         (if (eq nesting 0)
                             (progn
                               (setq searching nil)
@@ -3833,10 +3838,10 @@ Return found position if found, nil if nothing found."
                           (setq nesting (1- nesting))))
                        ;; Found a block end text: entering a deeper nesting
                        ;; level.
-                       ((match-string 2)
+                       ((match-beginning 2)
                         (setq nesting (1+ nesting)))
                        ;; Found peer level clause: stop if at nesting level 0
-                       ((match-string 3)
+                       ((match-beginning 3)
                         (when (and (not (string= second-word "func"))
                                    (eq nesting 0))
                           (setq searching nil)
@@ -4202,24 +4207,24 @@ Does not move point."
 
 ;;*** Seed7 Indentation Base Position Detection Utilities
 
-;; [:todo 2025-05-30, by Pierre Rouleau: Add bound search limit]
-(defun seed7-assign-op-pos ()
-  "Position of end of previous Seed7 assignment operator if found.
-Return nil if not found.
-Do not move point."
+(defun seed7-assign-op-pos (&optional bound)
+  "Return the position after the previous Seed7 assignment operator.
+If BOUND is non-nil, do not search before that buffer position.
+Return nil if none is found.  Do not move point."
   (save-excursion
-    (when (seed7-re-search-backward seed7-predef-assignment-operator-regexp)
-      (+ (point) (length (match-string 0))))))
+    (when (seed7-re-search-backward seed7-predef-assignment-operator-regexp
+                                    bound)
+      (match-end 0))))
 
-;; [:todo 2025-05-30, by Pierre Rouleau: Add bound search limit]
-(defun seed7-statement-end-pos (&optional start-pos)
-  "Position right after next end of Seed7 statement if found, nil otherwise.
-Start searching at current point, unless START-POS is non-nil.
-Does not move point."
+(defun seed7-statement-end-pos (&optional start-pos bound)
+  "Return the position after the next Seed7 statement terminator.
+Start searching at START-POS when non-nil, otherwise at point.
+If BOUND is non-nil, do not search past that buffer position.
+Return nil if no terminator is found.  Do not move point."
   (save-excursion
     (when start-pos
       (goto-char start-pos))
-    (seed7-forward-char-pos ";" nil 'point-after)))
+    (seed7-forward-char-pos ";" bound 'point-after)))
 
 
 ;;*** Seed7 Indentation Base Line Navigation
@@ -4848,10 +4853,12 @@ Invalid boundaries: begin=%S, end=%S"
                   ;; found an incomplete until statement remember position
                   (setq block-start-pos (point))
                   ;; Now search the end, which ends on a ';'.
-                  (setq enclosing-block-end-pos (seed7-statement-end-pos))
-                  (when (and  (< block-start-pos current-pos enclosing-block-end-pos)
-                              (or (not scope-end-pos)
-                                  (< enclosing-block-end-pos scope-end-pos)))
+                  (setq enclosing-block-end-pos
+                        (seed7-statement-end-pos nil scope-end-pos))
+                  (when (and enclosing-block-end-pos
+                             (< block-start-pos current-pos enclosing-block-end-pos)
+                             (or (not scope-end-pos)
+                                 (< enclosing-block-end-pos scope-end-pos)))
                     (goto-char block-start-pos)
                     (seed7-to-indent)
                     (setq found-column (+ 6 (current-column))))))
@@ -5115,6 +5122,8 @@ Invalid boundaries: begin=%S, end=%S"
 ;; [:todo 2025-05-22, by Pierre Rouleau: is this handling comment?]
 (defun seed7-line-inside-assign-statement-continuation (n
                                                         &optional
+                                                        scope-begin-pos
+                                                        scope-end-pos
                                                         dont-skip-comment-start)
   "Check if line N is inside a Seed7 assignment statement.
 Return the indentation column of the code following the statement
@@ -5128,9 +5137,9 @@ N is: - :previous-non-empty for the previous non-empty line,
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
       (let* ((current-pos (point))
-             (assignment-pos (seed7-assign-op-pos))
+             (assignment-pos (seed7-assign-op-pos scope-begin-pos))
              (statement-end-pos (when assignment-pos
-                                  (seed7-statement-end-pos assignment-pos))))
+                                  (seed7-statement-end-pos assignment-pos scope-end-pos))))
         (when (and assignment-pos
                    statement-end-pos
                    (< assignment-pos current-pos statement-end-pos))
@@ -5228,7 +5237,10 @@ Invalid boundaries: begin=%S, end=%S"
                                     (push (list op start-pos end-pos) candidate-list))
                               (setq keep-searching-this-paren nil))
                           ;; nothing found. Stop searching this paren
-                          (setq keep-searching-this-paren nil)))))
+                          (setq keep-searching-this-paren nil)))
+                      :on-error
+                      ;; Malformed/incomplete delimiter pair: stop this delimiter search.
+                      (setq keep-searching-this-paren nil)))
                 ;;
                 (setq keep-searching-this-paren nil)))))
         (when candidate-list
