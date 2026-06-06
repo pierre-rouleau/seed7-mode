@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.2038
+;; Package-Version: 20260606.1152
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -105,15 +105,13 @@
 ;; AUTO-INDENT
 ;; - Automatic indentation of code and         Done.
 ;;   block comments with leading start         Auto indentation of function and
-;;   characters with auto-fill mode support.   /procedure code and argument
-;;                                             blocks, logic blocks and code
-;;                                             inside parens of the 4
-;;                                             shapes (), [], {} and <> is
-;;                                             supported and currently
+;;   characters with auto-fill mode support.   procedure code, argument blocks,
+;;                                             logic blocks and code inside
+;;                                             parens of the 4 shapes (), [],
+;;                                             {} and <> is supported and
 ;;                                             imposed.
-;;                                             A potential improvement would
-;;                                             be to add customization for
-;;                                             this.
+;;                                             Potential improvement: add
+;;                                             customization for it.
 ;;                                             The `seed7-indent-width'
 ;;                                             user-option, which defaults to
 ;;                                             2, controls the indentation
@@ -519,7 +517,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-06T00:38:15+0000 W23-6"
+(defconst seed7-mode-version-timestamp "2026-06-06T15:52:25+0000 W23-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3508,21 +3506,25 @@ Changing either constant at runtime has no effect on compiled code."
          (success-forms (if on-error-tail
                             (butlast body (length on-error-tail))
                           body))
-         (error-forms   (if on-error-tail
-                            (cdr on-error-tail)
-                          '(nil))))          ; backward-compat default
+         (error-forms (if on-error-tail
+                          (or (cdr on-error-tail) '(nil))
+                        '(nil))))
     (cond
      ;; -- Debug build: no protection, scan-errors propagate;
      ;;    :on-error forms are not emitted (error surfaces to caller).
      (seed7--debug-sexp-scan
       `(progn (forward-sexp) ,@success-forms))
      ;; -- Logging build: catch scan-error, report it, then run error forms.
+     ;;    On error, point may move; remember it.
      (seed7--log-sexp-scan-errors
-      `(condition-case nil
-           (progn (forward-sexp) ,@success-forms)
-         (scan-error
-          (message "seed7-mode: forward-sexp scan-error at pos %d" (point))
-          ,@error-forms)))
+      `(let ((scan-start-pos (point)))
+         (condition-case err
+             (progn (forward-sexp) ,@success-forms)
+           (scan-error
+            (message "seed7-mode: forward-sexp scan-error at pos %d: %s"
+                     scan-start-pos
+                     (error-message-string err))
+            ,@error-forms))))
      ;; -- Production build: catch scan-error silently, run error forms.
      (t
       `(condition-case nil
@@ -3541,18 +3543,21 @@ error forms."
          (success-forms (if on-error-tail
                             (butlast body (length on-error-tail))
                           body))
-         (error-forms   (if on-error-tail
-                            (cdr on-error-tail)
-                          '(nil))))
+         (error-forms (if on-error-tail
+                          (or (cdr on-error-tail) '(nil))
+                        '(nil))))
     (cond
      (seed7--debug-sexp-scan
       `(progn (backward-sexp) ,@success-forms))
      (seed7--log-sexp-scan-errors
-      `(condition-case nil
-           (progn (backward-sexp) ,@success-forms)
-         (scan-error
-          (message "seed7-mode: backward-sexp scan-error at pos %d" (point))
-          ,@error-forms)))
+      `(let ((scan-start-pos (point)))
+         (condition-case err
+             (progn (backward-sexp) ,@success-forms)
+           (scan-error
+            (message "seed7-mode: backward-sexp scan-error at pos %d: %s"
+                     scan-start-pos
+                     (error-message-string err))
+            ,@error-forms))))
      (t
       `(condition-case nil
            (progn (backward-sexp) ,@success-forms)
@@ -4421,7 +4426,7 @@ N is: - :previous-non-empty for the previous non-empty line,
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (defun seed7-line-isa-string (n)
-  "Return non-nil indent column if line N is a string, nil otherwise.
+  "Return the indentation column if line N is a string, nil otherwise.
 N is: - :previous-non-empty for the previous non-empty line,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before..."
@@ -7394,11 +7399,12 @@ Return nil otherwise."
     found))
 
 (defun seed7--symbol-definition-areas-for-block (block-spec)
-  "Return a list of (start-pos . end-pos) cons.
-Each position pair identify an area inside the block where a Seed7 variable
+  "Return a list of definition area (START-POS . END-POS) cons cells.
+
+Each position pair identifies an area inside the block where a Seed7 variable
 or parameter can be defined.
-The BLOCK-SPEC parameter identifies the specification of the function or
-procedure.  It's a list returned by the function `seed7-line-inside-a-block'."
+BLOCK-SPEC identifies the function/procedure block.  It is a list returned
+by `seed7-line-inside-a-block'."
   (save-excursion
     (let ((block-start-pos          (nth 2 block-spec))
           (enclosing-block-end-pos  (nth 3 block-spec))
@@ -7728,9 +7734,9 @@ Is point at its definition? Is this file compiling?"
 ;;
 
 (defun seed7--invalidate-xref-cache ()
-  "Invalidate cached Seed7 xref data for the current buffer.
-Called from `after-save-hook' and `after-revert-hook'
-to ensure stale data is not used for the next xref lookup."
+  "Invalidate the buffer-local Seed7 xref cache for the current buffer.
+Called from `after-save-hook' and `after-revert-hook' to ensure stale
+data is not used for the next xref lookup."
   (when (buffer-live-p seed7---xref-buffer)
     (kill-buffer seed7---xref-buffer))
   (setq-local seed7---xref-buffer nil))
@@ -8290,7 +8296,7 @@ current Emacs session without restarting Emacs."
   ;; Seed7 Cross Reference
   ;; - Use the xref framework : implement a backend for Seed7 here. See above.
   (add-hook 'xref-backend-functions #'seed7--xref-backend nil t)
-  ;; - Invalidate the cache on file save to force a rebuild on next xref lookup
+  ;; - Invalidate cache on file save/revert: force a rebuild on next xref lookup.
   (add-hook 'after-save-hook #'seed7--invalidate-xref-cache nil t)
   (add-hook 'after-revert-hook #'seed7--invalidate-xref-cache nil t)
 
