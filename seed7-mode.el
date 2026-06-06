@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260605.1723
+;; Package-Version: 20260605.2038
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -519,7 +519,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-05T21:23:31+0000 W23-5"
+(defconst seed7-mode-version-timestamp "2026-06-06T00:38:15+0000 W23-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3483,52 +3483,80 @@ Has no effect at runtime on already-compiled code."))
 (defmacro seed7--with-forward-sexp (&rest body)
   "Call `forward-sexp' then evaluate BODY, returning the last value.
 
+BODY may contain an `:on-error' keyword to separate success forms from
+error forms:
+
+  (seed7--with-forward-sexp
+    SUCCESS-FORMS...
+    :on-error
+    ERROR-FORMS...)
+
+When `:on-error' is absent, the error handler returns nil.
+
 The expansion is chosen once, at byte-compile time, based on
 `seed7--debug-sexp-scan' and `seed7--log-sexp-scan-errors':
-- Both nil (production): `scan-error' is caught silently; BODY is
-  skipped and the form returns nil if the delimiter is unmatched.
-- `seed7--log-sexp-scan-errors' non-nil: same as production but
-  also emits a `message' for each caught scan-error.
-- `seed7--debug-sexp-scan' non-nil: bare `forward-sexp' with no
-  handler; scan-errors propagate normally for interactive debugging.
+- Both nil (production): `scan-error' is caught silently; SUCCESS-FORMS
+  are skipped and ERROR-FORMS evaluated when the delimiter is unmatched.
+- `seed7--log-sexp-scan-errors' non-nil: same as production but also emits
+  a `message' for each caught scan-error before ERROR-FORMS.
+- `seed7--debug-sexp-scan' non-nil: bare `forward-sexp' with no handler;
+  scan-errors propagate normally; ERROR-FORMS are not emitted.
 Changing either constant at runtime has no effect on compiled code."
   (declare (indent 0) (debug t))
-  (cond
-   ;; -- Debug build: no protection, scan-errors propagate
-   (seed7--debug-sexp-scan
-    `(progn (forward-sexp) ,@body))
-   ;; -- Logging build: catch scan-error and report it
-   (seed7--log-sexp-scan-errors
-    `(condition-case nil
-         (progn (forward-sexp) ,@body)
-       (scan-error
-        (message "seed7-mode: forward-sexp scan-error at pos %d" (point))
-        nil)))
-   ;; -- Production build: catch scan-error silently
-   (t
-    `(condition-case nil
-         (progn (forward-sexp) ,@body)
-       (scan-error nil)))))
+  ;; Split BODY on :on-error at macro-expansion time (pure Elisp, no cl-lib).
+  (let* ((on-error-tail (memq :on-error body))
+         (success-forms (if on-error-tail
+                            (butlast body (length on-error-tail))
+                          body))
+         (error-forms   (if on-error-tail
+                            (cdr on-error-tail)
+                          '(nil))))          ; backward-compat default
+    (cond
+     ;; -- Debug build: no protection, scan-errors propagate;
+     ;;    :on-error forms are not emitted (error surfaces to caller).
+     (seed7--debug-sexp-scan
+      `(progn (forward-sexp) ,@success-forms))
+     ;; -- Logging build: catch scan-error, report it, then run error forms.
+     (seed7--log-sexp-scan-errors
+      `(condition-case nil
+           (progn (forward-sexp) ,@success-forms)
+         (scan-error
+          (message "seed7-mode: forward-sexp scan-error at pos %d" (point))
+          ,@error-forms)))
+     ;; -- Production build: catch scan-error silently, run error forms.
+     (t
+      `(condition-case nil
+           (progn (forward-sexp) ,@success-forms)
+         (scan-error ,@error-forms))))))
 
 (defmacro seed7--with-backward-sexp (&rest body)
   "Call `backward-sexp' then evaluate BODY, returning the last value.
 
 Expansion rules are identical to `seed7--with-forward-sexp': the
-guard/log/debug mode is selected once at byte-compile time."
+guard/log/debug mode is selected once at byte-compile time, and BODY
+may contain an `:on-error' keyword to separate success forms from
+error forms."
   (declare (indent 0) (debug t))
-  (cond
-   (seed7--debug-sexp-scan
-    `(progn (backward-sexp) ,@body))
-   (seed7--log-sexp-scan-errors
-    `(condition-case nil
-         (progn (backward-sexp) ,@body)
-       (scan-error
-        (message "seed7-mode: backward-sexp scan-error at pos %d" (point))
-        nil)))
-   (t
-    `(condition-case nil
-         (progn (backward-sexp) ,@body)
-       (scan-error nil)))))
+  (let* ((on-error-tail (memq :on-error body))
+         (success-forms (if on-error-tail
+                            (butlast body (length on-error-tail))
+                          body))
+         (error-forms   (if on-error-tail
+                            (cdr on-error-tail)
+                          '(nil))))
+    (cond
+     (seed7--debug-sexp-scan
+      `(progn (backward-sexp) ,@success-forms))
+     (seed7--log-sexp-scan-errors
+      `(condition-case nil
+           (progn (backward-sexp) ,@success-forms)
+         (scan-error
+          (message "seed7-mode: backward-sexp scan-error at pos %d" (point))
+          ,@error-forms)))
+     (t
+      `(condition-case nil
+           (progn (backward-sexp) ,@success-forms)
+         (scan-error ,@error-forms))))))
 
 ;; --
 
@@ -4921,11 +4949,12 @@ Invalid boundaries: begin=%S, end=%S"
             (if open-paren-pos
                 (progn
                   (goto-char open-paren-pos)
-                  (if (ignore-errors (forward-sexp) t)
-                      ;; Point is now one past ')'.
-                      (let ((close-paren-pos (1- (point))))
-                        (unless (< open-paren-pos current-pos close-paren-pos)
-                          (setq found-column nil)))
+                  (seed7--with-forward-sexp
+                    ;; Point is now one past ')'.
+                    (let ((close-paren-pos (1- (point))))
+                      (unless (< open-paren-pos current-pos close-paren-pos)
+                        (setq found-column nil)))
+                    :on-error
                     ;; forward-sexp failed - closing paren not found in scope.
                     (setq found-column nil)))
               ;; No opening '(' within scope.
