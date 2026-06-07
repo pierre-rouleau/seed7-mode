@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260607.1502
+;; Package-Version: 20260607.1614
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -397,6 +397,7 @@
 ;;     o `seed7-complete-statement-or-indent'
 ;;       * `seed7-indent-line'
 ;;         . `seed7-calc-indent'
+;;           . `seed7--cached-block-bounds'
 ;;           . `seed7--indent-one-line'
 ;;       * `seed7-fill'
 ;;         * `seed7-indent-block'
@@ -528,7 +529,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-07T19:02:14+0000 W23-7"
+(defconst seed7-mode-version-timestamp "2026-06-07T20:14:17+0000 W23-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4857,12 +4858,22 @@ If it finds something it returns a list that holds the following information:
         ;;         enclosing-block-end-pos
         ;;         block-start-indent-column))
 
+;; --
+
 (defvar-local seed7--indent-last-block-spec nil
   "Buffer-local marker-backed block spec cache for indentation.
 Holds the result of the last successful `seed7-line-inside-a-block' call,
 converted to a marker-backed list by `seed7--cache-block-spec'.
 Used by `seed7--cached-block-spec-current-line' to avoid recomputation
 when the current line is still inside the same block.")
+
+(defvar-local seed7--indent-block-bounds nil
+  "Buffer-local lightweight block-boundary cache for indentation.
+Cons cell (BEGIN-MARKER . END-MARKER) holding the start and end positions
+of the last block identified by `seed7-line-inside-a-block-cached'.
+Updated whenever `seed7--indent-last-block-spec' is updated.
+Used by `seed7--cached-block-bounds' to provide O(1) begin/end lookup
+without returning or allocating the full block spec.")
 
 (defun seed7--cache-block-spec (spec)
   "Return a marker-backed copy of SPEC."
@@ -4872,6 +4883,23 @@ when the current line is still inside the same block.")
           (copy-marker (nth 2 spec))
           (copy-marker (nth 3 spec) t)
           (nth 4 spec))))
+
+(defun seed7--cached-block-bounds ()
+  "Return (BEGIN-POS . END-POS) for the current block if cache is valid.
+Return nil otherwise.
+Uses `(point)' directly — no `seed7-to-indent', no `save-excursion'.
+Cost: O(1) — two `marker-position' calls and two integer comparisons.
+
+Returns nil when no cache is present or point has moved outside the
+cached block.  Only the begin and end buffer positions of the current
+block are returned; the full block spec (keyword, match-text, indent
+column) is not exposed."
+  (when seed7--indent-block-bounds
+    (let ((begin-pos (marker-position (car seed7--indent-block-bounds)))
+          (end-pos   (marker-position (cdr seed7--indent-block-bounds))))
+      (when (and begin-pos end-pos
+                 (<= begin-pos (point) end-pos))
+        (cons begin-pos end-pos)))))
 
 (defun seed7--cached-block-spec-current-line ()
   "Return cached block spec for current line when still applicable."
@@ -4897,7 +4925,12 @@ when the current line is still inside the same block.")
       (let ((spec (seed7-line-inside-a-block n dont-skip-comment-start)))
         (when (and (eq n 0) spec)
           (setq seed7--indent-last-block-spec
-                (seed7--cache-block-spec spec)))
+                (seed7--cache-block-spec spec))
+          ;; Also update the lightweight bounds cache used for early-bound
+          ;; lookups at the top of `seed7-calc-indent'.
+          (setq seed7--indent-block-bounds
+                (cons (copy-marker (nth 2 spec))
+                      (copy-marker (nth 3 spec) t))))
         spec)))
 
 ;; ---------------------------------------------------------------------------
@@ -5672,18 +5705,23 @@ When TREAT-COMMENT-LINE-AS-CODE is non-nil a comment line is processed as if
 The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
   call.  Only one recursion is allowed."
   (let* ((recurse-count (or recurse-count 0))
-         ;; Eagerly probe the block-boundary cache.  Cost: O(1) — two
-         ;; marker-position comparisons.  When the current line is still
-         ;; inside the previously-computed block we obtain begin/end bounds
-         ;; for free and can pass them to all expensive backward-search
-         ;; helpers below, bounding their scan to the current block rather
-         ;; than the whole file.  The later `seed7-line-inside-a-block-cached'
-         ;; call is then a guaranteed cache hit — no recomputation occurs.
-         (cached-spec     (seed7--cached-block-spec-current-line))
-         ;; Widen by 1 on each side so searches that land exactly on the
-         ;; block-start or block-end keyword still succeed.
-         (early-begin-pos (when cached-spec (1- (nth 2 cached-spec))))
-         (early-end-pos   (when cached-spec (1+ (nth 3 cached-spec))))
+         ;; Eagerly probe probe of the previous call's block boundaries.
+         ;; Cost: O(1) — two marker-position comparisons, uses (point)
+         ;;              directly; no `seed7-to-indent' overhead.
+         ;; Returns (begin-pos . end-pos) or nil; never recomputes.
+         ;; Only begin and end positions are used here; the full block spec
+         ;; is left for the `seed7-line-inside-a-block-cached' call below.
+         ;; The previously-computed begin/end bounds can be passed to
+         ;; to all expensive backward-search helpers below, bounding their
+         ;; scan to the current block rather than the whole file.
+         ;; The later `seed7-line-inside-a-block-cached' call only recomputes
+         ;; when point moves out of previous block.
+         (cached-bounds   (seed7--cached-block-bounds))
+         ;; Widen by 1 on each side so backward searches that land exactly
+         ;; on the block keyword boundary still succeed.
+         (early-begin-pos (when cached-bounds (1- (car cached-bounds))))
+         (early-end-pos   (when cached-bounds (1+ (cdr cached-bounds))))
+         ;;
          (indent-step (seed7-line-indent-step :previous-non-empty))
          (first-word-on-line      (seed7--current-line-nth-word 1))
          (indent-column nil)
