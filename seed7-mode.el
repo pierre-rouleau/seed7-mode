@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260607.1326
+;; Package-Version: 20260607.1502
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -528,7 +528,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-07T17:26:05+0000 W23-7"
+(defconst seed7-mode-version-timestamp "2026-06-07T19:02:14+0000 W23-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4858,7 +4858,11 @@ If it finds something it returns a list that holds the following information:
         ;;         block-start-indent-column))
 
 (defvar-local seed7--indent-last-block-spec nil
-  "Dynamically bound marker-backed block spec cache during Seed7 indentation.")
+  "Buffer-local marker-backed block spec cache for indentation.
+Holds the result of the last successful `seed7-line-inside-a-block' call,
+converted to a marker-backed list by `seed7--cache-block-spec'.
+Used by `seed7--cached-block-spec-current-line' to avoid recomputation
+when the current line is still inside the same block.")
 
 (defun seed7--cache-block-spec (spec)
   "Return a marker-backed copy of SPEC."
@@ -5667,12 +5671,24 @@ When TREAT-COMMENT-LINE-AS-CODE is non-nil a comment line is processed as if
   it was a code line, allowing the indentation logic to handle comments.
 The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
   call.  Only one recursion is allowed."
-  (let ((recurse-count (or recurse-count 0))
-        (indent-step (seed7-line-indent-step :previous-non-empty))
-        (first-word-on-line      (seed7--current-line-nth-word 1))
-        (indent-column nil)
-        (indent-column2 nil)
-        (spec-list nil))
+  (let* ((recurse-count (or recurse-count 0))
+         ;; Eagerly probe the block-boundary cache.  Cost: O(1) — two
+         ;; marker-position comparisons.  When the current line is still
+         ;; inside the previously-computed block we obtain begin/end bounds
+         ;; for free and can pass them to all expensive backward-search
+         ;; helpers below, bounding their scan to the current block rather
+         ;; than the whole file.  The later `seed7-line-inside-a-block-cached'
+         ;; call is then a guaranteed cache hit — no recomputation occurs.
+         (cached-spec     (seed7--cached-block-spec-current-line))
+         ;; Widen by 1 on each side so searches that land exactly on the
+         ;; block-start or block-end keyword still succeed.
+         (early-begin-pos (when cached-spec (1- (nth 2 cached-spec))))
+         (early-end-pos   (when cached-spec (1+ (nth 3 cached-spec))))
+         (indent-step (seed7-line-indent-step :previous-non-empty))
+         (first-word-on-line      (seed7--current-line-nth-word 1))
+         (indent-column nil)
+         (indent-column2 nil)
+         (spec-list nil))
     ;; don't indent blank lines
     (unless (and (not first-word-on-line)
                  (seed7-blank-line-p))
@@ -5688,9 +5704,11 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
        ;; In an array or set definition, indent 1 level unless the line is
        ;; inside 2 nested parens.  In that case align with the inside of
        ;; the inner-most parens.
-       ((or (seed7--set (seed7-line-inside-array-definition-block 0)
+       ((or (seed7--set (seed7-line-inside-array-definition-block
+                         0 early-begin-pos)
                         spec-list)
-            (seed7--set (seed7-line-inside-set-definition-block 0)
+            (seed7--set (seed7-line-inside-set-definition-block
+                         0 early-begin-pos)
                         spec-list))
         (if (seed7--set (seed7-line-inside-nested-parens-pairs-column
                          0 2
@@ -5719,9 +5737,8 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
             (setq indent-column (+ indent-column seed7-indent-width)))
            ;;
            ;; If inside parens pairs
-           ;; [:todo 2026-06-07, by Pierre Rouleau: the next call takes a long
-           ;;                    time to run.  Add bounds?  Needs speed-up]
-           ((seed7--set (seed7-line-inside-parens-pair-column 0)
+           ((seed7--set (seed7-line-inside-parens-pair-column
+                         0 early-begin-pos early-end-pos)
                         indent-column))
            ;;
            ;; if previous line starts with a string, align the string to it.
@@ -5746,7 +5763,8 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                     indent-column))
        ;;
        ;; Assignment statement continuation
-       ((and (seed7--set (seed7-line-inside-assign-statement-continuation 0)
+       ((and (seed7--set (seed7-line-inside-assign-statement-continuation
+                          0 early-begin-pos early-end-pos)
                          indent-column2)
              (not (seed7-line-inside-parens-pair-column
                    0
