@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260607.1614
+;; Package-Version: 20260607.1808
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -107,9 +107,8 @@
 ;;   block comments with leading start         Auto indentation of function and
 ;;   characters with auto-fill mode support.   procedure code, argument blocks,
 ;;                                             logic blocks and code inside
-;;                                             parens of the 4 shapes (), [],
-;;                                             {} and <> is supported and
-;;                                             imposed.
+;;                                             parens of the 3 shapes (), [],
+;;                                             and {} is supported and imposed.
 ;;                                             Potential improvement: add
 ;;                                             customization for it.
 ;;                                             The `seed7-indent-width'
@@ -529,7 +528,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-07T20:14:17+0000 W23-7"
+(defconst seed7-mode-version-timestamp "2026-06-07T22:08:11+0000 W23-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4815,49 +4814,6 @@ If it finds something it returns a list that holds the following information:
                 (goto-char (1- block-start-pos))))))
         result))))
 
-
-;; ---------------------------------------------------------------------------
-            ;; (if (and (<= block-start-pos current-pos enclosing-block-end-pos)
-            ;;          ;; check if block start/end is consistent for those
-            ;;          ;; that support it, exclude this check for others.
-            ;;          ;; The check is important for type definition blocks
-            ;;          ;; to deal with short type definitions that are not
-            ;;          ;; blocks.
-            ;;          (or
-            ;;           (member match-text '("local"
-            ;;                                "begin"
-            ;;                                "global"
-            ;;                                "result"
-            ;;                                "elsif "
-            ;;                                "else"
-            ;;                                "catch "
-            ;;                                "case "
-            ;;                                "exception"))
-            ;;           (eq block-start-pos enclosing-block-start-pos)))
-            ;;     (progn
-            ;;       (setq line-n-indent-column
-            ;;             (if (seed7--on-lineof enclosing-block-start-pos current-pos)
-            ;;                 0
-            ;;               (seed7--indent-offset-for match-text current-pos)))
-            ;;       (setq keep-searching nil)
-            ;;       (setq result  t))
-            ;;   ;; found something that looks like a block, but either not
-            ;;   ;; a real block or not the block that holds the line need
-            ;;   ;; to search back further for a bigger block.  If
-            ;;   ;; block-start-pos is not a column 0, then keep searching
-            ;;   ;; above for the beginning of a larger block.
-            ;;   (if (eq (current-column) 0)
-            ;;       (setq keep-searching nil)
-            ;;     (goto-char (1- block-start-pos))))
-
-
-        ;; (when result
-        ;;   (list (or line-n-indent-column 0)
-        ;;         match-text
-        ;;         block-start-pos
-        ;;         enclosing-block-end-pos
-        ;;         block-start-indent-column))
-
 ;; --
 
 (defvar-local seed7--indent-last-block-spec nil
@@ -5093,6 +5049,7 @@ Invalid boundaries: begin=%S, end=%S"
 
 (defun seed7-line-inside-array-definition-block (n &optional
                                                    scope-begin-pos
+                                                   scope-end-pos
                                                    dont-skip-comment-start)
   "Check if line N is inside an array definition block.
 N is: - :previous-non-empty for the previous non-empty line,
@@ -5100,13 +5057,22 @@ N is: - :previous-non-empty for the previous non-empty line,
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
+
 If nothing found it returns nil.
 If line N is inside an array block, it returns a list with the following
 information:
 - 0: indent column : indentation column the line N should use,
 - 1: string: \"array\"
 - 2: block start position,
-- 3: block end position."
+- 3: block end position.
+
+If SCOPE-BEGIN-POS and SCOPE-END-POS are non-nil, they identify the
+search boundaries."
+  (unless (or (not scope-end-pos)
+              (< (or scope-begin-pos 0) scope-end-pos))
+    (error "seed7-line-inside-array-definition-block: \
+Invalid boundaries: begin=%S, end=%S"
+           scope-begin-pos scope-end-pos))
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
       (let ((original-pos (point))
@@ -5120,10 +5086,12 @@ information:
           (setq block-start-pos (point))
           (skip-chars-forward " \t")
           (setq block-indent-column (current-column))
-          (goto-char (1- (match-end 0)))   ; position at "("
+          (goto-char (1- (match-end 0))) ; position at "("
           (seed7--with-forward-sexp
             ;; point is at block end
-            (when (< block-start-pos original-pos (point))
+            (when (and (< block-start-pos original-pos (point))
+                       (or (not scope-end-pos)
+                           (<= (point) scope-end-pos)))
               (list block-indent-column
                     "array"
                     block-start-pos
@@ -5162,6 +5130,7 @@ N is: - :previous-non-empty for the previous non-empty line,
 
 (defun seed7-line-inside-set-definition-block (n &optional
                                                  scope-begin-pos
+                                                 scope-end-pos
                                                  dont-skip-comment-start)
   "Check if line N is inside a set definition block.
 N is: - :previous-non-empty for the previous non-empty line,
@@ -5169,13 +5138,22 @@ N is: - :previous-non-empty for the previous non-empty line,
         is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
+
 If nothing found it returns nil.
 If line N is inside a set definition block, it returns a list with the
 following information:
 - 0: indent column : indentation column the line N should use,
 - 1: string: \"set\"
 - 2: block start position,
-- 3: block end position."
+- 3: block end position.
+
+If SCOPE-BEGIN-POS and SCOPE-END-POS are non-nil, they identify the
+search boundaries."
+  (unless (or (not scope-end-pos)
+              (< (or scope-begin-pos 0) scope-end-pos))
+    (error "seed7-line-inside-set-definition-block: \
+Invalid boundaries: begin=%S, end=%S"
+           scope-begin-pos scope-end-pos))
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
       (let ((original-pos (point))
@@ -5189,10 +5167,12 @@ following information:
           (setq block-start-pos (point))
           (skip-chars-forward " \t")
           (setq block-indent-column (current-column))
-          (goto-char (1- (match-end 0)))   ; position at "{("
+          (goto-char (1- (match-end 0))) ; position at "{"
           (seed7--with-forward-sexp
             ;; point should be at block end
-            (when (< block-start-pos original-pos (point))
+            (when (and (< block-start-pos original-pos (point))
+                       (or (not scope-end-pos)
+                           (<= (point) scope-end-pos)))
               (list block-indent-column
                     "set"
                     block-start-pos
@@ -5249,11 +5229,15 @@ Invalid boundaries: begin=%S, end=%S"
 Return the indentation column of the code following the statement
 operator on the assignment statement if line N is inside a statement
 continuation line, nil otherwise.
+
 N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
         is non-nil,
       - 0 for the current line,
-      - A negative number for previous lines: -1 previous, -2 line before..."
+      - A negative number for previous lines: -1 previous, -2 line before...
+
+If SCOPE-BEGIN-POS and SCOPE-END-POS are non-nil, they identify the
+search boundaries for the assignment operator and statement-end searches."
   ;; Note: if point is inside a comment embedded inside a assign statement
   ;;       line continuation, the function does return the column as if it
   ;;       was code; it's OK because we want the comment to be indented like
@@ -5303,7 +5287,7 @@ N is: - :previous-non-empty for the previous non-empty line,
 
 ;; --
 (defconst seed7--open-paren-regexp
-  (regexp-opt '("(" "[" "{" "<"))
+  (regexp-opt '("(" "[" "{" ))
   "Regexp matching Seed7 opening paren-like delimiters.")
 
 (defun seed7--paren-pair-string (open-char)
@@ -5313,7 +5297,6 @@ Return nil if OPEN-CHAR is none of the supported opening parens characters."
    ((eq open-char ?\() "()")
    ((eq open-char ?\[) "[]")
    ((eq open-char ?\{) "{}")
-   ((eq open-char ?<) "<>")
    (t nil)))
 
 (defun seed7-line-inside-syntax-parens-pair
@@ -5337,6 +5320,9 @@ If an appropriate parens pair is found, return a list of 4 elements:
 - 1: string identifying the parens pair found
 - 2: position of the opening paren
 - 3: position of the closing paren."
+  ;; Note: This is only called by `seed7-line-inside-parens-pair' and
+  ;; that function checks the validity of the scope-begin-pos and
+  ;; scope-end-pos arguments; therefore they are not checked here.
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
       (let* ((line-start (point))
@@ -5705,7 +5691,7 @@ When TREAT-COMMENT-LINE-AS-CODE is non-nil a comment line is processed as if
 The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
   call.  Only one recursion is allowed."
   (let* ((recurse-count (or recurse-count 0))
-         ;; Eagerly probe probe of the previous call's block boundaries.
+         ;; Eagerly probe of the previous call's block boundaries.
          ;; Cost: O(1) — two marker-position comparisons, uses (point)
          ;;              directly; no `seed7-to-indent' overhead.
          ;; Returns (begin-pos . end-pos) or nil; never recomputes.
@@ -5743,10 +5729,10 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
        ;; inside 2 nested parens.  In that case align with the inside of
        ;; the inner-most parens.
        ((or (seed7--set (seed7-line-inside-array-definition-block
-                         0 early-begin-pos)
+                         0 early-begin-pos early-end-pos)
                         spec-list)
             (seed7--set (seed7-line-inside-set-definition-block
-                         0 early-begin-pos)
+                         0 early-begin-pos early-end-pos)
                         spec-list))
         (if (seed7--set (seed7-line-inside-nested-parens-pairs-column
                          0 2
@@ -5785,6 +5771,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
             (search-forward "\"")
             (setq indent-column (1- (current-column))))
            (t
+            (setq indent-column (seed7-indentation-of-previous-non-string-line))
             (message
              "At line %d: string line syntax not yet supported! Recurse count=%d Please report."
              (seed7-current-line-number)
@@ -5915,9 +5902,10 @@ If a region is marked, use it to identify the lines that must be indented,
 then deactivates it (to prevent the area to limit searches)."
   (interactive "*")
   (let ((move-point (seed7-inside-line-indent-p))
-        ;; clear cache; code below calls `seed7-line-inside-a-block-cached'
-        ;; once per loop via the call to `seed7--indent-one-line'.
-        (seed7--indent-last-block-spec nil))
+        ;; clear both caches; code below repopulates them per line via the
+        ;; call to `seed7--indent-one-line' --> `seed7-calc-indent'.
+        (seed7--indent-last-block-spec nil)
+        (seed7--indent-block-bounds    nil))
     (save-excursion
       (if (use-region-p)
           ;; region active: indent complete region
