@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260607.0942
+;; Package-Version: 20260607.1201
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -380,6 +380,8 @@
 ;;     . `seed7-line-inside-parens-pair'
 ;;     . `seed7-line-inside-parens-pair-column'
 ;;     . `seed7-line-inside-nested-parens-pairs'
+;;       . `seed7-line-inside-syntax-parens-pair'
+;;         . `seed7--paren-pair-string'
 ;;     . `seed7-line-inside-nested-parens-pairs-column'
 ;;     . `seed7-indentation-of-previous-non-string-line'
 ;;     . `seed7-line-is-procfunc-beg-of-decl'
@@ -526,7 +528,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-07T13:42:47+0000 W23-7"
+(defconst seed7-mode-version-timestamp "2026-06-07T16:01:48+0000 W23-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5258,6 +5260,47 @@ N is: - :previous-non-empty for the previous non-empty line,
               (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
                 block-indent-column))))))))
 
+;; --
+(defconst seed7--open-paren-regexp
+  (regexp-opt '("(" "[" "{" "<"))
+  "Regexp matching Seed7 opening paren-like delimiters.")
+
+(defun seed7--paren-pair-string (open-char)
+  "Return delimiter-pair string corresponding to OPEN-CHAR."
+  (cond
+   ((eq open-char ?\() "()")
+   ((eq open-char ?\[) "[]")
+   ((eq open-char ?\{) "{}")
+   ((eq open-char ?<) "<>")
+   (t nil)))
+
+(defun seed7-line-inside-syntax-parens-pair
+    (n &optional scope-begin-pos scope-end-pos dont-skip-comment-start)
+  "Fast syntax-table check for a parens pair containing line N.
+Return nil if syntax state does not identify a usable pair."
+  (save-excursion
+    (when (seed7-move-to-line n dont-skip-comment-start)
+      (let* ((line-start (point))
+             (open-pos (nth 1 (syntax-ppss line-start))))
+        (when (and open-pos
+                   (or (not scope-begin-pos)
+                       (< scope-begin-pos open-pos))
+                   (or (not scope-end-pos)
+                       (< open-pos scope-end-pos)))
+          (goto-char open-pos)
+          (let* ((open-char (char-after open-pos))
+                 (op (seed7--paren-pair-string open-char))
+                 (indent-column (1+ (current-column))))
+            (when op
+              (seed7--with-forward-sexp
+                (let ((end-pos (1- (point))))
+                  (when (and (< open-pos line-start end-pos)
+                             (or (not scope-end-pos)
+                                 (< end-pos scope-end-pos)))
+                    (list indent-column op open-pos end-pos)))
+                :on-error
+                nil))))))))
+
 (defun seed7-line-inside-parens-pair (n &optional
                                         scope-begin-pos
                                         scope-end-pos
@@ -5268,77 +5311,59 @@ N is: - :dont-move to keep point at current position
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
-      - A negative number for previous lines: -1 previous, -2 line before...
-If SCOPE-BEGIN-POS is non-nil specified, SCOPE-BEGIN-POS and
-SCOPE-END-POS are boundary positions identifying the beginning and end
-of scope where to search.
+      - A positive integer for next lines, a negative integer for previous
+        lines: 1: next line, -1: previous line, etc.
 
-If nothing is found it returns nil.
-If the appropriate parens pair is found it returns a list of 4 elements:
-- 0: indentation column of the character after the opening parens
-- 1: string: parens pair found.
+If SCOPE-BEGIN-POS and SCOPE-END-POS are non-nil, they identify the
+search boundaries.
+
+Return nil if nothing is found.
+If an appropriate parens pair is found, return a list of 4 elements:
+- 0: indentation column of the character after the opening paren
+- 1: string identifying the parens pair found
 - 2: position of the opening paren
-- 3: position of the end paren."
+- 3: position of the closing paren."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
-    (error "seed7-line-inside-parens-pair: \
-Invalid boundaries: begin=%S, end=%S"
+    (error "seed7-line-inside-parens-pair: Invalid boundaries: begin=%S, end=%S"
            scope-begin-pos scope-end-pos))
-  (save-excursion
-    (when (seed7-move-to-line n dont-skip-comment-start)
-      (let* ((start-pos nil)
-             (end-pos   nil)
-             (line-start (point))
-             (candidate-list nil)
-             (open-paren nil)
-             (keep-searching-this-paren nil))
-        (dolist (op '("()" "[]" "{}" "<>"))
-          (save-excursion
-            (setq open-paren (substring op 0 1))
-            (setq keep-searching-this-paren t)
-            (while keep-searching-this-paren
-              (setq start-pos (seed7-backward-char-pos open-paren scope-begin-pos))
-              (if start-pos
-                  (progn
-                    (goto-char start-pos)
-                    (seed7--with-forward-sexp
-                      (backward-char)
-                      (setq end-pos (point))
-                      (if (< start-pos end-pos line-start)
-                          ;; found a pair that is closed above current position
-                          ;; move to its opening paren and keep searching
-                          (goto-char start-pos)
-                        (if (and (< (or scope-begin-pos 0)
-                                    start-pos line-start end-pos)
-                                 (or (not scope-end-pos)
-                                     (< end-pos scope-end-pos)))
-                            ;; found a candidate
-                            (progn
-                              (setq candidate-list
-                                    (push (list op start-pos end-pos) candidate-list))
-                              (setq keep-searching-this-paren nil))
-                          ;; nothing found. Stop searching this paren
-                          (setq keep-searching-this-paren nil)))
-                      :on-error
-                      ;; Malformed/incomplete delimiter pair: stop this delimiter search.
-                      (setq keep-searching-this-paren nil)))
-                ;;
-                (setq keep-searching-this-paren nil)))))
-        (when candidate-list
-          ;; sort the list by distance between open paren and start of line
-          (setq candidate-list (sort candidate-list
-                                     (lambda (e1 e2)
-                                       (<
-                                        (- line-start (nth 1 e1))
-                                        (- line-start (nth 1 e2))))))
-          ;; The inner block is in the first element of the candidate-list
-          ;; Return the column position right after its opening paren.
-          (goto-char (nth 1 (nth 0 candidate-list)))
-          (list (1+ (current-column))
-                (nth 0 (nth 0 candidate-list))
-                (nth 1 (nth 0 candidate-list))
-                (nth 2 (nth 0 candidate-list))))))))
+  (or (seed7-line-inside-syntax-parens-pair
+       n scope-begin-pos scope-end-pos dont-skip-comment-start)
+      (save-excursion
+        (when (seed7-move-to-line n dont-skip-comment-start)
+          (let ((line-start (point))
+                (found-spec nil))
+            ;; Search backward once for any opener.  Since we search from the
+            ;; current line toward the beginning, the first valid enclosing pair
+            ;; is the innermost one.
+            (while (and (not found-spec)
+                        (seed7-re-search-backward seed7--open-paren-regexp
+                                                  scope-begin-pos))
+              (let* ((start-pos (match-beginning 0))
+                     (open-char (char-after start-pos))
+                     (op (seed7--paren-pair-string open-char))
+                     (indent-column nil))
+                (goto-char start-pos)
+                (setq indent-column (1+ (current-column)))
+                (seed7--with-forward-sexp
+                  ;; Point is now one past the closing delimiter.
+                  (let ((end-pos (1- (point))))
+                    (when (and op
+                               (< (or scope-begin-pos 0)
+                                  start-pos line-start end-pos)
+                               (or (not scope-end-pos)
+                                   (< end-pos scope-end-pos)))
+                      (setq found-spec
+                            (list indent-column op start-pos end-pos))))
+                  :on-error
+                  ;; Malformed/incomplete delimiter pair.  Ignore this opener
+                  ;; and continue searching farther backward.
+                  nil)
+                ;; Continue before this opener if it did not produce a result.
+                (goto-char start-pos)))
+            found-spec)))))
 
+;; --
 
 (defun seed7-line-inside-parens-pair-column (n &optional
                                                scope-begin-pos
