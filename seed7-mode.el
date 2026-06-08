@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260608.1023
+;; Package-Version: 20260608.1033
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -531,7 +531,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-08T14:23:27+0000 W24-1"
+(defconst seed7-mode-version-timestamp "2026-06-08T14:33:07+0000 W24-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5071,8 +5071,8 @@ information:
 - 3: block end position.
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
-If SCOPE-END-POS is non-nil, require the closing delimiter to end at or before
-that position."
+If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound:
+the closing delimiter position must be strictly before it."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
     (error "seed7-line-inside-array-definition-block: \
@@ -5158,8 +5158,8 @@ following information:
 - 3: block end position.
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
-If SCOPE-END-POS is non-nil, require the closing delimiter to end at or before
-that position."
+If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound:
+the closing delimiter position must be strictly before it."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
     (error "seed7-line-inside-set-definition-block: \
@@ -5328,8 +5328,8 @@ N is: - :dont-move to keep point at current position
         lines: 1: next line, -1: previous line, etc.
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
-If SCOPE-END-POS is non-nil, require the closing delimiter to end at or before
-that position.
+If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound:
+the closing delimiter position must be strictly before it.
 
 Return nil if syntax state does not identify a usable pair.
 If an appropriate parens pair is found, return a list of 4 elements:
@@ -5377,8 +5377,8 @@ N is: - :dont-move to keep point at current position
         lines: 1: next line, -1: previous line, etc.
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
-If SCOPE-END-POS is non-nil, require the closing delimiter to end at or before
-that position.
+If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound:
+the closing delimiter position must be strictly before it.
 
 Return nil if nothing is found.
 If an appropriate parens pair is found, return a list of 4 elements:
