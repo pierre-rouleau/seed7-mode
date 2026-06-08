@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260608.0944
+;; Package-Version: 20260608.0954
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -531,7 +531,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-08T13:44:32+0000 W24-1"
+(defconst seed7-mode-version-timestamp "2026-06-08T13:54:08+0000 W24-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5729,8 +5729,10 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
          (cached-bounds   (seed7--cached-block-bounds))
          ;; Widen by 1 on each side so backward searches that land exactly
          ;; on the block keyword boundary still succeed.
-         (early-begin-pos (when cached-bounds (1- (car cached-bounds))))
-         (early-end-pos   (when cached-bounds (1+ (cdr cached-bounds))))
+         (early-begin-pos (when cached-bounds
+                            (max (point-min) (1- (car cached-bounds)))))
+         (early-end-pos   (when cached-bounds
+                            (min (point-max) (1+ (cdr cached-bounds)))))
          ;;
          (indent-step (seed7-line-indent-step :previous-non-empty))
          (first-word-on-line      (seed7--current-line-nth-word 1))
@@ -5850,8 +5852,8 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
         ;; For all of those extra checks limit the zone to the scope of the
         ;; current block to improve efficiency. Extend the boundary by 1
         ;; character to allow searches to succeed if they match at the edges.
-        (let ((begin-pos (1- (nth 2 spec-list)))
-              (end-pos   (1+  (nth 3 spec-list))))
+        (let ((begin-pos (max (point-min) (1- (nth 2 spec-list))))
+              (end-pos   (min (point-max) (1+ (nth 3 spec-list)))))
           (cond
            ((seed7--set                 ; inside parens pair?
              (seed7-line-inside-parens-pair-column 0 begin-pos end-pos)
