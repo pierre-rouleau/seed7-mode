@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260608.1033
+;; Package-Version: 20260608.1049
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -531,7 +531,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-08T14:33:07+0000 W24-1"
+(defconst seed7-mode-version-timestamp "2026-06-08T14:49:40+0000 W24-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4822,18 +4822,30 @@ If it finds something it returns a list that holds the following information:
 
 (defvar-local seed7--indent-last-block-spec nil
   "Buffer-local marker-backed block spec cache for indentation.
+
 Holds the result of the last successful `seed7-line-inside-a-block' call,
 converted to a marker-backed list by `seed7--cache-block-spec'.
 Used by `seed7--cached-block-spec-current-line' to avoid recomputation
-when the current line is still inside the same block.")
+when the current line is still inside the same block.
+
+During normal indentation this variable is dynamically rebound by
+`seed7-indent-line', so the cache lifetime is one indentation command
+or one region-indentation pass.  Direct callers of `seed7-calc-indent'
+may use the buffer-local value.")
 
 (defvar-local seed7--indent-block-bounds nil
   "Buffer-local lightweight block-boundary cache for indentation.
+
 Cons cell (BEGIN-MARKER . END-MARKER) holding the start and end positions
 of the last block identified by `seed7-line-inside-a-block-cached'.
 Updated whenever `seed7--indent-last-block-spec' is updated.
 Used by `seed7--cached-block-bounds' to provide O(1) begin/end lookup
-without returning or allocating the full block spec.")
+without returning or allocating the full block spec.
+
+During normal indentation this variable is dynamically rebound by
+`seed7-indent-line', so the cache lifetime is one indentation command
+or one region-indentation pass.  Direct callers of `seed7-calc-indent'
+may use the buffer-local value.")
 
 (defun seed7--cache-block-spec (spec)
   "Return a marker-backed copy of SPEC."
