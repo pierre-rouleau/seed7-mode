@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260607.2318
+;; Package-Version: 20260608.0939
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -531,7 +531,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-08T03:18:02+0000 W24-1"
+(defconst seed7-mode-version-timestamp "2026-06-08T13:39:05+0000 W24-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -670,8 +670,9 @@ The name of the source code file is appended to the end of that line."
           "tools/s7xref.sd7"
           (file-name-directory
            (or (locate-library "seed7-mode")
-               (when-let (buf (get-buffer "seed7-mode.el"))
-                 (buffer-file-name buf))
+               (let ((buf (get-buffer "seed7-mode.el")))
+                 (when buf
+                   (buffer-file-name buf)))
                (expand-file-name "utils/" user-emacs-directory))))))
   "Seed7 cross reference builder command line.
 
@@ -7373,13 +7374,14 @@ See also: `seed7-check-or-compile', `seed7-interpreter'."
                                  prog-args)))
         ;;
         ;; Kill any leftover process in the stdout buffer
-        (when-let ((old (get-buffer-process stdout-buf)))
-          (when (process-live-p old)
-            (if (y-or-n-p
-                 (format "A Seed7 process is already running in %s.  Kill it? "
-                         buf-name))
-                (delete-process old)
-              (user-error "Aborted: existing process still running"))))
+        (let ((old (get-buffer-process stdout-buf)))
+          (when old
+            (when (process-live-p old)
+              (if (y-or-n-p
+                   (format "A Seed7 process is already running in %s.  Kill it? "
+                           buf-name))
+                  (delete-process old)
+                (user-error "Aborted: existing process still running")))))
         ;;
         ;; Prepare stdout buffer
         (with-current-buffer stdout-buf
