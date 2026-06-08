@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260608.1159
+;; Package-Version: 20260608.1235
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -531,7 +531,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-08T15:59:28+0000 W24-1"
+(defconst seed7-mode-version-timestamp "2026-06-08T16:35:32+0000 W24-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5750,8 +5750,8 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
          (early-end-pos   (when cached-bounds
                             (min (point-max) (1+ (cdr cached-bounds)))))
          ;;
-         (indent-step (seed7-line-indent-step :previous-non-empty))
-         (first-word-on-line      (seed7--current-line-nth-word 1))
+         (indent-step nil) ; will be initialized later only if needed
+         (first-word-on-line (seed7--current-line-nth-word 1))
          (indent-column nil)
          (indent-column2 nil)
          (spec-list nil))
@@ -5908,10 +5908,16 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                     indent-column))
        ((and (string= first-word-on-line "end")
              (string= (seed7--current-line-nth-word 2) "block"))
-        (setq indent-step (- indent-step 2)))
+        (setq indent-step (- (or indent-step
+                                 (seed7-line-indent-step :previous-non-empty))
+                             2)))
+       ;;
+       ;;
        ((string= first-word-on-line "until")
-        (setq indent-step (1- indent-step)))
-
+        (setq indent-step (1- (or indent-step
+                                  (seed7-line-indent-step :previous-non-empty)))))
+       ;;
+       ;;
        ((and (string= first-word-on-line "var")
              (seed7-line-starts-with :previous-non-empty "include "))
         (setq indent-step 0))
@@ -5925,7 +5931,9 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
         (error "No rule yet to indent line %d" (seed7-current-line-number)))))
     (if indent-column
         indent-column
-      (* indent-step seed7-indent-width))))
+      (* (or indent-step
+             (seed7-line-indent-step :previous-non-empty))
+         seed7-indent-width))))
 
 
 (defun seed7--indent-one-line ()
