@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260607.1808
+;; Package-Version: 20260607.2318
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -361,7 +361,10 @@
 ;;     . `seed7-line-is-block-end'
 ;;     . `seed7-line-inside-a-block-cached'
 ;;       . `seed7--cached-block-spec-current-line'
+;;       . `seed7--cached-block-bounds'
 ;;       . `seed7--cache-block-spec'
+;;       . `seed7--indent-last-block-spec'
+;;       . `seed7--indent-block-bounds'
 ;;       . `seed7-line-inside-a-block'
 ;;         . `seed7--block-end-pos-for'
 ;;         . `seed7--indent-offset-for'
@@ -528,7 +531,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-07T22:08:11+0000 W23-7"
+(defconst seed7-mode-version-timestamp "2026-06-08T03:18:02+0000 W24-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5066,8 +5069,9 @@ information:
 - 2: block start position,
 - 3: block end position.
 
-If SCOPE-BEGIN-POS and SCOPE-END-POS are non-nil, they identify the
-search boundaries."
+If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
+If SCOPE-END-POS is non-nil, require the closing delimiter to end at or before
+that position."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
     (error "seed7-line-inside-array-definition-block: \
@@ -5117,16 +5121,22 @@ N is: - :previous-non-empty for the previous non-empty line,
              (line-end-pos (line-end-position))
              (block-start-pos nil)
              (enclosing-block-end-pos nil))
-        (end-of-line)
-        (when (seed7-re-search-backward ");")
+        ;; Fast reject: only a code line ending with ");" can close an
+        ;; array definition block.  This avoids an unnecessary backward
+        ;; search on almost all ordinary previous lines.
+        (when (seed7-line-code-ends-with 0 ");")
+          (end-of-line)
+          ;; Bound the search to the current line.  The old code searched
+          ;; backward without a bound, which could scan far above line N.
           (forward-char)
-          (setq enclosing-block-end-pos (point))
-          (seed7--with-backward-sexp
-            (seed7-to-indent)
-            (when (looking-at-p "\\(?:const\\|var\\) +?array +?.+?:.+?(")
-              (setq block-start-pos (point))
-              (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
-                block-indent-column))))))))
+          (when (seed7-re-search-backward ");" line-start-pos)
+            (setq enclosing-block-end-pos (point))
+            (seed7--with-backward-sexp
+              (seed7-to-indent)
+              (when (looking-at-p "\\(?:const\\|var\\) +?array +?.+?:.+?(")
+                (setq block-start-pos (point))
+                (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
+                  block-indent-column)))))))))
 
 (defun seed7-line-inside-set-definition-block (n &optional
                                                  scope-begin-pos
@@ -5147,8 +5157,9 @@ following information:
 - 2: block start position,
 - 3: block end position.
 
-If SCOPE-BEGIN-POS and SCOPE-END-POS are non-nil, they identify the
-search boundaries."
+If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
+If SCOPE-END-POS is non-nil, require the closing delimiter to end at or before
+that position."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
     (error "seed7-line-inside-set-definition-block: \
@@ -5259,7 +5270,7 @@ search boundaries for the assignment operator and statement-end searches."
                                                    dont-skip-comment-start)
   "Check if line N is the end of a set definition block.
 Return the indentation column of the set definition block statement
-if line N is the end of a set definition array block, nil otherwise.
+if line N is the end of a set definition block, nil otherwise.
 N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
         is non-nil,
@@ -5274,16 +5285,20 @@ N is: - :previous-non-empty for the previous non-empty line,
              (line-end-pos (line-end-position))
              (block-start-pos nil)
              (enclosing-block-end-pos nil))
-        (end-of-line)
-        (when (seed7-re-search-backward "};")
+        ;; Fast reject: only a code line ending with "};" can close a set
+        ;; definition block.
+        (when (seed7-line-code-ends-with 0 "};")
+          (end-of-line)
+          ;; Bound the search to the current line.
           (forward-char)
-          (setq enclosing-block-end-pos (point))
-          (seed7--with-backward-sexp
-            (seed7-to-indent)
-            (when (looking-at-p "\\(?:const\\|var\\) +?set +?.+?:.+?{")
-              (setq block-start-pos (point))
-              (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
-                block-indent-column))))))))
+          (when (seed7-re-search-backward "};" line-start-pos)
+            (setq enclosing-block-end-pos (point))
+            (seed7--with-backward-sexp
+              (seed7-to-indent)
+              (when (looking-at-p "\\(?:const\\|var\\) +?set +?.+?:.+?{")
+                (setq block-start-pos (point))
+                (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
+                  block-indent-column)))))))))
 
 ;; --
 (defconst seed7--open-paren-regexp
@@ -5311,8 +5326,9 @@ N is: - :dont-move to keep point at current position
       - A positive integer for next lines, a negative integer for previous
         lines: 1: next line, -1: previous line, etc.
 
-If SCOPE-BEGIN-POS and SCOPE-END-POS are non-nil, they identify the
-search boundaries.
+If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
+If SCOPE-END-POS is non-nil, require the closing delimiter to end at or before
+that position.
 
 Return nil if syntax state does not identify a usable pair.
 If an appropriate parens pair is found, return a list of 4 elements:
@@ -5359,8 +5375,9 @@ N is: - :dont-move to keep point at current position
       - A positive integer for next lines, a negative integer for previous
         lines: 1: next line, -1: previous line, etc.
 
-If SCOPE-BEGIN-POS and SCOPE-END-POS are non-nil, they identify the
-search boundaries.
+If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
+If SCOPE-END-POS is non-nil, require the closing delimiter to end at or before
+that position.
 
 Return nil if nothing is found.
 If an appropriate parens pair is found, return a list of 4 elements:
@@ -5445,7 +5462,8 @@ N is: - :dont-move to keep point at current position
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
-      - A negative number for previous lines: -1 previous, -2 line before...
+      - A positive integer for next lines, a negative integer for previous
+        lines: 1: next line, -1: previous line, etc.
 SCOPE-BEGIN-POS and SCOPE-END-POS are the search begin and end boundaries.
 If nothing is found it returns nil.
 If the appropriate parens pair is found it returns a list of 4 elements:
@@ -5473,7 +5491,7 @@ If the appropriate parens pair is found it returns a list of 4 elements:
         (unless inner-most-nesting-spec-list
           (setq inner-most-nesting-spec-list spec-list)))
       (when (eq nested-depth 0)
-            inner-most-nesting-spec-list))))
+        inner-most-nesting-spec-list))))
 
 (defun seed7-line-inside-nested-parens-pairs-column (n nested-depth
                                                        &optional
@@ -5496,9 +5514,8 @@ the character after the opening parens of the inner-most nesting."
                                                    scope-end-pos
                                                    dont-skip-comment-start)))
 
-;; [:todo 2025-05-30, by Pierre Rouleau: test the following with/without comments]
 (defun seed7-indentation-of-previous-non-string-line ()
-  "Return indentation of previous line that is not starting with a string."
+  "Return indentation of the previous non-blank, non-comment, non-string line."
   (save-excursion
     (let ((found nil))
       (while (and (not found)
@@ -5506,6 +5523,7 @@ the character after the opening parens of the inner-most nesting."
         (forward-line -1)
         (when (and (not (seed7-line-starts-with 0 "\""))
                    (not (seed7-inside-comment-p (point)))
+                   (not (seed7-inside-string-p (point)))
                    (save-excursion
                      (skip-chars-forward " \t")
                      (not (looking-at-p "\n"))))
@@ -5530,51 +5548,54 @@ N is: - :previous-non-empty for the previous non-empty line,
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before..."
-  (let ((previous-defun-column nil)
-        (end-pos (line-end-position)))
-    (cond
-     ;; handle line that is a end func, struc or enum
-     ((seed7-line-starts-with-any n
-                                  (list
-                                   "end[[:blank:]]+?func[[:blank:]]*?;"
-                                   "end[[:blank:]]+?struct[[:blank:]]*?;"
-                                   "end[[:blank:]]+?enum[[:blank:]]*?;")
-                                  dont-skip-comment-start)
-      (save-excursion
-        (seed7-move-to-line n)
-        (seed7-to-block-backward nil :dont-push-mark)
-        (seed7-current-line-indent)))
-     ;; handle forward and native action declarations of func and proc
-     ((seed7--set (seed7-line-starts-with-any
-                   n
-                   (list
-                    seed7-func-forward-or-action-declaration-nc-re
-                    seed7---inner-callables-4
-                    seed7-proc-forward-or-action-declaration-re)
-                   dont-skip-comment-start
-                   end-pos)
-                  previous-defun-column)
-      previous-defun-column)
-     ;; Line N is not a end func; struc or enum.
-     ;; It might be another block such as a function forward or action
-     ;; declaration. To check that, use the `seed7-beg-of-defun' and
-     ;; `seed7-end-of-defun' to check if they match.
-     (t
-      (save-excursion
-        (seed7-move-to-line n)
-        (let ((endline-pos nil)
-              (endline-pos-2 nil))
-          (end-of-line)
-          (setq endline-pos (point))
-          (when (ignore-errors
-                  (seed7-beg-of-defun nil :silent :dont-push-mark)
-                  (setq previous-defun-column (current-column)))
-            (setq endline-pos-2 (ignore-errors
-                                  (seed7-end-of-defun nil :silent
-                                                      :dont-push-mark)
-                                  (point)))
-            (when (eq endline-pos endline-pos-2)
-              previous-defun-column))))))))
+  (save-excursion
+    (when (seed7-move-to-line n dont-skip-comment-start)
+      (let ((previous-defun-column nil)
+            (first-word-on-line (seed7--current-line-nth-word 1))
+            (end-pos (line-end-position)))
+        (cond
+         ;; Fast reject: ordinary code lines cannot be definition-ending lines.
+         ((not (member first-word-on-line '("end" "const")))
+          nil)
+
+         ;; Handle line that is an end func, struct or enum.
+         ((seed7-line-starts-with-any
+           0
+           (list
+            "end[[:blank:]]+?func[[:blank:]]*?;"
+            "end[[:blank:]]+?struct[[:blank:]]*?;"
+            "end[[:blank:]]+?enum[[:blank:]]*?;"))
+          (seed7-to-block-backward nil :dont-push-mark)
+          (seed7-current-line-indent))
+
+         ;; Handle forward and native/action declarations of func and proc.
+         ((seed7--set
+           (seed7-line-starts-with-any
+            0
+            (list
+             seed7-func-forward-or-action-declaration-nc-re
+             seed7---inner-callables-4
+             seed7-proc-forward-or-action-declaration-re)
+            nil
+            end-pos)
+           previous-defun-column)
+          previous-defun-column)
+
+         ;; Fallback only for plausible lines, not for every ordinary code line.
+         (t
+          (let ((endline-pos nil)
+                (endline-pos-2 nil))
+            (end-of-line)
+            (setq endline-pos (point))
+            (when (ignore-errors
+                    (seed7-beg-of-defun nil :silent :dont-push-mark)
+                    (setq previous-defun-column (current-column)))
+              (setq endline-pos-2
+                    (ignore-errors
+                      (seed7-end-of-defun nil :silent :dont-push-mark)
+                      (point)))
+              (when (eq endline-pos endline-pos-2)
+                previous-defun-column)))))))))
 
 ;;** Seed7 Indentation Comment Checking Function
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5691,14 +5712,14 @@ When TREAT-COMMENT-LINE-AS-CODE is non-nil a comment line is processed as if
 The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
   call.  Only one recursion is allowed."
   (let* ((recurse-count (or recurse-count 0))
-         ;; Eagerly probe of the previous call's block boundaries.
+         ;; Eagerly probe the previous call's block boundaries.
          ;; Cost: O(1) — two marker-position comparisons, uses (point)
          ;;              directly; no `seed7-to-indent' overhead.
          ;; Returns (begin-pos . end-pos) or nil; never recomputes.
          ;; Only begin and end positions are used here; the full block spec
          ;; is left for the `seed7-line-inside-a-block-cached' call below.
          ;; The previously-computed begin/end bounds can be passed to
-         ;; to all expensive backward-search helpers below, bounding their
+         ;; to expensive backward-search helpers below, bounding their
          ;; scan to the current block rather than the whole file.
          ;; The later `seed7-line-inside-a-block-cached' call only recomputes
          ;; when point moves out of previous block.
@@ -5859,7 +5880,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
         (setq indent-column (- indent-column seed7-indent-width)))
 
        ;; When inside a paren block, adjust indent to the column
-       ;; following the open paren; any of: ( { [ <
+       ;; following the open paren; any of: ( { [
        ((seed7--set (seed7-line-inside-parens-pair-column 0)
                     indent-column))
        ((and (string= first-word-on-line "end")
