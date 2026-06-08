@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260608.1049
+;; Package-Version: 20260608.1159
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -531,7 +531,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-08T14:49:40+0000 W24-1"
+(defconst seed7-mode-version-timestamp "2026-06-08T15:59:28+0000 W24-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4532,27 +4532,24 @@ Does not move point, does not modify search match data."
     (goto-char pos)
     (looking-at-p regexp)))
 
-;; [:todo 2025-06-04, by Pierre Rouleau: optimize #1? Add first-word argument
-;;                    and passed from seed7-line-inside-a-block call.
-;;                    Would eliminate the need to search
-;;                    (or add redundancy check) ]
-(defun seed7--indent-offset-for (header line-n-indent-pos)
+(defun seed7--indent-offset-for (header first-text)
   "Return indentation offset (in columns) for the inside of a block.
 
 - HEADER: string: identifies the block start header.
-- LINE-N-INDENT-POS: position: the indented position of the currently
-  inspected line."
+- FIRST-TEXT: string: the text at the indented start of the currently
+  inspected line (pre-extracted by the caller to avoid repeated buffer
+  scanning)."
   (cond
 
    ;;-- local - begin - end func;
    ((string= header "local")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "begin")
+    (if (string-prefix-p "begin" first-text)
         ;; The begin keyword lines up with the local keyword
         0
       ;; Other lines are indented
       seed7-indent-width))
    ((string= header "begin")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end func;")
+    (if (string-prefix-p "end func;" first-text)
         ;; The end func; lines up with begin
         0
       ;; Other lines are indented
@@ -4563,9 +4560,9 @@ Does not move point, does not modify search match data."
                      "elsif "
                      "else"))
     (if (or
-         (seed7--at-pos-looking-at-p line-n-indent-pos "elsif")
-         (seed7--at-pos-looking-at-p line-n-indent-pos "else")
-         (seed7--at-pos-looking-at-p line-n-indent-pos "end if;?"))
+         (string-prefix-p "elsif"  first-text)
+         (string-prefix-p "else"   first-text)
+         (string-prefix-p "end if" first-text))
         ;; The elsif/else/end if keywords line up with the if keyword
         0
       ;; Other lines are indented
@@ -4573,27 +4570,27 @@ Does not move point, does not modify search match data."
 
    ;;-- block - exception - catch - end block;
    ((string= header "block")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "exception")
+    (if (string-prefix-p "exception" first-text)
         ;; exception lines up with block
         0
       ;; Other lines are indented
       seed7-indent-width))
    ((string= header "exception")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "catch ")
+    (if (string-prefix-p "catch " first-text)
         ;; catch is indented one level from exception
         seed7-indent-width
       ;; Other lines are indented by 2 levels
       (* 2 seed7-indent-width)))
    ((string= header "catch ")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end block")
+    (if (string-prefix-p "end block" first-text)
         ;; end block lines up with block, 1 indentation level less than catch
-        (-  seed7-indent-width)
+        (- seed7-indent-width)
       ;; Other lines are indented by 1 level relative to catch
       seed7-indent-width))
 
    ;;-- repeat - until
    ((string= header "repeat")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "until ")
+    (if (string-prefix-p "until " first-text)
         ;; until lines up with repeat
         0
       ;; Other lines are indented
@@ -4601,7 +4598,7 @@ Does not move point, does not modify search match data."
 
    ;;-- global - end global
    ((string= header "global")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end global;")
+    (if (string-prefix-p "end global;" first-text)
         ;; 'end global' lines up with 'global'
         0
       ;; Other lines are indented
@@ -4609,15 +4606,15 @@ Does not move point, does not modify search match data."
 
    ;;-- for - end for
    ((string= header "for ")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end for;?")
+    (if (string-prefix-p "end for" first-text)
         ;; 'end for' lines up with 'for'
         0
       ;; Other lines are indented
       seed7-indent-width))
 
-   ;;-- while - end while - elsif - end while
+   ;;-- while - end while
    ((string= header "while ")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end while;?")
+    (if (string-prefix-p "end while" first-text)
         ;; 'end while' lines up with 'while'
         0
       ;; Other lines are indented
@@ -4625,12 +4622,12 @@ Does not move point, does not modify search match data."
 
    ;;-- case - end case;
    ((string= header "case ")
-    (if (seed7--at-pos-looking-at-p line-n-indent-pos "end case;?")
+    (if (string-prefix-p "end case" first-text)
         ;; 'end case' lines up with 'case'
         0
       ;; Other lines are indented
-      (if (or (seed7--at-pos-looking-at-p line-n-indent-pos "when ")
-              (seed7--at-pos-looking-at-p line-n-indent-pos "otherwise"))
+      (if (or (string-prefix-p "when "     first-text)
+              (string-prefix-p "otherwise" first-text))
           ;; the when and otherwise keywords are indented once
           seed7-indent-width
         ;; the statements inside when or otherwise blocks are indented twice
@@ -4638,14 +4635,14 @@ Does not move point, does not modify search match data."
 
    ;;-- const func - return/result-begin
    ((string= header "const func ")
-    (if (or (seed7--at-pos-looking-at-p line-n-indent-pos "return ")
-            (seed7--at-pos-looking-at-p line-n-indent-pos "result"))
+    (if (or (string-prefix-p "return " first-text)
+            (string-prefix-p "result"  first-text))
         seed7-indent-width
       ;; otherwise indent below 'return '. BUT other code should handle this.
       (+ seed7-indent-width 7)))
    ((string= header "result")
-    (if (or (seed7--at-pos-looking-at-p line-n-indent-pos "begin")
-            (seed7--at-pos-looking-at-p line-n-indent-pos "local"))
+    (if (or (string-prefix-p "begin" first-text)
+            (string-prefix-p "local" first-text))
         ;; begin/local lines up with result
         0
       ;; other lines are indented
@@ -4656,8 +4653,8 @@ Does not move point, does not modify search match data."
     seed7-indent-width)
 
    ((string= header "const type: ")
-    (if (or (seed7--at-pos-looking-at-p line-n-indent-pos "end struct;")
-            (seed7--at-pos-looking-at-p line-n-indent-pos "end enum;"))
+    (if (or (string-prefix-p "end struct;" first-text)
+            (string-prefix-p "end enum;"   first-text))
         ;; end struct/enum is indented once relative to the const type
         seed7-indent-width
       ;; the definitions are indented twice.
@@ -4676,8 +4673,6 @@ Does not move point, does not modify search match data."
       (save-excursion (goto-char start-pos)
                       (line-end-position))))
 
-;; [:todo 2025-06-04, by Pierre Rouleau: optimize #1? Add first-word argument
-;;                    and pass it to seed7--indent-offset-for ]
 (defun seed7-line-inside-a-block (n &optional dont-skip-comment-start)
   "Check if line N is inside a Seed7 block.
 N is: - :previous-non-empty for the previous non-empty line,
@@ -4694,15 +4689,22 @@ If it finds something it returns a list that holds the following information:
 - 4: indent column of the block start."
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
-      (let ((current-pos (point))
-            (block-start-pos nil)
-            (enclosing-block-start-pos nil)
-            (enclosing-block-end-pos nil)
-            (match-text nil)
-            (block-start-indent-column nil)
-            ;; (line-n-indent-column nil)
-            (keep-searching t)
-            (result nil))
+      (let* ((current-pos (point))
+             ;; Pre-extract the text at the indented start of line N once so
+             ;; that seed7--indent-offset-for can use string-prefix-p instead
+             ;; of repeated save-excursion + goto-char + looking-at-p calls.
+             ;; 16 characters covers the longest needed check ("end global;").
+             (line-n-first-text
+              (save-excursion
+                (skip-chars-forward " \t")
+                (buffer-substring-no-properties (point) (line-end-position))))
+             (block-start-pos nil)
+             (enclosing-block-start-pos nil)
+             (enclosing-block-end-pos nil)
+             (match-text nil)
+             (block-start-indent-column nil)
+             (keep-searching t)
+             (result nil))
         ;; all block line start regexp fit 1 line: search from end of line
         ;; to detect if the point is on the block start we find.
         (end-of-line)
@@ -4775,7 +4777,7 @@ If it finds something it returns a list that holds the following information:
                 (when (seed7-re-search-backward
                        seed7-block-line-start-regexp)
                   (setq match-text (substring-no-properties (match-string 1)))
-                  (setq block-start-pos (point)) ; start point: line start.
+                  (setq block-start-pos (point))
                   (skip-chars-forward " \t")
                   (setq block-start-indent-column (current-column))
                   ;; Identify the end position and start position of the
@@ -4789,8 +4791,9 @@ If it finds something it returns a list that holds the following information:
                   (when (<= block-start-pos current-pos enclosing-block-end-pos)
                     (setq keep-searching nil
                           result (list (+ block-start-indent-column
-                                          (seed7--indent-offset-for match-text
-                                                                    current-pos))
+                                          (seed7--indent-offset-for
+                                           match-text
+                                           line-n-first-text))
                                        match-text
                                        block-start-pos
                                        enclosing-block-end-pos
@@ -4801,8 +4804,9 @@ If it finds something it returns a list that holds the following information:
                (t
                 (setq keep-searching nil
                       result (list (+ block-start-indent-column
-                                      (seed7--indent-offset-for match-text
-                                                                current-pos))
+                                      (seed7--indent-offset-for
+                                       match-text
+                                       line-n-first-text))
                                    match-text
                                    block-start-pos
                                    enclosing-block-end-pos
