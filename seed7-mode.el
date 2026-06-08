@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260608.0939
+;; Package-Version: 20260608.0944
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -531,7 +531,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-08T13:39:05+0000 W24-1"
+(defconst seed7-mode-version-timestamp "2026-06-08T13:44:32+0000 W24-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5516,7 +5516,8 @@ the character after the opening parens of the inner-most nesting."
                                                    dont-skip-comment-start)))
 
 (defun seed7-indentation-of-previous-non-string-line ()
-  "Return indentation of the previous non-blank, non-comment, non-string line."
+  "Return indentation of the previous non-blank, non-comment, non-string line.
+Return nil when no such previous line exists."
   (save-excursion
     (let ((found nil))
       (while (and (not found)
@@ -5528,9 +5529,10 @@ the character after the opening parens of the inner-most nesting."
                    (save-excursion
                      (skip-chars-forward " \t")
                      (not (looking-at-p "\n"))))
-          (setq found t))))
-    (skip-chars-forward " \t")
-    (current-column)))
+          (setq found t)))
+      (when found
+        (skip-chars-forward " \t")
+        (current-column)))))
 
 
 (defun seed7-line-is-procfunc-beg-of-decl (n &optional dont-skip-comment-start)
@@ -5793,7 +5795,9 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
             (search-forward "\"")
             (setq indent-column (1- (current-column))))
            (t
-            (setq indent-column (seed7-indentation-of-previous-non-string-line))
+            (let ((col (seed7-indentation-of-previous-non-string-line)))
+              (when col
+                (setq indent-column col)))
             (message
              "At line %d: string line syntax not yet supported! Recurse count=%d Please report."
              (seed7-current-line-number)
