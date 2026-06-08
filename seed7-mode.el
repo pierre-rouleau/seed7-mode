@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260608.1235
+;; Package-Version: 20260608.1538
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -368,7 +368,6 @@
 ;;       . `seed7-line-inside-a-block'
 ;;         . `seed7--block-end-pos-for'
 ;;         . `seed7--indent-offset-for'
-;;           . `seed7--at-pos-looking-at-p'
 ;;         . `seed7--on-lineof'
 ;;     . `seed7-line-inside-until-logic-expression'
 ;;     . `seed7-line-inside-func-return-statement'
@@ -531,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-08T16:35:32+0000 W24-1"
+(defconst seed7-mode-version-timestamp "2026-06-08T19:38:26+0000 W24-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4525,13 +4524,6 @@ Move point."
    ;;
    (t (error "Unsupported block header: %s" header))))
 
-(defun seed7--at-pos-looking-at-p (pos regexp)
-  "Return non-nil if text at POS matches REGEXP, nil otherwise.
-Does not move point, does not modify search match data."
-  (save-excursion
-    (goto-char pos)
-    (looking-at-p regexp)))
-
 (defun seed7--indent-offset-for (header first-text)
   "Return indentation offset (in columns) for the inside of a block.
 
@@ -4693,7 +4685,6 @@ If it finds something it returns a list that holds the following information:
              ;; Pre-extract the text at the indented start of line N once so
              ;; that seed7--indent-offset-for can use string-prefix-p instead
              ;; of repeated save-excursion + goto-char + looking-at-p calls.
-             ;; 16 characters covers the longest needed check ("end global;").
              (line-n-first-text
               (save-excursion
                 (skip-chars-forward " \t")
@@ -4905,8 +4896,8 @@ column) is not exposed."
           ;; Also update the lightweight bounds cache used for early-bound
           ;; lookups at the top of `seed7-calc-indent'.
           (setq seed7--indent-block-bounds
-                (cons (copy-marker (nth 2 spec))
-                      (copy-marker (nth 3 spec) t))))
+                (cons (nth 2 seed7--indent-last-block-spec)
+                      (nth 3 seed7--indent-last-block-spec))))
         spec)))
 
 ;; ---------------------------------------------------------------------------
@@ -5087,8 +5078,9 @@ information:
 - 3: block end position.
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
-If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound:
-the closing delimiter position must be strictly before it."
+If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound for
+the closing delimiter.  Internally the returned end position is point after
+the closing delimiter, so it may be equal to SCOPE-END-POS."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
     (error "seed7-line-inside-array-definition-block: \
@@ -5109,14 +5101,14 @@ Invalid boundaries: begin=%S, end=%S"
           (setq block-indent-column (current-column))
           (goto-char (1- (match-end 0))) ; position at "("
           (seed7--with-forward-sexp
-            ;; point is at block end
-            (when (and (< block-start-pos original-pos (point))
-                       (or (not scope-end-pos)
-                           (<= (point) scope-end-pos)))
-              (list block-indent-column
-                    "array"
-                    block-start-pos
-                    (point)))))))))
+           ;; point is at block end
+           (when (and (< block-start-pos original-pos (point))
+                      (or (not scope-end-pos)
+                          (<= (point) scope-end-pos)))
+             (list block-indent-column
+                   "array"
+                   block-start-pos
+                   (point)))))))))
 
 
 (defun seed7-line-at-endof-array-definition-block (n &optional
@@ -5174,8 +5166,9 @@ following information:
 - 3: block end position.
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
-If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound:
-the closing delimiter position must be strictly before it."
+If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound for
+the closing delimiter.  Internally the returned end position is point after
+the closing delimiter, so it may be equal to SCOPE-END-POS."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
     (error "seed7-line-inside-set-definition-block: \
@@ -5344,8 +5337,9 @@ N is: - :dont-move to keep point at current position
         lines: 1: next line, -1: previous line, etc.
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
-If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound:
-the closing delimiter position must be strictly before it.
+If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound for
+the closing delimiter.  Internally the returned end position is point after
+the closing delimiter, so it may be equal to SCOPE-END-POS.
 
 Return nil if syntax state does not identify a usable pair.
 If an appropriate parens pair is found, return a list of 4 elements:
@@ -5393,8 +5387,9 @@ N is: - :dont-move to keep point at current position
         lines: 1: next line, -1: previous line, etc.
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
-If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound:
-the closing delimiter position must be strictly before it.
+If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound for
+the closing delimiter.  Internally the returned end position is point after
+the closing delimiter, so it may be equal to SCOPE-END-POS.
 
 Return nil if nothing is found.
 If an appropriate parens pair is found, return a list of 4 elements:
