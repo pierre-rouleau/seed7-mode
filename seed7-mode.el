@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260608.0954
+;; Package-Version: 20260608.1023
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -531,7 +531,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-08T13:54:08+0000 W24-1"
+(defconst seed7-mode-version-timestamp "2026-06-08T14:23:27+0000 W24-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5126,10 +5126,9 @@ N is: - :previous-non-empty for the previous non-empty line,
         ;; array definition block.  This avoids an unnecessary backward
         ;; search on almost all ordinary previous lines.
         (when (seed7-line-code-ends-with 0 ");")
-          (end-of-line)
+          (goto-char line-end-pos)
           ;; Bound the search to the current line.  The old code searched
           ;; backward without a bound, which could scan far above line N.
-          (forward-char)
           (when (seed7-re-search-backward ");" line-start-pos)
             (setq enclosing-block-end-pos (point))
             (seed7--with-backward-sexp
@@ -5287,11 +5286,12 @@ N is: - :previous-non-empty for the previous non-empty line,
              (block-start-pos nil)
              (enclosing-block-end-pos nil))
         ;; Fast reject: only a code line ending with "};" can close a set
-        ;; definition block.
+        ;; definition block.  This avoids an unnecessary backward
+        ;; search on almost all ordinary previous lines.
         (when (seed7-line-code-ends-with 0 "};")
-          (end-of-line)
-          ;; Bound the search to the current line.
-          (forward-char)
+          (goto-char line-end-pos)
+          ;; Bound the search to the current line.  The old code searched
+          ;; backward without a bound, which could scan far above line N.
           (when (seed7-re-search-backward "};" line-start-pos)
             (setq enclosing-block-end-pos (point))
             (seed7--with-backward-sexp
