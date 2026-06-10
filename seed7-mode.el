@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260610.1105
+;; Package-Version: 20260610.1127
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-10T15:05:58+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2026-06-10T15:27:18+0000 W24-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2526,7 +2526,6 @@ Allows selecting similar colours for various systems."
                font-lock-comment-face)
              t)))
   "Associates regexp to a regexp group and a face to render it.")
-
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Comments Control
@@ -5153,7 +5152,7 @@ information:
 - 1: string: \"array\"
 - 2: block start position,
 - 3: block end position: position of the character immediately after
-     the closing delimiter (one past the `(').
+     the closing delimiter (one past the `)').
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
 If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound for
@@ -5242,7 +5241,7 @@ following information:
 - 1: string: \"set\"
 - 2: block start position,
 - 3: block end position: position of the character immediately after
-     the closing delimiter (one past the `{').
+     the closing delimiter (one past the `}').
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
 If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound for
