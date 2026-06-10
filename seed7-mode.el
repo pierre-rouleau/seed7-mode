@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260610.1411
+;; Package-Version: 20260610.1449
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-10T18:11:09+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2026-06-10T18:49:02+0000 W24-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2064,11 +2064,13 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
    ;; (----(----------------------------------)----(--------------------------------------------------------------------------------)--)-----(------)-----(------)
    ;;                      (---)                   (-----------------------------------------------------------------------------------)
    ;;                                                 (-----------)     (-------)     (-----------------------------)     (------)           (------)     (------)
-   ;;                      G1                      G2                                                                        %1              G3           G4
-   ;; G1: #
+   ;;                      G1                      G2                                  backslash-character                   %s              G3           G4
+   ;; G1: #                                                                                                                  #1
    ;; G2: single quote character expression
    ;; G3: opening block comment: (*
    ;; G4: closing block comment: *)
+   ;; backslash characters: \a, \b... :standard named escape letters, including \e for the Escape character.
+   ;; backslash characters: \A .. \Z  : standard Seed7 control characters: Ctrl-A .. Ctrl-Z
    seed7-any-valid-char-integer-semicolon-re))
 
 ;; Emacs supports two-character comment delimiters via "style b"
@@ -5175,7 +5177,7 @@ Invalid boundaries: begin=%S, end=%S"
           (setq block-indent-column (current-column))
           (goto-char (1- (match-end 0))) ; position at "("
           (seed7--with-forward-sexp
-            ;; with point now one path the closing delimiter
+            ;; with point now one past the closing delimiter
             (when (and (< block-start-pos original-pos (point))
                        (or (not scope-end-pos)
                            (<= (point) scope-end-pos)))
@@ -5263,7 +5265,7 @@ Invalid boundaries: begin=%S, end=%S"
           (setq block-indent-column (current-column))
           (goto-char (1- (match-end 0))) ; position at "{"
           (seed7--with-forward-sexp
-            ;; with point now one path the closing delimiter
+            ;; with point now one past the closing delimiter
             (when (and (< block-start-pos original-pos (point))
                        (or (not scope-end-pos)
                            (<= (point) scope-end-pos)))
@@ -5438,7 +5440,7 @@ If an appropriate parens pair is found, return a list of 4 elements:
                  (indent-column (1+ (current-column))))
             (when op
               (seed7--with-forward-sexp
-                ;; with point now one path the closing delimiter
+                ;; with point now one past the closing delimiter
                 (let ((end-pos (1- (point))))
                   (when (and (< open-pos line-start end-pos)
                              (or (not scope-end-pos)
@@ -5493,7 +5495,7 @@ If an appropriate parens pair is found, return a list of 4 elements:
                 (goto-char start-pos)
                 (setq indent-column (1+ (current-column)))
                 (seed7--with-forward-sexp
-                  ;; with point now one path the closing delimiter
+                  ;; with point now one past the closing delimiter
                   (let ((end-pos (1- (point))))
                     (when (and op
                                (< (or scope-begin-pos 0)
