@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260610.1127
+;; Package-Version: 20260610.1250
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-10T15:27:18+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2026-06-10T16:50:47+0000 W24-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2042,7 +2042,7 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
     ;;
     (modify-syntax-entry ?\( "()1n" st) ; The comment "(*" can be nested ...
     (modify-syntax-entry ?\) ")(4n" st) ; ...  and end with the matching "*)"
-    (modify-syntax-entry ?* ". 23" st) ; '*' as second of "(*" and previous of "*)"
+    (modify-syntax-entry ?* ". 23" st) ; '*' as second of "(*" and first of "*)"
     ;;
     ;; Seed7 Comments Control : line-end comment.
     (modify-syntax-entry ?# "<"  st)
@@ -2089,7 +2089,7 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
 
 
 (defun seed7-mode-syntax-propertize (start end)
-  "Apply syntax-table text property between START and END for # and comments.
+  "Apply syntax-table text property between START and END.
 
 Handle 4 cases:
 - The `#' number-base separator,
@@ -2713,9 +2713,7 @@ Returns the value at index 4 of `syntax-ppss': non-nil when inside a
 comment (an integer > 0 for nested `(* ... *)' block comments, `t' for
 `#' line-end comments)."
   (declare (side-effect-free t))
-  (let ((pos (or pos (point))))
-    (unless (eq pos 0)
-      (nth 4 (syntax-ppss pos)))))
+  (nth 4 (syntax-ppss (or pos (point)))))
 
 (defun seed7-inside-string-p (&optional pos)
   "Return non-nil if POS or point is inside a string, nil otherwise.
@@ -2923,7 +2921,7 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
 
 
 (defun seed7---skip-block-comment-forward ()
-  "Skip comment block utility.
+  "Skip comment block -- ignores nesting.
 Only used by `seed7-skip-comment-forward'."
   (search-forward "*)" nil :noerror)
   (when (seed7-at-end-of-line-p)
@@ -5156,8 +5154,11 @@ information:
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
 If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound for
-the closing delimiter.  Internally the returned end position is point after
-the closing delimiter, so it may be equal to SCOPE-END-POS."
+the closing delimiter.
+
+If SCOPE-END-POS is non-nil, it is treated as an inclusive upper bound:
+the position one past the closing delimiter must be less than or equal
+to SCOPE-END-POS."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
     (error "seed7-line-inside-array-definition-block: \
@@ -5178,14 +5179,14 @@ Invalid boundaries: begin=%S, end=%S"
           (setq block-indent-column (current-column))
           (goto-char (1- (match-end 0))) ; position at "("
           (seed7--with-forward-sexp
-           ;; point is at block end
-           (when (and (< block-start-pos original-pos (point))
-                      (or (not scope-end-pos)
-                          (<= (point) scope-end-pos)))
-             (list block-indent-column
-                   "array"
-                   block-start-pos
-                   (point)))))))))
+            ;; point is at block end
+            (when (and (< block-start-pos original-pos (point))
+                       (or (not scope-end-pos)
+                           (<= (point) scope-end-pos)))
+              (list block-indent-column
+                    "array"
+                    block-start-pos
+                    (point)))))))))
 
 
 (defun seed7-line-at-endof-array-definition-block (n &optional
@@ -5245,8 +5246,11 @@ following information:
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
 If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound for
-the closing delimiter.  Internally the returned end position is point after
-the closing delimiter, so it may be equal to SCOPE-END-POS."
+the closing delimiter.
+
+If SCOPE-END-POS is non-nil, it is treated as an inclusive upper bound:
+the position one past the closing delimiter must be less than or equal
+to SCOPE-END-POS."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
     (error "seed7-line-inside-set-definition-block: \
@@ -8572,7 +8576,7 @@ this major mode takes advantage of Seed7 ability to analyze itself to provide
 built-in cross reference support.  This, along with static analysis and
 compilation requires a working installation of Seed7.
 
-\\<seed7-mode-map>"
+Key binding: \\<seed7-mode-map>"
 
   ;; Seed7 Font Locking Control
   (setq-local font-lock-defaults '((seed7-font-lock-keywords)))
