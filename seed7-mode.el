@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260610.1250
+;; Package-Version: 20260610.1411
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-10T16:50:47+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2026-06-10T18:11:09+0000 W24-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5152,10 +5152,6 @@ information:
 - 3: block end position: position of the character immediately after
      the closing delimiter (one past the `)').
 
-If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
-If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound for
-the closing delimiter.
-
 If SCOPE-END-POS is non-nil, it is treated as an inclusive upper bound:
 the position one past the closing delimiter must be less than or equal
 to SCOPE-END-POS."
@@ -5179,7 +5175,7 @@ Invalid boundaries: begin=%S, end=%S"
           (setq block-indent-column (current-column))
           (goto-char (1- (match-end 0))) ; position at "("
           (seed7--with-forward-sexp
-            ;; point is at block end
+            ;; with point now one path the closing delimiter
             (when (and (< block-start-pos original-pos (point))
                        (or (not scope-end-pos)
                            (<= (point) scope-end-pos)))
@@ -5244,10 +5240,6 @@ following information:
 - 3: block end position: position of the character immediately after
      the closing delimiter (one past the `}').
 
-If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
-If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound for
-the closing delimiter.
-
 If SCOPE-END-POS is non-nil, it is treated as an inclusive upper bound:
 the position one past the closing delimiter must be less than or equal
 to SCOPE-END-POS."
@@ -5271,7 +5263,7 @@ Invalid boundaries: begin=%S, end=%S"
           (setq block-indent-column (current-column))
           (goto-char (1- (match-end 0))) ; position at "{"
           (seed7--with-forward-sexp
-            ;; point should be at block end
+            ;; with point now one path the closing delimiter
             (when (and (< block-start-pos original-pos (point))
                        (or (not scope-end-pos)
                            (<= (point) scope-end-pos)))
@@ -5446,6 +5438,7 @@ If an appropriate parens pair is found, return a list of 4 elements:
                  (indent-column (1+ (current-column))))
             (when op
               (seed7--with-forward-sexp
+                ;; with point now one path the closing delimiter
                 (let ((end-pos (1- (point))))
                   (when (and (< open-pos line-start end-pos)
                              (or (not scope-end-pos)
@@ -5500,7 +5493,7 @@ If an appropriate parens pair is found, return a list of 4 elements:
                 (goto-char start-pos)
                 (setq indent-column (1+ (current-column)))
                 (seed7--with-forward-sexp
-                  ;; Point is now one past the closing delimiter.
+                  ;; with point now one path the closing delimiter
                   (let ((end-pos (1- (point))))
                     (when (and op
                                (< (or scope-begin-pos 0)
@@ -8576,7 +8569,7 @@ this major mode takes advantage of Seed7 ability to analyze itself to provide
 built-in cross reference support.  This, along with static analysis and
 compilation requires a working installation of Seed7.
 
-Key binding: \\<seed7-mode-map>"
+\\<seed7-mode-map>"
 
   ;; Seed7 Font Locking Control
   (setq-local font-lock-defaults '((seed7-font-lock-keywords)))
