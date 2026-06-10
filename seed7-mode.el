@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260610.1511
+;; Package-Version: 20260610.1722
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-10T19:11:20+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2026-06-10T21:22:50+0000 W24-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2712,13 +2712,48 @@ The SYNTAX argument holds the value returned by `syntax-ppss' for point."
         (not (seed7--inside-comment-p ,syntax))))
 
 (defun seed7-inside-comment-p (&optional pos)
-  "Return non-nil if POS or point is inside a comment, nil otherwise.
+  "Return non-nil if POS or point is part of a comment.
 
-Returns the value at index 4 of `syntax-ppss': non-nil when inside a
-comment (an integer > 0 for nested `(* ... *)' block comments, `t' for
-`#' line-end comments)."
+This includes positions where `syntax-ppss' reports being inside a
+comment, and also comment delimiter boundary characters that font-lock
+renders as comment text:
+
+- the `#' character that starts a line-end comment,
+- the `(' character of a `(*' block-comment opener,
+- the `)' character of a `*)' block-comment closer.
+
+Return nil otherwise.
+Does not move point."
   (declare (side-effect-free t))
-  (nth 4 (syntax-ppss (or pos (point)))))
+  (save-excursion
+    (let* ((pos (or pos (point)))
+           (syntax (syntax-ppss pos)))
+      (or
+       ;; Normal case: POS is syntactically inside a comment.
+       (nth 4 syntax)
+
+       ;; Boundary case 1: POS is at the `#' that starts a line-end comment.
+       ;; `syntax-ppss' at POS reports the state before consuming `#', so look
+       ;; one character later.  For number-base separators, syntax-propertize
+       ;; gives `#' symbol syntax, so looking after it will not enter a comment.
+       (and (eq (char-after pos) ?#)
+            (< pos (point-max))
+            (nth 4 (syntax-ppss (1+ pos))))
+
+       ;; Boundary case 2: POS is at the `(' of a `(*' block-comment opener.
+       ;; Check after the full two-character delimiter has been consumed.
+       (and (eq (char-after pos) ?\()
+            (< (1+ pos) (point-max))
+            (eq (char-after (1+ pos)) ?*)
+            (nth 4 (syntax-ppss (+ pos 2))))
+
+       ;; Boundary case 3: POS is at the `)' of a `*)' block-comment closer.
+       ;; At `)' itself the comment is already closed, so check the previous
+       ;; `*', which is still syntactically inside the comment.
+       (and (eq (char-after pos) ?\))
+            (> pos (point-min))
+            (eq (char-before pos) ?*)
+            (nth 4 (syntax-ppss (1- pos))))))))
 
 (defun seed7-inside-string-p (&optional pos)
   "Return non-nil if POS or point is inside a string, nil otherwise.
@@ -4155,11 +4190,24 @@ buffers using the `seed7-mode'."
     (seed7-to-indent)
     (current-column)))
 
+
 (defun seed7-current-line-start-inside-comment-p ()
-  "Return non-nil if the current line starts inside a comment."
+  "Return non-nil if the current code line starts inside or opens a comment.
+Detects three cases:
+- The line's first non-whitespace character opens a `(*' block comment.
+- The line's first non-whitespace character starts a `#' line-end comment.
+- The line's first non-whitespace character is already inside a multi-line
+  block comment (a continuation line of a `(* ... *)' spanning several lines).
+
+Note: `syntax-ppss' at the opening `(' of `(*' or the `#' reports the state
+before that character is consumed — not yet inside the comment — so
+`seed7-inside-comment-p' alone misses every line that STARTS a new comment.
+The `looking-at-p' checks handle those."
   (save-excursion
     (seed7-to-indent)
-    (seed7-inside-comment-p (point))))
+    (or (looking-at-p "(\\*")
+        (looking-at-p "#")
+        (seed7-inside-comment-p (point)))))
 
 (defun seed7-to-line-last-non-whitespace ()
   "Move point to the last non-whitespace character of the line.
