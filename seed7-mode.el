@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260610.1722
+;; Package-Version: 20260610.1729
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-10T21:22:50+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2026-06-10T21:29:12+0000 W24-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4192,22 +4192,10 @@ buffers using the `seed7-mode'."
 
 
 (defun seed7-current-line-start-inside-comment-p ()
-  "Return non-nil if the current code line starts inside or opens a comment.
-Detects three cases:
-- The line's first non-whitespace character opens a `(*' block comment.
-- The line's first non-whitespace character starts a `#' line-end comment.
-- The line's first non-whitespace character is already inside a multi-line
-  block comment (a continuation line of a `(* ... *)' spanning several lines).
-
-Note: `syntax-ppss' at the opening `(' of `(*' or the `#' reports the state
-before that character is consumed — not yet inside the comment — so
-`seed7-inside-comment-p' alone misses every line that STARTS a new comment.
-The `looking-at-p' checks handle those."
+  "Return non-nil if the current code line starts inside a comment."
   (save-excursion
     (seed7-to-indent)
-    (or (looking-at-p "(\\*")
-        (looking-at-p "#")
-        (seed7-inside-comment-p (point)))))
+    (seed7-inside-comment-p (point))))
 
 (defun seed7-to-line-last-non-whitespace ()
   "Move point to the last non-whitespace character of the line.
