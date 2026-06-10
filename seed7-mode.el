@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260610.1449
+;; Package-Version: 20260610.1511
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-10T18:49:02+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2026-06-10T19:11:20+0000 W24-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2065,7 +2065,9 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
    ;;                      (---)                   (-----------------------------------------------------------------------------------)
    ;;                                                 (-----------)     (-------)     (-----------------------------)     (------)           (------)     (------)
    ;;                      G1                      G2                                  backslash-character                   %s              G3           G4
-   ;; G1: #                                                                                                                  #1
+   ;; format argument number:                                                                                                 1
+   ;;
+   ;; G1: #
    ;; G2: single quote character expression
    ;; G3: opening block comment: (*
    ;; G4: closing block comment: *)
@@ -2106,14 +2108,15 @@ Handle 4 cases:
     (cond
      ;; deal with '#'
      ((match-beginning 1)
-      (let ((mb (match-beginning 1)) (me (match-end 1))
-            (syntax (string-to-syntax "_")))
-        (if syntax (put-text-property mb me 'syntax-table syntax))))
+      (put-text-property (match-beginning 1) (match-end 1)
+                         'syntax-table (string-to-syntax "_")))
 
      ;; Deal with single quoted character expression
      ((match-beginning 2)
-      (put-text-property (match-beginning 2) (1+ (match-beginning 2)) 'syntax-table '(7 . ?'))
-      (put-text-property (1- (match-end 2))  (match-end 2)            'syntax-table '(7 . ?')))
+      (put-text-property (match-beginning 2) (1+ (match-beginning 2))
+                         'syntax-table '(7 . ?'))
+      (put-text-property (1- (match-end 2))  (match-end 2)
+                         'syntax-table '(7 . ?')))
 
      ;; Mark (* as a two-character comment-start (style b).
      ;; Override the paren-open syntax on '(' for this occurrence.
@@ -8567,7 +8570,7 @@ See https://seed7.net/ for information on the Seed7 programming
 language.
 
 Use `seed7-mode-customize' to customize important elements;
-this major mode takes advantage of Seed7 ability to analyze itself to provide
+this major mode takes advantage of Seed7's ability to analyze itself to provide
 built-in cross reference support.  This, along with static analysis and
 compilation requires a working installation of Seed7.
 
