@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260608.1607
+;; Package-Version: 20260610.0834
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-08T20:07:36+0000 W24-1"
+(defconst seed7-mode-version-timestamp "2026-06-10T12:34:06+0000 W24-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2060,17 +2060,36 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
 
 (defconst seed7-char-literal-re
   (format
-   "\\(?:\\(?:[[:digit:]]\\(#\\)[[:alnum:]]\\)\\|\\(\\(?:'\\\\''\\)\\|\\(?:'.'\\)\\|\\(?:'\\\\[abefnrtv\"A-Z\\\\]'\\)\\|\\(?:%s\\)\\)\\)"
-   ;; (----(----------------------------------)----(--------------------------------------------------------------------------------)--)
+   "\\(?:\\(?:[[:digit:]]\\(#\\)[[:alnum:]]\\)\\|\\(\\(?:'\\\\''\\)\\|\\(?:'.'\\)\\|\\(?:'\\\\[abefnrtv\"A-Z\\\\]'\\)\\|\\(?:%s\\)\\)\\)\\|\\((\\*\\)\\|\\(\\*)\\)"
+   ;; (----(----------------------------------)----(--------------------------------------------------------------------------------)--)-----(------)-----(------)
    ;;                      (---)                   (-----------------------------------------------------------------------------------)
-   ;;                                                 (-----------)     (-------)     (-----------------------------)     (------)
-   ;;                      G1                      G2                                                                        %1
+   ;;                                                 (-----------)     (-------)     (-----------------------------)     (------)           (------)     (------)
+   ;;                      G1                      G2                                                                        %1              G3           G4
+   ;; G1: #
+   ;; G2: single quote character expression
+   ;; G3: opening block comment: (*
+   ;; G4: closing block comment: *)
    seed7-any-valid-char-integer-semicolon-re))
+
+;; Emacs supports two-character comment delimiters via "style b"
+;; syntax text properties. The characters of each delimiter are
+;; tagged with 4 codes (see `modify-syntax-entry')::
+;;
+;;              syntax-
+;;              entry
+;; Position     code        Meaning
+;; ==========   =========   ====================================
+;; ( in (*      "< 1b"      first char of style-b comment-start
+;; * in (*      "< 2b"      second char of style-b comment-start
+;; * in *)      "> 3b"      first char of style-b comment-end
+;; ) in *)      "> 4b"      second char of style-b comment-end
 
 (defun seed7-mode-syntax-propertize (start end)
   "Apply syntax property between START and END to # character.
 Used when # is used as a number base separator and in single quoted
-character expression."
+character expression.  Also marks (* and *) as the two-character
+comment-start and comment-end delimiters (style b) so that
+`syntax-ppss' correctly detects block-comment regions."
   ;; (info "(elisp)Syntax Properties")
   ;;
   ;; called from `syntax-propertize', inside save-excursion with-silent-modifications
@@ -2079,16 +2098,30 @@ character expression."
     (cond
      ;; deal with '#'
      ((match-beginning 1)
-      (let
-          ((mb (match-beginning 1)) (me (match-end 1))
-           (syntax (string-to-syntax "_")))
+      (let ((mb (match-beginning 1)) (me (match-end 1))
+            (syntax (string-to-syntax "_")))
         (if syntax (put-text-property mb me 'syntax-table syntax))))
 
      ;; Deal with single quoted character expression
      ((match-beginning 2)
-      (put-text-property  (match-beginning 2) (1+ (match-beginning 2)) 'syntax-table '(7 . ?'))
-      (put-text-property  (1- (match-end 2))  (match-end 2)            'syntax-table '(7 . ?'))))))
+      (put-text-property (match-beginning 2) (1+ (match-beginning 2)) 'syntax-table '(7 . ?'))
+      (put-text-property (1- (match-end 2))  (match-end 2)            'syntax-table '(7 . ?')))
 
+     ;; Mark (* as a two-character comment-start (style b).
+     ;; Override the paren-open syntax on '(' for this occurrence.
+     ((match-beginning 3)
+      (put-text-property (match-beginning 3) (1+ (match-beginning 3))
+                         'syntax-table (string-to-syntax "< 1b"))
+      (put-text-property (1+ (match-beginning 3)) (match-end 3)
+                         'syntax-table (string-to-syntax "< 2b")))
+
+     ;; Mark *) as a two-character comment-end (style b).
+     ;; Override the paren-close syntax on ')' for this occurrence.
+     ((match-beginning 4)
+      (put-text-property (match-beginning 4) (1+ (match-beginning 4))
+                         'syntax-table (string-to-syntax "> 3b"))
+      (put-text-property (1+ (match-beginning 4)) (match-end 4)
+                         'syntax-table (string-to-syntax "> 4b"))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
@@ -2128,8 +2161,8 @@ Allows selecting similar colours for various systems."
     (while list
       (or answer
           (if (or (color-defined-p (car list))
-                          (null (cdr list)))
-                  (setq answer (car list))))
+                  (null (cdr list)))
+              (setq answer (car list))))
       (setq list (cdr list)))
     answer))
 
@@ -2647,31 +2680,16 @@ The SYNTAX argument holds the value returned by `syntax-ppss' for point."
   `(and (not (seed7--inside-string-p ,syntax))
         (not (seed7--inside-comment-p ,syntax))))
 
-;; [:todo 2025-05-21, by Pierre Rouleau: clarify identifying comments]
 (defun seed7-inside-comment-p (&optional pos)
-  "Return face of comment if POS or point is inside comment, nil otherwise.
-Inside a comment, the returned value is:
-- `font-lock-comment-face'           : inside comment block or end-line comment
-- `font-lock-comment-delimiter-face' : at the # for line-end comment."
-  ;; Using the face instead of the syntax, as I found the syntax
-  ;; not reliable enough when looking at some edge cases: the open block
-  ;; comment characters are not recognized as comment syntax.
+  "Return non-nil if POS or point is inside a comment, nil otherwise.
+
+Returns the value at index 4 of `syntax-ppss': non-nil when inside a
+comment (an integer > 0 for nested `(* … *)' block comments, `t' for
+`#' line-end comments)."
   (declare (side-effect-free t))
   (let ((pos (or pos (point))))
-    ;; deal with comment-dwim that passes 0 to pos when trying to write a line
-    ;; comment when issued at the beginning of an empty line.
     (unless (eq pos 0)
-      ;; if there's no overlay the face show up at the top
-      (or (car-safe (memq  (get-char-property pos 'face)
-                           '(font-lock-comment-face
-                             font-lock-comment-delimiter-face)))
-          ;; where there is one or several overlay, we need to
-          ;; look into the text properties to see the face.
-          (let ((text-prop (text-properties-at pos)))
-            (and (eq (nth 0 text-prop) 'face)
-                 (or (eq (nth 1 text-prop) 'font-lock-comment-face)
-                     (eq (nth 1 text-prop)
-                         'font-lock-comment-delimiter-face))))))))
+      (nth 4 (syntax-ppss pos)))))
 
 (defun seed7-inside-string-p (&optional pos)
   "Return non-nil if POS or point is inside a string, nil otherwise.
