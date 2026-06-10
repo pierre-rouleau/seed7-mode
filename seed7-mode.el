@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260610.0834
+;; Package-Version: 20260610.1105
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-10T12:34:06+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2026-06-10T15:05:58+0000 W24-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2042,7 +2042,7 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
     ;;
     (modify-syntax-entry ?\( "()1n" st) ; The comment "(*" can be nested ...
     (modify-syntax-entry ?\) ")(4n" st) ; ...  and end with the matching "*)"
-    (modify-syntax-entry ?* ". 23" st) ; '*' as second of "(*" and previous of; "*)"
+    (modify-syntax-entry ?* ". 23" st) ; '*' as second of "(*" and previous of "*)"
     ;;
     ;; Seed7 Comments Control : line-end comment.
     (modify-syntax-entry ?# "<"  st)
@@ -2073,26 +2073,32 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
 
 ;; Emacs supports two-character comment delimiters via "style b"
 ;; syntax text properties. The characters of each delimiter are
-;; tagged with 4 codes (see `modify-syntax-entry')::
+;; tagged with 4 codes (see `modify-syntax-entry'):
 ;;
 ;;              syntax-
 ;;              entry
 ;; Position     code        Meaning
 ;; ==========   =========   ====================================
-;; ( in (*      "< 1b"      first char of style-b comment-start
-;; * in (*      "< 2b"      second char of style-b comment-start
-;; * in *)      "> 3b"      first char of style-b comment-end
-;; ) in *)      "> 4b"      second char of style-b comment-end
+;; ( in (*      "< 1bn"     first char of style-b comment-start
+;; * in (*      "< 2bn"     second char of style-b comment-start
+;; * in *)      "> 3bn"     first char of style-b comment-end
+;; ) in *)      "> 4bn"     second char of style-b comment-end
+;;
+;; Each syntax-entry code ends with 'n' because Seed7 (* *) style
+;; comments can be nested.
+
 
 (defun seed7-mode-syntax-propertize (start end)
-  "Apply syntax property between START and END to # character.
-Used when # is used as a number base separator and in single quoted
-character expression.  Also marks (* and *) as the two-character
-comment-start and comment-end delimiters (style b) so that
-`syntax-ppss' correctly detects block-comment regions."
+  "Apply syntax-table text property between START and END for # and comments.
+
+Handle 4 cases:
+- The `#' number-base separator,
+- The single-quoted character literals
+- The `(*' and `*)' two-character block-comment delimiters."
   ;; (info "(elisp)Syntax Properties")
   ;;
-  ;; called from `syntax-propertize', inside save-excursion with-silent-modifications
+  ;; called from `syntax-propertize', wrapped in `save-excursion' and
+  ;; `with-silent-modifications'.
   (goto-char start)
   (while (re-search-forward seed7-char-literal-re end t)
     (cond
@@ -2111,17 +2117,17 @@ comment-start and comment-end delimiters (style b) so that
      ;; Override the paren-open syntax on '(' for this occurrence.
      ((match-beginning 3)
       (put-text-property (match-beginning 3) (1+ (match-beginning 3))
-                         'syntax-table (string-to-syntax "< 1b"))
+                         'syntax-table (string-to-syntax "< 1bn"))
       (put-text-property (1+ (match-beginning 3)) (match-end 3)
-                         'syntax-table (string-to-syntax "< 2b")))
+                         'syntax-table (string-to-syntax "< 2bn")))
 
      ;; Mark *) as a two-character comment-end (style b).
      ;; Override the paren-close syntax on ')' for this occurrence.
      ((match-beginning 4)
       (put-text-property (match-beginning 4) (1+ (match-beginning 4))
-                         'syntax-table (string-to-syntax "> 3b"))
+                         'syntax-table (string-to-syntax "> 3bn"))
       (put-text-property (1+ (match-beginning 4)) (match-end 4)
-                         'syntax-table (string-to-syntax "> 4b"))))))
+                         'syntax-table (string-to-syntax "> 4bn"))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
@@ -2497,7 +2503,28 @@ Allows selecting similar colours for various systems."
    (cons seed7-minus-operator-regexp                 (list 1 ''font-lock-keyword-face))
    ;; other low priority characters [:todo 2025-07-09, by Pierre Rouleau:
    ;; check if any missing and improve control of ..]
-   (cons "[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]"   (list 1 ''font-lock-keyword-face)))
+   (cons "[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]"   (list 1 ''font-lock-keyword-face))
+   ;;
+   ;; Fontify the `*)' block-comment end delimiter entirely with
+   ;; `font-lock-comment-face'.
+   ;;
+   ;; Syntactic fontification applies `font-lock-comment-delimiter-face'
+   ;; to `*' (syntax property "> 3b": first char of style-b comment-end)
+   ;; and leaves `)' ("> 4b": second char) with no face, because
+   ;; `syntax-ppss' at the `)' position already reports "outside comment"
+   ;; — the comment was fully closed by the complete `*)' pair.
+   ;;
+   ;; This rule overrides both characters to `font-lock-comment-face',
+   ;; consistent with the interior of the block.  The
+   ;; `(nth 4 (syntax-ppss ...))' guard ensures the rule fires only when
+   ;; `*)' genuinely closes a `(* ... *)' block comment and not when
+   ;; those two characters appear elsewhere (e.g. inside a string).
+   (list "\\*)"
+         '(0 (when (save-excursion
+                     (goto-char (match-beginning 0))
+                     (nth 4 (syntax-ppss)))
+               font-lock-comment-face)
+             t)))
   "Associates regexp to a regexp group and a face to render it.")
 
 
@@ -2684,7 +2711,7 @@ The SYNTAX argument holds the value returned by `syntax-ppss' for point."
   "Return non-nil if POS or point is inside a comment, nil otherwise.
 
 Returns the value at index 4 of `syntax-ppss': non-nil when inside a
-comment (an integer > 0 for nested `(* … *)' block comments, `t' for
+comment (an integer > 0 for nested `(* ... *)' block comments, `t' for
 `#' line-end comments)."
   (declare (side-effect-free t))
   (let ((pos (or pos (point))))
@@ -4127,7 +4154,7 @@ buffers using the `seed7-mode'."
     (current-column)))
 
 (defun seed7-current-line-start-inside-comment-p ()
-  "Return non-nil if the current line start inside a comment."
+  "Return non-nil if the current line starts inside a comment."
   (save-excursion
     (seed7-to-indent)
     (seed7-inside-comment-p (point))))
@@ -4903,7 +4930,39 @@ column) is not exposed."
               (nth 4 seed7--indent-last-block-spec))))))
 
 (defun seed7-line-inside-a-block-cached (n &optional dont-skip-comment-start)
-  "Cached variant of `seed7-line-inside-a-block' for indentation."
+  "Cached variant of `seed7-line-inside-a-block' for indentation.
+
+N is: - :previous-non-empty for the previous non-empty line,
+        skipping lines with starting comments unless DONT-SKIP-COMMENT-START
+         is non-nil,
+      - 0 for the current line,
+      - A negative number for previous lines: -1 previous, -2 line before...
+
+When N is 0 and DONT-SKIP-COMMENT-START is nil, the function first
+checks `seed7--cached-block-spec-current-line'; if the cache is still
+valid it returns the cached spec immediately without re-scanning (O(1)
+fast path).
+
+On a cache miss the function delegates to `seed7-line-inside-a-block'.
+When N is 0 and a block is found, two caches are updated as side effects:
+- `seed7--indent-last-block-spec' is set to a marker-backed copy of the
+  returned spec (via `seed7--cache-block-spec').
+- `seed7--indent-block-bounds' is set to a cons cell whose car is the
+  marker for the block start position (element 2 of the spec) and whose
+  cdr is the marker for the enclosing block end position (element 3).
+  This lightweight cons is used by `seed7-calc-indent' for O(1) early
+  bound checks on subsequent lines.
+
+These side effects do NOT occur when N is non-zero or when no block is
+found.
+
+Return nil if line N is not inside any Seed7 block.
+If a block is found, return a list of 5 elements:
+- 0: indent column     : indentation column line N should use,
+- 1: match string      : string describing the type of block found,
+- 2: block start position (the beginning of the start keyword line),
+- 3: enclosing block end position,
+- 4: indent column of the block start line."
   (or (and (eq n 0)
            (not dont-skip-comment-start)
            (seed7--cached-block-spec-current-line))
@@ -5093,7 +5152,8 @@ information:
 - 0: indent column : indentation column the line N should use,
 - 1: string: \"array\"
 - 2: block start position,
-- 3: block end position.
+- 3: block end position: position of the character immediately after
+     the closing delimiter (one past the `(').
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
 If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound for
@@ -5181,7 +5241,8 @@ following information:
 - 0: indent column : indentation column the line N should use,
 - 1: string: \"set\"
 - 2: block start position,
-- 3: block end position.
+- 3: block end position: position of the character immediately after
+     the closing delimiter (one past the `{').
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
 If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound for
@@ -7228,7 +7289,7 @@ ignored because there is no universal byte encoding for them."
       (user-error "No running Seed7 process in this buffer"))
     (if (characterp last-input-event)
         (process-send-string proc (char-to-string last-input-event))
-      ;; Non-character events (arrows, F-keys, mouse, …) cannot be
+      ;; Non-character events (arrows, F-keys, mouse, ...) cannot be
       ;; forwarded as raw bytes without a terminal-encoding layer.
       (message "seed7-run[RAW]: cannot forward non-character event: %s"
                (key-description (vector last-input-event))))))
@@ -8503,6 +8564,14 @@ current Emacs session without restarting Emacs."
 ;;;###autoload
 (define-derived-mode seed7-mode prog-mode "seed7"
   "Major mode for editing Seed7 files.
+
+See https://seed7.net/ for information on the Seed7 programming
+language.
+
+Use `seed7-mode-customize' to customize important elements;
+this major mode takes advantage of Seed7 ability to analyze itself to provide
+built-in cross reference support.  This, along with static analysis and
+compilation requires a working installation of Seed7.
 
 \\<seed7-mode-map>"
 
