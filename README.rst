@@ -2,7 +2,7 @@
 Seed7-mode - Emacs support for the Seed7 Programming Language
 =============================================================
 
-.. image:: https://img.shields.io/badge/seed7_mode_News-teal
+.. image:: https://img.shields.io/badge/seed7--mode_News-teal
    :alt: News
    :target: https://github.com/pierre-rouleau/seed7-mode/blob/main/NEWS
 
