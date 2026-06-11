@@ -4115,7 +4115,9 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
   "Seed7-aware `forward-sexp-function'.
 Handles:
 - nested `(* ... *)' block comments,
-- consecutive `#' line-end comment blocks.
+- consecutive `#' line-end comment blocks,
+- procedure/function declarations (`seed7-procfunc-beg-of-decl-nc-re'),
+- any other block start keyword (`seed7-block-top-start-regexp').
 Falls through to `scan-sexps' for all other sexp forms."
   (let* ((arg (or arg 1)))
     (dotimes (_ (abs arg))
@@ -4128,9 +4130,13 @@ Falls through to `scan-sexps' for all other sexp forms."
        ((and (> arg 0) (seed7--at-line-comment-start-p))
         (seed7--forward-line-comments 1))
        ;;
-       ;; Forward: end of proc/func
+       ;; Forward: at the beginning of a proc/func declaration
        ((and (> arg 0) (looking-at seed7-procfunc-beg-of-decl-nc-re))
-        (seed7-end-of-defun 1))
+        (seed7-to-block-forward t))
+       ;;
+       ;; Forward: at the beginning of any other block
+       ((and (> arg 0) (looking-at seed7-block-top-start-regexp))
+        (seed7-to-block-forward t))
 
        ;; Backward: point is just after *) closer
        ((and (< arg 0)
@@ -4145,14 +4151,14 @@ Falls through to `scan-sexps' for all other sexp forms."
                     (>= (point) hash-pos))))
         (seed7--forward-line-comments -1))
        ;;
-       ;; Backward: from end of proc/func
+       ;; Backward: from end of any block (proc/func, if, while, for, etc.)
        ((and (< arg 0)
-             (looking-back "end func;" (line-beginning-position)))
-        (beginning-of-defun 1))
+             (looking-back seed7-block-end-regexp (line-beginning-position)))
+        (seed7-to-block-backward nil t))
        ;;
        ;; Default: delegate to built-in scanner
        (t
-        (goto-char (or (scan-sexps (point) (if (> arg 0) 1 -1))
+
                        (buffer-end arg))))))))
 
 ;; ---------------------------------------------------------------------------
