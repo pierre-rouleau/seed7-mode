@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260611.0742
+;; Package-Version: 20260611.0923
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -446,12 +446,14 @@
 ;; - Seed7 Compilation
 ;;   * `seed7-check-or-compile'
 ;;     . `seed7-check-file'
+;;       . `seed7--cmd-specs-for'
 ;;       . `seed7--expand-args'
 ;;       . `seed7--run-and-parse'
 ;;         . `seed7--parse-diagnostics'
 ;; - Seed7 Run Program
 ;;   - Seed7 Run – process filters and sentinel
 ;;   * `seed7-run-program'
+;;     o `seed7--cmd-specs-for'
 ;;     . `seed7--run-program-filter'
 ;;     . `seed7--run-sentinel'
 ;;   - Seed7 Run – interactive input commands
@@ -530,7 +532,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T11:42:15+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-11T13:23:58+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7007,6 +7009,36 @@ used to set `default-directory' for the subprocess."
       (when (buffer-live-p stdout-buf) (kill-buffer stdout-buf)))
     (list exit-code diagnostics stderr-text)))
 
+(defun seed7--cmd-specs-for (user-option)
+  "Return a (PROGRAM CMD-STRING CMD-PARTS) list for the specified USER-OPTION.
+
+USER-OPTION is a symbol; the name of the user-option.
+
+The returned PROGRAM is the absolute path of the executable file to execute.
+Honours absolute, relative, and PATH names identified in the user-option,
+including a leading ~ symbol to identify the home directory.
+
+The returned CMD-PARTS is a list of strings of all arguments for the command.
+
+Signals a user error if the absolute path of the program is not found.
+"
+  (let* ((user-option-name (symbol-name user-option))
+         (cmd-string       (symbol-value user-option))
+         (cmd-parts        (split-string-and-unquote cmd-string))
+         (pgm-name         (car-safe cmd-parts))
+         ;; Resolve the executable: when a directory component is present
+         ;; (e.g. "~/bin/s7check"), expand ~ before searching exec-path
+         ;; so tilde paths are honoured.
+         (program-path  (and pgm-name
+                             (if (file-name-directory pgm-name)
+                                 (executable-find (expand-file-name pgm-name))
+                               (executable-find pgm-name)))))
+    (if program-path
+        (list program-path cmd-string (cdr-safe cmd-parts)
+              (cdr-safe cmd-parts))
+      (user-error "Program specified by `%s' not found or not executable: %s"
+                  user-option-name (or pgm-name "")))))
+
 (defun seed7-check-file (file-name &optional compile)
   "Run static check or compilation on FILE-NAME without using the shell.
 
@@ -7042,25 +7074,15 @@ non-nil) cannot be found or is not executable.  In that case verify the
 value of the corresponding user-option.
 
 See also: `seed7-check-or-compile'."
-  (let* ((cmd-string         (if compile seed7-compiler seed7-checker))
-         (user-option-name   (if compile "seed7-compiler" "seed7-checker"))
-         (cmd-parts  (split-string-and-unquote cmd-string))
-         (raw-program (car cmd-parts))
-         ;; Resolve the executable: when a directory component is present
-         ;; (e.g. "~/bin/s7check"), expand ~ before searching exec-path
-         ;; so tilde paths are honoured.
-         (program (and raw-program
-                       (if (file-name-directory raw-program)
-                           (executable-find (expand-file-name raw-program))
-                         (executable-find raw-program)))))
-    ;; Guard: fail fast before allocating any buffers.
-    (unless program
-      (user-error "Program specified by `%s' not found or not executable: %s
-Verify the value of `%s'."
-                  user-option-name raw-program user-option-name))
+  (let* ((cmd-specs  (seed7--cmd-specs-for (if compile
+                                               'seed7-compiler
+                                             'seed7-checker)))
+         (program    (nth 0 cmd-specs))
+         (cmd-string (nth 1 cmd-specs))
+         (args       (nth 2 cmd-specs)))
     ;; Run compiler or checker and return results
     (seed7--run-and-parse program
-                          (append (seed7--expand-args (cdr cmd-parts))
+                          (append (seed7--expand-args args)
                                   (list (expand-file-name file-name)))
                           cmd-string compile file-name)))
 
@@ -7442,8 +7464,9 @@ See also: `seed7-check-or-compile', `seed7-interpreter'."
    (list (read-string "Program arguments (empty for none): ")))
   ;;
   ;; -- Validate current buffer
-  (let ((file (expand-file-name (or buffer-file-truename buffer-file-name))))
-    (unless file
+  (let ((file (or buffer-file-truename buffer-file-name)))
+    (if file
+        (setq file (expand-file-name file))
       (user-error "Buffer is not visiting a file"))
     (unless (eq major-mode 'seed7-mode)
       (user-error "%s is not a Seed7 buffer" (buffer-name)))
@@ -7457,7 +7480,7 @@ See also: `seed7-check-or-compile', `seed7-interpreter'."
     ;;
     ;; -- Step 1: static check -----------------------------------------------
     (message "seed7: checking %s..." (file-name-nondirectory file))
-    (let* ((check-result (seed7-check-file file nil))   ; nil = s7check, not s7c
+    (let* ((check-result (seed7-check-file file nil)) ; nil = s7check, not s7c
            (exit-code    (nth 0 check-result))
            (diags        (nth 1 check-result))
            (stderr-text  (nth 2 check-result))
@@ -7506,10 +7529,9 @@ See also: `seed7-check-or-compile', `seed7-interpreter'."
              (err-name   (format "*seed7-run-stderr: %s*" basename))
              (stdout-buf (get-buffer-create buf-name))
              (stderr-buf (get-buffer-create err-name))
-             (interp-cmd (split-string-and-unquote seed7-interpreter))
-             (interp-pgm (expand-file-name (car interp-cmd)))
-             (interp-pgm (or (executable-find interp-pgm) interp-pgm))
-             (interp-opts (cdr interp-cmd))
+             (cmd-specs (seed7--cmd-specs-for 'seed7-interpreter))
+             (interp-pgm  (nth 0 cmd-specs))
+             (interp-opts (nth 2 cmd-specs))
              (prog-args  (unless (string-blank-p args)
                            (split-string-and-unquote args)))
              (cmd-list   (append (list interp-pgm)
