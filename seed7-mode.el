@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260610.2240
+;; Package-Version: 20260611.0742
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T02:40:13+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-11T11:42:15+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2095,46 +2095,45 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
 (defun seed7-mode-syntax-propertize (start end)
   "Apply syntax-table text properties between START and END.
 
-Handle 4 cases:
-- The `#' number-base separator,
-- Single-Quoted character literals,
-- The `(*' and `*)' two-characters block-comment delimiters."
-  ;; (info "(elisp)Syntax Properties")
+Handle four cases:
+- the `#' number-base separator,
+- single-quoted character literals,
+- the `(*' and `*)' two-characters block-comment delimiters."
+  ;; See:  (info "(elisp)Syntax Properties")
   ;;
-  ;; called from `syntax-propertize', wrapped in `save-excursion' and
-  ;; `with-silent-modifications'.
-  (save-excursion
-    (save-match-data
-      (goto-char start)
-      (while (re-search-forward seed7-char-literal-re end t)
-        (cond
-         ;; deal with '#'
-         ((match-beginning 1)
-          (put-text-property (match-beginning 1) (match-end 1)
-                             'syntax-table (string-to-syntax "_")))
+  (with-silent-modifications
+    (save-excursion
+      (save-match-data
+        (goto-char start)
+        (while (re-search-forward seed7-char-literal-re end t)
+          (cond
+           ;; deal with '#'
+           ((match-beginning 1)
+            (put-text-property (match-beginning 1) (match-end 1)
+                               'syntax-table (string-to-syntax "_")))
 
-         ;; Deal with single quoted character expression
-         ((match-beginning 2)
-          (put-text-property (match-beginning 2) (1+ (match-beginning 2))
-                             'syntax-table '(7 . ?'))
-          (put-text-property (1- (match-end 2))  (match-end 2)
-                             'syntax-table '(7 . ?')))
+           ;; Deal with single quoted character expression
+           ((match-beginning 2)
+            (put-text-property (match-beginning 2) (1+ (match-beginning 2))
+                               'syntax-table '(7 . ?'))
+            (put-text-property (1- (match-end 2))  (match-end 2)
+                               'syntax-table '(7 . ?')))
 
-         ;; Mark (* as a two-character comment-start (style b).
-         ;; Override the paren-open syntax on '(' for this occurrence.
-         ((match-beginning 3)
-          (put-text-property (match-beginning 3) (1+ (match-beginning 3))
-                             'syntax-table (string-to-syntax "< 1bn"))
-          (put-text-property (1+ (match-beginning 3)) (match-end 3)
-                             'syntax-table (string-to-syntax "< 2bn")))
+           ;; Mark (* as a two-character comment-start (style b).
+           ;; Override the paren-open syntax on '(' for this occurrence.
+           ((match-beginning 3)
+            (put-text-property (match-beginning 3) (1+ (match-beginning 3))
+                               'syntax-table (string-to-syntax "< 1bn"))
+            (put-text-property (1+ (match-beginning 3)) (match-end 3)
+                               'syntax-table (string-to-syntax "< 2bn")))
 
-         ;; Mark *) as a two-character comment-end (style b).
-         ;; Override the paren-close syntax on ')' for this occurrence.
-         ((match-beginning 4)
-          (put-text-property (match-beginning 4) (1+ (match-beginning 4))
-                             'syntax-table (string-to-syntax "> 3bn"))
-          (put-text-property (1+ (match-beginning 4)) (match-end 4)
-                             'syntax-table (string-to-syntax "> 4bn"))))))))
+           ;; Mark *) as a two-character comment-end (style b).
+           ;; Override the paren-close syntax on ')' for this occurrence.
+           ((match-beginning 4)
+            (put-text-property (match-beginning 4) (1+ (match-beginning 4))
+                               'syntax-table (string-to-syntax "> 3bn"))
+            (put-text-property (1+ (match-beginning 4)) (match-end 4)
+                               'syntax-table (string-to-syntax "> 4bn")))))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
@@ -2726,7 +2725,6 @@ the comment text:
 
 Return nil otherwise.
 Does not move point."
-  (declare (side-effect-free t))
   (save-excursion
     (let* ((pos (or pos (point)))
            (syntax (syntax-ppss pos)))
@@ -2965,6 +2963,9 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
 (defun seed7---skip-block-comment-forward ()
   "Skip comment block -- ignores nesting.
 Only used by `seed7-skip-comment-forward'."
+  ;; note: Seed7 supports nested block comments.  This function does not
+  ;;       move point out of nested comments, it just moves point to the end
+  ;;       of the current comment even if it is nested inside another one.
   (search-forward "*)" nil :noerror)
   (when (seed7-at-end-of-line-p)
     (forward-line 1)
@@ -4187,14 +4188,16 @@ buffers using the `seed7-mode'."
   (skip-chars-forward " \t"))
 
 (defun seed7-current-line-indent ()
-  "Return indentation column number of current line, 0 if line not indented."
+  "Return indentation column number of current line, 0 if line not indented.
+Does not move point."
   (save-excursion
     (seed7-to-indent)
     (current-column)))
 
 
 (defun seed7-current-line-start-inside-comment-p ()
-  "Return non-nil if the current code line starts inside a comment."
+  "Return non-nil if beginning of current line is in a comment.
+Checks the first indented character.  Does not move point."
   (save-excursion
     (seed7-to-indent)
     (seed7-inside-comment-p (point))))
