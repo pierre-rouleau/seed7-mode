@@ -1061,7 +1061,7 @@ Running Seed7 Program inside Emacs
 **Example screenshot:**
 
 Two Emacs processes, one running terminal mode, the other Emacs running
-graphics mode. Both editing Seed7 code and running some Seed7 programs.
+in graphics mode. Both editing Seed7 code and running some Seed7 programs.
 
 .. image:: doc/res/running-seed7.png
    :scale: 50%
