@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260611.1010
+;; Package-Version: 20260611.1046
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T14:10:35+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-11T14:46:05+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7039,8 +7039,7 @@ Signals a user error if the absolute path of the program is not found.
                                  (executable-find (expand-file-name pgm-name))
                                (executable-find pgm-name)))))
     (if program-path
-        (list program-path cmd-string (cdr-safe cmd-parts)
-              (cdr-safe cmd-parts))
+        (list program-path cmd-string (cdr-safe cmd-parts))
       (user-error "Program specified by `%s' not found or not executable: %s"
                   user-option-name (or pgm-name "")))))
 
