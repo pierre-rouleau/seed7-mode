@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260611.1510
+;; Package-Version: 20260611.1544
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T19:10:12+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-11T19:44:41+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4110,50 +4110,81 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
       (point))))
 
 
-
 (defun seed7--forward-sexp-function (&optional arg)
   "Seed7-aware `forward-sexp-function'.
 Handles:
 - nested `(* ... *)' block comments,
-- consecutive `#' line-end comment blocks.
+- consecutive `#' line-end comment blocks,
+- procedure/function declarations,
+- any other Seed7 code block.
 Falls through to `scan-sexps' for all other sexp forms."
   (let* ((arg (or arg 1)))
     (dotimes (_ (abs arg))
       (cond
-       ;; Forward: point is at (* opener
-       ((and (> arg 0) (looking-at "(\\*"))
-        (seed7--forward-block-comment 1))
-       ;;
-       ;; Forward: point is at # line-comment start
-       ((and (> arg 0) (seed7--at-line-comment-start-p))
-        (seed7--forward-line-comments 1))
-       ;;
-       ;; Forward: end of proc/func
-       ((and (> arg 0) (looking-at seed7-procfunc-beg-of-decl-nc-re))
-        (seed7-end-of-defun 1))
+       ((> arg 0)
+        ;; Forward
+        (cond
+         ;; Forward: point is at (* opener
+         ((looking-at "(\\*")
+          (seed7--forward-block-comment 1))
+         ;;
+         ;; Forward: point is at # line-comment start
+         ((seed7--at-line-comment-start-p)
+          (seed7--forward-line-comments 1))
+         ;;
+         ;; Forward: current line is the start of a proc/func declaration.
+         ;; Must be tested before the generic block case below because
+         ;; `seed7-block-start-regexp' also matches "const proc:" and "const func".
+         ((save-excursion
+            (seed7-to-indent)
+            (looking-at seed7-procfunc-beg-of-decl-nc-re))
+          (seed7-end-of-defun 1 :silent :dont-push-mark))
+         ;;
+         ;; Forward: current line is the start of any other Seed7 block
+         ;; (if, while, for, repeat, case, block, global, local, begin, …).
+         ((save-excursion
+            (seed7-to-indent)
+            (looking-at seed7-block-start-regexp))
+          (seed7-to-block-forward :dont-push-mark))
 
-       ;; Backward: point is just after *) closer
-       ((and (< arg 0)
-             (>= (- (point) 2) (point-min))
-             (string= (buffer-substring (- (point) 2) (point)) "*)"))
-        (seed7--forward-block-comment -1))
-       ;;
-       ;; Backward: current line has a # line comment
-       ((and (< arg 0)
-             (let ((hash-pos (seed7--line-comment-hash)))
-               (and hash-pos
-                    (>= (point) hash-pos))))
-        (seed7--forward-line-comments -1))
-       ;;
-       ;; Backward: from end of proc/func
-       ((and (< arg 0)
-             (looking-back "end func;" (line-beginning-position)))
-        (beginning-of-defun 1))
-       ;;
-       ;; Default: delegate to built-in scanner
-       (t
-        (goto-char (or (scan-sexps (point) (if (> arg 0) 1 -1))
-                       (buffer-end arg))))))))
+         ;;
+         ;; Default: delegate to built-in scanner
+         (t
+          (goto-char (or (scan-sexps (point) 1)
+                         (buffer-end arg))))))
+       ;; Backward
+       ((< arg 0)
+        (cond
+         ;; Backward: point is just after *) closer
+         ((and (>= (- (point) 2) (point-min))
+               (string= (buffer-substring (- (point) 2) (point)) "*)"))
+          (seed7--forward-block-comment -1))
+         ;;
+         ;; Backward: current line has a # line comment
+         ((let ((hash-pos (seed7--line-comment-hash)))
+            (and hash-pos
+                 (>= (point) hash-pos)))
+          (seed7--forward-line-comments -1))
+         ;;
+         ;; Backward: current line is "end func;" (end of proc/func).
+         ;; Must be tested before the generic block-end case because
+         ;; `seed7-block-end-regexp' also matches "end func;".
+         ((save-excursion
+            (seed7-to-indent)
+            (looking-at seed7-procfunc-end-regexp))
+          (seed7-beg-of-defun 1 :silent :dont-push-mark))
+         ;;
+         ;; Backward: current line is any other block end
+         ;; (end if;, end while;, end for;, end case;, end block, until …).
+         ((save-excursion
+            (seed7-to-indent)
+            (looking-at seed7-block-end-regexp))
+          (seed7-to-block-backward nil :dont-push-mark))
+         ;;
+         ;; Default: delegate to built-in scanner
+         (t
+          (goto-char (or (scan-sexps (point) -1)
+                         (buffer-end arg))))))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 iMenu Support

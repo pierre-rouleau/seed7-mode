@@ -51,9 +51,14 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 
 ** Improvements
 
-- *forward-sexp for comments*: *forward-sexp* (and *backward-sexp*)
-  can now move across Seed7 =(*= ... =*)= nested block comments and
-  consecutive =#= line-end comment blocks.
+- *forward-sexp for comments, blocks, procedure and functions*:
+  *forward-sexp* (and *backward-sexp*)
+  can now move across Seed7 =(*= ... =*)=
+  - nested block comments,
+  - line comments,
+  - consecutive =#= line-end comment blocks
+  - nested statement blocks,
+  - function and procedure blocks.
 
 - *Syntax propertization*: *seed7-mode-syntax-propertize* is now
   wrapped in *with-silent-modifications*, making it safe whether called
