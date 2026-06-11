@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260611.1344
+;; Package-Version: 20260611.1510
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T17:44:04+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-11T19:10:12+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3162,41 +3162,6 @@ Negative N: point is on a line that contains a line comment.
             (goto-char (seed7--line-comment-hash)))))
       (setq count (1- count)))))
 
-(defun seed7--forward-sexp-function (&optional arg)
-  "Seed7-aware `forward-sexp-function'.
-Handles:
-- nested `(* ... *)' block comments,
-- consecutive `#' line-end comment blocks.
-Falls through to `scan-sexps' for all other sexp forms."
-  (let* ((arg (or arg 1)))
-    (dotimes (_ (abs arg))
-      (cond
-       ;; Forward: point is at (* opener
-       ((and (> arg 0) (looking-at "(\\*"))
-        (seed7--forward-block-comment 1))
-       ;;
-       ;; Forward: point is at # line-comment start
-       ((and (> arg 0) (seed7--at-line-comment-start-p))
-        (seed7--forward-line-comments 1))
-       ;;
-       ;; Backward: point is just after *) closer
-       ((and (< arg 0)
-             (>= (- (point) 2) (point-min))
-             (string= (buffer-substring (- (point) 2) (point)) "*)"))
-        (seed7--forward-block-comment -1))
-       ;;
-       ;; Backward: current line has a # line comment
-       ((and (< arg 0)
-             (let ((hash-pos (seed7--line-comment-hash)))
-               (and hash-pos
-                    (>= (point) hash-pos))))
-        (seed7--forward-line-comments -1))
-       ;;
-       ;; Default: delegate to built-in scanner
-       (t
-        (goto-char (or (scan-sexps (point) (if (> arg 0) 1 -1))
-                       (buffer-end arg))))))))
-
 ;;** Seed7 Navigation by Block/Procedure/Function
 ;;   --------------------------------------------
 
@@ -4143,6 +4108,52 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
         (when (seed7-inside-line-indent-before-comment-p)
           (seed7-to-indent)))
       (point))))
+
+
+
+(defun seed7--forward-sexp-function (&optional arg)
+  "Seed7-aware `forward-sexp-function'.
+Handles:
+- nested `(* ... *)' block comments,
+- consecutive `#' line-end comment blocks.
+Falls through to `scan-sexps' for all other sexp forms."
+  (let* ((arg (or arg 1)))
+    (dotimes (_ (abs arg))
+      (cond
+       ;; Forward: point is at (* opener
+       ((and (> arg 0) (looking-at "(\\*"))
+        (seed7--forward-block-comment 1))
+       ;;
+       ;; Forward: point is at # line-comment start
+       ((and (> arg 0) (seed7--at-line-comment-start-p))
+        (seed7--forward-line-comments 1))
+       ;;
+       ;; Forward: end of proc/func
+       ((and (> arg 0) (looking-at seed7-procfunc-beg-of-decl-nc-re))
+        (seed7-end-of-defun 1))
+
+       ;; Backward: point is just after *) closer
+       ((and (< arg 0)
+             (>= (- (point) 2) (point-min))
+             (string= (buffer-substring (- (point) 2) (point)) "*)"))
+        (seed7--forward-block-comment -1))
+       ;;
+       ;; Backward: current line has a # line comment
+       ((and (< arg 0)
+             (let ((hash-pos (seed7--line-comment-hash)))
+               (and hash-pos
+                    (>= (point) hash-pos))))
+        (seed7--forward-line-comments -1))
+       ;;
+       ;; Backward: from end of proc/func
+       ((and (< arg 0)
+             (looking-back "end func;" (line-beginning-position)))
+        (beginning-of-defun 1))
+       ;;
+       ;; Default: delegate to built-in scanner
+       (t
+        (goto-char (or (scan-sexps (point) (if (> arg 0) 1 -1))
+                       (buffer-end arg))))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 iMenu Support
