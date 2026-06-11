@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260611.1544
+;; Package-Version: 20260611.1638
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T19:44:41+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-11T20:38:16+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -799,6 +799,11 @@ Inside a non-capturing group.")
           seed7-name-identifier-nc-re)
   "A complete, valid name identifier.
 Group 1: identifier : 1 word")
+
+;; --
+(defconst seed7--open-paren-regexp
+  (regexp-opt '("(" "[" "{" ))
+  "Regexp matching Seed7 opening paren-like delimiters.")
 
 ;; --
 
@@ -4112,17 +4117,20 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
 
 (defun seed7--forward-sexp-function (&optional arg)
   "Seed7-aware `forward-sexp-function'.
-Handles:
+Handles moving forward (and backwards with negative ARGS) from start/end of:
 - nested `(* ... *)' block comments,
-- consecutive `#' line-end comment blocks,
-- procedure/function declarations,
-- any other Seed7 code block.
-Falls through to `scan-sexps' for all other sexp forms."
+- single and consecutive `#' line-end comments,
+- procedure/function declaration and their end lines,
+- Seed7 block start/end lines,
+- other nested parens pairs made of (), [] and {} pairs.
+
+Falls through to `scan-sexps' for all other sexp forms to provide a uniform
+navigation command."
   (let* ((arg (or arg 1)))
     (dotimes (_ (abs arg))
       (cond
        ((> arg 0)
-        ;; Forward
+        ;; -- Forward ---------------------
         (cond
          ;; Forward: point is at (* opener
          ((looking-at "(\\*")
@@ -4135,24 +4143,25 @@ Falls through to `scan-sexps' for all other sexp forms."
          ;; Forward: current line is the start of a proc/func declaration.
          ;; Must be tested before the generic block case below because
          ;; `seed7-block-start-regexp' also matches "const proc:" and "const func".
-         ((save-excursion
-            (seed7-to-indent)
-            (looking-at seed7-procfunc-beg-of-decl-nc-re))
+         ((and (not (looking-at-p seed7--open-paren-regexp))
+               (save-excursion
+                 (seed7-to-indent)
+                 (looking-at-p seed7-procfunc-beg-of-decl-nc-re)))
           (seed7-end-of-defun 1 :silent :dont-push-mark))
          ;;
          ;; Forward: current line is the start of any other Seed7 block
          ;; (if, while, for, repeat, case, block, global, local, begin, …).
-         ((save-excursion
-            (seed7-to-indent)
-            (looking-at seed7-block-start-regexp))
+         ((and (not (looking-at-p seed7--open-paren-regexp))
+               (save-excursion
+                 (seed7-to-indent)
+                 (looking-at-p seed7-block-start-regexp)))
           (seed7-to-block-forward :dont-push-mark))
-
          ;;
-         ;; Default: delegate to built-in scanner
+         ;; Forward default: delegate to built-in scanner
          (t
           (goto-char (or (scan-sexps (point) 1)
                          (buffer-end arg))))))
-       ;; Backward
+       ;; -- Backward ----------------------
        ((< arg 0)
         (cond
          ;; Backward: point is just after *) closer
@@ -4169,19 +4178,21 @@ Falls through to `scan-sexps' for all other sexp forms."
          ;; Backward: current line is "end func;" (end of proc/func).
          ;; Must be tested before the generic block-end case because
          ;; `seed7-block-end-regexp' also matches "end func;".
-         ((save-excursion
-            (seed7-to-indent)
-            (looking-at seed7-procfunc-end-regexp))
+         ((and (not (memq (char-before) '(?\) ?\] ?\})))
+               (save-excursion
+                 (seed7-to-indent)
+                 (looking-at-p seed7-procfunc-end-regexp)))
           (seed7-beg-of-defun 1 :silent :dont-push-mark))
          ;;
          ;; Backward: current line is any other block end
          ;; (end if;, end while;, end for;, end case;, end block, until …).
-         ((save-excursion
-            (seed7-to-indent)
-            (looking-at seed7-block-end-regexp))
+         ((and (not (memq (char-before) '(?\) ?\] ?\})))
+               (save-excursion
+                 (seed7-to-indent)
+                 (looking-at-p seed7-block-end-regexp)))
           (seed7-to-block-backward nil :dont-push-mark))
          ;;
-         ;; Default: delegate to built-in scanner
+         ;; Backward default: delegate to built-in scanner
          (t
           (goto-char (or (scan-sexps (point) -1)
                          (buffer-end arg))))))))))
@@ -5621,9 +5632,6 @@ N is: - :previous-non-empty for the previous non-empty line,
                   block-indent-column)))))))))
 
 ;; --
-(defconst seed7--open-paren-regexp
-  (regexp-opt '("(" "[" "{" ))
-  "Regexp matching Seed7 opening paren-like delimiters.")
 
 (defun seed7--paren-pair-string (open-char)
   "Return delimiter-pair string corresponding to OPEN-CHAR.
@@ -8848,7 +8856,8 @@ compilation requires a working installation of Seed7.
   ;; Seed7 Mode Syntax Propertize Function
   (setq-local syntax-propertize-function #'seed7-mode-syntax-propertize)
 
-  ;; Allow forward-sexp to navigate from begin/end of block and line comments
+  ;; Allow forward-sexp to navigate from begin/end of block and line comments,
+  ;; begin/end of function, procedures and all Seed7 blocks.
   (setq-local forward-sexp-function #'seed7--forward-sexp-function)
 
   ;; Seed7 iMenu Support
