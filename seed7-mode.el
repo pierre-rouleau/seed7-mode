@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260608.1235
+;; Package-Version: 20260610.2240
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -368,7 +368,6 @@
 ;;       . `seed7-line-inside-a-block'
 ;;         . `seed7--block-end-pos-for'
 ;;         . `seed7--indent-offset-for'
-;;           . `seed7--at-pos-looking-at-p'
 ;;         . `seed7--on-lineof'
 ;;     . `seed7-line-inside-until-logic-expression'
 ;;     . `seed7-line-inside-func-return-statement'
@@ -531,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-08T16:35:32+0000 W24-1"
+(defconst seed7-mode-version-timestamp "2026-06-11T02:40:13+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2043,7 +2042,7 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
     ;;
     (modify-syntax-entry ?\( "()1n" st) ; The comment "(*" can be nested ...
     (modify-syntax-entry ?\) ")(4n" st) ; ...  and end with the matching "*)"
-    (modify-syntax-entry ?* ". 23" st) ; '*' as second of "(*" and previous of; "*)"
+    (modify-syntax-entry ?* ". 23" st) ; '*' as second of "(*" and first of "*)"
     ;;
     ;; Seed7 Comments Control : line-end comment.
     (modify-syntax-entry ?# "<"  st)
@@ -2061,35 +2060,81 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
 
 (defconst seed7-char-literal-re
   (format
-   "\\(?:\\(?:[[:digit:]]\\(#\\)[[:alnum:]]\\)\\|\\(\\(?:'\\\\''\\)\\|\\(?:'.'\\)\\|\\(?:'\\\\[abefnrtv\"A-Z\\\\]'\\)\\|\\(?:%s\\)\\)\\)"
-   ;; (----(----------------------------------)----(--------------------------------------------------------------------------------)--)
+   "\\(?:\\(?:[[:digit:]]\\(#\\)[[:alnum:]]\\)\\|\\(\\(?:'\\\\''\\)\\|\\(?:'.'\\)\\|\\(?:'\\\\[abefnrtv\"A-Z\\\\]'\\)\\|\\(?:%s\\)\\)\\)\\|\\((\\*\\)\\|\\(\\*)\\)"
+   ;; (----(----------------------------------)----(--------------------------------------------------------------------------------)--)-----(------)-----(------)
    ;;                      (---)                   (-----------------------------------------------------------------------------------)
-   ;;                                                 (-----------)     (-------)     (-----------------------------)     (------)
-   ;;                      G1                      G2                                                                        %1
+   ;;                                                 (-----------)     (-------)     (-----------------------------)     (------)           (------)     (------)
+   ;;                      G1                      G2                                  backslash-character                   %s              G3           G4
+   ;; format argument number:                                                                                                 1
+   ;;
+   ;; G1: #
+   ;; G2: single quote character expression
+   ;; G3: opening block comment: (*
+   ;; G4: closing block comment: *)
+   ;; backslash characters: \a, \b... :standard named escape letters, including \e for the Escape character.
+   ;; backslash characters: \A .. \Z  : standard Seed7 control characters: Ctrl-A .. Ctrl-Z
    seed7-any-valid-char-integer-semicolon-re))
 
+;; Emacs supports two-character comment delimiters via "style b"
+;; syntax text properties. The characters of each delimiter are
+;; tagged with 4 codes (see `modify-syntax-entry'):
+;;
+;;              syntax-
+;;              entry
+;; Position     code        Meaning
+;; ==========   =========   ====================================
+;; ( in (*      "< 1bn"     first char of style-b comment-start
+;; * in (*      "< 2bn"     second char of style-b comment-start
+;; * in *)      "> 3bn"     first char of style-b comment-end
+;; ) in *)      "> 4bn"     second char of style-b comment-end
+;;
+;; Each syntax-entry code ends with 'n' because Seed7 (* *) style
+;; comments can be nested.
+
+
 (defun seed7-mode-syntax-propertize (start end)
-  "Apply syntax property between START and END to # character.
-Used when # is used as a number base separator and in single quoted
-character expression."
+  "Apply syntax-table text properties between START and END.
+
+Handle 4 cases:
+- The `#' number-base separator,
+- Single-Quoted character literals,
+- The `(*' and `*)' two-characters block-comment delimiters."
   ;; (info "(elisp)Syntax Properties")
   ;;
-  ;; called from `syntax-propertize', inside save-excursion with-silent-modifications
-  (goto-char start)
-  (while (re-search-forward seed7-char-literal-re end t)
-    (cond
-     ;; deal with '#'
-     ((match-beginning 1)
-      (let
-          ((mb (match-beginning 1)) (me (match-end 1))
-           (syntax (string-to-syntax "_")))
-        (if syntax (put-text-property mb me 'syntax-table syntax))))
+  ;; called from `syntax-propertize', wrapped in `save-excursion' and
+  ;; `with-silent-modifications'.
+  (save-excursion
+    (save-match-data
+      (goto-char start)
+      (while (re-search-forward seed7-char-literal-re end t)
+        (cond
+         ;; deal with '#'
+         ((match-beginning 1)
+          (put-text-property (match-beginning 1) (match-end 1)
+                             'syntax-table (string-to-syntax "_")))
 
-     ;; Deal with single quoted character expression
-     ((match-beginning 2)
-      (put-text-property  (match-beginning 2) (1+ (match-beginning 2)) 'syntax-table '(7 . ?'))
-      (put-text-property  (1- (match-end 2))  (match-end 2)            'syntax-table '(7 . ?'))))))
+         ;; Deal with single quoted character expression
+         ((match-beginning 2)
+          (put-text-property (match-beginning 2) (1+ (match-beginning 2))
+                             'syntax-table '(7 . ?'))
+          (put-text-property (1- (match-end 2))  (match-end 2)
+                             'syntax-table '(7 . ?')))
 
+         ;; Mark (* as a two-character comment-start (style b).
+         ;; Override the paren-open syntax on '(' for this occurrence.
+         ((match-beginning 3)
+          (put-text-property (match-beginning 3) (1+ (match-beginning 3))
+                             'syntax-table (string-to-syntax "< 1bn"))
+          (put-text-property (1+ (match-beginning 3)) (match-end 3)
+                             'syntax-table (string-to-syntax "< 2bn")))
+
+         ;; Mark *) as a two-character comment-end (style b).
+         ;; Override the paren-close syntax on ')' for this occurrence.
+         ((match-beginning 4)
+          (put-text-property (match-beginning 4) (1+ (match-beginning 4))
+                             'syntax-table (string-to-syntax "> 3bn"))
+          (put-text-property (1+ (match-beginning 4)) (match-end 4)
+                             'syntax-table (string-to-syntax "> 4bn"))))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
@@ -2129,8 +2174,8 @@ Allows selecting similar colours for various systems."
     (while list
       (or answer
           (if (or (color-defined-p (car list))
-                          (null (cdr list)))
-                  (setq answer (car list))))
+                  (null (cdr list)))
+              (setq answer (car list))))
       (setq list (cdr list)))
     answer))
 
@@ -2465,9 +2510,29 @@ Allows selecting similar colours for various systems."
    (cons seed7-minus-operator-regexp                 (list 1 ''font-lock-keyword-face))
    ;; other low priority characters [:todo 2025-07-09, by Pierre Rouleau:
    ;; check if any missing and improve control of ..]
-   (cons "[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]"   (list 1 ''font-lock-keyword-face)))
+   (cons "[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]"   (list 1 ''font-lock-keyword-face))
+   ;;
+   ;; Fontify the `*)' block-comment end delimiter entirely with
+   ;; `font-lock-comment-face'.
+   ;;
+   ;; Syntactic fontification applies `font-lock-comment-delimiter-face'
+   ;; to `*' (syntax property "> 3bn": first char of style-b comment-end)
+   ;; and leaves `)' ("> 4bn": second char) with no face, because
+   ;; `syntax-ppss' at the `)' position already reports "outside comment"
+   ;; — the comment was fully closed by the complete `*)' pair.
+   ;;
+   ;; This rule overrides both characters to `font-lock-comment-face',
+   ;; consistent with the interior of the block.  The
+   ;; `(nth 4 (syntax-ppss ...))' guard ensures the rule fires only when
+   ;; `*)' genuinely closes a `(* ... *)' block comment and not when
+   ;; those two characters appear elsewhere (e.g. inside a string).
+   (list "\\*)"
+         '(0 (when (save-excursion
+                     (goto-char (match-beginning 0))
+                     (nth 4 (syntax-ppss)))
+               font-lock-comment-face)
+             t)))
   "Associates regexp to a regexp group and a face to render it.")
-
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Comments Control
@@ -2648,31 +2713,49 @@ The SYNTAX argument holds the value returned by `syntax-ppss' for point."
   `(and (not (seed7--inside-string-p ,syntax))
         (not (seed7--inside-comment-p ,syntax))))
 
-;; [:todo 2025-05-21, by Pierre Rouleau: clarify identifying comments]
 (defun seed7-inside-comment-p (&optional pos)
-  "Return face of comment if POS or point is inside comment, nil otherwise.
-Inside a comment, the returned value is:
-- `font-lock-comment-face'           : inside comment block or end-line comment
-- `font-lock-comment-delimiter-face' : at the # for line-end comment."
-  ;; Using the face instead of the syntax, as I found the syntax
-  ;; not reliable enough when looking at some edge cases: the open block
-  ;; comment characters are not recognized as comment syntax.
+  "Return non-nil if POS or point is part of a comment.
+
+This includes positions where `syntax-ppss' reports being inside a
+comment, plus comment delimiter boundary characters that belong to
+the comment text:
+
+- the `#' character that starts a line-end comment,
+- the `(' character of a `(*' block-comment opener,
+- the `)' character of a `*)' block-comment closer.
+
+Return nil otherwise.
+Does not move point."
   (declare (side-effect-free t))
-  (let ((pos (or pos (point))))
-    ;; deal with comment-dwim that passes 0 to pos when trying to write a line
-    ;; comment when issued at the beginning of an empty line.
-    (unless (eq pos 0)
-      ;; if there's no overlay the face show up at the top
-      (or (car-safe (memq  (get-char-property pos 'face)
-                           '(font-lock-comment-face
-                             font-lock-comment-delimiter-face)))
-          ;; where there is one or several overlay, we need to
-          ;; look into the text properties to see the face.
-          (let ((text-prop (text-properties-at pos)))
-            (and (eq (nth 0 text-prop) 'face)
-                 (or (eq (nth 1 text-prop) 'font-lock-comment-face)
-                     (eq (nth 1 text-prop)
-                         'font-lock-comment-delimiter-face))))))))
+  (save-excursion
+    (let* ((pos (or pos (point)))
+           (syntax (syntax-ppss pos)))
+      (or
+       ;; Normal case: POS is syntactically inside a comment.
+       (nth 4 syntax)
+
+       ;; Boundary case 1: POS is at the `#' that starts a line-end comment.
+       ;; `syntax-ppss' at POS reports the state before consuming `#', so look
+       ;; one character later.  For number-base separators, syntax-propertize
+       ;; gives `#' symbol syntax, so looking after it will not enter a comment.
+       (and (eq (char-after pos) ?#)
+            (< pos (point-max))
+            (nth 4 (syntax-ppss (1+ pos))))
+
+       ;; Boundary case 2: POS is at the `(' of a `(*' block-comment opener.
+       ;; Check after the full two-character delimiter has been consumed.
+       (and (eq (char-after pos) ?\()
+            (< (1+ pos) (point-max))
+            (eq (char-after (1+ pos)) ?*)
+            (nth 4 (syntax-ppss (+ pos 2))))
+
+       ;; Boundary case 3: POS is at the `)' of a `*)' block-comment closer.
+       ;; At `)' itself the comment is already closed, so check the previous
+       ;; `*', which is still syntactically inside the comment.
+       (and (eq (char-after pos) ?\))
+            (> pos (point-min))
+            (eq (char-before pos) ?*)
+            (nth 4 (syntax-ppss (1- pos))))))))
 
 (defun seed7-inside-string-p (&optional pos)
   "Return non-nil if POS or point is inside a string, nil otherwise.
@@ -2880,7 +2963,7 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
 
 
 (defun seed7---skip-block-comment-forward ()
-  "Skip comment block utility.
+  "Skip comment block -- ignores nesting.
 Only used by `seed7-skip-comment-forward'."
   (search-forward "*)" nil :noerror)
   (when (seed7-at-end-of-line-p)
@@ -4109,8 +4192,9 @@ buffers using the `seed7-mode'."
     (seed7-to-indent)
     (current-column)))
 
+
 (defun seed7-current-line-start-inside-comment-p ()
-  "Return non-nil if the current line start inside a comment."
+  "Return non-nil if the current code line starts inside a comment."
   (save-excursion
     (seed7-to-indent)
     (seed7-inside-comment-p (point))))
@@ -4525,13 +4609,6 @@ Move point."
    ;;
    (t (error "Unsupported block header: %s" header))))
 
-(defun seed7--at-pos-looking-at-p (pos regexp)
-  "Return non-nil if text at POS matches REGEXP, nil otherwise.
-Does not move point, does not modify search match data."
-  (save-excursion
-    (goto-char pos)
-    (looking-at-p regexp)))
-
 (defun seed7--indent-offset-for (header first-text)
   "Return indentation offset (in columns) for the inside of a block.
 
@@ -4693,7 +4770,6 @@ If it finds something it returns a list that holds the following information:
              ;; Pre-extract the text at the indented start of line N once so
              ;; that seed7--indent-offset-for can use string-prefix-p instead
              ;; of repeated save-excursion + goto-char + looking-at-p calls.
-             ;; 16 characters covers the longest needed check ("end global;").
              (line-n-first-text
               (save-excursion
                 (skip-chars-forward " \t")
@@ -4894,7 +4970,39 @@ column) is not exposed."
               (nth 4 seed7--indent-last-block-spec))))))
 
 (defun seed7-line-inside-a-block-cached (n &optional dont-skip-comment-start)
-  "Cached variant of `seed7-line-inside-a-block' for indentation."
+  "Cached variant of `seed7-line-inside-a-block' for indentation.
+
+N is: - :previous-non-empty for the previous non-empty line,
+        skipping lines with starting comments unless DONT-SKIP-COMMENT-START
+         is non-nil,
+      - 0 for the current line,
+      - A negative number for previous lines: -1 previous, -2 line before...
+
+When N is 0 and DONT-SKIP-COMMENT-START is nil, the function first
+checks `seed7--cached-block-spec-current-line'; if the cache is still
+valid it returns the cached spec immediately without re-scanning (O(1)
+fast path).
+
+On a cache miss the function delegates to `seed7-line-inside-a-block'.
+When N is 0 and a block is found, two caches are updated as side effects:
+- `seed7--indent-last-block-spec' is set to a marker-backed copy of the
+  returned spec (via `seed7--cache-block-spec').
+- `seed7--indent-block-bounds' is set to a cons cell whose car is the
+  marker for the block start position (element 2 of the spec) and whose
+  cdr is the marker for the enclosing block end position (element 3).
+  This lightweight cons is used by `seed7-calc-indent' for O(1) early
+  bound checks on subsequent lines.
+
+These side effects do NOT occur when N is non-zero or when no block is
+found.
+
+Return nil if line N is not inside any Seed7 block.
+If a block is found, return a list of 5 elements:
+- 0: indent column     : indentation column line N should use,
+- 1: match string      : string describing the type of block found,
+- 2: block start position (the beginning of the start keyword line),
+- 3: enclosing block end position,
+- 4: indent column of the block start line."
   (or (and (eq n 0)
            (not dont-skip-comment-start)
            (seed7--cached-block-spec-current-line))
@@ -4905,8 +5013,8 @@ column) is not exposed."
           ;; Also update the lightweight bounds cache used for early-bound
           ;; lookups at the top of `seed7-calc-indent'.
           (setq seed7--indent-block-bounds
-                (cons (copy-marker (nth 2 spec))
-                      (copy-marker (nth 3 spec) t))))
+                (cons (nth 2 seed7--indent-last-block-spec)
+                      (nth 3 seed7--indent-last-block-spec))))
         spec)))
 
 ;; ---------------------------------------------------------------------------
@@ -5084,11 +5192,12 @@ information:
 - 0: indent column : indentation column the line N should use,
 - 1: string: \"array\"
 - 2: block start position,
-- 3: block end position.
+- 3: block end position: position of the character immediately after
+     the closing delimiter (one past the `)').
 
-If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
-If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound:
-the closing delimiter position must be strictly before it."
+If SCOPE-END-POS is non-nil, it is treated as an inclusive upper bound:
+the position one past the closing delimiter must be less than or equal
+to SCOPE-END-POS."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
     (error "seed7-line-inside-array-definition-block: \
@@ -5109,7 +5218,7 @@ Invalid boundaries: begin=%S, end=%S"
           (setq block-indent-column (current-column))
           (goto-char (1- (match-end 0))) ; position at "("
           (seed7--with-forward-sexp
-            ;; point is at block end
+            ;; with point now one past the closing delimiter
             (when (and (< block-start-pos original-pos (point))
                        (or (not scope-end-pos)
                            (<= (point) scope-end-pos)))
@@ -5171,11 +5280,12 @@ following information:
 - 0: indent column : indentation column the line N should use,
 - 1: string: \"set\"
 - 2: block start position,
-- 3: block end position.
+- 3: block end position: position of the character immediately after
+     the closing delimiter (one past the `}').
 
-If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
-If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound:
-the closing delimiter position must be strictly before it."
+If SCOPE-END-POS is non-nil, it is treated as an inclusive upper bound:
+the position one past the closing delimiter must be less than or equal
+to SCOPE-END-POS."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
     (error "seed7-line-inside-set-definition-block: \
@@ -5196,7 +5306,7 @@ Invalid boundaries: begin=%S, end=%S"
           (setq block-indent-column (current-column))
           (goto-char (1- (match-end 0))) ; position at "{"
           (seed7--with-forward-sexp
-            ;; point should be at block end
+            ;; with point now one past the closing delimiter
             (when (and (< block-start-pos original-pos (point))
                        (or (not scope-end-pos)
                            (<= (point) scope-end-pos)))
@@ -5344,8 +5454,8 @@ N is: - :dont-move to keep point at current position
         lines: 1: next line, -1: previous line, etc.
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
-If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound:
-the closing delimiter position must be strictly before it.
+If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound: the
+closing paren must be at a position strictly less than SCOPE-END-POS.
 
 Return nil if syntax state does not identify a usable pair.
 If an appropriate parens pair is found, return a list of 4 elements:
@@ -5371,6 +5481,7 @@ If an appropriate parens pair is found, return a list of 4 elements:
                  (indent-column (1+ (current-column))))
             (when op
               (seed7--with-forward-sexp
+                ;; with point now one past the closing delimiter
                 (let ((end-pos (1- (point))))
                   (when (and (< open-pos line-start end-pos)
                              (or (not scope-end-pos)
@@ -5393,8 +5504,8 @@ N is: - :dont-move to keep point at current position
         lines: 1: next line, -1: previous line, etc.
 
 If SCOPE-BEGIN-POS is non-nil, bound the backward search to that position.
-If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound:
-the closing delimiter position must be strictly before it.
+If SCOPE-END-POS is non-nil, it is treated as an exclusive upper bound: the
+closing paren must be at a position strictly less than SCOPE-END-POS.
 
 Return nil if nothing is found.
 If an appropriate parens pair is found, return a list of 4 elements:
@@ -5425,7 +5536,7 @@ If an appropriate parens pair is found, return a list of 4 elements:
                 (goto-char start-pos)
                 (setq indent-column (1+ (current-column)))
                 (seed7--with-forward-sexp
-                  ;; Point is now one past the closing delimiter.
+                  ;; with point now one past the closing delimiter
                   (let ((end-pos (1- (point))))
                     (when (and op
                                (< (or scope-begin-pos 0)
@@ -7217,7 +7328,7 @@ ignored because there is no universal byte encoding for them."
       (user-error "No running Seed7 process in this buffer"))
     (if (characterp last-input-event)
         (process-send-string proc (char-to-string last-input-event))
-      ;; Non-character events (arrows, F-keys, mouse, …) cannot be
+      ;; Non-character events (arrows, F-keys, mouse, ...) cannot be
       ;; forwarded as raw bytes without a terminal-encoding layer.
       (message "seed7-run[RAW]: cannot forward non-character event: %s"
                (key-description (vector last-input-event))))))
@@ -7846,9 +7957,9 @@ Return a list of 4-element lists, where each 4-element list has:
         ;; prevent case fold searching: Seed7 is case sensitive.
         (case-fold-search nil))
     (cond
-     ((eq point-face 'font-lock-comment-face)
+     ((seed7-inside-comment-p)
       (user-error "Comments cross reference is not supported!"))
-     ((eq point-face 'font-lock-string-face)
+     ((seed7-inside-string-p)
       (user-error "This is a string: no reference available"))
      ((memq point-face '(seed7-float-face
                          seed7-integer-face
@@ -8492,6 +8603,14 @@ current Emacs session without restarting Emacs."
 ;;;###autoload
 (define-derived-mode seed7-mode prog-mode "seed7"
   "Major mode for editing Seed7 files.
+
+See https://seed7.net/ for information on the Seed7 programming
+language.
+
+Use `seed7-mode-customize' to customize important elements;
+this major mode takes advantage of Seed7's ability to analyze itself to provide
+built-in cross reference support.  This, along with static analysis and
+compilation requires a working installation of Seed7.
 
 \\<seed7-mode-map>"
 
