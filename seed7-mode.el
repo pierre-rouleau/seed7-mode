@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260610.1729
+;; Package-Version: 20260610.2240
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-10T21:29:12+0000 W24-3"
+(defconst seed7-mode-version-timestamp "2026-06-11T02:40:13+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2093,46 +2093,48 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
 
 
 (defun seed7-mode-syntax-propertize (start end)
-  "Apply syntax-table text property between START and END.
+  "Apply syntax-table text properties between START and END.
 
 Handle 4 cases:
 - The `#' number-base separator,
-- The single-quoted character literals
-- The `(*' and `*)' two-character block-comment delimiters."
+- Single-Quoted character literals,
+- The `(*' and `*)' two-characters block-comment delimiters."
   ;; (info "(elisp)Syntax Properties")
   ;;
   ;; called from `syntax-propertize', wrapped in `save-excursion' and
   ;; `with-silent-modifications'.
-  (goto-char start)
-  (while (re-search-forward seed7-char-literal-re end t)
-    (cond
-     ;; deal with '#'
-     ((match-beginning 1)
-      (put-text-property (match-beginning 1) (match-end 1)
-                         'syntax-table (string-to-syntax "_")))
+  (save-excursion
+    (save-match-data
+      (goto-char start)
+      (while (re-search-forward seed7-char-literal-re end t)
+        (cond
+         ;; deal with '#'
+         ((match-beginning 1)
+          (put-text-property (match-beginning 1) (match-end 1)
+                             'syntax-table (string-to-syntax "_")))
 
-     ;; Deal with single quoted character expression
-     ((match-beginning 2)
-      (put-text-property (match-beginning 2) (1+ (match-beginning 2))
-                         'syntax-table '(7 . ?'))
-      (put-text-property (1- (match-end 2))  (match-end 2)
-                         'syntax-table '(7 . ?')))
+         ;; Deal with single quoted character expression
+         ((match-beginning 2)
+          (put-text-property (match-beginning 2) (1+ (match-beginning 2))
+                             'syntax-table '(7 . ?'))
+          (put-text-property (1- (match-end 2))  (match-end 2)
+                             'syntax-table '(7 . ?')))
 
-     ;; Mark (* as a two-character comment-start (style b).
-     ;; Override the paren-open syntax on '(' for this occurrence.
-     ((match-beginning 3)
-      (put-text-property (match-beginning 3) (1+ (match-beginning 3))
-                         'syntax-table (string-to-syntax "< 1bn"))
-      (put-text-property (1+ (match-beginning 3)) (match-end 3)
-                         'syntax-table (string-to-syntax "< 2bn")))
+         ;; Mark (* as a two-character comment-start (style b).
+         ;; Override the paren-open syntax on '(' for this occurrence.
+         ((match-beginning 3)
+          (put-text-property (match-beginning 3) (1+ (match-beginning 3))
+                             'syntax-table (string-to-syntax "< 1bn"))
+          (put-text-property (1+ (match-beginning 3)) (match-end 3)
+                             'syntax-table (string-to-syntax "< 2bn")))
 
-     ;; Mark *) as a two-character comment-end (style b).
-     ;; Override the paren-close syntax on ')' for this occurrence.
-     ((match-beginning 4)
-      (put-text-property (match-beginning 4) (1+ (match-beginning 4))
-                         'syntax-table (string-to-syntax "> 3bn"))
-      (put-text-property (1+ (match-beginning 4)) (match-end 4)
-                         'syntax-table (string-to-syntax "> 4bn"))))))
+         ;; Mark *) as a two-character comment-end (style b).
+         ;; Override the paren-close syntax on ')' for this occurrence.
+         ((match-beginning 4)
+          (put-text-property (match-beginning 4) (1+ (match-beginning 4))
+                             'syntax-table (string-to-syntax "> 3bn"))
+          (put-text-property (1+ (match-beginning 4)) (match-end 4)
+                             'syntax-table (string-to-syntax "> 4bn"))))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
@@ -2514,8 +2516,8 @@ Allows selecting similar colours for various systems."
    ;; `font-lock-comment-face'.
    ;;
    ;; Syntactic fontification applies `font-lock-comment-delimiter-face'
-   ;; to `*' (syntax property "> 3b": first char of style-b comment-end)
-   ;; and leaves `)' ("> 4b": second char) with no face, because
+   ;; to `*' (syntax property "> 3bn": first char of style-b comment-end)
+   ;; and leaves `)' ("> 4bn": second char) with no face, because
    ;; `syntax-ppss' at the `)' position already reports "outside comment"
    ;; — the comment was fully closed by the complete `*)' pair.
    ;;
@@ -2715,8 +2717,8 @@ The SYNTAX argument holds the value returned by `syntax-ppss' for point."
   "Return non-nil if POS or point is part of a comment.
 
 This includes positions where `syntax-ppss' reports being inside a
-comment, and also comment delimiter boundary characters that font-lock
-renders as comment text:
+comment, plus comment delimiter boundary characters that belong to
+the comment text:
 
 - the `#' character that starts a line-end comment,
 - the `(' character of a `(*' block-comment opener,
@@ -7955,9 +7957,9 @@ Return a list of 4-element lists, where each 4-element list has:
         ;; prevent case fold searching: Seed7 is case sensitive.
         (case-fold-search nil))
     (cond
-     ((eq point-face 'font-lock-comment-face)
+     ((seed7-inside-comment-p)
       (user-error "Comments cross reference is not supported!"))
-     ((eq point-face 'font-lock-string-face)
+     ((seed7-inside-string-p)
       (user-error "This is a string: no reference available"))
      ((memq point-face '(seed7-float-face
                          seed7-integer-face
