@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260611.1046
+;; Package-Version: 20260611.1118
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -162,7 +162,7 @@
 ;; - Keyword Completion help.
 
 ;;
-;; [:todo 2025-04-06, by Pierre Rouleau: Fix following problems:
+;; [ TODO 2025-04-06, by Pierre Rouleau: Fix following problems:
 ;;  Known problems and improvements:
 ;;  # 01  Problem: Complete defface definitions:
 ;;        - Complete the dark backgrounds coloring.
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T14:46:05+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-11T15:18:34+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1332,7 +1332,7 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
 ;;** Seed7 Operator Symbols
 ;;   ----------------------
 
-;; [:todo 2025-04-10, by Pierre Rouleau: categorize 'noop' according to Seed7 spec once I find it ]
+;; [ TODO 2025-04-10, by Pierre Rouleau: categorize 'noop' according to Seed7 spec once I find it ]
 (defconst seed7--operator-symbols
   '("and"
     "conv"
@@ -1473,7 +1473,7 @@ catch \\|\
                                          seed7-block-start-regexp)
   "Regexp to find location of blocks.")
 
-;; [:todo 2025-07-01, by Pierre Rouleau: optimize this regexp]
+;; [ TODO 2025-07-01, by Pierre Rouleau: optimize this regexp]
 (defconst seed7-block-end-regexp "\
 \\(?:end \
 \\(?:\\(?:\\(?:enum\\|for\\|func\\|if\\|struct\\|while\\|case\\);\\)\
@@ -1481,7 +1481,7 @@ catch \\|\
 \\|\\(?:until \\)"
   "Regexp for generic end of block.")
 
-;; [:todo 2025-07-01, by Pierre Rouleau: optimize this regexp]
+;; [ TODO 2025-07-01, by Pierre Rouleau: optimize this regexp]
 (defconst seed7-block-top-start-regexp "\\(\
 const proc: \\|\
 const func \\|\
@@ -1809,7 +1809,7 @@ Group 1: \"proc\", \"varfunc\" or \"func \"
 Group 2: The func return type.  May be empty.
 Group 3: The func or proc name." )
 
-;; [:todo 2025-07-17, by Pierre Rouleau: Enhance seed7-procfunc-regexp to support array parameters.]
+;; [ TODO 2025-07-17, by Pierre Rouleau: Enhance seed7-procfunc-regexp to support array parameters.]
 (defconst seed7-procfunc-regexp
   (format
    ;;                                      fct name                           is     func | return | ...
@@ -2054,8 +2054,8 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
     ;;
     ;; string escape
     (modify-syntax-entry ?\\ "\\"  st)
-    ;; single quote: Seed7 supports ''' as well as '\''.  Deal with it in seed7-syntax-propertize.
-    (modify-syntax-entry ?\' "." st) ; attribute; see seed7-syntax-propertize for character literal
+    ;; single quote: Seed7 supports ''' as well as '\''.  Deal with it in `seed7-mode-syntax-propertize'.
+    (modify-syntax-entry ?\' "." st) ; attribute; see `seed7-mode-syntax-propertize' for character literal
     st)
   "Syntax table in use in `seed7-mode' buffers.")
 
@@ -2512,10 +2512,11 @@ Allows selecting similar colors for various systems."
    (cons seed7-integer-re                            (list 1 ''seed7-integer-face))
    ;; low priority rendering of arithmetic + and -
    (cons seed7-minus-operator-regexp                 (list 1 ''font-lock-keyword-face))
-   ;; other low priority characters [:todo 2025-07-09, by Pierre Rouleau:
-   ;; check if any missing and improve control of ..]
+
+   ;; other low priority characters
+   ;; [ TODO 2025-07-09, by Pierre Rouleau: check if any missing and improve control of ..]
    (cons "[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]"   (list 1 ''font-lock-keyword-face))
-   ;;
+
    ;; Fontify the `*)' block-comment end delimiter entirely with
    ;; `font-lock-comment-face'.
    ;;
@@ -3325,7 +3326,7 @@ Move inside the current if inside one, to the next if outside one.
                    (setq final-pos (seed7-re-search-forward seed7-procfunc-end-regexp)
                          top-block-name2 (seed7-top-block-name))
                    (when (seed7-re-search-backward seed7-procfunc-regexp)
-                     ;; [:todo 2025-06-12, by Pierre Rouleau: when at end of
+                     ;; [ TODO 2025-06-12, by Pierre Rouleau: when at end of
                      ;; func that has nested func/proc, the spec extracted below
                      ;; are the spec of the last nested func/proc NOT the spec
                      ;; of the top one. Need a way to distinguish the 2...]
@@ -3406,7 +3407,7 @@ Move inside the current if inside one, to the next if outside one.
             ;; search for forward or action declaration of function or procedures
             ;; that have a complex parameter list not detected by the previous
             ;; searches.
-            ;; [:todo 2025-07-17, by Pierre Rouleau: remove once other regexps are
+            ;; [ TODO 2025-07-17, by Pierre Rouleau: remove once other regexps are
             ;;                    able to match all formats of parameters.
             ;;                    This is currently not needed.]
             ;; (save-excursion
@@ -3522,7 +3523,7 @@ Negative N starts counting from the end of the line: -1 is the last word."
                  (<= (point) line-end))
         (thing-at-point 'word :no-properties)))))
 
-;; [:todo 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
+;; [ TODO 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
 (defconst seed7---inner-callables-1
   ;;         (----------------)              (----------)
   ;;                                    (--------------------)
@@ -3530,7 +3531,7 @@ Negative N starts counting from the end of the line: -1 is the last word."
   "\\(const \\(?:func\\|proc\\)[^;]+?is\\(?:\\(?: +func\\)?$\\)\\)"
   "Group 1: complete text.")
 
-;; [:todo 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
+;; [ TODO 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
 (defconst seed7---inner-callables-2
   ;;              (---------------)
   ;;     (----------------------------)     (--------------)
@@ -3561,7 +3562,7 @@ Negative N starts counting from the end of the line: -1 is the last word."
 - group 3: action or forward function declaration.")
 
 
-;; -- Compilation Behaviour Control for forward-sexp/backward-sexp protection
+;; -- Compilation Behavior Control for forward-sexp/backward-sexp protection
 (eval-and-compile
   (defconst seed7--debug-sexp-scan nil
     "Forward/Backward Sexp debug control.  For DEVELOPMENT ONLY!
@@ -3679,7 +3680,7 @@ The regexp has 2 capture groups:
   (format "^\\(?:[[:space:]]*?\\(const[[:space:]]+?type:.+?[[:space:]]%s\\)\\|[[:space:]]*?\\(end %s;\\)\\)"
           keyword keyword))
 
-;; [:todo 2025-05-31, by Pierre Rouleau: Add support for hard tab after keyword
+;; [ TODO 2025-05-31, by Pierre Rouleau: Add support for hard tab after keyword
 (defun seed7--end-regexp-for (word1 word2 last-word)
   "Return regexps for end and start of block for specified arguments.
 Used when searching forward.
@@ -3842,7 +3843,7 @@ NO match.  From %d, at point  %d, nesting=%d, line %d for: %S"
       (goto-char found-position))))
 
 
-;; [:todo 2025-05-31, by Pierre Rouleau: Add & test support for hard tab after keyword
+;; [ TODO 2025-05-31, by Pierre Rouleau: Add & test support for hard tab after keyword
 (defun seed7--start-regexp-for (word1 word2)
   "Return a regexp to search the starting string block specified by the arguments.
 Used when searching backward.
@@ -4084,7 +4085,7 @@ Toggles listing them together or separately.
 ;;* Seed7 Code Marking
 ;;  ==================
 
-;; [:todo 2025-06-21, by Pierre Rouleau: Perhaps this can use
+;; [ TODO 2025-06-21, by Pierre Rouleau: Perhaps this can use
 ;; `seed7-to-top-of-block' to handle more blocks?]
 (defun seed7-mark-defun ()
   "Mark the current Seed7 function or procedure.
@@ -7761,7 +7762,7 @@ Please update!"
                   seed7-xref))))
 
 
-;; [:todo 2025-06-20, by Pierre Rouleau: Add support for multi-line signatures]
+;; [ TODO 2025-06-20, by Pierre Rouleau: Add support for multi-line signatures]
 (defun seed7--signature-at (&optional pos)
   "Return Seed7 element signature for element at point or POS."
   (when pos (goto-char pos))
@@ -8031,7 +8032,7 @@ Return a list of 4-element lists, where each 4-element list has:
      ;; for other keywords only look into the xref extracted by s7xref
      (t (seed7--xref-get-from-s7xref identifier current-lineno)))))
 
-;; [:todo 2025-06-13, by Pierre Rouleau: Should we also skip parens?.]
+;; [ TODO 2025-06-13, by Pierre Rouleau: Should we also skip parens?.]
 (defun seed7-operator-at-point ()
   "Return the Seed7 operator at point as a string."
   (save-excursion
@@ -8144,7 +8145,7 @@ Is point at its definition? Is this file compiling?"
   "Return definition of SYMBOL."
   (seed7--find-symbol symbol))
 
-;; [:todo 2025-06-16, by Pierre Rouleau: Complete xref support]
+;; [ TODO 2025-06-16, by Pierre Rouleau: Complete xref support]
 ;; (cl-defmethod xref-backend-references ((_backend (eql seed7)) symbol)
 ;;   (seed7--find-uses-of symbol symbol))
 ;;
@@ -8163,7 +8164,7 @@ data is not used for the next xref lookup."
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Completion Support
 ;;  ========================
-;; [:todo 2025-06-07, by Pierre Rouleau: add completion support]
+;; [ TODO 2025-06-07, by Pierre Rouleau: add completion support]
 ;; (defun seed7-completions-at-point)
 
 
@@ -8727,7 +8728,7 @@ compilation requires a working installation of Seed7.
   (add-hook 'after-save-hook #'seed7--invalidate-xref-cache nil t)
   (add-hook 'after-revert-hook #'seed7--invalidate-xref-cache nil t)
 
-  ;; Seed7 Completion [:todo 2025-07-08, by Pierre Rouleau: find the proper way to hook it]
+  ;; Seed7 Completion [ TODO 2025-07-08, by Pierre Rouleau: find the proper way to hook it]
   ;; (add-hook 'completion-at-point-functions #'seed7--xref-backend nil t)
   ;; (add-hook 'completion-at-point-functions #'seed7--list-of-terms nil
   ;; 'local)
