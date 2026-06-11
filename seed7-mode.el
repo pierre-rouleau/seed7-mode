@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260611.1222
+;; Package-Version: 20260611.1318
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -278,7 +278,7 @@
 ;;     . `seed7-skip-comment-forward'
 ;;       . `seed7---skip-block-comment-forward'
 ;;       . `seed7---skip-line-end-comment'
-;;   -  Seed7 foward-sexp support for block comments
+;;   -  Seed7 forward-sexp support for block comments
 ;;     . `seed7--forward-sexp-function'
 ;;       . `seed7--forward-block-comment'
 ;;       . `seed7--at-line-comment-start-p'
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T16:22:00+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-11T17:18:50+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3063,7 +3063,7 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
       (push-mark original-pos))
     (goto-char end-pos)))
 
-;;** Seed7 foward-sexp support for block comments
+;;** Seed7 forward-sexp support for block comments
 ;;   --------------------------------------------
 
 (defun seed7--forward-block-comment (n)
@@ -3179,13 +3179,15 @@ Handles nested `(* ... *)' block comments; falls through to
        ;;
        ;; Backward: point is just after *) closer
        ((and (< arg 0)
-             (>= (point) 2)
+             (>= (- (point) 2) (point-min))
              (string= (buffer-substring (- (point) 2) (point)) "*)"))
         (seed7--forward-block-comment -1))
        ;;
        ;; Backward: current line has a # line comment
        ((and (< arg 0)
-             (seed7--line-comment-hash))
+             (let ((hash-pos (seed7--line-comment-hash)))
+               (and hash-pos
+                    (>= (point) hash-pos))))
         (seed7--forward-line-comments -1))
        ;;
        ;; Default: delegate to built-in scanner
