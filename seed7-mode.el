@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260611.0923
+;; Package-Version: 20260611.1010
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -450,12 +450,14 @@
 ;;       . `seed7--expand-args'
 ;;       . `seed7--run-and-parse'
 ;;         . `seed7--parse-diagnostics'
+;;       . `seed7--end-msg-for'
 ;; - Seed7 Run Program
 ;;   - Seed7 Run – process filters and sentinel
 ;;   * `seed7-run-program'
 ;;     o `seed7--cmd-specs-for'
 ;;     . `seed7--run-program-filter'
 ;;     . `seed7--run-sentinel'
+;;     o `seed7--end-msg-for'
 ;;   - Seed7 Run – interactive input commands
 ;;     . `seed7-run-send-input'
 ;;     . `seed7-run-interrupt'
@@ -532,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T13:23:58+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-11T14:10:35+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -594,7 +596,7 @@ When `seed7-complete-statement-or-indent' performs code expansion and
 `overwrite-mode' off in the current buffer to prevent writing over the
 expanded code.
 
-To disable this behaviour turn this user-option off."
+To disable this behavior turn this user-option off."
   :group 'seed7
   :type 'boolean
   :safe #'booleanp)
@@ -617,7 +619,7 @@ when the navigation commands fail."
 The command line must identify the Seed7 static check tool, s7check,
 by default.
 You may:
-- Specify the program name without a path if it is in the PATH of your shell.
+- Specify the program name without a path if it can be found by Emacs.
 - Specify the program name with an absolute path.
 - Specify static checker options after the program name if necessary.
 
@@ -635,7 +637,7 @@ the executable you can use for this."
 
 The command line must identify the Seed7 interpreter, s7, by default.
 You may:
-- Specify the program name without a path if it is in the PATH of your shell.
+- Specify the program name without a path if it can be found by Emacs.
 - Specify the program name with an absolute path.
 - Specify interpreter options after the program name if necessary.
 
@@ -652,7 +654,7 @@ directory."
 
 The command line must identify the Seed7 compiler, s7c, by default.
 You may:
-- Specify the program name without a path if it is in the PATH of your shell.
+- Specify the program name without a path if it can be found by Emacs.
 - Specify the program name with an absolute path.
 - Specify compiler options after the program name if necessary.
 
@@ -1541,7 +1543,7 @@ Matches something like:
           seed7--whitespace-re     ; 4
           seed7-one-arg-re         ; 5
           seed7--whitespace-re)    ; 6
-  "Regexp for 0 to many arguments inside parenthesis pair.")
+  "Regexp for zero or more arguments inside parenthesis pair.")
 
 ;; --
 
@@ -2100,7 +2102,8 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
 Handle four cases:
 - the `#' number-base separator,
 - single-quoted character literals,
-- the `(*' and `*)' two-characters block-comment delimiters."
+- the `(*' and
+- the `*)' two-characters block-comment delimiters."
   ;; See:  (info "(elisp)Syntax Properties")
   ;;
   (with-silent-modifications
@@ -2168,9 +2171,9 @@ Handle four cases:
 ;; ===================================== ================================================
 
 (defun seed7-choose-color (&rest list)
-  "Use the first colour available from the specified LIST of color names.
+  "Use the first color available from the specified LIST of color names.
 
-Allows selecting similar colours for various systems."
+Allows selecting similar colors for various systems."
   (let (answer)
     (while list
       (or answer
@@ -3102,7 +3105,7 @@ If END-POS is specified it specifies the last possible position."
 - ORIGINAL-POS and FINAL-POS are the original and final position
   of the operations.
 - DONT-PUSH-MARK a flag indicating whether mark should be pushed.
-- INFO a string to issue as message if non nil."
+- INFO a string to issue as message if non-nil."
   (when (/= final-pos original-pos)
     (unless dont-push-mark
       (push-mark original-pos (not seed7-verbose-navigation))
@@ -4142,7 +4145,9 @@ Only values in the range 2 to 8, inclusive, are used.
 If the value is smaller than 2, then 2 is used.
 If the value is larger than 8, 8 is used."
   :group 'seed7
-  :type 'integer)
+  :type 'integer
+  :safe (lambda (value)
+        (and (integerp value) (<= 2 value 8))))
 
 (defcustom seed7-auto-indent t
   "Set to t to activate automatic indentation control.
@@ -4282,7 +4287,7 @@ Return nil otherwise."
 
 (defun seed7-backward-char-pos (char &optional bound)
   "Back search for CHAR in code, return its position or nil.
-CHAR is a string of 1 character.
+CHAR is a string of one character.
 If BOUND is specified it bounds the search; it is a buffer position:
 the match found must not begin before that position.
 Do not move point."
@@ -4293,7 +4298,7 @@ Do not move point."
   "Forward search for CHAR in code, return its position or nil.
 Return the position of the CHAR unless POINT-AFTER is non-nil, in which case
 it returns the point after CHAR.
-CHAR is a string of 1 character.
+CHAR is a string of one character.
 If BOUND is specified it bounds the search; it is a buffer position:
 the match found must not begin after that position.
 Does not move point."
@@ -5640,7 +5645,7 @@ N is: - :dont-move to keep point at current position
       - A negative number for previous lines: -1 previous, -2 line before...
 SCOPE-BEGIN-POS and SCOPE-END-POS are the search begin and end boundaries.
 If nothing is found it returns nil.
-If the appropriate parens pair is found it return the indentation column of
+If the appropriate parens pair is found it returns the indentation column of
 the character after the opening parens of the inner-most nesting."
   (car-safe (seed7-line-inside-nested-parens-pairs n nested-depth
                                                    scope-begin-pos
@@ -5669,7 +5674,7 @@ Return nil when no such previous line exists."
 
 (defun seed7-line-is-procfunc-beg-of-decl (n &optional dont-skip-comment-start)
   "Return indent column when line N is a procedure or function declaration.
-Skip comment start unless DONT-SKIP-COMMENT-START is non nil."
+Skip comment start unless DONT-SKIP-COMMENT-START is non-nil."
   (seed7-line-starts-with n seed7-procfunc-beg-of-decl-nc-re
                           dont-skip-comment-start))
 
@@ -6064,7 +6069,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
 
 (defun seed7-indent-line ()
   "Indent the current Seed7 line of code or all marked lines.
-If point was inside the indentation space move it to first non white space,
+If point was inside the indentation space move it to first non-whitespace,
 otherwise leave point over the same character.
 If a region is marked, use it to identify the lines that must be indented,
 then deactivates it (to prevent the area to limit searches)."
@@ -6110,12 +6115,12 @@ then deactivates it (to prevent the area to limit searches)."
 ;;  =============================
 
 (defun seed7--delete-char-and-mark ()
-  "Delete 1 character and put a tempo marker at its position."
+  "Delete one character and put a tempo marker at its position."
   (delete-char 1)
   (tempo-insert-mark (point-marker)))
 
 (defun seed7--delete-char-and-mark-at-column (indented-column)
-  "Delete 1 char at specified INDENTED-COLUMN number.
+  "Delete one character at specified INDENTED-COLUMN number.
 Also add a tempo marker at that location."
   (seed7-to-indent)
   (when (> indented-column 0)
@@ -6123,7 +6128,7 @@ Also add a tempo marker at that location."
   (seed7--delete-char-and-mark))
 
 (defun seed7--delete-char-and-mark-at (indented-column)
-  "Delete 1 char at specified INDENTED-COLUMN number or each one in the list.
+  "Delete one character at INDENTED-COLUMN number or each one in the list.
 Also add tempo marker at each of these locations."
   (if (listp indented-column)
       (dolist (col indented-column)
@@ -7039,6 +7044,43 @@ Signals a user error if the absolute path of the program is not found.
       (user-error "Program specified by `%s' not found or not executable: %s"
                   user-option-name (or pgm-name "")))))
 
+(defun seed7--end-msg-for (pgm operation n-diags stderr-text exit-code)
+  "Return message describing result of execution of PGM.
+
+OPERATION  : a descriptive name for the purpose of the PGM.
+N-DIAGS    : the number of diagnostics/errors detected by PGM.
+STDERR-TEXT: text printed by PGM on its stderr stream.
+EXIT-CODE  : the exit code of PGM.
+"
+  (let ((err-msg     (when (and stderr-text
+                                (not (string-blank-p stderr-text)))
+                       (format "\nSTDERR: %s" stderr-text))))
+    (format "%s: %s"
+            pgm
+            (cond
+             ;; 1 or more error found.
+             ((> n-diags 0)
+              (format "%s: %d error%s found%s"
+                      operation
+                      n-diags
+                      (seed7--plural-s n-diags)
+                      (or err-msg "")))
+             ;;
+             ;; stderr message
+             (err-msg (format "%s with exit code %d%s"
+                              operation
+                              exit-code
+                              err-msg))
+             ;;
+             ;; no stderr message
+             ((not (zerop exit-code))
+              (format "%s with exit code %d"
+                      operation
+                      exit-code))
+             ;;
+             ;; no diags, no stderr, exit-code 0
+             (t "no errors found")))))
+
 (defun seed7-check-file (file-name &optional compile)
   "Run static check or compilation on FILE-NAME without using the shell.
 
@@ -7142,26 +7184,8 @@ or nil when no diagnostics are found."
            (duration    (float-time (time-subtract t1 t0)))
            (n-diags     (length diags))
            (out-buf     (get-buffer-create "*seed7-errors*"))
-           ;; Format result message
-           (err-msg     (when (and stderr-text
-                                   (not (string-blank-p stderr-text)))
-                          (format "\nSTDERR: %s" stderr-text)))
-           (end-msg (format "%s: %s"
-                            pgm
-                            (cond
-                             (diags (format "%d error%s found%s"
-                                            n-diags
-                                            (seed7--plural-s n-diags)
-                                            (or err-msg "")))
-                             (err-msg (format "%s with exit code %d%s"
-                                              operation
-                                              exit-code
-                                              err-msg))
-                             ((not (zerop exit-code))
-                              (format "%s with exit code %d"
-                                      operation
-                                      exit-code))
-                             (t "no errors found")))))
+           (end-msg     (seed7--end-msg-for pgm operation
+                                            n-diags stderr-text exit-code)))
       ;;
       ;; -- Format the output -----------------------------------------------
       (with-current-buffer out-buf
@@ -7491,13 +7515,10 @@ See also: `seed7-check-or-compile', `seed7-interpreter'."
       ;;
       (when (or diags (not (zerop exit-code)))
         ;; Build the errors buffer the same way seed7-check-or-compile does.
-        (let* ((err-msg  (when (and stderr-text
-                                    (not (string-blank-p stderr-text)))
-                           (format "\nSTDERR: %s" stderr-text)))
-               (end-msg  (format "%s: %d error%s found%s"
-                                 pgm n-diags
-                                 (seed7--plural-s n-diags)
-                                 (or err-msg "")))
+        (let ((end-msg (seed7--end-msg-for
+                        pgm
+                        (format "run %s" (file-name-nondirectory file))
+                        n-diags stderr-text exit-code))
                (out-buf  (get-buffer-create "*seed7-errors*")))
           (with-current-buffer out-buf
             (let ((inhibit-read-only t))
@@ -8666,7 +8687,7 @@ compilation requires a working installation of Seed7.
    ((not (integerp seed7-indent-width)) (setq-local seed7-indent-width 2))
    ((< seed7-indent-width 2) (setq-local seed7-indent-width 2))
    ((> seed7-indent-width 8) (setq-local seed7-indent-width 8)))
-  ;; Adjust tab width to the indentation; that's sometime useful to quickly
+  ;; Adjust tab width to the indentation; that's sometimes useful to quickly
   ;; change the visual rendering of the indentation by converting to tabs then
   ;; changing the tab width.
   (setq-local tab-width seed7-indent-width)
