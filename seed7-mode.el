@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260611.1638
+;; Package-Version: 20260611.1711
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T20:38:16+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-11T21:11:31+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1459,24 +1459,16 @@ Match group 1")
 ;;** Seed7 Block Processing Regexp
 ;;   -----------------------------
 
-(defconst seed7-block-start-regexp "\\(\
-const proc: \\|\
-const func \\|\
-const type: \\|\
-elsif \\|\
-if \\|\
-while \\|\
-for \\|\
-case \\|\
-catch \\|\
-\\<local\\>\\|\
-\\<repeat\\>\\|\
-\\<global\\>\\|\
-\\<begin\\>\\|\
-\\<block\\>\\|\
-\\<else\\>\\|\
-\\<exception\\>\\|\
-\\<result\\>\\)"
+(defconst seed7-block-start-regexp
+  (concat
+   "\\("
+   (regexp-opt '("case" "catch" "const func" "const proc:"
+                 "const type:" "elsif" "for" "if" "while"))
+   "[[:blank:]]\\|"
+   (regexp-opt '("begin" "block" "else" "exception"
+                 "global" "local" "repeat" "result")
+               'words)
+   "\\)")
   "Regexp for the beginning of a Seed7 block.  One capture group.")
 
 (defconst seed7-block-line-start-regexp (concat
@@ -1484,39 +1476,27 @@ catch \\|\
                                          seed7-block-start-regexp)
   "Regexp to find location of blocks.")
 
-;; [ TODO 2025-07-01, by Pierre Rouleau: optimize this regexp]
-(defconst seed7-block-end-regexp "\
-\\(?:end \
-\\(?:\\(?:\\(?:enum\\|for\\|func\\|if\\|struct\\|while\\|case\\);\\)\
-\\|block\\)\\)\
-\\|\\(?:until \\)"
+(defconst seed7-block-end-regexp
+  (concat
+   "\\(?:end[[:blank:]]+"
+   "\\(?:"
+   (regexp-opt '("case" "enum" "for" "func" "if" "struct" "while"))
+   ";\\|block\\)\\)"
+   "\\|\\(?:until[[:blank:]]\\)")
   "Regexp for generic end of block.")
 
-;; [ TODO 2025-07-01, by Pierre Rouleau: optimize this regexp]
-(defconst seed7-block-top-start-regexp "\\(\
-const proc: \\|\
-const func \\|\
-const type: \\|\
-const array \\|\
-var array \\|\
-const set \\|\
-var set \\|\
-elsif \\|\
-if \\|\
-while \\|\
-for \\|\
-case \\|\
-catch \\|\
-\\<local\\>\\|\
-\\<repeat\\>\\|\
-\\<global\\>\\|\
-\\<begin\\>\\|\
-\\<block\\>\\|\
-\\<else\\>\\|\
-\\<exception\\>\\|\
-\\<result\\>\\)"
+(defconst seed7-block-top-start-regexp
+  (concat
+   "\\("
+   (regexp-opt '("case" "catch" "const array" "const func" "const proc:"
+                 "const set" "const type:" "elsif" "for" "if"
+                 "var array" "var set" "while"))
+   "[[:blank:]]\\|"
+   (regexp-opt '("begin" "block" "else" "exception"
+                 "global" "local" "repeat" "result")
+               'words)
+   "\\)")
   "Regexp for the top of a Seed7 block.  One capture group.")
-
 
 ;;** Seed7 Procedure/Function Parameters Regexp
 ;;   ------------------------------------------

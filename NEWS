@@ -51,6 +51,11 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 
 ** Improvements
 
+- Regular expressions used to detect keywords and used in navigation now
+  allow hard tabs as whitespace following keywords.  The hard tabs are not
+  promoted by the code but tolerated as Seed7 promotes the sue of space
+  characters.
+
 - *forward-sexp for comments, blocks, procedure and functions*:
   *forward-sexp* (and *backward-sexp*)
   can now move across Seed7 =(*= ... =*)=
