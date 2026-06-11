@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260610.2240
+;; Package-Version: 20260611.1344
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -162,7 +162,7 @@
 ;; - Keyword Completion help.
 
 ;;
-;; [:todo 2025-04-06, by Pierre Rouleau: Fix following problems:
+;; [ TODO 2025-04-06, by Pierre Rouleau: Fix following problems:
 ;;  Known problems and improvements:
 ;;  # 01  Problem: Complete defface definitions:
 ;;        - Complete the dark backgrounds coloring.
@@ -278,6 +278,12 @@
 ;;     . `seed7-skip-comment-forward'
 ;;       . `seed7---skip-block-comment-forward'
 ;;       . `seed7---skip-line-end-comment'
+;;   -  Seed7 forward-sexp support for block and line comments
+;;     . `seed7--forward-sexp-function'
+;;       . `seed7--forward-block-comment'
+;;       . `seed7--at-line-comment-start-p'
+;;       . `seed7--forward-line-comments'
+;;         . `seed7--line-comment-hash'
 ;;   - Seed7 Navigation by Block/Procedure/Function
 ;;     - Navigation to Outer Block
 ;;       . `seed7-top-block-name'
@@ -446,14 +452,18 @@
 ;; - Seed7 Compilation
 ;;   * `seed7-check-or-compile'
 ;;     . `seed7-check-file'
+;;       . `seed7--cmd-specs-for'
 ;;       . `seed7--expand-args'
 ;;       . `seed7--run-and-parse'
 ;;         . `seed7--parse-diagnostics'
+;;       . `seed7--end-msg-for'
 ;; - Seed7 Run Program
 ;;   - Seed7 Run – process filters and sentinel
 ;;   * `seed7-run-program'
+;;     o `seed7--cmd-specs-for'
 ;;     . `seed7--run-program-filter'
 ;;     . `seed7--run-sentinel'
+;;     o `seed7--end-msg-for'
 ;;   - Seed7 Run – interactive input commands
 ;;     . `seed7-run-send-input'
 ;;     . `seed7-run-interrupt'
@@ -530,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T02:40:13+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-11T17:44:04+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -592,7 +602,7 @@ When `seed7-complete-statement-or-indent' performs code expansion and
 `overwrite-mode' off in the current buffer to prevent writing over the
 expanded code.
 
-To disable this behaviour turn this user-option off."
+To disable this behavior turn this user-option off."
   :group 'seed7
   :type 'boolean
   :safe #'booleanp)
@@ -615,7 +625,7 @@ when the navigation commands fail."
 The command line must identify the Seed7 static check tool, s7check,
 by default.
 You may:
-- Specify the program name without a path if it is in the PATH of your shell.
+- Specify the program name without a path if it can be found by Emacs.
 - Specify the program name with an absolute path.
 - Specify static checker options after the program name if necessary.
 
@@ -633,7 +643,7 @@ the executable you can use for this."
 
 The command line must identify the Seed7 interpreter, s7, by default.
 You may:
-- Specify the program name without a path if it is in the PATH of your shell.
+- Specify the program name without a path if it can be found by Emacs.
 - Specify the program name with an absolute path.
 - Specify interpreter options after the program name if necessary.
 
@@ -650,7 +660,7 @@ directory."
 
 The command line must identify the Seed7 compiler, s7c, by default.
 You may:
-- Specify the program name without a path if it is in the PATH of your shell.
+- Specify the program name without a path if it can be found by Emacs.
 - Specify the program name with an absolute path.
 - Specify compiler options after the program name if necessary.
 
@@ -1328,7 +1338,7 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
 ;;** Seed7 Operator Symbols
 ;;   ----------------------
 
-;; [:todo 2025-04-10, by Pierre Rouleau: categorize 'noop' according to Seed7 spec once I find it ]
+;; [ TODO 2025-04-10, by Pierre Rouleau: categorize 'noop' according to Seed7 spec once I find it ]
 (defconst seed7--operator-symbols
   '("and"
     "conv"
@@ -1469,7 +1479,7 @@ catch \\|\
                                          seed7-block-start-regexp)
   "Regexp to find location of blocks.")
 
-;; [:todo 2025-07-01, by Pierre Rouleau: optimize this regexp]
+;; [ TODO 2025-07-01, by Pierre Rouleau: optimize this regexp]
 (defconst seed7-block-end-regexp "\
 \\(?:end \
 \\(?:\\(?:\\(?:enum\\|for\\|func\\|if\\|struct\\|while\\|case\\);\\)\
@@ -1477,7 +1487,7 @@ catch \\|\
 \\|\\(?:until \\)"
   "Regexp for generic end of block.")
 
-;; [:todo 2025-07-01, by Pierre Rouleau: optimize this regexp]
+;; [ TODO 2025-07-01, by Pierre Rouleau: optimize this regexp]
 (defconst seed7-block-top-start-regexp "\\(\
 const proc: \\|\
 const func \\|\
@@ -1539,7 +1549,7 @@ Matches something like:
           seed7--whitespace-re     ; 4
           seed7-one-arg-re         ; 5
           seed7--whitespace-re)    ; 6
-  "Regexp for 0 to many arguments inside parenthesis pair.")
+  "Regexp for zero or more arguments inside parenthesis pair.")
 
 ;; --
 
@@ -1805,7 +1815,7 @@ Group 1: \"proc\", \"varfunc\" or \"func \"
 Group 2: The func return type.  May be empty.
 Group 3: The func or proc name." )
 
-;; [:todo 2025-07-17, by Pierre Rouleau: Enhance seed7-procfunc-regexp to support array parameters.]
+;; [ TODO 2025-07-17, by Pierre Rouleau: Enhance seed7-procfunc-regexp to support array parameters.]
 (defconst seed7-procfunc-regexp
   (format
    ;;                                      fct name                           is     func | return | ...
@@ -2050,8 +2060,8 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
     ;;
     ;; string escape
     (modify-syntax-entry ?\\ "\\"  st)
-    ;; single quote: Seed7 supports ''' as well as '\''.  Deal with it in seed7-syntax-propertize.
-    (modify-syntax-entry ?\' "." st) ; attribute; see seed7-syntax-propertize for character literal
+    ;; single quote: Seed7 supports ''' as well as '\''.  Deal with it in `seed7-mode-syntax-propertize'.
+    (modify-syntax-entry ?\' "." st) ; attribute; see `seed7-mode-syntax-propertize' for character literal
     st)
   "Syntax table in use in `seed7-mode' buffers.")
 
@@ -2095,46 +2105,46 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
 (defun seed7-mode-syntax-propertize (start end)
   "Apply syntax-table text properties between START and END.
 
-Handle 4 cases:
-- The `#' number-base separator,
-- Single-Quoted character literals,
-- The `(*' and `*)' two-characters block-comment delimiters."
-  ;; (info "(elisp)Syntax Properties")
+Handle four cases:
+- the `#' number-base separator,
+- single-quoted character literals,
+- the `(*' and
+- the `*)' two-characters block-comment delimiters."
+  ;; See:  (info "(elisp)Syntax Properties")
   ;;
-  ;; called from `syntax-propertize', wrapped in `save-excursion' and
-  ;; `with-silent-modifications'.
-  (save-excursion
-    (save-match-data
-      (goto-char start)
-      (while (re-search-forward seed7-char-literal-re end t)
-        (cond
-         ;; deal with '#'
-         ((match-beginning 1)
-          (put-text-property (match-beginning 1) (match-end 1)
-                             'syntax-table (string-to-syntax "_")))
+  (with-silent-modifications
+    (save-excursion
+      (save-match-data
+        (goto-char start)
+        (while (re-search-forward seed7-char-literal-re end t)
+          (cond
+           ;; deal with '#'
+           ((match-beginning 1)
+            (put-text-property (match-beginning 1) (match-end 1)
+                               'syntax-table (string-to-syntax "_")))
 
-         ;; Deal with single quoted character expression
-         ((match-beginning 2)
-          (put-text-property (match-beginning 2) (1+ (match-beginning 2))
-                             'syntax-table '(7 . ?'))
-          (put-text-property (1- (match-end 2))  (match-end 2)
-                             'syntax-table '(7 . ?')))
+           ;; Deal with single quoted character expression
+           ((match-beginning 2)
+            (put-text-property (match-beginning 2) (1+ (match-beginning 2))
+                               'syntax-table '(7 . ?'))
+            (put-text-property (1- (match-end 2))  (match-end 2)
+                               'syntax-table '(7 . ?')))
 
-         ;; Mark (* as a two-character comment-start (style b).
-         ;; Override the paren-open syntax on '(' for this occurrence.
-         ((match-beginning 3)
-          (put-text-property (match-beginning 3) (1+ (match-beginning 3))
-                             'syntax-table (string-to-syntax "< 1bn"))
-          (put-text-property (1+ (match-beginning 3)) (match-end 3)
-                             'syntax-table (string-to-syntax "< 2bn")))
+           ;; Mark (* as a two-character comment-start (style b).
+           ;; Override the paren-open syntax on '(' for this occurrence.
+           ((match-beginning 3)
+            (put-text-property (match-beginning 3) (1+ (match-beginning 3))
+                               'syntax-table (string-to-syntax "< 1bn"))
+            (put-text-property (1+ (match-beginning 3)) (match-end 3)
+                               'syntax-table (string-to-syntax "< 2bn")))
 
-         ;; Mark *) as a two-character comment-end (style b).
-         ;; Override the paren-close syntax on ')' for this occurrence.
-         ((match-beginning 4)
-          (put-text-property (match-beginning 4) (1+ (match-beginning 4))
-                             'syntax-table (string-to-syntax "> 3bn"))
-          (put-text-property (1+ (match-beginning 4)) (match-end 4)
-                             'syntax-table (string-to-syntax "> 4bn"))))))))
+           ;; Mark *) as a two-character comment-end (style b).
+           ;; Override the paren-close syntax on ')' for this occurrence.
+           ((match-beginning 4)
+            (put-text-property (match-beginning 4) (1+ (match-beginning 4))
+                               'syntax-table (string-to-syntax "> 3bn"))
+            (put-text-property (1+ (match-beginning 4)) (match-end 4)
+                               'syntax-table (string-to-syntax "> 4bn")))))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
@@ -2167,9 +2177,9 @@ Handle 4 cases:
 ;; ===================================== ================================================
 
 (defun seed7-choose-color (&rest list)
-  "Use the first colour available from the specified LIST of color names.
+  "Use the first color available from the specified LIST of color names.
 
-Allows selecting similar colours for various systems."
+Allows selecting similar colors for various systems."
   (let (answer)
     (while list
       (or answer
@@ -2508,10 +2518,11 @@ Allows selecting similar colours for various systems."
    (cons seed7-integer-re                            (list 1 ''seed7-integer-face))
    ;; low priority rendering of arithmetic + and -
    (cons seed7-minus-operator-regexp                 (list 1 ''font-lock-keyword-face))
-   ;; other low priority characters [:todo 2025-07-09, by Pierre Rouleau:
-   ;; check if any missing and improve control of ..]
+
+   ;; other low priority characters
+   ;; [ TODO 2025-07-09, by Pierre Rouleau: check if any missing and improve control of ..]
    (cons "[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]"   (list 1 ''font-lock-keyword-face))
-   ;;
+
    ;; Fontify the `*)' block-comment end delimiter entirely with
    ;; `font-lock-comment-face'.
    ;;
@@ -2726,7 +2737,6 @@ the comment text:
 
 Return nil otherwise.
 Does not move point."
-  (declare (side-effect-free t))
   (save-excursion
     (let* ((pos (or pos (point)))
            (syntax (syntax-ppss pos)))
@@ -2965,6 +2975,9 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
 (defun seed7---skip-block-comment-forward ()
   "Skip comment block -- ignores nesting.
 Only used by `seed7-skip-comment-forward'."
+  ;; note: Seed7 supports nested block comments.  This function does not
+  ;;       move point out of nested comments, it just moves point to the end
+  ;;       of the current comment even if it is nested inside another one.
   (search-forward "*)" nil :noerror)
   (when (seed7-at-end-of-line-p)
     (forward-line 1)
@@ -3050,6 +3063,140 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
       (push-mark original-pos))
     (goto-char end-pos)))
 
+;;** Seed7 forward-sexp support for block and line comments
+;;   ------------------------------------------------------
+
+(defun seed7--forward-block-comment (n)
+  "Move over N nested `(* ... *)' block comment pairs.
+Positive N: point must be at `(' of `(*'.
+Negative N: point must be just past `)' of `*)'."
+  (let ((dir (if (> n 0) 1 -1))
+        (count (abs n)))
+    (while (> count 0)
+      (if (> dir 0)
+          ;; -- Forward --------------------
+          ;; Point is at ( of (*
+          (let ((depth 1))
+            (forward-char 2)                      ; step past (*
+            (while (> depth 0)
+              (cond
+               ((eobp)
+                (signal 'scan-error
+                        (list "Unbalanced `(*'" (point) (point))))
+               ((looking-at "(\\*")
+                (setq depth (1+ depth))
+                (forward-char 2))
+               ((looking-at "\\*)")
+                (setq depth (1- depth))
+                (forward-char 2))
+               (t
+                (forward-char 1)))))
+        ;; -- Backward ---------------------
+        ;; Point is just after ) of *)
+        (let ((depth 1))
+          (backward-char 2)                       ; step before *)
+          (while (> depth 0)
+            (let ((found (re-search-backward
+                          "(\\*\\|\\*)" nil t)))
+              (unless found
+                (signal 'scan-error
+                        (list "Unbalanced `*)'" (point) (point))))
+              ;; re-search-backward leaves point at start of match
+              (if (looking-at "(\\*")
+                  (setq depth (1- depth))    ; found (*  → close a level
+                (setq depth (1+ depth))))))) ; found *)  → open a level
+      (setq count (1- count)))))
+
+(defun seed7--line-comment-hash ()
+  "Return position of the `#' line-comment start on the current line, or nil.
+Only returns a position if the `#' has comment-start syntax (class 11),
+excluding `#' used as a Seed7 number-base separator."
+  (save-excursion
+    (beginning-of-line)
+    (catch 'found
+      (while (re-search-forward "#" (line-end-position) t)
+        (let* ((pos (1- (point)))
+               (s   (syntax-after pos)))
+          (when (and s (= (syntax-class s) 11))   ; 11 = comment-start (<)
+            (throw 'found pos))))
+      nil)))
+
+(defun seed7--at-line-comment-start-p ()
+  "Return non-nil if point is at a `#' that is a line-comment start."
+  (and (eq (char-after) ?#)
+       (let ((s (syntax-after (point))))
+         (and s (= (syntax-class s) 11)))))
+
+(defun seed7--forward-line-comments (n)
+  "Move over N consecutive `#' line-end comment blocks.
+Positive N: point must be at the `#' of a line comment.
+  Moves forward to end of the last consecutive commented line.
+Negative N: point is on a line that contains a line comment.
+  Moves backward to the `#' of the first consecutive commented line."
+  (let ((dir   (if (> n 0) 1 -1))
+        (count (abs n)))
+    (while (> count 0)
+      (if (> dir 0)
+          ;; -- Forward ----------
+          ;; Point is at # on the current line; advance to end of the
+          ;; last consecutive commented line.
+          (progn
+            (end-of-line)
+            (while (save-excursion                  ; peek — don't move yet
+                     (and (= (forward-line 1) 0)
+                          (seed7--line-comment-hash)))
+              (forward-line 1)                      ; next line is a comment: commit
+              (end-of-line)))                       ; point stays here when loop exits
+        ;; -- Backward ------------
+        ;; Point is somewhere on a commented line; retreat to the # of
+        ;; the first consecutive commented line.
+        (let ((hash-pos (seed7--line-comment-hash)))
+          (unless hash-pos
+            (signal 'scan-error
+                    (list "Not on a `#' comment line" (point) (point))))
+          (goto-char hash-pos)
+          (while (save-excursion                    ; peek — don't move yet
+                   (and (= (forward-line -1) 0)
+                        (seed7--line-comment-hash)))
+            (forward-line -1)
+            (goto-char (seed7--line-comment-hash)))))
+      (setq count (1- count)))))
+
+(defun seed7--forward-sexp-function (&optional arg)
+  "Seed7-aware `forward-sexp-function'.
+Handles:
+- nested `(* ... *)' block comments,
+- consecutive `#' line-end comment blocks.
+Falls through to `scan-sexps' for all other sexp forms."
+  (let* ((arg (or arg 1)))
+    (dotimes (_ (abs arg))
+      (cond
+       ;; Forward: point is at (* opener
+       ((and (> arg 0) (looking-at "(\\*"))
+        (seed7--forward-block-comment 1))
+       ;;
+       ;; Forward: point is at # line-comment start
+       ((and (> arg 0) (seed7--at-line-comment-start-p))
+        (seed7--forward-line-comments 1))
+       ;;
+       ;; Backward: point is just after *) closer
+       ((and (< arg 0)
+             (>= (- (point) 2) (point-min))
+             (string= (buffer-substring (- (point) 2) (point)) "*)"))
+        (seed7--forward-block-comment -1))
+       ;;
+       ;; Backward: current line has a # line comment
+       ((and (< arg 0)
+             (let ((hash-pos (seed7--line-comment-hash)))
+               (and hash-pos
+                    (>= (point) hash-pos))))
+        (seed7--forward-line-comments -1))
+       ;;
+       ;; Default: delegate to built-in scanner
+       (t
+        (goto-char (or (scan-sexps (point) (if (> arg 0) 1 -1))
+                       (buffer-end arg))))))))
+
 ;;** Seed7 Navigation by Block/Procedure/Function
 ;;   --------------------------------------------
 
@@ -3099,7 +3246,7 @@ If END-POS is specified it specifies the last possible position."
 - ORIGINAL-POS and FINAL-POS are the original and final position
   of the operations.
 - DONT-PUSH-MARK a flag indicating whether mark should be pushed.
-- INFO a string to issue as message if non nil."
+- INFO a string to issue as message if non-nil."
   (when (/= final-pos original-pos)
     (unless dont-push-mark
       (push-mark original-pos (not seed7-verbose-navigation))
@@ -3319,7 +3466,7 @@ Move inside the current if inside one, to the next if outside one.
                    (setq final-pos (seed7-re-search-forward seed7-procfunc-end-regexp)
                          top-block-name2 (seed7-top-block-name))
                    (when (seed7-re-search-backward seed7-procfunc-regexp)
-                     ;; [:todo 2025-06-12, by Pierre Rouleau: when at end of
+                     ;; [ TODO 2025-06-12, by Pierre Rouleau: when at end of
                      ;; func that has nested func/proc, the spec extracted below
                      ;; are the spec of the last nested func/proc NOT the spec
                      ;; of the top one. Need a way to distinguish the 2...]
@@ -3400,7 +3547,7 @@ Move inside the current if inside one, to the next if outside one.
             ;; search for forward or action declaration of function or procedures
             ;; that have a complex parameter list not detected by the previous
             ;; searches.
-            ;; [:todo 2025-07-17, by Pierre Rouleau: remove once other regexps are
+            ;; [ TODO 2025-07-17, by Pierre Rouleau: remove once other regexps are
             ;;                    able to match all formats of parameters.
             ;;                    This is currently not needed.]
             ;; (save-excursion
@@ -3516,7 +3663,7 @@ Negative N starts counting from the end of the line: -1 is the last word."
                  (<= (point) line-end))
         (thing-at-point 'word :no-properties)))))
 
-;; [:todo 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
+;; [ TODO 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
 (defconst seed7---inner-callables-1
   ;;         (----------------)              (----------)
   ;;                                    (--------------------)
@@ -3524,7 +3671,7 @@ Negative N starts counting from the end of the line: -1 is the last word."
   "\\(const \\(?:func\\|proc\\)[^;]+?is\\(?:\\(?: +func\\)?$\\)\\)"
   "Group 1: complete text.")
 
-;; [:todo 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
+;; [ TODO 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
 (defconst seed7---inner-callables-2
   ;;              (---------------)
   ;;     (----------------------------)     (--------------)
@@ -3555,7 +3702,7 @@ Negative N starts counting from the end of the line: -1 is the last word."
 - group 3: action or forward function declaration.")
 
 
-;; -- Compilation Behaviour Control for forward-sexp/backward-sexp protection
+;; -- Compilation Behavior Control for forward-sexp/backward-sexp protection
 (eval-and-compile
   (defconst seed7--debug-sexp-scan nil
     "Forward/Backward Sexp debug control.  For DEVELOPMENT ONLY!
@@ -3673,7 +3820,7 @@ The regexp has 2 capture groups:
   (format "^\\(?:[[:space:]]*?\\(const[[:space:]]+?type:.+?[[:space:]]%s\\)\\|[[:space:]]*?\\(end %s;\\)\\)"
           keyword keyword))
 
-;; [:todo 2025-05-31, by Pierre Rouleau: Add support for hard tab after keyword
+;; [ TODO 2025-05-31, by Pierre Rouleau: Add support for hard tab after keyword
 (defun seed7--end-regexp-for (word1 word2 last-word)
   "Return regexps for end and start of block for specified arguments.
 Used when searching forward.
@@ -3836,7 +3983,7 @@ NO match.  From %d, at point  %d, nesting=%d, line %d for: %S"
       (goto-char found-position))))
 
 
-;; [:todo 2025-05-31, by Pierre Rouleau: Add & test support for hard tab after keyword
+;; [ TODO 2025-05-31, by Pierre Rouleau: Add & test support for hard tab after keyword
 (defun seed7--start-regexp-for (word1 word2)
   "Return a regexp to search the starting string block specified by the arguments.
 Used when searching backward.
@@ -4078,7 +4225,7 @@ Toggles listing them together or separately.
 ;;* Seed7 Code Marking
 ;;  ==================
 
-;; [:todo 2025-06-21, by Pierre Rouleau: Perhaps this can use
+;; [ TODO 2025-06-21, by Pierre Rouleau: Perhaps this can use
 ;; `seed7-to-top-of-block' to handle more blocks?]
 (defun seed7-mark-defun ()
   "Mark the current Seed7 function or procedure.
@@ -4139,7 +4286,9 @@ Only values in the range 2 to 8, inclusive, are used.
 If the value is smaller than 2, then 2 is used.
 If the value is larger than 8, 8 is used."
   :group 'seed7
-  :type 'integer)
+  :type 'integer
+  :safe (lambda (value)
+        (and (integerp value) (<= 2 value 8))))
 
 (defcustom seed7-auto-indent t
   "Set to t to activate automatic indentation control.
@@ -4187,14 +4336,16 @@ buffers using the `seed7-mode'."
   (skip-chars-forward " \t"))
 
 (defun seed7-current-line-indent ()
-  "Return indentation column number of current line, 0 if line not indented."
+  "Return indentation column number of current line, 0 if line not indented.
+Does not move point."
   (save-excursion
     (seed7-to-indent)
     (current-column)))
 
 
 (defun seed7-current-line-start-inside-comment-p ()
-  "Return non-nil if the current code line starts inside a comment."
+  "Return non-nil if beginning of current line is in a comment.
+Checks the first indented character.  Does not move point."
   (save-excursion
     (seed7-to-indent)
     (seed7-inside-comment-p (point))))
@@ -4277,7 +4428,7 @@ Return nil otherwise."
 
 (defun seed7-backward-char-pos (char &optional bound)
   "Back search for CHAR in code, return its position or nil.
-CHAR is a string of 1 character.
+CHAR is a string of one character.
 If BOUND is specified it bounds the search; it is a buffer position:
 the match found must not begin before that position.
 Do not move point."
@@ -4288,7 +4439,7 @@ Do not move point."
   "Forward search for CHAR in code, return its position or nil.
 Return the position of the CHAR unless POINT-AFTER is non-nil, in which case
 it returns the point after CHAR.
-CHAR is a string of 1 character.
+CHAR is a string of one character.
 If BOUND is specified it bounds the search; it is a buffer position:
 the match found must not begin after that position.
 Does not move point."
@@ -5635,7 +5786,7 @@ N is: - :dont-move to keep point at current position
       - A negative number for previous lines: -1 previous, -2 line before...
 SCOPE-BEGIN-POS and SCOPE-END-POS are the search begin and end boundaries.
 If nothing is found it returns nil.
-If the appropriate parens pair is found it return the indentation column of
+If the appropriate parens pair is found it returns the indentation column of
 the character after the opening parens of the inner-most nesting."
   (car-safe (seed7-line-inside-nested-parens-pairs n nested-depth
                                                    scope-begin-pos
@@ -5664,7 +5815,7 @@ Return nil when no such previous line exists."
 
 (defun seed7-line-is-procfunc-beg-of-decl (n &optional dont-skip-comment-start)
   "Return indent column when line N is a procedure or function declaration.
-Skip comment start unless DONT-SKIP-COMMENT-START is non nil."
+Skip comment start unless DONT-SKIP-COMMENT-START is non-nil."
   (seed7-line-starts-with n seed7-procfunc-beg-of-decl-nc-re
                           dont-skip-comment-start))
 
@@ -6059,7 +6210,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
 
 (defun seed7-indent-line ()
   "Indent the current Seed7 line of code or all marked lines.
-If point was inside the indentation space move it to first non white space,
+If point was inside the indentation space move it to first non-whitespace,
 otherwise leave point over the same character.
 If a region is marked, use it to identify the lines that must be indented,
 then deactivates it (to prevent the area to limit searches)."
@@ -6105,12 +6256,12 @@ then deactivates it (to prevent the area to limit searches)."
 ;;  =============================
 
 (defun seed7--delete-char-and-mark ()
-  "Delete 1 character and put a tempo marker at its position."
+  "Delete one character and put a tempo marker at its position."
   (delete-char 1)
   (tempo-insert-mark (point-marker)))
 
 (defun seed7--delete-char-and-mark-at-column (indented-column)
-  "Delete 1 char at specified INDENTED-COLUMN number.
+  "Delete one character at specified INDENTED-COLUMN number.
 Also add a tempo marker at that location."
   (seed7-to-indent)
   (when (> indented-column 0)
@@ -6118,7 +6269,7 @@ Also add a tempo marker at that location."
   (seed7--delete-char-and-mark))
 
 (defun seed7--delete-char-and-mark-at (indented-column)
-  "Delete 1 char at specified INDENTED-COLUMN number or each one in the list.
+  "Delete one character at INDENTED-COLUMN number or each one in the list.
 Also add tempo marker at each of these locations."
   (if (listp indented-column)
       (dolist (col indented-column)
@@ -7004,6 +7155,72 @@ used to set `default-directory' for the subprocess."
       (when (buffer-live-p stdout-buf) (kill-buffer stdout-buf)))
     (list exit-code diagnostics stderr-text)))
 
+(defun seed7--cmd-specs-for (user-option)
+  "Return a (PROGRAM CMD-STRING CMD-PARTS) list for the specified USER-OPTION.
+
+USER-OPTION is a symbol; the name of the user-option.
+
+The returned PROGRAM is the absolute path of the executable file to execute.
+Honors absolute, relative, and PATH names identified in the user-option,
+including a leading ~ symbol to identify the home directory.
+
+The returned CMD-PARTS is a list of strings of all arguments that follow the
+program name.
+
+Signals a user error if the absolute path of the program is not found."
+  (let* ((user-option-name (symbol-name user-option))
+         (cmd-string       (symbol-value user-option))
+         (cmd-parts        (split-string-and-unquote cmd-string))
+         (pgm-name         (car-safe cmd-parts))
+         ;; Resolve the executable: when a directory component is present
+         ;; (e.g. "~/bin/s7check"), expand ~ before searching exec-path
+         ;; so tilde paths are honoured.
+         (program-path  (and pgm-name
+                             (if (file-name-directory pgm-name)
+                                 (executable-find (expand-file-name pgm-name))
+                               (executable-find pgm-name)))))
+    (if program-path
+        (list program-path cmd-string (cdr-safe cmd-parts))
+      (user-error "Program specified by `%s' not found or not executable: %s"
+                  user-option-name (or pgm-name "")))))
+
+(defun seed7--end-msg-for (pgm operation n-diags stderr-text exit-code)
+  "Return message describing result of execution of PGM.
+
+OPERATION  : a descriptive name for the purpose of the PGM.
+N-DIAGS    : the number of diagnostics/errors detected by PGM.
+STDERR-TEXT: text printed by PGM on its stderr stream.
+EXIT-CODE  : the exit code of PGM.
+"
+  (let ((err-msg     (when (and stderr-text
+                                (not (string-blank-p stderr-text)))
+                       (format "\nSTDERR: %s" stderr-text))))
+    (format "%s: %s"
+            pgm
+            (cond
+             ;; 1 or more error found.
+             ((> n-diags 0)
+              (format "%s: %d error%s found%s"
+                      operation
+                      n-diags
+                      (seed7--plural-s n-diags)
+                      (or err-msg "")))
+             ;;
+             ;; stderr message
+             (err-msg (format "%s with exit code %d%s"
+                              operation
+                              exit-code
+                              err-msg))
+             ;;
+             ;; no stderr message
+             ((not (zerop exit-code))
+              (format "%s with exit code %d"
+                      operation
+                      exit-code))
+             ;;
+             ;; no diags, no stderr, exit-code 0
+             (t "no errors found")))))
+
 (defun seed7-check-file (file-name &optional compile)
   "Run static check or compilation on FILE-NAME without using the shell.
 
@@ -7039,25 +7256,15 @@ non-nil) cannot be found or is not executable.  In that case verify the
 value of the corresponding user-option.
 
 See also: `seed7-check-or-compile'."
-  (let* ((cmd-string         (if compile seed7-compiler seed7-checker))
-         (user-option-name   (if compile "seed7-compiler" "seed7-checker"))
-         (cmd-parts  (split-string-and-unquote cmd-string))
-         (raw-program (car cmd-parts))
-         ;; Resolve the executable: when a directory component is present
-         ;; (e.g. "~/bin/s7check"), expand ~ before searching exec-path
-         ;; so tilde paths are honoured.
-         (program (and raw-program
-                       (if (file-name-directory raw-program)
-                           (executable-find (expand-file-name raw-program))
-                         (executable-find raw-program)))))
-    ;; Guard: fail fast before allocating any buffers.
-    (unless program
-      (user-error "Program specified by `%s' not found or not executable: %s
-Verify the value of `%s'."
-                  user-option-name raw-program user-option-name))
+  (let* ((cmd-specs  (seed7--cmd-specs-for (if compile
+                                               'seed7-compiler
+                                             'seed7-checker)))
+         (program    (nth 0 cmd-specs))
+         (cmd-string (nth 1 cmd-specs))
+         (args       (nth 2 cmd-specs)))
     ;; Run compiler or checker and return results
     (seed7--run-and-parse program
-                          (append (seed7--expand-args (cdr cmd-parts))
+                          (append (seed7--expand-args args)
                                   (list (expand-file-name file-name)))
                           cmd-string compile file-name)))
 
@@ -7117,26 +7324,8 @@ or nil when no diagnostics are found."
            (duration    (float-time (time-subtract t1 t0)))
            (n-diags     (length diags))
            (out-buf     (get-buffer-create "*seed7-errors*"))
-           ;; Format result message
-           (err-msg     (when (and stderr-text
-                                   (not (string-blank-p stderr-text)))
-                          (format "\nSTDERR: %s" stderr-text)))
-           (end-msg (format "%s: %s"
-                            pgm
-                            (cond
-                             (diags (format "%d error%s found%s"
-                                            n-diags
-                                            (seed7--plural-s n-diags)
-                                            (or err-msg "")))
-                             (err-msg (format "%s with exit code %d%s"
-                                              operation
-                                              exit-code
-                                              err-msg))
-                             ((not (zerop exit-code))
-                              (format "%s with exit code %d"
-                                      operation
-                                      exit-code))
-                             (t "no errors found")))))
+           (end-msg     (seed7--end-msg-for pgm operation
+                                            n-diags stderr-text exit-code)))
       ;;
       ;; -- Format the output -----------------------------------------------
       (with-current-buffer out-buf
@@ -7439,8 +7628,9 @@ See also: `seed7-check-or-compile', `seed7-interpreter'."
    (list (read-string "Program arguments (empty for none): ")))
   ;;
   ;; -- Validate current buffer
-  (let ((file (expand-file-name (or buffer-file-truename buffer-file-name))))
-    (unless file
+  (let ((file (or buffer-file-truename buffer-file-name)))
+    (if file
+        (setq file (expand-file-name file))
       (user-error "Buffer is not visiting a file"))
     (unless (eq major-mode 'seed7-mode)
       (user-error "%s is not a Seed7 buffer" (buffer-name)))
@@ -7454,7 +7644,7 @@ See also: `seed7-check-or-compile', `seed7-interpreter'."
     ;;
     ;; -- Step 1: static check -----------------------------------------------
     (message "seed7: checking %s..." (file-name-nondirectory file))
-    (let* ((check-result (seed7-check-file file nil))   ; nil = s7check, not s7c
+    (let* ((check-result (seed7-check-file file nil)) ; nil = s7check, not s7c
            (exit-code    (nth 0 check-result))
            (diags        (nth 1 check-result))
            (stderr-text  (nth 2 check-result))
@@ -7465,13 +7655,10 @@ See also: `seed7-check-or-compile', `seed7-interpreter'."
       ;;
       (when (or diags (not (zerop exit-code)))
         ;; Build the errors buffer the same way seed7-check-or-compile does.
-        (let* ((err-msg  (when (and stderr-text
-                                    (not (string-blank-p stderr-text)))
-                           (format "\nSTDERR: %s" stderr-text)))
-               (end-msg  (format "%s: %d error%s found%s"
-                                 pgm n-diags
-                                 (seed7--plural-s n-diags)
-                                 (or err-msg "")))
+        (let ((end-msg (seed7--end-msg-for
+                        pgm
+                        (format "run %s" (file-name-nondirectory file))
+                        n-diags stderr-text exit-code))
                (out-buf  (get-buffer-create "*seed7-errors*")))
           (with-current-buffer out-buf
             (let ((inhibit-read-only t))
@@ -7503,10 +7690,9 @@ See also: `seed7-check-or-compile', `seed7-interpreter'."
              (err-name   (format "*seed7-run-stderr: %s*" basename))
              (stdout-buf (get-buffer-create buf-name))
              (stderr-buf (get-buffer-create err-name))
-             (interp-cmd (split-string-and-unquote seed7-interpreter))
-             (interp-pgm (expand-file-name (car interp-cmd)))
-             (interp-pgm (or (executable-find interp-pgm) interp-pgm))
-             (interp-opts (cdr interp-cmd))
+             (cmd-specs (seed7--cmd-specs-for 'seed7-interpreter))
+             (interp-pgm  (nth 0 cmd-specs))
+             (interp-opts (nth 2 cmd-specs))
              (prog-args  (unless (string-blank-p args)
                            (split-string-and-unquote args)))
              (cmd-list   (append (list interp-pgm)
@@ -7716,7 +7902,7 @@ Please update!"
                   seed7-xref))))
 
 
-;; [:todo 2025-06-20, by Pierre Rouleau: Add support for multi-line signatures]
+;; [ TODO 2025-06-20, by Pierre Rouleau: Add support for multi-line signatures]
 (defun seed7--signature-at (&optional pos)
   "Return Seed7 element signature for element at point or POS."
   (when pos (goto-char pos))
@@ -7986,7 +8172,7 @@ Return a list of 4-element lists, where each 4-element list has:
      ;; for other keywords only look into the xref extracted by s7xref
      (t (seed7--xref-get-from-s7xref identifier current-lineno)))))
 
-;; [:todo 2025-06-13, by Pierre Rouleau: Should we also skip parens?.]
+;; [ TODO 2025-06-13, by Pierre Rouleau: Should we also skip parens?.]
 (defun seed7-operator-at-point ()
   "Return the Seed7 operator at point as a string."
   (save-excursion
@@ -8099,7 +8285,7 @@ Is point at its definition? Is this file compiling?"
   "Return definition of SYMBOL."
   (seed7--find-symbol symbol))
 
-;; [:todo 2025-06-16, by Pierre Rouleau: Complete xref support]
+;; [ TODO 2025-06-16, by Pierre Rouleau: Complete xref support]
 ;; (cl-defmethod xref-backend-references ((_backend (eql seed7)) symbol)
 ;;   (seed7--find-uses-of symbol symbol))
 ;;
@@ -8118,7 +8304,7 @@ data is not used for the next xref lookup."
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Completion Support
 ;;  ========================
-;; [:todo 2025-06-07, by Pierre Rouleau: add completion support]
+;; [ TODO 2025-06-07, by Pierre Rouleau: add completion support]
 ;; (defun seed7-completions-at-point)
 
 
@@ -8620,6 +8806,9 @@ compilation requires a working installation of Seed7.
   ;; Seed7 Mode Syntax Propertize Function
   (setq-local syntax-propertize-function #'seed7-mode-syntax-propertize)
 
+  ;; Allow forward-sexp to navigate from begin/end of block and line comments
+  (setq-local forward-sexp-function #'seed7--forward-sexp-function)
+
   ;; Seed7 iMenu Support
   (seed7--setup-imenu)
 
@@ -8641,7 +8830,7 @@ compilation requires a working installation of Seed7.
    ((not (integerp seed7-indent-width)) (setq-local seed7-indent-width 2))
    ((< seed7-indent-width 2) (setq-local seed7-indent-width 2))
    ((> seed7-indent-width 8) (setq-local seed7-indent-width 8)))
-  ;; Adjust tab width to the indentation; that's sometime useful to quickly
+  ;; Adjust tab width to the indentation; that's sometimes useful to quickly
   ;; change the visual rendering of the indentation by converting to tabs then
   ;; changing the tab width.
   (setq-local tab-width seed7-indent-width)
@@ -8682,7 +8871,7 @@ compilation requires a working installation of Seed7.
   (add-hook 'after-save-hook #'seed7--invalidate-xref-cache nil t)
   (add-hook 'after-revert-hook #'seed7--invalidate-xref-cache nil t)
 
-  ;; Seed7 Completion [:todo 2025-07-08, by Pierre Rouleau: find the proper way to hook it]
+  ;; Seed7 Completion [ TODO 2025-07-08, by Pierre Rouleau: find the proper way to hook it]
   ;; (add-hook 'completion-at-point-functions #'seed7--xref-backend nil t)
   ;; (add-hook 'completion-at-point-functions #'seed7--list-of-terms nil
   ;; 'local)
