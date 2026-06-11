@@ -6,6 +6,10 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
    :alt: News
    :target: https://github.com/pierre-rouleau/seed7-mode/blob/main/NEWS
 
+.. image:: https://img.shields.io/badge/Emacs_>=_25.1-white?logo=gnu-emacs
+   :alt: Emacs >= 25.1
+   :target: https://www.gnu.org/software/emacs/
+
 .. image:: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build.yml/badge.svg
    :alt: Build State
    :target: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build.yml
@@ -22,9 +26,6 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
    :alt: Windows Build State
    :target: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build-windows.yml
 
-.. image:: https://img.shields.io/badge/Emacs_>=_25.1-white?logo=gnu-emacs
-   :alt: Emacs >= 25.1
-   :target: https://www.gnu.org/software/emacs/
 
 **Highlights**
 
