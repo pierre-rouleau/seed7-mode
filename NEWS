@@ -1,11 +1,166 @@
 seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 
-* New in seed7-mode on 2026-06-11
 
-- The *forward-sexp* command now supports moving from beginning to the end or
-  from end to the beginning of:
-  - =(*= and =*)= delimited Seed7 block comments as long as point is right
-    before the opening parenthesis or right after the closing parenthesis.
-  - a Seed7 line-end comment that starts with =#= and end at the end of the
-    line. It also skips all consecutive commented-out lines, allowing to move
-    from the beginning of a commented-out area to the end and vice-versa.
+* New in seed7-mode since 2026-05-01
+
+** New Commands
+
+- *seed7-run-program*: Run a Seed7 program directly from Emacs.  The
+  command first performs a static check; if no error is found it
+  launches the program via the configured interpreter and displays its
+  standard output and standard error in two separate windows named
+  =*seed7-run: BASENAME*= and =*seed7-run-stderr: BASENAME*=.
+  The run buffer supports two input modes:
+  - *Buffered mode* (default): input is sent to the program when =RET=
+    is pressed; all normal Emacs key bindings remain active.
+  - *Raw mode*: every key stroke (except ~C-c C-j~ and ~C-c C-c~) is
+    sent directly to the program.
+
+- *seed7-rebuild-abbrev-table*: Reload the abbreviation table after
+  customizing the user-options that control it.  The command checks for
+  duplicates and errors, and warns the user of any issue found.
+
+** Renamed Commands
+
+- *seed7-compile* was renamed to *seed7-check-or-compile*, which
+  better reflects that the command performs either a static check or a
+  full compilation depending on the checker/compiler configured.  The
+  key binding is unchanged.
+
+- *seed7-line-inside-proc-argument-list-section* was renamed to
+  *seed7-line-inside-argument-list-section* and its logic fixed.
+
+** New Internal Helpers
+
+- *seed7--cmd-specs-for*: Centralizes executable path resolution and
+  command-line construction for all Seed7 tool invocations.
+
+- *seed7--end-msg-for*: Centralizes the formatting of execution-result
+  messages (diagnostics count, pluralization, stderr inclusion,
+  exit-code reporting) used by *seed7-check-or-compile* and
+  *seed7-run-program*.
+
+- *seed7--run* and *seed7--parse-diagnostics*: Low-level helpers that
+  execute an external tool and parse its diagnostic output,
+  respectively.
+
+- *seed7--with-forward-sexp* and *seed7--with-backward-sexp*: Macros
+  that protect call sites against =scan-error= signals from
+  *forward-sexp* and *backward-sexp*.  They can be compiled with
+  additional logging/debugging code.
+
+** Improvements
+
+- *forward-sexp for comments*: *forward-sexp* (and *backward-sexp*)
+  can now move across Seed7 =(*= ... =*)= nested block comments and
+  consecutive =#= line-end comment blocks.
+
+- *Syntax propertization*: *seed7-mode-syntax-propertize* is now
+  wrapped in *with-silent-modifications*, making it safe whether called
+  by =jit-lock= or directly.
+
+- *Comment detection*: *seed7-inside-comment-p* now uses syntax-table
+  information instead of font-lock face properties, eliminating a race
+  condition where a check performed before font-locking completed could
+  yield incorrect results.
+
+- *Nested block comment support*: The =(*= ... =*)= comment
+  rendering now correctly handles nested block comments.
+
+- *Indentation speed*: Multiple improvements to *seed7-calc-indent*
+  and related helpers:
+  - Block boundary positions are cached per indentation pass,
+    dramatically reducing repeated searches in large files.
+  - *indent-step* is now computed lazily inside *seed7-calc-indent*.
+  - Functions that return early on lines not meeting their preconditions
+    have been made faster by checking the simplest condition first.
+  - *seed7--indent-offset-for* now receives the pre-extracted line text
+    from *seed7-line-inside-a-block*, avoiding redundant buffer scans.
+  - *seed7-line-inside-a-block-cached* added to reduce repeated calls
+    from *seed7-indent-line* on multi-line statements.
+
+- *Xref support*:
+  - Cache is now invalidated when the Seed7 buffer is saved or reverted.
+  - *seed7-xref* =~= expansion, space-in-path handling, and failing
+    exit-code reporting improved.
+  - *seed7--build-xref* now refuses to operate on a buffer not visiting
+    a file, and warns when the buffer has unsaved changes.
+
+- *Error handling for static check / compilation*:
+  - *seed7-check-or-compile* now shows the program name, exit code,
+    stderr text, and parsed diagnostics in the result buffer and echo
+    area.
+  - *seed7-check-file* correctly distinguishes =s7c= (diagnostics on
+    stderr) from =s7check= (diagnostics on stdout).
+  - Buffer leaks on exception during tool invocation are now prevented.
+
+- *Emacs compatibility*: *string-split* replaced by *split-string* and
+  *when-let* replaced by its expansion so that seed7-mode continues to
+  work on Emacs 25.1 and later.
+
+- *Compiler optimization declarations*: Side-effect-free and pure
+  function declarations added to help the byte and native compilers
+  produce better code.
+
+- *seed7-re-search-forward-closest* and
+  *seed7-re-search-backward-closest* improved: both now guarantee that
+  the global match data on return corresponds to the regexp search that
+  found the closest element.
+
+- =s7xref= tool: command-line help (=--help=) and argument validation
+  added.
+
+** Bug Fixes
+
+- Fix *seed7-line-inside-parens-pair*: was using the wrong variable for
+  the line-beginning position.
+
+- Fix *seed7-symbol-at-point*: was using *looking-at-p* (does not
+  update match data) instead of *looking-at* in one branch.
+
+- Fix *seed7-re-search-backward-closest*: no longer returns match data
+  from the last-searched regexp instead of the winning regexp.
+
+- Fix *nth* calls that were incorrectly using 1-based indexing.
+
+- Fix *seed7-nav-beginning-of-defun*: *nil* argument is now treated as
+  *1*, consistent with *forward-defun* conventions.
+
+- Fix *seed7--xref-get-from-s7xref*: was using the file name of the
+  internal xref result buffer instead of the source buffer's file name.
+
+- Fix *seed7-inside-comment-p* and
+  *seed7-current-line-start-inside-comment-p* to work correctly after
+  the switch from font-lock to syntax-table–based comment detection.
+
+- Fix comment rendering regression after introducing syntax-table
+  text-property–based block comment support.
+
+- Fix Emacs 29.4 byte-compilation regression (bug `#1058739`) in the
+  diagnostic parsing code.
+
+- Fix *seed7-check-file* path expansion for the checked file.
+
+- Fix various regexp typos in token-matching patterns.
+
+- Fix *seed7-indentation-of-previous-non-string-line*: now returns
+  *nil* (instead of a meaningless integer) when no non-string line is
+  found.
+
+- Prevent possible out-of-bounds buffer positions (*1+*, *1-*) inside
+  *seed7-calc-indent* when operating at buffer edges.
+
+** Build / CI
+
+- GitHub Actions workflows added for multi-platform byte and native
+  compilation:
+  - Linux (Docker/silex image)
+  - Linux (apt-get + Homebrew based)
+  - Windows (manual and push triggered)
+  - macOS (Homebrew)
+  - Emacs versions: 25.1 and later
+  Workflows succeed only when there are zero errors and zero compiler
+  warnings.
+
+- Timing measurement tool *seed7-mode-time.el* added under =tools/= to
+  help measure the execution time of individual commands.
