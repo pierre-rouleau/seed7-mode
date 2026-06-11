@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260611.1318
+;; Package-Version: 20260611.1344
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -278,7 +278,7 @@
 ;;     . `seed7-skip-comment-forward'
 ;;       . `seed7---skip-block-comment-forward'
 ;;       . `seed7---skip-line-end-comment'
-;;   -  Seed7 forward-sexp support for block comments
+;;   -  Seed7 forward-sexp support for block and line comments
 ;;     . `seed7--forward-sexp-function'
 ;;       . `seed7--forward-block-comment'
 ;;       . `seed7--at-line-comment-start-p'
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T17:18:50+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-11T17:44:04+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3063,8 +3063,8 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
       (push-mark original-pos))
     (goto-char end-pos)))
 
-;;** Seed7 forward-sexp support for block comments
-;;   --------------------------------------------
+;;** Seed7 forward-sexp support for block and line comments
+;;   ------------------------------------------------------
 
 (defun seed7--forward-block-comment (n)
   "Move over N nested `(* ... *)' block comment pairs.
@@ -3164,8 +3164,10 @@ Negative N: point is on a line that contains a line comment.
 
 (defun seed7--forward-sexp-function (&optional arg)
   "Seed7-aware `forward-sexp-function'.
-Handles nested `(* ... *)' block comments; falls through to
-`scan-sexps' for all other sexp forms."
+Handles:
+- nested `(* ... *)' block comments,
+- consecutive `#' line-end comment blocks.
+Falls through to `scan-sexps' for all other sexp forms."
   (let* ((arg (or arg 1)))
     (dotimes (_ (abs arg))
       (cond
@@ -7159,13 +7161,13 @@ used to set `default-directory' for the subprocess."
 USER-OPTION is a symbol; the name of the user-option.
 
 The returned PROGRAM is the absolute path of the executable file to execute.
-Honours absolute, relative, and PATH names identified in the user-option,
+Honors absolute, relative, and PATH names identified in the user-option,
 including a leading ~ symbol to identify the home directory.
 
-The returned CMD-PARTS is a list of strings of all arguments for the command.
+The returned CMD-PARTS is a list of strings of all arguments that follow the
+program name.
 
-Signals a user error if the absolute path of the program is not found.
-"
+Signals a user error if the absolute path of the program is not found."
   (let* ((user-option-name (symbol-name user-option))
          (cmd-string       (symbol-value user-option))
          (cmd-parts        (split-string-and-unquote cmd-string))
@@ -8804,7 +8806,7 @@ compilation requires a working installation of Seed7.
   ;; Seed7 Mode Syntax Propertize Function
   (setq-local syntax-propertize-function #'seed7-mode-syntax-propertize)
 
-  ;; Allow forward-sexp to navigate from begin/end of block comments
+  ;; Allow forward-sexp to navigate from begin/end of block and line comments
   (setq-local forward-sexp-function #'seed7--forward-sexp-function)
 
   ;; Seed7 iMenu Support
