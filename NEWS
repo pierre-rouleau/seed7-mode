@@ -1,0 +1,11 @@
+seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
+
+* New in seed7-mode on 2026-06-11
+
+- The *forward-sexp* command now supports moving from beginning to the end or
+  from end to the beginning of:
+  - =(*= and =*)= delimited Seed7 block comments as long as point is right
+    before the opening parenthesis or right after the closing parenthesis.
+  - a Seed7 line-end comment that starts with =#= and end at the end of the
+    line. It also skips all consecutive commented-out lines, allowing to move
+    from the beginning of a commented-out area to the end and vice-versa.

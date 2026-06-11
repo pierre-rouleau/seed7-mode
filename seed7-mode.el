@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260611.1118
+;; Package-Version: 20260611.1222
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -278,6 +278,12 @@
 ;;     . `seed7-skip-comment-forward'
 ;;       . `seed7---skip-block-comment-forward'
 ;;       . `seed7---skip-line-end-comment'
+;;   -  Seed7 foward-sexp support for block comments
+;;     . `seed7--forward-sexp-function'
+;;       . `seed7--forward-block-comment'
+;;       . `seed7--at-line-comment-start-p'
+;;       . `seed7--forward-line-comments'
+;;         . `seed7--line-comment-hash'
 ;;   - Seed7 Navigation by Block/Procedure/Function
 ;;     - Navigation to Outer Block
 ;;       . `seed7-top-block-name'
@@ -534,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T15:18:34+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-11T16:22:00+0000 W24-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3056,6 +3062,136 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
                 (eq original-pos end-pos))
       (push-mark original-pos))
     (goto-char end-pos)))
+
+;;** Seed7 foward-sexp support for block comments
+;;   --------------------------------------------
+
+(defun seed7--forward-block-comment (n)
+  "Move over N nested `(* ... *)' block comment pairs.
+Positive N: point must be at `(' of `(*'.
+Negative N: point must be just past `)' of `*)'."
+  (let ((dir (if (> n 0) 1 -1))
+        (count (abs n)))
+    (while (> count 0)
+      (if (> dir 0)
+          ;; -- Forward --------------------
+          ;; Point is at ( of (*
+          (let ((depth 1))
+            (forward-char 2)                      ; step past (*
+            (while (> depth 0)
+              (cond
+               ((eobp)
+                (signal 'scan-error
+                        (list "Unbalanced `(*'" (point) (point))))
+               ((looking-at "(\\*")
+                (setq depth (1+ depth))
+                (forward-char 2))
+               ((looking-at "\\*)")
+                (setq depth (1- depth))
+                (forward-char 2))
+               (t
+                (forward-char 1)))))
+        ;; -- Backward ---------------------
+        ;; Point is just after ) of *)
+        (let ((depth 1))
+          (backward-char 2)                       ; step before *)
+          (while (> depth 0)
+            (let ((found (re-search-backward
+                          "(\\*\\|\\*)" nil t)))
+              (unless found
+                (signal 'scan-error
+                        (list "Unbalanced `*)'" (point) (point))))
+              ;; re-search-backward leaves point at start of match
+              (if (looking-at "(\\*")
+                  (setq depth (1- depth))    ; found (*  → close a level
+                (setq depth (1+ depth))))))) ; found *)  → open a level
+      (setq count (1- count)))))
+
+(defun seed7--line-comment-hash ()
+  "Return position of the `#' line-comment start on the current line, or nil.
+Only returns a position if the `#' has comment-start syntax (class 11),
+excluding `#' used as a Seed7 number-base separator."
+  (save-excursion
+    (beginning-of-line)
+    (catch 'found
+      (while (re-search-forward "#" (line-end-position) t)
+        (let* ((pos (1- (point)))
+               (s   (syntax-after pos)))
+          (when (and s (= (syntax-class s) 11))   ; 11 = comment-start (<)
+            (throw 'found pos))))
+      nil)))
+
+(defun seed7--at-line-comment-start-p ()
+  "Return non-nil if point is at a `#' that is a line-comment start."
+  (and (eq (char-after) ?#)
+       (let ((s (syntax-after (point))))
+         (and s (= (syntax-class s) 11)))))
+
+(defun seed7--forward-line-comments (n)
+  "Move over N consecutive `#' line-end comment blocks.
+Positive N: point must be at the `#' of a line comment.
+  Moves forward to end of the last consecutive commented line.
+Negative N: point is on a line that contains a line comment.
+  Moves backward to the `#' of the first consecutive commented line."
+  (let ((dir   (if (> n 0) 1 -1))
+        (count (abs n)))
+    (while (> count 0)
+      (if (> dir 0)
+          ;; -- Forward ----------
+          ;; Point is at # on the current line; advance to end of the
+          ;; last consecutive commented line.
+          (progn
+            (end-of-line)
+            (while (save-excursion                  ; peek — don't move yet
+                     (and (= (forward-line 1) 0)
+                          (seed7--line-comment-hash)))
+              (forward-line 1)                      ; next line is a comment: commit
+              (end-of-line)))                       ; point stays here when loop exits
+        ;; -- Backward ------------
+        ;; Point is somewhere on a commented line; retreat to the # of
+        ;; the first consecutive commented line.
+        (let ((hash-pos (seed7--line-comment-hash)))
+          (unless hash-pos
+            (signal 'scan-error
+                    (list "Not on a `#' comment line" (point) (point))))
+          (goto-char hash-pos)
+          (while (save-excursion                    ; peek — don't move yet
+                   (and (= (forward-line -1) 0)
+                        (seed7--line-comment-hash)))
+            (forward-line -1)
+            (goto-char (seed7--line-comment-hash)))))
+      (setq count (1- count)))))
+
+(defun seed7--forward-sexp-function (&optional arg)
+  "Seed7-aware `forward-sexp-function'.
+Handles nested `(* ... *)' block comments; falls through to
+`scan-sexps' for all other sexp forms."
+  (let* ((arg (or arg 1)))
+    (dotimes (_ (abs arg))
+      (cond
+       ;; Forward: point is at (* opener
+       ((and (> arg 0) (looking-at "(\\*"))
+        (seed7--forward-block-comment 1))
+       ;;
+       ;; Forward: point is at # line-comment start
+       ((and (> arg 0) (seed7--at-line-comment-start-p))
+        (seed7--forward-line-comments 1))
+       ;;
+       ;; Backward: point is just after *) closer
+       ((and (< arg 0)
+             (>= (point) 2)
+             (string= (buffer-substring (- (point) 2) (point)) "*)"))
+        (seed7--forward-block-comment -1))
+       ;;
+       ;; Backward: current line has a # line comment
+       ((and (< arg 0)
+             (seed7--line-comment-hash))
+        (seed7--forward-line-comments -1))
+       ;;
+       ;; Default: delegate to built-in scanner
+       (t
+        (goto-char (or (scan-sexps (point) (if (> arg 0) 1 -1))
+                       (buffer-end arg))))))))
 
 ;;** Seed7 Navigation by Block/Procedure/Function
 ;;   --------------------------------------------
@@ -8665,6 +8801,9 @@ compilation requires a working installation of Seed7.
 
   ;; Seed7 Mode Syntax Propertize Function
   (setq-local syntax-propertize-function #'seed7-mode-syntax-propertize)
+
+  ;; Allow forward-sexp to navigate from begin/end of block comments
+  (setq-local forward-sexp-function #'seed7--forward-sexp-function)
 
   ;; Seed7 iMenu Support
   (seed7--setup-imenu)
