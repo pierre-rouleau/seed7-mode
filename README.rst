@@ -856,6 +856,10 @@ function or procedure moves the point to the beginning of the previous
 function or procedure if there is one.  This is only true for function and
 procedures (the commands do not try to find the next array for instance).
 
+Since ``forward-sexp`` and ``backward-sexp`` delegate to
+``seed7-end-of-defun`` or ``seed7-to-block-forward`` respectively (and some other functions)
+they inherit the same behavior.
+
 
 Cross Reference Code Navigation Through Xref
 --------------------------------------------
