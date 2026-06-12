@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260612.1124
+;; Package-Version: 20260612.1213
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -235,6 +235,7 @@
 ;;   - Seed7 Predefined Comparison Operators
 ;;   - Seed7 Other Predefined Operators
 ;;   - Seed7 Arithmetic Operators
+;;   - Seed7 Array/Set Regexp
 ;;   - Seed7 Block Processing Regexp
 ;;   - Seed7 Procedure/Function Parameters Regexp
 ;;   - Seed7 Procedure/Function Regexp
@@ -540,7 +541,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-12T15:24:02+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2026-06-12T16:13:52+0000 W24-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1500,6 +1501,35 @@ Match group 1")
                'words)
    "\\)")
   "Regexp for the top of a Seed7 block.  One capture group.")
+
+;;** Seed7 Array/Set Regexp
+;;   ----------------------
+
+(defconst seed7--array-definition-start-regexp
+  "\\(?:const\\|var\\) +?array[[:blank:]]+?.+?:.+?("
+  "Regexp matching the start of a Seed7 array definition block header.
+See `seed7--set-definition-start-regexp' for the whitespace convention.")
+
+(defconst seed7--line-array-definition-start-regexp
+  (concat "^[[:blank:]]*?" seed7--array-definition-start-regexp)
+  "Regexp matching line starting with a  Seed7 array definition block header.")
+
+(defconst seed7--set-definition-start-regexp
+  "\\(?:const\\|var\\) +?set[[:blank:]]+?.+?:.+?{"
+  "Regexp matching the start of a Seed7 set definition block header.
+Matches `const set' or `var set' followed by a type annotation and the
+opening `{'.
+
+Design note: a literal space (` +?') is required between `const'/`var' and
+`set' — hard tabs between adjacent keywords are intentionally not supported
+per Seed7 style (dual-keyword restriction).  A hard tab or space
+\(`[[:blank:]]') is accepted after `set', because `set' is the last keyword
+in the phrase before the user-supplied identifier.")
+
+(defconst seed7--line-set-definition-start-regexp
+  (concat "^[[:blank:]]*?" seed7--set-definition-start-regexp)
+  "Regexp matching line starting with a Seed7 set definition block header.")
+
 
 ;;** Seed7 Procedure/Function Parameters Regexp
 ;;   ------------------------------------------
@@ -3768,10 +3798,10 @@ error forms."
 
 The regexp has 2 capture groups:
 - group1 for the starting expression,
-- group2 for then end part."
+- group2 for the end part."
   (declare (side-effect-free t))
   ;; Note hard tab is supported after keyword and not between 2 adjacent keywords as inside 'end block'.
-  (format "^\\(?:[[:space:]]*?\\(const[[:space:]]+?type:.+?[[:space:]]%s\\)\\|[[:space:]]*?\\(end %s;\\)\\)"
+  (format "^\\(?:[[:space:]]*?\\(const +?type:.+?[[:space:]]%s\\)\\|[[:space:]]*?\\(end %s;\\)\\)"
           keyword keyword))
 
 (defun seed7--end-regexp-for (word1 word2 last-word)
@@ -3961,7 +3991,7 @@ The regexp has 2 or 3 groups:
            ;;  though the space is always required in Seed7 code.  This is done this
            ;;  way to allow a match when trying to verify a matching block for the
            ;;  purpose of calculating the indentation required.
-           ((not word1) "^\\(?:[[:space:]]*?\\(const[[:space:]]+?array[[:space:]]+?.+?:\\)\\|[[:space:]]+?\\();\\)\\)")
+           ((not word1) "^\\(?:[[:space:]]*?\\(const +?array[[:space:]]+?.+?:\\)\\|[[:space:]]+?\\();\\)\\)")
            ((string= word1 "until")               "^[[:blank:]]*?\\(?:\\(repeat\\>\\)\\|\\(until\\>\\)[[:blank:]]\\)")
            ((member  word1 '("when" "otherwise")) "^[[:blank:]]*?\\(?:\\(case[[:blank:]]\\)\\|\\(end case;?\\)\\|\\(when[[:blank:]]\\)\\)")
            ((member  word1 '("elsif" "else"))     "^[[:blank:]]*?\\(?:\\(if[[:blank:]]\\)\\|\\(end if;?\\)\\|\\(elsif[[:blank:]]\\)\\)")
@@ -3984,7 +4014,7 @@ The regexp has 2 or 3 groups:
                  (string= word2 "type"))
             (setq same-line t)
             ;; return a regexp where the group 2 never matches
-            "\\(\\(?:^[[:space:]]*?const[[:space:]]+?type:.+?[[:space:]]\\)\\)\\|\\(^;INVALID-MAKE-IT-NEVER-MATCH;\\)")
+            "\\(\\(?:^[[:space:]]*?const +?type:.+?[[:space:]]\\)\\)\\|\\(^;INVALID-MAKE-IT-NEVER-MATCH;\\)")
            (t nil)))
     (cons regexp same-line)))
 
@@ -4853,7 +4883,7 @@ Move point."
       ;; Other lines are indented
       seed7-indent-width))
    ((string= header "exception")
-    (if (string-prefix-p "catch[[:blank:]]" first-text)
+    (if (string-match-p "\\`catch[[:blank:]]" first-text)
         ;; catch is indented one level from exception
         seed7-indent-width
       ;; Other lines are indented by 2 levels
@@ -4867,7 +4897,7 @@ Move point."
 
    ;;-- repeat - until
    ((string= header "repeat")
-    (if (string-prefix-p "until[[:blank:]]" first-text)
+    (if (string-match-p "\\`until[[:blank:]]" first-text)
         ;; until lines up with repeat
         0
       ;; Other lines are indented
@@ -4903,7 +4933,7 @@ Move point."
         ;; 'end case' lines up with 'case'
         0
       ;; Other lines are indented
-      (if (or (string-prefix-p "when[[:blank:]]" first-text)
+      (if (or (string-match-p "\\`when[[:blank:]]" first-text)
               (string-prefix-p "otherwise" first-text))
           ;; the when and otherwise keywords are indented once
           seed7-indent-width
@@ -4912,7 +4942,7 @@ Move point."
 
    ;;-- const func - return/result-begin
    ((string= header "const func ")
-    (if (or (string-prefix-p "return[[:blank:]]" first-text)
+    (if (or (string-match-p "\\`return[[:blank:]]" first-text)
             (string-prefix-p "result"  first-text))
         seed7-indent-width
       ;; otherwise indent below 'return '. BUT other code should handle this.
@@ -5414,9 +5444,7 @@ Invalid boundaries: begin=%S, end=%S"
             (block-start-pos nil)
             (block-indent-column nil))
         (when (seed7-re-search-backward
-               "^[[:blank:]]*?\\(?:const\\|var\\)[[:blank:]
-]+?array[[:blank:]
-]+?.+?:.+?("
+               seed7--line-array-definition-start-regexp
                scope-begin-pos)
           (setq block-start-pos (point))
           (skip-chars-forward " \t")
@@ -5431,7 +5459,6 @@ Invalid boundaries: begin=%S, end=%S"
                     "array"
                     block-start-pos
                     (point)))))))))
-
 
 (defun seed7-line-at-endof-array-definition-block (n &optional
                                                      dont-skip-comment-start)
@@ -5463,7 +5490,7 @@ N is: - :previous-non-empty for the previous non-empty line,
             (setq enclosing-block-end-pos (point))
             (seed7--with-backward-sexp
               (seed7-to-indent)
-              (when (looking-at-p "\\(?:const\\|var\\) +?array[[:blank:]]+?.+?:.+?(")
+              (when (looking-at-p seed7--array-definition-start-regexp)
                 (setq block-start-pos (point))
                 (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
                   block-indent-column)))))))))
@@ -5502,9 +5529,7 @@ Invalid boundaries: begin=%S, end=%S"
             (block-start-pos nil)
             (block-indent-column nil))
         (when (seed7-re-search-backward
-               "^[[:blank:]]*?\\(?:const\\|var\\)[[:blank:]
-]+?set[[:blank:]
-]+?.+?:.+?{"
+               seed7--line-set-definition-start-regexp
                scope-begin-pos)
           (setq block-start-pos (point))
           (skip-chars-forward " \t")
@@ -5627,7 +5652,7 @@ N is: - :previous-non-empty for the previous non-empty line,
             (setq enclosing-block-end-pos (point))
             (seed7--with-backward-sexp
               (seed7-to-indent)
-              (when (looking-at-p "\\(?:const\\|var\\) +?set[[:blank:]]+?.+?:.+?{")
+              (when (looking-at-p seed7--set-definition-start-regexp)
                 (setq block-start-pos (point))
                 (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
                   block-indent-column)))))))))
