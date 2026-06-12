@@ -794,6 +794,7 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                                  - single and consecutive ``#`` line-end comments,
                                                  - nested statement blocks,
                                                  - function and procedure blocks.
+                                                 - const/var array and const/var set definition block end lines,
                                                  - matching paren for ``(``, ``[`` or ``{``.
 
 . backward-sexp                - ``C-M-b``       Move to the beginning of:
@@ -802,6 +803,7 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                                  - single and consecutive ``#`` line-end comments,
                                                  - nested statement blocks,
                                                  - function and procedure blocks.
+                                                 - const/var array and const/var set definition block start lines,
                                                  - matching paren for ``)``, ``]`` or ``}``.
 
 . seed7-end-of-defun           ``C-M-e``         Move point forward to the end of the current function or procedure.
