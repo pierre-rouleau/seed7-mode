@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260612.1045
+;; Package-Version: 20260612.1057
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-12T14:45:05+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2026-06-12T14:57:15+0000 W24-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4103,10 +4103,10 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
 
 (defun seed7--forward-sexp-function (&optional arg)
   "Seed7-aware `forward-sexp-function'.
-Handles moving forward (and backwards with negative ARG) from start/end of:
+Handles moving forward, or backwards with negative ARG, from start/end of:
 - nested `(* ... *)' block comments,
 - single and consecutive `#' line-end comments,
-- procedure/function declaration and their end lines,
+- procedure/function declaration lines and their end lines,
 - Seed7 block start/end lines,
 - (), [] and {} delimiter pairs.
 
@@ -5054,7 +5054,9 @@ If it finds something it returns a list that holds the following information:
                 (goto-char block-start-pos)
                 (when (seed7-re-search-backward
                        seed7-block-line-start-regexp)
-                  (setq match-text (substring-no-properties (match-string 1)))
+                  (setq match-text (replace-regexp-in-string
+                                    "[[:blank:]]+$" " "
+                                    (substring-no-properties (match-string 1))))
                   (setq block-start-pos (point))
                   (skip-chars-forward " \t")
                   (setq block-start-indent-column (current-column))
