@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260612.1057
+;; Package-Version: 20260612.1124
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-12T14:57:15+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2026-06-12T15:24:02+0000 W24-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4103,7 +4103,7 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
 
 (defun seed7--forward-sexp-function (&optional arg)
   "Seed7-aware `forward-sexp-function'.
-Handles moving forward, or backwards with negative ARG, from start/end of:
+Handles moving forward, or backward with negative ARG, from start/end of:
 - nested `(* ... *)' block comments,
 - single and consecutive `#' line-end comments,
 - procedure/function declaration lines and their end lines,
@@ -4812,6 +4812,7 @@ Move point."
   "Return indentation offset (in columns) for the inside of a block.
 
 - HEADER: string: identifies the block start header.
+  This is normalized: hard tabs replaced by spaces.
 - FIRST-TEXT: string: the text at the indented start of the currently
   inspected line (pre-extracted by the caller to avoid repeated buffer
   scanning)."
@@ -4852,7 +4853,7 @@ Move point."
       ;; Other lines are indented
       seed7-indent-width))
    ((string= header "exception")
-    (if (string-prefix-p "catch " first-text)
+    (if (string-prefix-p "catch[[:blank:]]" first-text)
         ;; catch is indented one level from exception
         seed7-indent-width
       ;; Other lines are indented by 2 levels
@@ -4866,7 +4867,7 @@ Move point."
 
    ;;-- repeat - until
    ((string= header "repeat")
-    (if (string-prefix-p "until " first-text)
+    (if (string-prefix-p "until[[:blank:]]" first-text)
         ;; until lines up with repeat
         0
       ;; Other lines are indented
@@ -4902,7 +4903,7 @@ Move point."
         ;; 'end case' lines up with 'case'
         0
       ;; Other lines are indented
-      (if (or (string-prefix-p "when "     first-text)
+      (if (or (string-prefix-p "when[[:blank:]]" first-text)
               (string-prefix-p "otherwise" first-text))
           ;; the when and otherwise keywords are indented once
           seed7-indent-width
@@ -4911,7 +4912,7 @@ Move point."
 
    ;;-- const func - return/result-begin
    ((string= header "const func ")
-    (if (or (string-prefix-p "return " first-text)
+    (if (or (string-prefix-p "return[[:blank:]]" first-text)
             (string-prefix-p "result"  first-text))
         seed7-indent-width
       ;; otherwise indent below 'return '. BUT other code should handle this.
@@ -5252,7 +5253,7 @@ Invalid boundaries: begin=%S, end=%S"
             (keep-searching t))
         (while (and keep-searching
                     (not (bobp)))
-          (if (seed7-re-search-backward "^[[:blank:]]+until " scope-begin-pos)
+          (if (seed7-re-search-backward "^[[:blank:]]+until[[:blank:]]" scope-begin-pos)
               (progn
                 (setq keep-searching nil)
                 (unless (seed7-line-code-ends-with 0 ";")
@@ -5302,7 +5303,7 @@ If it detects that it is outside, it returns nil."
             (keep-searching t))
         (while (and keep-searching
                     (not (bobp)))
-          (if (seed7-re-search-backward "^[[:blank:]]+return "
+          (if (seed7-re-search-backward "^[[:blank:]]+return[[:blank:]]"
                                         scope-begin-pos)
               (progn
                 (setq keep-searching nil)
@@ -5462,7 +5463,7 @@ N is: - :previous-non-empty for the previous non-empty line,
             (setq enclosing-block-end-pos (point))
             (seed7--with-backward-sexp
               (seed7-to-indent)
-              (when (looking-at-p "\\(?:const\\|var\\) +?array +?.+?:.+?(")
+              (when (looking-at-p "\\(?:const\\|var\\) +?array[[:blank:]]+?.+?:.+?(")
                 (setq block-start-pos (point))
                 (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
                   block-indent-column)))))))))
@@ -5626,7 +5627,7 @@ N is: - :previous-non-empty for the previous non-empty line,
             (setq enclosing-block-end-pos (point))
             (seed7--with-backward-sexp
               (seed7-to-indent)
-              (when (looking-at-p "\\(?:const\\|var\\) +?set +?.+?:.+?{")
+              (when (looking-at-p "\\(?:const\\|var\\) +?set[[:blank:]]+?.+?:.+?{")
                 (setq block-start-pos (point))
                 (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
                   block-indent-column)))))))))
