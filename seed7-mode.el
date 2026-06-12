@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260611.1344
+;; Package-Version: 20260612.1544
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -235,6 +235,7 @@
 ;;   - Seed7 Predefined Comparison Operators
 ;;   - Seed7 Other Predefined Operators
 ;;   - Seed7 Arithmetic Operators
+;;   - Seed7 Array/Set Regexp
 ;;   - Seed7 Block Processing Regexp
 ;;   - Seed7 Procedure/Function Parameters Regexp
 ;;   - Seed7 Procedure/Function Regexp
@@ -278,12 +279,14 @@
 ;;     . `seed7-skip-comment-forward'
 ;;       . `seed7---skip-block-comment-forward'
 ;;       . `seed7---skip-line-end-comment'
-;;   -  Seed7 forward-sexp support for block and line comments
+;;   - Seed7 forward-sexp/backward-sexp Support
 ;;     . `seed7--forward-sexp-function'
 ;;       . `seed7--forward-block-comment'
 ;;       . `seed7--at-line-comment-start-p'
 ;;       . `seed7--forward-line-comments'
 ;;         . `seed7--line-comment-hash'
+;;       . `seed7--at-array-definition-end-line-p'
+;;       . `seed7--at-set-definition-end-line-p'
 ;;   - Seed7 Navigation by Block/Procedure/Function
 ;;     - Navigation to Outer Block
 ;;       . `seed7-top-block-name'
@@ -540,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T17:44:04+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-12T19:44:34+0000 W24-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -799,6 +802,14 @@ Inside a non-capturing group.")
           seed7-name-identifier-nc-re)
   "A complete, valid name identifier.
 Group 1: identifier : 1 word")
+
+;; --
+(defconst seed7--open-paren-regexp
+  (regexp-opt '("(" "[" "{" ))
+  "Regexp matching Seed7 opening paren-like delimiters.")
+
+(defconst seed7--close-paren-chars '(?\) ?\] ?\})
+  "Seed7 closing paren-like delimiter characters.")
 
 ;; --
 
@@ -1454,24 +1465,16 @@ Match group 1")
 ;;** Seed7 Block Processing Regexp
 ;;   -----------------------------
 
-(defconst seed7-block-start-regexp "\\(\
-const proc: \\|\
-const func \\|\
-const type: \\|\
-elsif \\|\
-if \\|\
-while \\|\
-for \\|\
-case \\|\
-catch \\|\
-\\<local\\>\\|\
-\\<repeat\\>\\|\
-\\<global\\>\\|\
-\\<begin\\>\\|\
-\\<block\\>\\|\
-\\<else\\>\\|\
-\\<exception\\>\\|\
-\\<result\\>\\)"
+(defconst seed7-block-start-regexp
+  (concat
+   "\\("
+   (regexp-opt '("case" "catch" "const func" "const proc:"
+                 "const type:" "elsif" "for" "if" "while"))
+   "[[:blank:]]\\|"
+   (regexp-opt '("begin" "block" "else" "exception"
+                 "global" "local" "repeat" "result")
+               'words)
+   "\\)")
   "Regexp for the beginning of a Seed7 block.  One capture group.")
 
 (defconst seed7-block-line-start-regexp (concat
@@ -1479,38 +1482,55 @@ catch \\|\
                                          seed7-block-start-regexp)
   "Regexp to find location of blocks.")
 
-;; [ TODO 2025-07-01, by Pierre Rouleau: optimize this regexp]
-(defconst seed7-block-end-regexp "\
-\\(?:end \
-\\(?:\\(?:\\(?:enum\\|for\\|func\\|if\\|struct\\|while\\|case\\);\\)\
-\\|block\\)\\)\
-\\|\\(?:until \\)"
+(defconst seed7-block-end-regexp
+  (concat
+   "\\(?:end +"
+   "\\(?:"
+   (regexp-opt '("case" "enum" "for" "func" "if" "struct" "while"))
+   ";\\|block\\)\\)"
+   "\\|\\(?:until[[:blank:]]\\)")    ; tab allowed after until and rest of logic
   "Regexp for generic end of block.")
 
-;; [ TODO 2025-07-01, by Pierre Rouleau: optimize this regexp]
-(defconst seed7-block-top-start-regexp "\\(\
-const proc: \\|\
-const func \\|\
-const type: \\|\
-const array \\|\
-var array \\|\
-const set \\|\
-var set \\|\
-elsif \\|\
-if \\|\
-while \\|\
-for \\|\
-case \\|\
-catch \\|\
-\\<local\\>\\|\
-\\<repeat\\>\\|\
-\\<global\\>\\|\
-\\<begin\\>\\|\
-\\<block\\>\\|\
-\\<else\\>\\|\
-\\<exception\\>\\|\
-\\<result\\>\\)"
+(defconst seed7-block-top-start-regexp
+  (concat
+   "\\("
+   (regexp-opt '("case" "catch" "const array" "const func" "const proc:"
+                 "const set" "const type:" "elsif" "for" "if"
+                 "var array" "var set" "while"))
+   "[[:blank:]]\\|"
+   (regexp-opt '("begin" "block" "else" "exception"
+                 "global" "local" "repeat" "result")
+               'words)
+   "\\)")
   "Regexp for the top of a Seed7 block.  One capture group.")
+
+;;** Seed7 Array/Set Regexp
+;;   ----------------------
+
+(defconst seed7--array-definition-start-regexp
+  "\\(?:const\\|var\\) +?array[[:blank:]]+?.+?:.+?("
+  "Regexp matching the start of a Seed7 array definition block header.
+See `seed7--set-definition-start-regexp' for the whitespace convention.")
+
+(defconst seed7--line-array-definition-start-regexp
+  (concat "^[[:blank:]]*?" seed7--array-definition-start-regexp)
+  "Regexp matching line starting with a  Seed7 array definition block header.")
+
+(defconst seed7--set-definition-start-regexp
+  "\\(?:const\\|var\\) +?set[[:blank:]]+?.+?:.+?{"
+  "Regexp matching the start of a Seed7 set definition block header.
+Matches `const set' or `var set' followed by a type annotation and the
+opening `{'.
+
+Design note: a literal space (` +?') is required between `const'/`var' and
+`set' — hard tabs between adjacent keywords are intentionally not supported
+per Seed7 style (dual-keyword restriction).  A hard tab or space
+\(`[[:blank:]]') is accepted after `set', because `set' is the last keyword
+in the phrase before the user-supplied identifier.")
+
+(defconst seed7--line-set-definition-start-regexp
+  (concat "^[[:blank:]]*?" seed7--set-definition-start-regexp)
+  "Regexp matching line starting with a Seed7 set definition block header.")
 
 
 ;;** Seed7 Procedure/Function Parameters Regexp
@@ -1854,7 +1874,7 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
 (defconst seed7-procfunc-regexp-tail-type-group 4)
 
 (defconst seed7-procfunc-end-regexp
-  "end[[:blank:]]+func;"
+  "end +func;"
   "Regexp to detect end of procedure or long function.  No group.")
 
 (defconst seed7-short-func-end-regexp
@@ -3063,8 +3083,8 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
       (push-mark original-pos))
     (goto-char end-pos)))
 
-;;** Seed7 forward-sexp support for block and line comments
-;;   ------------------------------------------------------
+;;** Seed7 forward-sexp/backward-sexp Support
+;;   ----------------------------------------
 
 (defun seed7--forward-block-comment (n)
   "Move over N nested `(* ... *)' block comment pairs.
@@ -3083,10 +3103,10 @@ Negative N: point must be just past `)' of `*)'."
                ((eobp)
                 (signal 'scan-error
                         (list "Unbalanced `(*'" (point) (point))))
-               ((looking-at "(\\*")
+               ((looking-at-p "(\\*")
                 (setq depth (1+ depth))
                 (forward-char 2))
-               ((looking-at "\\*)")
+               ((looking-at-p "\\*)")
                 (setq depth (1- depth))
                 (forward-char 2))
                (t
@@ -3102,7 +3122,7 @@ Negative N: point must be just past `)' of `*)'."
                 (signal 'scan-error
                         (list "Unbalanced `*)'" (point) (point))))
               ;; re-search-backward leaves point at start of match
-              (if (looking-at "(\\*")
+              (if (looking-at-p "(\\*")
                   (setq depth (1- depth))    ; found (*  → close a level
                 (setq depth (1+ depth))))))) ; found *)  → open a level
       (setq count (1- count)))))
@@ -3161,41 +3181,6 @@ Negative N: point is on a line that contains a line comment.
             (forward-line -1)
             (goto-char (seed7--line-comment-hash)))))
       (setq count (1- count)))))
-
-(defun seed7--forward-sexp-function (&optional arg)
-  "Seed7-aware `forward-sexp-function'.
-Handles:
-- nested `(* ... *)' block comments,
-- consecutive `#' line-end comment blocks.
-Falls through to `scan-sexps' for all other sexp forms."
-  (let* ((arg (or arg 1)))
-    (dotimes (_ (abs arg))
-      (cond
-       ;; Forward: point is at (* opener
-       ((and (> arg 0) (looking-at "(\\*"))
-        (seed7--forward-block-comment 1))
-       ;;
-       ;; Forward: point is at # line-comment start
-       ((and (> arg 0) (seed7--at-line-comment-start-p))
-        (seed7--forward-line-comments 1))
-       ;;
-       ;; Backward: point is just after *) closer
-       ((and (< arg 0)
-             (>= (- (point) 2) (point-min))
-             (string= (buffer-substring (- (point) 2) (point)) "*)"))
-        (seed7--forward-block-comment -1))
-       ;;
-       ;; Backward: current line has a # line comment
-       ((and (< arg 0)
-             (let ((hash-pos (seed7--line-comment-hash)))
-               (and hash-pos
-                    (>= (point) hash-pos))))
-        (seed7--forward-line-comments -1))
-       ;;
-       ;; Default: delegate to built-in scanner
-       (t
-        (goto-char (or (scan-sexps (point) (if (> arg 0) 1 -1))
-                       (buffer-end arg))))))))
 
 ;;** Seed7 Navigation by Block/Procedure/Function
 ;;   --------------------------------------------
@@ -3344,7 +3329,7 @@ Arguments:
         (seed7-end-of-defun (abs n) silent dont-push-mark)
       (unless (eq n 0)
         (save-excursion
-          (unless (looking-at seed7-procfunc-beg-of-decl-re)
+          (unless (looking-at-p seed7-procfunc-beg-of-decl-re)
             (end-of-line))
           (dotimes (_ n)
             (setq found-pos nil)
@@ -3815,12 +3800,12 @@ error forms."
 
 The regexp has 2 capture groups:
 - group1 for the starting expression,
-- group2 for then end part."
+- group2 for the end part."
   (declare (side-effect-free t))
-  (format "^\\(?:[[:space:]]*?\\(const[[:space:]]+?type:.+?[[:space:]]%s\\)\\|[[:space:]]*?\\(end %s;\\)\\)"
+  ;; Note hard tab is supported after keyword and not between 2 adjacent keywords as inside 'end block'.
+  (format "^\\(?:[[:space:]]*?\\(const +?type:.+?[[:space:]]%s\\)\\|[[:space:]]*?\\(end %s;\\)\\)"
           keyword keyword))
 
-;; [ TODO 2025-05-31, by Pierre Rouleau: Add support for hard tab after keyword
 (defun seed7--end-regexp-for (word1 word2 last-word)
   "Return regexps for end and start of block for specified arguments.
 Used when searching forward.
@@ -3829,6 +3814,8 @@ The regexp has 2 or 3 groups:
 - group 1: block start text,
 - group 2: the block end text,
 - group 3: optional, a peer level clause."
+  ;; Note hard tab is supported *after* keyword and *not* between 2 adjacent
+  ;; keywords as inside "end block".
   (let ((regexp nil)
         (start-pos 'end-of-line))
     (setq regexp
@@ -3840,18 +3827,18 @@ The regexp has 2 or 3 groups:
            ;; though the space is always required in Seed7 code.  This is done this
            ;; way to allow a match when trying to verify a matching block for the
            ;; purpose of calculating the indentation required.
-           ((string= word1 "repeat")    "^[[:blank:]]*?\\(?:\\(repeat\\>\\)\\|\\(until\\>\\) \\)" )
+           ((string= word1 "repeat")    "^[[:blank:]]*?\\(?:\\(repeat\\>\\)\\|\\(until\\>\\)[[:blank:]]\\)" )
            ((string= word1 "block")     "^[[:blank:]]*?\\(?:\\(block\\>\\)\\|\\(end block\\)\\)" )
            ((string= word1 "global")    "^[[:blank:]]*?\\(?:\\(global\\>\\)\\|\\(end global;\\)\\)" )
-           ((string= word1 "when")      "^[[:blank:]]*?\\(?:\\(case \\)\\|\\(end case;?\\)\\|\\(when \\|otherwise\\)\\)")
-           ((string= word1 "otherwise") "^[[:blank:]]*?\\(?:\\(case \\)\\|\\(end case;?\\)\\)")
-           ((string= word1 "elsif")     "^[[:blank:]]*?\\(?:\\(if \\)\\|\\(end if;?\\)\\|\\((elsif \\|else\\)\\)")
-           ((string= word1 "else")      "^[[:blank:]]*?\\(?:\\(if \\)\\|\\(end if;?\\)\\)")
+           ((string= word1 "when")      "^[[:blank:]]*?\\(?:\\(case[[:blank:]]\\)\\|\\(end case;?\\)\\|\\(when[[:blank:]]\\|otherwise\\)\\)")
+           ((string= word1 "otherwise") "^[[:blank:]]*?\\(?:\\(case[[:blank:]]\\)\\|\\(end case;?\\)\\)")
+           ((string= word1 "elsif")     "^[[:blank:]]*?\\(?:\\(if[[:blank:]]\\)\\|\\(end if;?\\)\\|\\((elsif[[:blank:]]\\|else\\)\\)")
+           ((string= word1 "else")      "^[[:blank:]]*?\\(?:\\(if[[:blank:]]\\)\\|\\(end if;?\\)\\)")
            ((member word1 '("local" "begin")) seed7--inner-callables-triplets-re)
            ((string= word1 "const")
             (cond
              ((member word2 '("varfunc" "func" "proc"))
-              nil)   ; use `seed7-end-of-defun' for functions and procedures.
+              nil)    ; use `seed7-end-of-defun' for functions and procedures.
              ((string= word2 "type")
               (cond
                ((member last-word '("enum" "struct"))
@@ -3864,14 +3851,16 @@ The regexp has 2 or 3 groups:
 
            ;; then deal with general case: block, case, for, while.
            ((member word1 seed7--block-start-keywords)
-            (format "^[[:blank:]]*?\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word1 word1))
+            (format "^[[:blank:]]*?\\(?:\\(%s[[:blank:]]\\)\\|\\(end %s;?\\)\\)" word1 word1))
            (t nil)))
     (cons regexp start-pos)))
 
 (defun seed7-to-block-forward (&optional dont-push-mark)
   "Move forward from the block beginning to its end.
 
-Handle function and forward declarations blocks.
+Handle comments, array/set/type definition blocks, procedure/function
+declarations, and generic Seed7 statement blocks.
+
 Push mark unless DONT-PUSH-MARK is non-nil.  Supports shift-marking.
 Return found position or nil if nothing found."
   (interactive "^")
@@ -3983,7 +3972,6 @@ NO match.  From %d, at point  %d, nesting=%d, line %d for: %S"
       (goto-char found-position))))
 
 
-;; [ TODO 2025-05-31, by Pierre Rouleau: Add & test support for hard tab after keyword
 (defun seed7--start-regexp-for (word1 word2)
   "Return a regexp to search the starting string block specified by the arguments.
 Used when searching backward.
@@ -3996,6 +3984,8 @@ The regexp has 2 or 3 groups:
 - group 1: block start text,
 - group 2: the block end text,
 - group 3: optional, a peer level clause."
+  ;; Note hard tab is supported *after* keyword and *not* between 2 adjacent
+  ;; keywords as inside "end block".
   (let ((regexp nil)
         (same-line nil))
     (setq regexp
@@ -4005,10 +3995,10 @@ The regexp has 2 or 3 groups:
            ;;  though the space is always required in Seed7 code.  This is done this
            ;;  way to allow a match when trying to verify a matching block for the
            ;;  purpose of calculating the indentation required.
-           ((not word1) "^\\(?:[[:space:]]*?\\(const[[:space:]]+?array[[:space:]]+?.+?:\\)\\|[[:space:]]+?\\();\\)\\)")
-           ((string= word1 "until")               "^[[:blank:]]*?\\(?:\\(repeat\\>\\)\\|\\(until\\>\\) \\)")
-           ((member  word1 '("when" "otherwise")) "^[[:blank:]]*?\\(?:\\(case \\)\\|\\(end case;?\\)\\|\\(when \\)\\)")
-           ((member  word1 '("elsif" "else"))     "^[[:blank:]]*?\\(?:\\(if \\)\\|\\(end if;?\\)\\|\\(elsif \\)\\)")
+           ((not word1) "^\\(?:[[:space:]]*?\\(const +?array[[:space:]]+?.+?:\\)\\|[[:space:]]+?\\();\\)\\)")
+           ((string= word1 "until")               "^[[:blank:]]*?\\(?:\\(repeat\\>\\)\\|\\(until\\>\\)[[:blank:]]\\)")
+           ((member  word1 '("when" "otherwise")) "^[[:blank:]]*?\\(?:\\(case[[:blank:]]\\)\\|\\(end case;?\\)\\|\\(when[[:blank:]]\\)\\)")
+           ((member  word1 '("elsif" "else"))     "^[[:blank:]]*?\\(?:\\(if[[:blank:]]\\)\\|\\(end if;?\\)\\|\\(elsif[[:blank:]]\\)\\)")
            ((string= word1 "return")              "\\(^[[:blank:]]*?const func\\>\\)\\|\\(^;INVALID-MAKE-IT-NEVER-MATCH;\\)")
            ((string= word1 "end")
             (cond
@@ -4019,7 +4009,7 @@ The regexp has 2 or 3 groups:
                               "for"
                               "if"
                               "while"))
-              (format"^[[:space:]]*?\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word2 word2))
+              (format"^[[:space:]]*?\\(?:\\(%s[[:blank:]]\\)\\|\\(end %s;?\\)\\)" word2 word2))
              ((member word2 '("enum"
                               "struct"))
               (seed7--type-regexp word2))
@@ -4028,16 +4018,18 @@ The regexp has 2 or 3 groups:
                  (string= word2 "type"))
             (setq same-line t)
             ;; return a regexp where the group 2 never matches
-            "\\(\\(?:^[[:space:]]*?const[[:space:]]+?type:.+?[[:space:]]\\)\\)\\|\\(^;INVALID-MAKE-IT-NEVER-MATCH;\\)")
+            "\\(\\(?:^[[:space:]]*?const +?type:.+?[[:space:]]\\)\\)\\|\\(^;INVALID-MAKE-IT-NEVER-MATCH;\\)")
            (t nil)))
     (cons regexp same-line)))
 
 (defun seed7-to-block-backward (&optional at-beginning-of-line dont-push-mark)
-  "Move backward from block end to its beginning.
+  "Move backward from block end or array/set definition delimiter to its beginning.
 
-Move point to the beginning of the block keyword or comment.
- If point moves to the indenting area as a result, and AT-BEGINNING-OF-LINE
- optional argument is set, move point to the beginning of the line.
+Move point to the beginning of the block keyword, definition header, or comment.
+
+If point moves to the indenting area as a result, and AT-BEGINNING-OF-LINE
+optional argument is set, move point to the beginning of the line.
+
 Push mark unless DONT-PUSH-MARK is non-nil.  Supports shift-marking.
 Return found position if found, nil if nothing found."
   (interactive "^P")
@@ -4051,7 +4043,7 @@ Return found position if found, nil if nothing found."
         (let* ((first-word (seed7--current-line-nth-word 1))
                (second-word (seed7--current-line-nth-word 2))
                (regexp.same-line (seed7--start-regexp-for first-word
-                                                         second-word))
+                                                          second-word))
                (regexp (car regexp.same-line))
                (same-line (cdr regexp.same-line)))
           (if (and regexp
@@ -4117,7 +4109,7 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
                   ;; at the beginning of the block and most probably inside a
                   ;; function return statement so use `seed7-beg-of-defun' to
                   ;; find it.
-                  (unless (looking-at "const ")
+                  (unless (looking-at-p seed7--array-definition-start-regexp)
                     (seed7-beg-of-defun nil dont-push-mark dont-push-mark))
                   (setq found-position (point))))
                ;;
@@ -4126,7 +4118,7 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
                 (goto-char (1+ pos))
                 (seed7--with-backward-sexp
                   (seed7-to-indent)
-                  (unless (looking-at "const ")
+                  (unless (looking-at-p seed7--set-definition-start-regexp)
                     (seed7-beg-of-defun nil dont-push-mark dont-push-mark))
                   (setq found-position (point))))
                ;;
@@ -4143,6 +4135,150 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
         (when (seed7-inside-line-indent-before-comment-p)
           (seed7-to-indent)))
       (point))))
+
+(defvar-local seed7--sexp-dispatch-active nil
+  "Non-nil while `seed7--forward-sexp-function' is dispatching to a Seed7 helper.
+This prevents re-entry when those helpers internally invoke `backward-sexp' or
+`forward-sexp' (e.g. via `seed7--with-backward-sexp') which would otherwise
+cause unbounded recursion back into the dispatcher.")
+
+(defun seed7--at-array-definition-end-line-p ()
+  "Return non-nil if current line ends a Seed7 array definition block."
+  (save-excursion
+    (let ((pos (seed7-line-code-ends-with 0 ");")))
+      (when (and pos
+                 (not (eq (char-before) ?\))))
+        (goto-char (1+ pos))
+        (let ((seed7--sexp-dispatch-active t))
+          (when (ignore-errors
+                  (backward-sexp)
+                  t)
+            (seed7-to-indent)
+            (looking-at-p seed7--array-definition-start-regexp)))))))
+
+(defun seed7--at-set-definition-end-line-p ()
+  "Return non-nil if current line ends a Seed7 set definition block."
+  (save-excursion
+    (let ((pos (seed7-line-code-ends-with 0 "};")))
+      (when (and pos
+                 (not (eq (char-before) ?\})))
+        (goto-char (1+ pos))
+        (let ((seed7--sexp-dispatch-active t))
+          (when (ignore-errors
+                  (backward-sexp)
+                  t)
+            (seed7-to-indent)
+            (looking-at-p seed7--set-definition-start-regexp)))))))
+
+(defun seed7--forward-sexp-function (&optional arg)
+  "Seed7-aware `forward-sexp-function'.
+Handles moving forward, or backward with negative ARG, from start/end of:
+- nested `(* ... *)' block comments,
+- single and consecutive `#' line-end comments,
+- procedure/function declaration lines and their end lines,
+- Seed7 block start/end lines,
+- const/var array and const/var set definition block start/end lines,
+- (), [] and {} delimiter pairs.
+
+Falls through to `scan-sexps' for all other sexp forms to provide a uniform
+navigation command."
+  (if seed7--sexp-dispatch-active
+      ;; Re-entry: a Seed7 helper is calling (backward/forward)-sexp internally.
+      ;; Delegate straight to the built-in scanner to avoid infinite recursion.
+      (goto-char (or (scan-sexps (point) (if (> (or arg 1) 0) 1 -1))
+                     (buffer-end (or arg 1))))
+    (let* ((seed7--sexp-dispatch-active t)
+           (arg (or arg 1)))
+      (dotimes (_ (abs arg))
+        (cond
+         ((> arg 0)
+          ;; -- Forward ---------------------
+          (cond
+           ;; Forward: point is at (* opener
+           ((looking-at-p "(\\*")
+            (seed7--forward-block-comment 1))
+           ;;
+           ;; Forward: point is at # line-comment start
+           ((seed7--at-line-comment-start-p)
+            (seed7--forward-line-comments 1))
+           ;;
+           ;; Forward: current line is the start of a proc/func declaration.
+           ;; Must be tested before the generic block case below because
+           ;; `seed7-block-start-regexp' also matches "const proc:" and "const func".
+           ((and (not (looking-at-p seed7--open-paren-regexp))
+                 (save-excursion
+                   (seed7-to-indent)
+                   (looking-at-p seed7-procfunc-beg-of-decl-nc-re)))
+            (seed7-end-of-defun 1 :silent :dont-push-mark))
+           ;;
+           ;; Forward: current line is the start of any other Seed7 block
+           ;; (if, while, for, repeat, case, block, global, local, begin, …).
+           ((and (not (looking-at-p seed7--open-paren-regexp))
+                 (save-excursion
+                   (seed7-to-indent)
+                   (or
+                    (looking-at-p seed7-block-start-regexp)
+                    ;; If current line is the start of a const/var array or set
+                    ;; definition block.  These are not in
+                    ;; `seed7-block-start-regexp' so they need their own clause
+                    ;; `seed7-to-block-forward' handles both.
+                    (looking-at-p seed7--array-definition-start-regexp)
+                    (looking-at-p seed7--set-definition-start-regexp))))
+            (seed7-to-block-forward :dont-push-mark))
+           ;;
+           ;; Forward default: delegate to built-in scanner
+           (t
+            (goto-char (or (scan-sexps (point) 1)
+                           (buffer-end arg))))))
+         ;; -- Backward ----------------------
+         ((< arg 0)
+          (cond
+           ;; Backward: point is just after *) closer
+           ((and (>= (- (point) 2) (point-min))
+                 (string= (buffer-substring (- (point) 2) (point)) "*)"))
+            (seed7--forward-block-comment -1))
+           ;;
+           ;; Backward: current line has a # line comment
+           ((let ((hash-pos (seed7--line-comment-hash)))
+              (and hash-pos
+                   (>= (point) hash-pos)))
+            (seed7--forward-line-comments -1))
+           ;;
+           ;; Backward: current line is "end func;" (end of proc/func).
+           ;; Must be tested before the generic block-end case because
+           ;; `seed7-block-end-regexp' also matches "end func;".
+           ((and (not (memq (char-before) seed7--close-paren-chars))
+                 (save-excursion
+                   (seed7-to-indent)
+                   (looking-at-p seed7-procfunc-end-regexp)))
+            (seed7-beg-of-defun 1 :silent :dont-push-mark))
+           ;;
+           ;; Backward: current line is any other block end
+           ;; (end if;, end while;, end for;, end case;, end block, until …).
+           ((and (not (memq (char-before) seed7--close-paren-chars))
+                 (save-excursion
+                   (seed7-to-indent)
+                   (looking-at-p seed7-block-end-regexp)))
+            (seed7-to-block-backward nil :dont-push-mark))
+           ;;
+           ;; Backward: current line ends with ); — may be end of a
+           ;; const/var array definition block.
+           ;; `seed7-to-block-backward' already disambiguates between an array
+           ;; definition and a function return statement via the
+           ;; `seed7--array-definition-start-regexp' at the destination indent
+           ;; position.
+           ((seed7--at-array-definition-end-line-p)
+            (seed7-to-block-backward nil :dont-push-mark))
+           ;;
+           ;; Backward: current line ends with }; — may be end of a
+           ;; const/var set definition block.
+           ((seed7--at-set-definition-end-line-p)
+            (seed7-to-block-backward nil :dont-push-mark))
+           ;;
+           ;; Backward default: delegate to built-in scanner
+           (t
+            (goto-char (or (scan-sexps (point) -1)
+                           (buffer-end arg)))))))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 iMenu Support
@@ -4746,7 +4882,16 @@ Move point."
                      "elsif "
                      "while "
                      "for "
-                     "case "))
+                     "case "
+                     ;; ... also support tabs when caller did not normalize them.
+                     "const proc:\t"
+                     "const func\t"
+                     "const type:\t"
+                     "if\t"
+                     "elsif\t"
+                     "while\t"
+                     "for\t"
+                     "case\t"))
     (seed7-to-block-forward :dont-push-mark)
     (point))
    ;;
@@ -4754,7 +4899,7 @@ Move point."
     (seed7-to-next-line-starts-with "end block")
     (point))
    ;;
-   ((string= header "catch ")
+   ((member header '("catch " "catch\t"))
     (seed7-to-next-line-starts-with "end block")
     (point))
    ;;
@@ -4764,6 +4909,7 @@ Move point."
   "Return indentation offset (in columns) for the inside of a block.
 
 - HEADER: string: identifies the block start header.
+  This is normalized: hard tabs replaced by spaces.
 - FIRST-TEXT: string: the text at the indented start of the currently
   inspected line (pre-extracted by the caller to avoid repeated buffer
   scanning)."
@@ -4804,7 +4950,7 @@ Move point."
       ;; Other lines are indented
       seed7-indent-width))
    ((string= header "exception")
-    (if (string-prefix-p "catch " first-text)
+    (if (string-match-p "\\`catch[[:blank:]]" first-text)
         ;; catch is indented one level from exception
         seed7-indent-width
       ;; Other lines are indented by 2 levels
@@ -4818,7 +4964,7 @@ Move point."
 
    ;;-- repeat - until
    ((string= header "repeat")
-    (if (string-prefix-p "until " first-text)
+    (if (string-match-p "\\`until[[:blank:]]" first-text)
         ;; until lines up with repeat
         0
       ;; Other lines are indented
@@ -4854,7 +5000,7 @@ Move point."
         ;; 'end case' lines up with 'case'
         0
       ;; Other lines are indented
-      (if (or (string-prefix-p "when "     first-text)
+      (if (or (string-match-p "\\`when[[:blank:]]" first-text)
               (string-prefix-p "otherwise" first-text))
           ;; the when and otherwise keywords are indented once
           seed7-indent-width
@@ -4863,7 +5009,7 @@ Move point."
 
    ;;-- const func - return/result-begin
    ((string= header "const func ")
-    (if (or (string-prefix-p "return " first-text)
+    (if (or (string-match-p "\\`return[[:blank:]]" first-text)
             (string-prefix-p "result"  first-text))
         seed7-indent-width
       ;; otherwise indent below 'return '. BUT other code should handle this.
@@ -4938,7 +5084,10 @@ If it finds something it returns a list that holds the following information:
         (while (and keep-searching
                     (not (bobp)))
           (when (seed7-re-search-backward seed7-block-line-start-regexp)
-            (setq match-text (substring-no-properties (match-string 1)))
+            ;; get match text, normalize matching hard tabs to spaces.
+            (setq match-text (replace-regexp-in-string
+                              "[[:blank:]]+$" " "
+                              (substring-no-properties (match-string 1))))
             (setq block-start-pos (point)) ; start point: line start.
             (skip-chars-forward " \t")
             (setq block-start-indent-column (current-column))
@@ -5003,7 +5152,9 @@ If it finds something it returns a list that holds the following information:
                 (goto-char block-start-pos)
                 (when (seed7-re-search-backward
                        seed7-block-line-start-regexp)
-                  (setq match-text (substring-no-properties (match-string 1)))
+                  (setq match-text (replace-regexp-in-string
+                                    "[[:blank:]]+$" " "
+                                    (substring-no-properties (match-string 1))))
                   (setq block-start-pos (point))
                   (skip-chars-forward " \t")
                   (setq block-start-indent-column (current-column))
@@ -5199,7 +5350,7 @@ Invalid boundaries: begin=%S, end=%S"
             (keep-searching t))
         (while (and keep-searching
                     (not (bobp)))
-          (if (seed7-re-search-backward "^[[:blank:]]+until " scope-begin-pos)
+          (if (seed7-re-search-backward "^[[:blank:]]+until[[:blank:]]" scope-begin-pos)
               (progn
                 (setq keep-searching nil)
                 (unless (seed7-line-code-ends-with 0 ";")
@@ -5249,7 +5400,7 @@ If it detects that it is outside, it returns nil."
             (keep-searching t))
         (while (and keep-searching
                     (not (bobp)))
-          (if (seed7-re-search-backward "^[[:blank:]]+return "
+          (if (seed7-re-search-backward "^[[:blank:]]+return[[:blank:]]"
                                         scope-begin-pos)
               (progn
                 (setq keep-searching nil)
@@ -5360,9 +5511,7 @@ Invalid boundaries: begin=%S, end=%S"
             (block-start-pos nil)
             (block-indent-column nil))
         (when (seed7-re-search-backward
-               "^[[:blank:]]*?\\(?:const\\|var\\)[[:blank:]
-]+?array[[:blank:]
-]+?.+?:.+?("
+               seed7--line-array-definition-start-regexp
                scope-begin-pos)
           (setq block-start-pos (point))
           (skip-chars-forward " \t")
@@ -5377,7 +5526,6 @@ Invalid boundaries: begin=%S, end=%S"
                     "array"
                     block-start-pos
                     (point)))))))))
-
 
 (defun seed7-line-at-endof-array-definition-block (n &optional
                                                      dont-skip-comment-start)
@@ -5409,7 +5557,7 @@ N is: - :previous-non-empty for the previous non-empty line,
             (setq enclosing-block-end-pos (point))
             (seed7--with-backward-sexp
               (seed7-to-indent)
-              (when (looking-at-p "\\(?:const\\|var\\) +?array +?.+?:.+?(")
+              (when (looking-at-p seed7--array-definition-start-regexp)
                 (setq block-start-pos (point))
                 (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
                   block-indent-column)))))))))
@@ -5448,9 +5596,7 @@ Invalid boundaries: begin=%S, end=%S"
             (block-start-pos nil)
             (block-indent-column nil))
         (when (seed7-re-search-backward
-               "^[[:blank:]]*?\\(?:const\\|var\\)[[:blank:]
-]+?set[[:blank:]
-]+?.+?:.+?{"
+               seed7--line-set-definition-start-regexp
                scope-begin-pos)
           (setq block-start-pos (point))
           (skip-chars-forward " \t")
@@ -5573,15 +5719,12 @@ N is: - :previous-non-empty for the previous non-empty line,
             (setq enclosing-block-end-pos (point))
             (seed7--with-backward-sexp
               (seed7-to-indent)
-              (when (looking-at-p "\\(?:const\\|var\\) +?set +?.+?:.+?{")
+              (when (looking-at-p seed7--set-definition-start-regexp)
                 (setq block-start-pos (point))
                 (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
                   block-indent-column)))))))))
 
 ;; --
-(defconst seed7--open-paren-regexp
-  (regexp-opt '("(" "[" "{" ))
-  "Regexp matching Seed7 opening paren-like delimiters.")
 
 (defun seed7--paren-pair-string (open-char)
   "Return delimiter-pair string corresponding to OPEN-CHAR.
@@ -8126,7 +8269,7 @@ Return a list of 4-element lists, where each 4-element list has:
       (goto-char pos))
     (forward-word-strictly 2)
     (backward-word-strictly)
-    (looking-at "is\\>")))
+    (looking-at-p "is\\>")))
 
 (defun seed7--xref-get (identifier)
   "Get a list of all entries matching IDENTIFIER literally.
@@ -8218,10 +8361,10 @@ This implements `xref-backend-identifier-at-point' for Seed7 buffers."
    ((looking-at seed7-arithmetic-operator-regexp)
     (substring-no-properties (match-string 1)))
    ;;
-   ((looking-at seed7--very-special-char-re)
+   ((looking-at-p seed7--very-special-char-re)
     (string (char-after)))
    ;;
-   ((looking-at seed7--special-char-re)
+   ((looking-at-p seed7--special-char-re)
     (seed7-operator-at-point))
    ;;
    (t (or (thing-at-point 'symbol t)
@@ -8806,7 +8949,9 @@ compilation requires a working installation of Seed7.
   ;; Seed7 Mode Syntax Propertize Function
   (setq-local syntax-propertize-function #'seed7-mode-syntax-propertize)
 
-  ;; Allow forward-sexp to navigate from begin/end of block and line comments
+  ;; Allow forward-sexp/backward-sexp to navigate Seed7 comments,
+  ;; procedure/function boundaries, block start/end lines, array/set
+  ;; definition blocks, and delimiter pairs.
   (setq-local forward-sexp-function #'seed7--forward-sexp-function)
 
   ;; Seed7 iMenu Support

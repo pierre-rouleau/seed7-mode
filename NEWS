@@ -13,8 +13,10 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
   The run buffer supports two input modes:
   - *Buffered mode* (default): input is sent to the program when =RET=
     is pressed; all normal Emacs key bindings remain active.
+    - Switch to raw mode by typing ~C-c C-k~.
   - *Raw mode*: every key stroke (except ~C-c C-j~ and ~C-c C-c~) is
     sent directly to the program.
+    - Switch to buffered mode by typing ~C-c C-j~.
 
 - *seed7-rebuild-abbrev-table*: Reload the abbreviation table after
   customizing the user-options that control it.  The command checks for
@@ -51,9 +53,18 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 
 ** Improvements
 
-- *forward-sexp for comments*: *forward-sexp* (and *backward-sexp*)
-  can now move across Seed7 =(*= ... =*)= nested block comments and
-  consecutive =#= line-end comment blocks.
+- Regular expressions used to detect keywords and used in navigation now
+  allow hard tabs as whitespace following keywords.
+  Hard tabs are not encouraged; Seed7 recommends spaces.  They are tolerated
+  in existing indentation and after a single keyword, but not between the two
+  words of a dual keyword (e.g. "end func").
+
+- *forward-sexp for comments, blocks, procedures and functions*:
+  *forward-sexp* and *backward-sexp* can now move across:
+  - Seed7 =(*= ... =*)= nested block comments,
+  - single and consecutive =#= line-end comments,
+  - nested statement blocks,
+  - function and procedure blocks.
 
 - *Syntax propertization*: *seed7-mode-syntax-propertize* is now
   wrapped in *with-silent-modifications*, making it safe whether called
@@ -68,7 +79,7 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
   rendering now correctly handles nested block comments.
 
 - *Indentation speed*: Multiple improvements to *seed7-calc-indent*
-  and related helpers:
+  and related helpers which significantly improves speed in large files:
   - Block boundary positions are cached per indentation pass,
     dramatically reducing repeated searches in large files.
   - *indent-step* is now computed lazily inside *seed7-calc-indent*.
