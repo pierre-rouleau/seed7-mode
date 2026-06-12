@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260612.0904
+;; Package-Version: 20260612.0934
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-12T13:04:49+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2026-06-12T13:34:24+0000 W24-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4985,7 +4985,10 @@ If it finds something it returns a list that holds the following information:
         (while (and keep-searching
                     (not (bobp)))
           (when (seed7-re-search-backward seed7-block-line-start-regexp)
-            (setq match-text (substring-no-properties (match-string 1)))
+            ;; get match text, normalize matching hard tabs to spaces.
+            (setq match-text (replace-regexp-in-string
+                              "[[:blank:]]+$" " "
+                              (substring-no-properties (match-string 1))))
             (setq block-start-pos (point)) ; start point: line start.
             (skip-chars-forward " \t")
             (setq block-start-indent-column (current-column))
