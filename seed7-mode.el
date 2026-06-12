@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260612.0934
+;; Package-Version: 20260612.1001
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -278,7 +278,7 @@
 ;;     . `seed7-skip-comment-forward'
 ;;       . `seed7---skip-block-comment-forward'
 ;;       . `seed7---skip-line-end-comment'
-;;   -  Seed7 forward-sexp support for block and line comments
+;;   - seed7 forward-sexp/backward-sexp Support
 ;;     . `seed7--forward-sexp-function'
 ;;       . `seed7--forward-block-comment'
 ;;       . `seed7--at-line-comment-start-p'
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-12T13:34:24+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2026-06-12T14:01:21+0000 W24-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1481,7 +1481,7 @@ Match group 1")
 
 (defconst seed7-block-end-regexp
   (concat
-   "\\(?:end[[:blank:]]+"
+   "\\(?:end +"
    "\\(?:"
    (regexp-opt '("case" "enum" "for" "func" "if" "struct" "while"))
    ";\\|block\\)\\)"
@@ -3051,8 +3051,8 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
       (push-mark original-pos))
     (goto-char end-pos)))
 
-;;** Seed7 forward-sexp support for block and line comments
-;;   ------------------------------------------------------
+;;** seed7 forward-sexp/backward-sexp Support
+;;   ----------------------------------------
 
 (defun seed7--forward-block-comment (n)
   "Move over N nested `(* ... *)' block comment pairs.
@@ -3773,7 +3773,6 @@ The regexp has 2 capture groups:
   (format "^\\(?:[[:space:]]*?\\(const[[:space:]]+?type:.+?[[:space:]]%s\\)\\|[[:space:]]*?\\(end %s;\\)\\)"
           keyword keyword))
 
-;; [ TODO 2025-05-31, by Pierre Rouleau: Add support for hard tab after keyword
 (defun seed7--end-regexp-for (word1 word2 last-word)
   "Return regexps for end and start of block for specified arguments.
 Used when searching forward.
@@ -3938,7 +3937,6 @@ NO match.  From %d, at point  %d, nesting=%d, line %d for: %S"
       (goto-char found-position))))
 
 
-;; [ TODO 2025-05-31, by Pierre Rouleau: Add & test support for hard tab after keyword
 (defun seed7--start-regexp-for (word1 word2)
   "Return a regexp to search the starting string block specified by the arguments.
 Used when searching backward.
@@ -4104,7 +4102,7 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
 
 (defun seed7--forward-sexp-function (&optional arg)
   "Seed7-aware `forward-sexp-function'.
-Handles moving forward (and backwards with negative ARGS) from start/end of:
+Handles moving forward (and backwards with negative ARG) from start/end of:
 - nested `(* ... *)' block comments,
 - single and consecutive `#' line-end comments,
 - procedure/function declaration and their end lines,
@@ -4801,7 +4799,7 @@ Move point."
     (seed7-to-next-line-starts-with "end block")
     (point))
    ;;
-   ((string= header "catch ")
+   ((member header '("catch " "catch\t"))
     (seed7-to-next-line-starts-with "end block")
     (point))
    ;;

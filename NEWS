@@ -55,8 +55,9 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 
 - Regular expressions used to detect keywords and used in navigation now
   allow hard tabs as whitespace following keywords.
-  Hard tabs are not encouraged, but are tolerated for exiting indentation and between
-  single keywords (but not inside dual keywords); Seed7 recommends spaces.
+  Hard tabs are not encouraged, but are tolerated for existing indentation
+  and after a keyword, but not between the two words of a dual
+  keyword(e.g. "end func"). Seed7 recommend using spaces instead of hard tabs.
 
 - *forward-sexp for comments, blocks, procedures and functions*:
   *forward-sexp* and *backward-sexp* can now move across:
