@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260612.1544
+;; Package-Version: 20260612.1603
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-12T19:44:34+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2026-06-12T20:03:32+0000 W24-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4955,12 +4955,18 @@ Move point."
         seed7-indent-width
       ;; Other lines are indented by 2 levels
       (* 2 seed7-indent-width)))
+
    ((string= header "catch ")
-    (if (string-prefix-p "end block" first-text)
-        ;; end block lines up with block, 1 indentation level less than catch
-        (- seed7-indent-width)
+    (cond
+     ((string-prefix-p "end block" first-text)
+      ;; end block lines up with block, 1 indentation level less than catch
+      (- seed7-indent-width))
+     ((string-match-p "\\`catch[[:blank:]]" first-text)
+      ;; A sibling catch clause lines up with the previous catch (offset 0)
+      0)
+     (t
       ;; Other lines are indented by 1 level relative to catch
-      seed7-indent-width))
+      seed7-indent-width)))
 
    ;;-- repeat - until
    ((string= header "repeat")
