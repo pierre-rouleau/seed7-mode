@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260612.1026
+;; Package-Version: 20260612.1045
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-12T14:26:46+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2026-06-12T14:45:05+0000 W24-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4108,7 +4108,7 @@ Handles moving forward (and backwards with negative ARG) from start/end of:
 - single and consecutive `#' line-end comments,
 - procedure/function declaration and their end lines,
 - Seed7 block start/end lines,
-- other nested parens pairs made of (), [] and {} pairs.
+- (), [] and {} delimiter pairs.
 
 Falls through to `scan-sexps' for all other sexp forms to provide a uniform
 navigation command."
@@ -4781,13 +4781,12 @@ Move point."
                      "global"
                      "else"
                      "result"
-                     ;; Those which end with space...
                      "if "
                      "elsif "
                      "while "
                      "for "
                      "case "
-                     ;; ... also support tabs.
+                     ;; ... also support tabs when caller did not normalize them.
                      "const proc:\t"
                      "const func\t"
                      "const type:\t"
