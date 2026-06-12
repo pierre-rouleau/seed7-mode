@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260612.1445
+;; Package-Version: 20260612.1534
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -285,6 +285,8 @@
 ;;       . `seed7--at-line-comment-start-p'
 ;;       . `seed7--forward-line-comments'
 ;;         . `seed7--line-comment-hash'
+;;       . `seed7--at-array-definition-end-line-p'
+;;       . `seed7--at-set-definition-end-line-p'
 ;;   - Seed7 Navigation by Block/Procedure/Function
 ;;     - Navigation to Outer Block
 ;;       . `seed7-top-block-name'
@@ -541,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-12T18:45:34+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2026-06-12T19:34:19+0000 W24-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3856,7 +3858,9 @@ The regexp has 2 or 3 groups:
 (defun seed7-to-block-forward (&optional dont-push-mark)
   "Move forward from the block beginning to its end.
 
-Handle function and forward declarations blocks.
+Handle comments, array/set/type definition blocks, procedure/function
+declarations, and generic Seed7 statement blocks.
+
 Push mark unless DONT-PUSH-MARK is non-nil.  Supports shift-marking.
 Return found position or nil if nothing found."
   (interactive "^")
@@ -4019,11 +4023,13 @@ The regexp has 2 or 3 groups:
     (cons regexp same-line)))
 
 (defun seed7-to-block-backward (&optional at-beginning-of-line dont-push-mark)
-  "Move backward from block end to its beginning.
+  "Move backward from block end or array/set definition delimiter to its beginning.
 
-Move point to the beginning of the block keyword or comment.
- If point moves to the indenting area as a result, and AT-BEGINNING-OF-LINE
- optional argument is set, move point to the beginning of the line.
+Move point to the beginning of the block keyword, definition header, or comment.
+
+If point moves to the indenting area as a result, and AT-BEGINNING-OF-LINE
+optional argument is set, move point to the beginning of the line.
+
 Push mark unless DONT-PUSH-MARK is non-nil.  Supports shift-marking.
 Return found position if found, nil if nothing found."
   (interactive "^P")
@@ -4037,7 +4043,7 @@ Return found position if found, nil if nothing found."
         (let* ((first-word (seed7--current-line-nth-word 1))
                (second-word (seed7--current-line-nth-word 2))
                (regexp.same-line (seed7--start-regexp-for first-word
-                                                         second-word))
+                                                          second-word))
                (regexp (car regexp.same-line))
                (same-line (cdr regexp.same-line)))
           (if (and regexp
@@ -4129,6 +4135,34 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
         (when (seed7-inside-line-indent-before-comment-p)
           (seed7-to-indent)))
       (point))))
+
+(defun seed7--at-array-definition-end-line-p ()
+  "Return non-nil if current line ends a Seed7 array definition block."
+  (save-excursion
+    (let ((pos (seed7-line-code-ends-with 0 ");")))
+      (when (and pos
+                 (not (eq (char-before) ?\))))
+        (goto-char (1+ pos))
+        (let ((seed7--sexp-dispatch-active t))
+          (when (ignore-errors
+                  (backward-sexp)
+                  t)
+            (seed7-to-indent)
+            (looking-at-p seed7--array-definition-start-regexp)))))))
+
+(defun seed7--at-set-definition-end-line-p ()
+  "Return non-nil if current line ends a Seed7 set definition block."
+  (save-excursion
+    (let ((pos (seed7-line-code-ends-with 0 "};")))
+      (when (and pos
+                 (not (eq (char-before) ?\})))
+        (goto-char (1+ pos))
+        (let ((seed7--sexp-dispatch-active t))
+          (when (ignore-errors
+                  (backward-sexp)
+                  t)
+            (seed7-to-indent)
+            (looking-at-p seed7--set-definition-start-regexp)))))))
 
 (defvar-local seed7--sexp-dispatch-active nil
   "Non-nil while `seed7--forward-sexp-function' is dispatching to a Seed7 helper.
@@ -4231,13 +4265,14 @@ navigation command."
            ;; const/var array definition block.
            ;; `seed7-to-block-backward' already disambiguates between an array
            ;; definition and a function return statement via the
-           ;; `const[[:blank:]]' check at the destination indent position.
-           ((save-excursion (seed7-line-code-ends-with 0 ");"))
+           ;; `seed7--array-definition-start-regexp' at the destination indent
+           ;; position.
+           ((seed7--at-array-definition-end-line-p)
             (seed7-to-block-backward nil :dont-push-mark))
            ;;
            ;; Backward: current line ends with }; — may be end of a
            ;; const/var set definition block.
-           ((save-excursion (seed7-line-code-ends-with 0 "};"))
+           ((seed7--at-set-definition-end-line-p)
             (seed7-to-block-backward nil :dont-push-mark))
            ;;
            ;; Backward default: delegate to built-in scanner
@@ -8914,8 +8949,9 @@ compilation requires a working installation of Seed7.
   ;; Seed7 Mode Syntax Propertize Function
   (setq-local syntax-propertize-function #'seed7-mode-syntax-propertize)
 
-  ;; Allow forward-sexp to navigate from begin/end of block and line comments,
-  ;; begin/end of function, procedures and all Seed7 blocks.
+  ;; Allow forward-sexp/backward-sexp to navigate Seed7 comments,
+  ;; procedure/function boundaries, block start/end lines, array/set
+  ;; definition blocks, and delimiter pairs.
   (setq-local forward-sexp-function #'seed7--forward-sexp-function)
 
   ;; Seed7 iMenu Support
