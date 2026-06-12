@@ -1,0 +1,70 @@
+# SEED7 FILE: bug-79.sd7
+#
+# Purpose   : The catch block.
+# Created   : Friday, June 12 2026.
+# ----------------------------------------------------------------------------
+# Module Description
+# ------------------
+#
+# Reported by barankegnu
+#
+# Also, when you press "tab" in a line with "catch", the auto-completion with
+# spaces is incorrect, because it looks like this (it's a part of my source
+# code):
+
+# block
+#   configFile := open(configPath, "r");
+# exception
+#   catch MEMORY_ERROR:
+#     write("\n\tREAD_DATA_FROM_FILE->OPEN->MEMORY_ERROR\n\n");
+#     exit(PROGRAM);
+#     catch RANGE_ERROR:
+#       write("\n\tREAD_DATA_FROM_FILE->OPEN->RANGE_ERROR\n\n");
+#       exit(PROGRAM);
+#   end block;
+#
+#
+
+# Correct variant is:
+#
+# block
+#   configFile := open(configPath, "r");
+# exception
+#   catch MEMORY_ERROR:
+#     write("\n\tREAD_DATA_FROM_FILE->OPEN->MEMORY_ERROR\n\n");
+#     exit(PROGRAM);
+#   catch RANGE_ERROR:
+#     write("\n\tREAD_DATA_FROM_FILE->OPEN->RANGE_ERROR\n\n");
+#     exit(PROGRAM);
+# end block;
+
+# ----------------------------------------------------------------------------
+# Code
+# ----
+#
+#
+block
+  configFile := open(configPath, "r");
+exception
+  catch MEMORY_ERROR:
+    write("\n\tREAD_DATA_FROM_FILE->OPEN->MEMORY_ERROR\n\n");
+    exit(PROGRAM);
+    catch RANGE_ERROR:
+      write("\n\tREAD_DATA_FROM_FILE->OPEN->RANGE_ERROR\n\n");
+      exit(PROGRAM);
+  end block;
+
+# Correct variant is:
+
+block
+  configFile := open(configPath, "r");
+exception
+  catch MEMORY_ERROR:
+    write("\n\tREAD_DATA_FROM_FILE->OPEN->MEMORY_ERROR\n\n");
+    exit(PROGRAM);
+  catch RANGE_ERROR:
+    write("\n\tREAD_DATA_FROM_FILE->OPEN->RANGE_ERROR\n\n");
+    exit(PROGRAM);
+end block;
+
+# ----------------------------------------------------------------------------
