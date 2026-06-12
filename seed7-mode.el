@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260612.1534
+;; Package-Version: 20260612.1544
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-12T19:34:19+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2026-06-12T19:44:34+0000 W24-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4136,6 +4136,12 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
           (seed7-to-indent)))
       (point))))
 
+(defvar-local seed7--sexp-dispatch-active nil
+  "Non-nil while `seed7--forward-sexp-function' is dispatching to a Seed7 helper.
+This prevents re-entry when those helpers internally invoke `backward-sexp' or
+`forward-sexp' (e.g. via `seed7--with-backward-sexp') which would otherwise
+cause unbounded recursion back into the dispatcher.")
+
 (defun seed7--at-array-definition-end-line-p ()
   "Return non-nil if current line ends a Seed7 array definition block."
   (save-excursion
@@ -4163,12 +4169,6 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
                   t)
             (seed7-to-indent)
             (looking-at-p seed7--set-definition-start-regexp)))))))
-
-(defvar-local seed7--sexp-dispatch-active nil
-  "Non-nil while `seed7--forward-sexp-function' is dispatching to a Seed7 helper.
-This prevents re-entry when those helpers internally invoke `backward-sexp' or
-`forward-sexp' (e.g. via `seed7--with-backward-sexp') which would otherwise
-cause unbounded recursion back into the dispatcher.")
 
 (defun seed7--forward-sexp-function (&optional arg)
   "Seed7-aware `forward-sexp-function'.
