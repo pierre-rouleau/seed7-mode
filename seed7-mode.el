@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260612.1001
+;; Package-Version: 20260612.1026
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -278,7 +278,7 @@
 ;;     . `seed7-skip-comment-forward'
 ;;       . `seed7---skip-block-comment-forward'
 ;;       . `seed7---skip-line-end-comment'
-;;   - seed7 forward-sexp/backward-sexp Support
+;;   - Seed7 forward-sexp/backward-sexp Support
 ;;     . `seed7--forward-sexp-function'
 ;;       . `seed7--forward-block-comment'
 ;;       . `seed7--at-line-comment-start-p'
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-12T14:01:21+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2026-06-12T14:26:46+0000 W24-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1485,7 +1485,7 @@ Match group 1")
    "\\(?:"
    (regexp-opt '("case" "enum" "for" "func" "if" "struct" "while"))
    ";\\|block\\)\\)"
-   "\\|\\(?:until[[:blank:]]\\)")
+   "\\|\\(?:until[[:blank:]]\\)")    ; tab allowed after until and rest of logic
   "Regexp for generic end of block.")
 
 (defconst seed7-block-top-start-regexp
@@ -1842,7 +1842,7 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
 (defconst seed7-procfunc-regexp-tail-type-group 4)
 
 (defconst seed7-procfunc-end-regexp
-  "end[[:blank:]]+func;"
+  "end +func;"
   "Regexp to detect end of procedure or long function.  No group.")
 
 (defconst seed7-short-func-end-regexp
@@ -3051,7 +3051,7 @@ Push mark before moving unless DONT-PUSH-MARK is non-nil."
       (push-mark original-pos))
     (goto-char end-pos)))
 
-;;** seed7 forward-sexp/backward-sexp Support
+;;** Seed7 forward-sexp/backward-sexp Support
 ;;   ----------------------------------------
 
 (defun seed7--forward-block-comment (n)
@@ -3770,6 +3770,7 @@ The regexp has 2 capture groups:
 - group1 for the starting expression,
 - group2 for then end part."
   (declare (side-effect-free t))
+  ;; Note hard tab is supported after keyword and not between 2 adjacent keywords as inside 'end block'.
   (format "^\\(?:[[:space:]]*?\\(const[[:space:]]+?type:.+?[[:space:]]%s\\)\\|[[:space:]]*?\\(end %s;\\)\\)"
           keyword keyword))
 
@@ -4787,6 +4788,9 @@ Move point."
                      "for "
                      "case "
                      ;; ... also support tabs.
+                     "const proc:\t"
+                     "const func\t"
+                     "const type:\t"
                      "if\t"
                      "elsif\t"
                      "while\t"
