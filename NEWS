@@ -13,8 +13,10 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
   The run buffer supports two input modes:
   - *Buffered mode* (default): input is sent to the program when =RET=
     is pressed; all normal Emacs key bindings remain active.
+    - Switch to raw mode by typing ~C-c C-k~.
   - *Raw mode*: every key stroke (except ~C-c C-j~ and ~C-c C-c~) is
     sent directly to the program.
+    - Switch to buffered mode by typing ~C-c C-j~.
 
 - *seed7-rebuild-abbrev-table*: Reload the abbreviation table after
   customizing the user-options that control it.  The command checks for
@@ -52,16 +54,14 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 ** Improvements
 
 - Regular expressions used to detect keywords and used in navigation now
-  allow hard tabs as whitespace following keywords.  The hard tabs are not
-  promoted by the code but tolerated as Seed7 promotes the sue of space
-  characters.
+  allow hard tabs as whitespace following keywords.
+  Hard tabs are not encouraged, but are tolerated for exiting indentation and between
+  single keywords (but not inside dual keywords); Seed7 recommends spaces.
 
-- *forward-sexp for comments, blocks, procedure and functions*:
-  *forward-sexp* (and *backward-sexp*)
-  can now move across Seed7 =(*= ... =*)=
-  - nested block comments,
-  - line comments,
-  - consecutive =#= line-end comment blocks
+- *forward-sexp for comments, blocks, procedures and functions*:
+  *forward-sexp* and *backward-sexp* can now move across:
+  - Seed7 =(*= ... =*)= nested block comments,
+  - single and consecutive =#= line-end comments,
   - nested statement blocks,
   - function and procedure blocks.
 

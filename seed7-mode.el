@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260611.1711
+;; Package-Version: 20260612.0904
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-11T21:11:31+0000 W24-4"
+(defconst seed7-mode-version-timestamp "2026-06-12T13:04:49+0000 W24-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -804,6 +804,9 @@ Group 1: identifier : 1 word")
 (defconst seed7--open-paren-regexp
   (regexp-opt '("(" "[" "{" ))
   "Regexp matching Seed7 opening paren-like delimiters.")
+
+(defconst seed7--close-paren-chars '(?\) ?\] ?\})
+  "Seed7 closing paren-like delimiter characters.")
 
 ;; --
 
@@ -3068,10 +3071,10 @@ Negative N: point must be just past `)' of `*)'."
                ((eobp)
                 (signal 'scan-error
                         (list "Unbalanced `(*'" (point) (point))))
-               ((looking-at "(\\*")
+               ((looking-at-p "(\\*")
                 (setq depth (1+ depth))
                 (forward-char 2))
-               ((looking-at "\\*)")
+               ((looking-at-p "\\*)")
                 (setq depth (1- depth))
                 (forward-char 2))
                (t
@@ -3087,7 +3090,7 @@ Negative N: point must be just past `)' of `*)'."
                 (signal 'scan-error
                         (list "Unbalanced `*)'" (point) (point))))
               ;; re-search-backward leaves point at start of match
-              (if (looking-at "(\\*")
+              (if (looking-at-p "(\\*")
                   (setq depth (1- depth))    ; found (*  → close a level
                 (setq depth (1+ depth))))))) ; found *)  → open a level
       (setq count (1- count)))))
@@ -3294,7 +3297,7 @@ Arguments:
         (seed7-end-of-defun (abs n) silent dont-push-mark)
       (unless (eq n 0)
         (save-excursion
-          (unless (looking-at seed7-procfunc-beg-of-decl-re)
+          (unless (looking-at-p seed7-procfunc-beg-of-decl-re)
             (end-of-line))
           (dotimes (_ n)
             (setq found-pos nil)
@@ -3779,6 +3782,8 @@ The regexp has 2 or 3 groups:
 - group 1: block start text,
 - group 2: the block end text,
 - group 3: optional, a peer level clause."
+  ;; Note hard tab is supported *after* keyword and *not* between 2 adjacent
+  ;; keywords as inside "end block".
   (let ((regexp nil)
         (start-pos 'end-of-line))
     (setq regexp
@@ -3790,18 +3795,18 @@ The regexp has 2 or 3 groups:
            ;; though the space is always required in Seed7 code.  This is done this
            ;; way to allow a match when trying to verify a matching block for the
            ;; purpose of calculating the indentation required.
-           ((string= word1 "repeat")    "^[[:blank:]]*?\\(?:\\(repeat\\>\\)\\|\\(until\\>\\) \\)" )
+           ((string= word1 "repeat")    "^[[:blank:]]*?\\(?:\\(repeat\\>\\)\\|\\(until\\>\\)[[:blank:]]\\)" )
            ((string= word1 "block")     "^[[:blank:]]*?\\(?:\\(block\\>\\)\\|\\(end block\\)\\)" )
            ((string= word1 "global")    "^[[:blank:]]*?\\(?:\\(global\\>\\)\\|\\(end global;\\)\\)" )
-           ((string= word1 "when")      "^[[:blank:]]*?\\(?:\\(case \\)\\|\\(end case;?\\)\\|\\(when \\|otherwise\\)\\)")
-           ((string= word1 "otherwise") "^[[:blank:]]*?\\(?:\\(case \\)\\|\\(end case;?\\)\\)")
-           ((string= word1 "elsif")     "^[[:blank:]]*?\\(?:\\(if \\)\\|\\(end if;?\\)\\|\\((elsif \\|else\\)\\)")
-           ((string= word1 "else")      "^[[:blank:]]*?\\(?:\\(if \\)\\|\\(end if;?\\)\\)")
+           ((string= word1 "when")      "^[[:blank:]]*?\\(?:\\(case[[:blank:]]\\)\\|\\(end case;?\\)\\|\\(when[[:blank:]]\\|otherwise\\)\\)")
+           ((string= word1 "otherwise") "^[[:blank:]]*?\\(?:\\(case[[:blank:]]\\)\\|\\(end case;?\\)\\)")
+           ((string= word1 "elsif")     "^[[:blank:]]*?\\(?:\\(if[[:blank:]]\\)\\|\\(end if;?\\)\\|\\((elsif[[:blank:]]\\|else\\)\\)")
+           ((string= word1 "else")      "^[[:blank:]]*?\\(?:\\(if[[:blank:]]\\)\\|\\(end if;?\\)\\)")
            ((member word1 '("local" "begin")) seed7--inner-callables-triplets-re)
            ((string= word1 "const")
             (cond
              ((member word2 '("varfunc" "func" "proc"))
-              nil)   ; use `seed7-end-of-defun' for functions and procedures.
+              nil)    ; use `seed7-end-of-defun' for functions and procedures.
              ((string= word2 "type")
               (cond
                ((member last-word '("enum" "struct"))
@@ -3814,7 +3819,7 @@ The regexp has 2 or 3 groups:
 
            ;; then deal with general case: block, case, for, while.
            ((member word1 seed7--block-start-keywords)
-            (format "^[[:blank:]]*?\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word1 word1))
+            (format "^[[:blank:]]*?\\(?:\\(%s[[:blank:]]\\)\\|\\(end %s;?\\)\\)" word1 word1))
            (t nil)))
     (cons regexp start-pos)))
 
@@ -3946,6 +3951,8 @@ The regexp has 2 or 3 groups:
 - group 1: block start text,
 - group 2: the block end text,
 - group 3: optional, a peer level clause."
+  ;; Note hard tab is supported *after* keyword and *not* between 2 adjacent
+  ;; keywords as inside "end block".
   (let ((regexp nil)
         (same-line nil))
     (setq regexp
@@ -3956,9 +3963,9 @@ The regexp has 2 or 3 groups:
            ;;  way to allow a match when trying to verify a matching block for the
            ;;  purpose of calculating the indentation required.
            ((not word1) "^\\(?:[[:space:]]*?\\(const[[:space:]]+?array[[:space:]]+?.+?:\\)\\|[[:space:]]+?\\();\\)\\)")
-           ((string= word1 "until")               "^[[:blank:]]*?\\(?:\\(repeat\\>\\)\\|\\(until\\>\\) \\)")
-           ((member  word1 '("when" "otherwise")) "^[[:blank:]]*?\\(?:\\(case \\)\\|\\(end case;?\\)\\|\\(when \\)\\)")
-           ((member  word1 '("elsif" "else"))     "^[[:blank:]]*?\\(?:\\(if \\)\\|\\(end if;?\\)\\|\\(elsif \\)\\)")
+           ((string= word1 "until")               "^[[:blank:]]*?\\(?:\\(repeat\\>\\)\\|\\(until\\>\\)[[:blank:]]\\)")
+           ((member  word1 '("when" "otherwise")) "^[[:blank:]]*?\\(?:\\(case[[:blank:]]\\)\\|\\(end case;?\\)\\|\\(when[[:blank:]]\\)\\)")
+           ((member  word1 '("elsif" "else"))     "^[[:blank:]]*?\\(?:\\(if[[:blank:]]\\)\\|\\(end if;?\\)\\|\\(elsif[[:blank:]]\\)\\)")
            ((string= word1 "return")              "\\(^[[:blank:]]*?const func\\>\\)\\|\\(^;INVALID-MAKE-IT-NEVER-MATCH;\\)")
            ((string= word1 "end")
             (cond
@@ -3969,7 +3976,7 @@ The regexp has 2 or 3 groups:
                               "for"
                               "if"
                               "while"))
-              (format"^[[:space:]]*?\\(?:\\(%s \\)\\|\\(end %s;?\\)\\)" word2 word2))
+              (format"^[[:space:]]*?\\(?:\\(%s[[:blank:]]\\)\\|\\(end %s;?\\)\\)" word2 word2))
              ((member word2 '("enum"
                               "struct"))
               (seed7--type-regexp word2))
@@ -4067,7 +4074,7 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
                   ;; at the beginning of the block and most probably inside a
                   ;; function return statement so use `seed7-beg-of-defun' to
                   ;; find it.
-                  (unless (looking-at "const ")
+                  (unless (looking-at-p "const[[:blank:]]")
                     (seed7-beg-of-defun nil dont-push-mark dont-push-mark))
                   (setq found-position (point))))
                ;;
@@ -4076,7 +4083,7 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
                 (goto-char (1+ pos))
                 (seed7--with-backward-sexp
                   (seed7-to-indent)
-                  (unless (looking-at "const ")
+                  (unless (looking-at-p "const[[:blank:]]")
                     (seed7-beg-of-defun nil dont-push-mark dont-push-mark))
                   (setq found-position (point))))
                ;;
@@ -4113,7 +4120,7 @@ navigation command."
         ;; -- Forward ---------------------
         (cond
          ;; Forward: point is at (* opener
-         ((looking-at "(\\*")
+         ((looking-at-p "(\\*")
           (seed7--forward-block-comment 1))
          ;;
          ;; Forward: point is at # line-comment start
@@ -4158,7 +4165,7 @@ navigation command."
          ;; Backward: current line is "end func;" (end of proc/func).
          ;; Must be tested before the generic block-end case because
          ;; `seed7-block-end-regexp' also matches "end func;".
-         ((and (not (memq (char-before) '(?\) ?\] ?\})))
+         ((and (not (memq (char-before) seed7--close-paren-chars))
                (save-excursion
                  (seed7-to-indent)
                  (looking-at-p seed7-procfunc-end-regexp)))
@@ -4166,7 +4173,7 @@ navigation command."
          ;;
          ;; Backward: current line is any other block end
          ;; (end if;, end while;, end for;, end case;, end block, until …).
-         ((and (not (memq (char-before) '(?\) ?\] ?\})))
+         ((and (not (memq (char-before) seed7--close-paren-chars))
                (save-excursion
                  (seed7-to-indent)
                  (looking-at-p seed7-block-end-regexp)))
@@ -4775,11 +4782,18 @@ Move point."
                      "global"
                      "else"
                      "result"
+                     ;; Those which end with space...
                      "if "
                      "elsif "
                      "while "
                      "for "
-                     "case "))
+                     "case "
+                     ;; ... also support tabs.
+                     "if\t"
+                     "elsif\t"
+                     "while\t"
+                     "for\t"
+                     "case\t"))
     (seed7-to-block-forward :dont-push-mark)
     (point))
    ;;
@@ -8156,7 +8170,7 @@ Return a list of 4-element lists, where each 4-element list has:
       (goto-char pos))
     (forward-word-strictly 2)
     (backward-word-strictly)
-    (looking-at "is\\>")))
+    (looking-at-p "is\\>")))
 
 (defun seed7--xref-get (identifier)
   "Get a list of all entries matching IDENTIFIER literally.
@@ -8248,10 +8262,10 @@ This implements `xref-backend-identifier-at-point' for Seed7 buffers."
    ((looking-at seed7-arithmetic-operator-regexp)
     (substring-no-properties (match-string 1)))
    ;;
-   ((looking-at seed7--very-special-char-re)
+   ((looking-at-p seed7--very-special-char-re)
     (string (char-after)))
    ;;
-   ((looking-at seed7--special-char-re)
+   ((looking-at-p seed7--special-char-re)
     (seed7-operator-at-point))
    ;;
    (t (or (thing-at-point 'symbol t)
