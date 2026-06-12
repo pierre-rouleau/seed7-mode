@@ -79,7 +79,7 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
   rendering now correctly handles nested block comments.
 
 - *Indentation speed*: Multiple improvements to *seed7-calc-indent*
-  and related helpers:
+  and related helpers which significantly improves speed in large files:
   - Block boundary positions are cached per indentation pass,
     dramatically reducing repeated searches in large files.
   - *indent-step* is now computed lazily inside *seed7-calc-indent*.
