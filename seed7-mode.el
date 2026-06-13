@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.1123
+;; Package-Version: 20260613.1153
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-13T15:23:43+0000 W24-6"
+(defconst seed7-mode-version-timestamp "2026-06-13T15:53:45+0000 W24-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3366,8 +3366,30 @@ Arguments:
         (seed7-end-of-defun (abs n) silent dont-push-mark)
       (unless (eq n 0)
         (save-excursion
-          (unless (looking-at-p seed7-procfunc-beg-of-decl-re)
-            (end-of-line))
+          ;; ---------------------------------------------------------------------------
+          ;; Choose a stable starting position for the backward scan:
+          ;; - If already on a declaration line, leave point there; searching backward
+          ;;   from the declaration should find the enclosing/previous callable.
+          ;; - If on an `end func;' / block-end line, start at BOL so the current end
+          ;;   is not counted as an inner nested close.
+          ;; - If on a short-function `return ...;' line, also start at BOL so the
+          ;;   matching declaration immediately above can be found.
+          ;; - Otherwise search backward from EOL of the current line.
+          (cond
+           ((save-excursion
+              (forward-line 0)
+              (looking-at-p seed7-procfunc-beg-of-decl-re))
+            (forward-line 0))
+           ((save-excursion
+              (forward-line 0)
+              (looking-at-p seed7-block-end-regexp))
+            (forward-line 0))
+           ((save-excursion
+              (forward-line 0)
+              (looking-at-p seed7-short-func-end-regexp))
+            (forward-line 0))
+           (t
+            (end-of-line)))
           (dotimes (_ n)
             (setq found-pos nil)
             ;;
@@ -3567,6 +3589,7 @@ Arguments:
          (unless silent
            (seed7--show-info 'at-start-of item-name item-type tail-type)))))))
 
+
 (defun seed7-end-of-defun (&optional n silent dont-push-mark)
   "Move forward to the end of the current or next function or procedure.
 
@@ -3613,15 +3636,27 @@ Move inside the current if inside one, to the next if outside one.
             ;;              belongs to an inner short function and is ignored here.
             ;;   Group 3: action/forward declaration    → not a nesting boundary
             (save-excursion
+              ;; If point is on the declaration line, skip that declaration before
+              ;; scanning.  Otherwise the current callable is counted as nested and its
+              ;; real `end func;' is skipped.
+              (when (save-excursion
+                      (forward-line 0)
+                      (looking-at-p seed7-procfunc-beg-of-decl-nc-re))
+                (end-of-line))
               (let ((nesting 0)
                     (searching t)
                     matched-end-pos)
                 (while (and searching (not (eobp)))
                   (if (seed7-re-search-forward seed7--inner-callables-triplets-re)
                       (cond
-                       ;; Group 1: another proc/func declaration opens → go deeper.
+                       ;; Group 1: callable declaration start.
+                       ;; Only long-body declarations ending in "is func" open a nested
+                       ;; callable for this scan.  Short functions ending in plain "is"
+                       ;; are handled by the short-function candidate search below.
                        ((match-beginning 1)
-                        (setq nesting (1+ nesting)))
+                        (when (string-match-p "\\bis[[:blank:]]+func[[:blank:]]*\\'"
+                                              (match-string-no-properties 1))
+                          (setq nesting (1+ nesting))))
                        ;; Group 2: end func/proc; or return ...;
                        ((match-beginning 2)
                         (let ((matched-text (match-string 2)))
@@ -3634,9 +3669,7 @@ Move inside the current if inside one, to the next if outside one.
                               ;; nesting = 0: this is the end that matches our
                               ;; starting declaration.
                               (setq matched-end-pos (point)
-                                    searching nil)))))
-                       ;; Group 3: action/forward declaration — not a nesting boundary.
-                       (t nil))
+                                    searching nil))))))
                     ;; No more matches in the buffer.
                     (setq searching nil)))
                 ;; after the loop, run the backward search and assign all metadata variables
@@ -3784,27 +3817,27 @@ Return t if point moved to the beginning of function, nil if nothing found."
 ;; in `seed7--block-start-keywords'.
 
 (defun seed7--current-line-nth-word (n)
-  "Return the N-th word at beginning of current line, nil if none.
+  "Return the N-th word on the current line, nil if none.
 For the first word N must be 1.
 Negative N starts counting from the end of the line: -1 is the last word."
   (save-excursion
     (let ((line-start (line-beginning-position))
           (line-end (line-end-position)))
       (if (< n 0)
-          ;; Count from end of line
+          ;; Count from end of current line, independent of original point.
           (progn
-            (setq n (abs n))
-            (move-end-of-line 1)
-            (dotimes (_ n)
+            (goto-char line-end)
+            (dotimes (_ (- n))
               (backward-word)))
-        ;; count from beginning of line
-        (forward-line 0)
-        (dotimes (_ n)
-          (forward-word))
-        (backward-word))
-      ;; Return the identified word or nil if found on a different line
+        ;; Count from indentation of current line, independent of original point.
+        (goto-char line-start)
+        (skip-chars-forward " \t" line-end)
+        (dotimes (_ (1- n))
+          (forward-word)
+          (skip-chars-forward " \t" line-end)))
+      ;; Return the identified word or nil if found on a different line.
       (when (and (>= (point) line-start)
-                 (<= (point) line-end))
+                 (< (point) line-end))
         (thing-at-point 'word :no-properties)))))
 
 ;; -- Compilation Behavior Control for forward-sexp/backward-sexp protection
