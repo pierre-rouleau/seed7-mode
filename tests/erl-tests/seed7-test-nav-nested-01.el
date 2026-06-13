@@ -2,7 +2,7 @@
 
 ;; Created   : Saturday, June 13 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-13 12:23:11 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-13 12:51:10 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -25,10 +25,19 @@
 ;;; --------------------------------------------------------------------------
 ;;; Commentary:
 ;;
-;; Regression tests for `seed7-end-of-defun' / `seed7-beg-of-defun' (and their
-;; Emacs-hook wrappers `seed7-nav-end-of-defun' / `seed7-nav-beginning-of-defun')
-;; when navigating forward and backward across long functions, short functions,
-;; and nested long callables.
+;; Regression tests for `seed7-end-of-defun' / `seed7-beg-of-defun'.
+;;
+;; IMPORTANT: Forward tests call `seed7-end-of-defun' directly, NOT via
+;; `end-of-defun' (the Emacs built-in wrapper).  The Emacs built-in:
+;;   1. Pre-positions point using `(end-of-line)' + `(beginning-of-defun-raw)'
+;;      before calling `end-of-defun-function', so the seed7 function runs from
+;;      a location different from the test's starting line.
+;;   2. Unconditionally does `(unless (eobp) (forward-line 1))' after the call,
+;;      shifting the result one line further.
+;; Both effects make the expected line numbers unpredictable from the test.
+;;
+;; Backward tests call `beginning-of-defun' (via `beginning-of-defun-function')
+;; which has no such pre-processing and is safe to use.
 ;;
 ;; The Seed7 fixture code is an excerpt from chkbig.sd7 (original lines 35-74)
 ;; embedded directly in this file so the test is fully self-contained.
@@ -38,13 +47,13 @@
 ;;
 ;; Test matrix (embedded line numbers):
 ;;
-;;   forward navigation (end-of-defun from BOL):
-;;     line  2 → line  7   (long func bigintExpr)
-;;     line 10 → line 11   (short func intExpr)
-;;     line 14 → line 15   (short func striExpr)
-;;     line 18 → line 19   (short func boolExpr)
-;;     line 22 → line 39   (proc DECLARE_RAISES_RANGE_ERROR, contains nested func)
-;;     line 25 → line 37   (nested long func raisesRangeError)
+;;   forward navigation (seed7-end-of-defun from BOL):
+;;     line  2 → line  7   (long func bigintExpr: end func;)
+;;     line 10 → line 11   (short func intExpr: return …;)
+;;     line 14 → line 15   (short func striExpr: return …;)
+;;     line 18 → line 19   (short func boolExpr: return …;)
+;;     line 22 → line 39   (proc DECLARE_RAISES_RANGE_ERROR: outer end func;)
+;;     line 25 → line 37   (nested func raisesRangeError: inner end func;)
 ;;
 ;;   backward navigation (beginning-of-defun from EOL):
 ;;     line  7 → line  2   (end func; of bigintExpr)
@@ -54,7 +63,7 @@
 ;;     line 37 → line 25   (end func; of raisesRangeError)
 ;;     line 39 → line 22   (end func; of DECLARE_RAISES_RANGE_ERROR)
 
-;; To run from the command line use :
+;; To run from the command line use:
 ;;
 ;;      emacs --batch -l seed7-mode.el \
 ;;            -l tests/erl-tests/seed7-test-nav-nested-01.el \
@@ -155,7 +164,7 @@ Line layout (1-based):
  37         end func;
  38   blank
  39     end func;
- 40   blank")
+ 40   blank (trailing newline)")
 
 ;;; --------------------------------------------------------------------------
 ;;; Helpers
@@ -184,112 +193,122 @@ Line layout (1-based):
   (line-number-at-pos))
 
 ;;; --------------------------------------------------------------------------
-;;; Tests — forward navigation (end-of-defun)
+;;; Tests — forward navigation
+;;
+;; Uses `seed7-end-of-defun' directly (NOT `end-of-defun') to avoid the
+;; Emacs built-in's point pre-processing and forward-line post-processing.
+;; Expected line = the line that contains the closing token itself.
 ;;
 
 (ert-deftest seed7-nav-nested/forward-long-func-bigintExpr ()
-  "From BOL of long func declaration (line 2), end-of-defun reaches line 7."
+  "From BOL line 2, seed7-end-of-defun leaves point on line 7 (end func;)."
   (seed7-test--with-nav-buffer
     (seed7-test--goto-bol 2)
-    (end-of-defun)
+    (seed7-end-of-defun 1 :silent)
     (should (= (seed7-test--current-line) 7))))
 
 (ert-deftest seed7-nav-nested/forward-short-func-intExpr ()
-  "From BOL of short func declaration (line 10), end-of-defun reaches line 11."
+  "From BOL line 10, seed7-end-of-defun leaves point on line 11 (return)."
   (seed7-test--with-nav-buffer
     (seed7-test--goto-bol 10)
-    (end-of-defun)
+    (seed7-end-of-defun 1 :silent)
     (should (= (seed7-test--current-line) 11))))
 
 (ert-deftest seed7-nav-nested/forward-short-func-striExpr ()
-  "From BOL of short func declaration (line 14), end-of-defun reaches line 15."
+  "From BOL line 14, seed7-end-of-defun leaves point on line 15 (return)."
   (seed7-test--with-nav-buffer
     (seed7-test--goto-bol 14)
-    (end-of-defun)
+    (seed7-end-of-defun 1 :silent)
     (should (= (seed7-test--current-line) 15))))
 
 (ert-deftest seed7-nav-nested/forward-short-func-boolExpr ()
-  "From BOL of short func declaration (line 18), end-of-defun reaches line 19."
+  "From BOL line 18, seed7-end-of-defun leaves point on line 19 (return)."
   (seed7-test--with-nav-buffer
     (seed7-test--goto-bol 18)
-    (end-of-defun)
+    (seed7-end-of-defun 1 :silent)
     (should (= (seed7-test--current-line) 19))))
 
 (ert-deftest seed7-nav-nested/forward-proc-with-nested-func ()
-  "From BOL of proc DECLARE_RAISES_RANGE_ERROR (line 22), end-of-defun reaches line 39."
+  "From BOL line 22, seed7-end-of-defun leaves point on line 39 (outer end func;)."
   (seed7-test--with-nav-buffer
     (seed7-test--goto-bol 22)
-    (end-of-defun)
+    (seed7-end-of-defun 1 :silent)
     (should (= (seed7-test--current-line) 39))))
 
 (ert-deftest seed7-nav-nested/forward-nested-func-raisesRangeError ()
-  "From BOL of nested func raisesRangeError (line 25), end-of-defun reaches line 37."
+  "From BOL line 25, seed7-end-of-defun leaves point on line 37 (inner end func;)."
   (seed7-test--with-nav-buffer
     (seed7-test--goto-bol 25)
-    (end-of-defun)
+    (seed7-end-of-defun 1 :silent)
     (should (= (seed7-test--current-line) 37))))
 
 ;;; --------------------------------------------------------------------------
-;;; Tests — backward navigation (beginning-of-defun)
+;;; Tests — backward navigation
+;;
+;; Uses `beginning-of-defun' (dispatches to `seed7-nav-beginning-of-defun')
+;; which has no pre-processing side effects on point.
+;; Expected line = the line that contains the opening declaration keyword.
 ;;
 
 (ert-deftest seed7-nav-nested/backward-from-end-of-bigintExpr ()
-  "From EOL of `end func;' (line 7), beginning-of-defun reaches line 2."
+  "From EOL line 7 (end func;), beginning-of-defun reaches line 2."
   (seed7-test--with-nav-buffer
     (seed7-test--goto-eol 7)
     (beginning-of-defun)
     (should (= (seed7-test--current-line) 2))))
 
 (ert-deftest seed7-nav-nested/backward-from-return-of-intExpr ()
-  "From EOL of return line (line 11), beginning-of-defun reaches line 10."
+  "From EOL line 11 (return), beginning-of-defun reaches line 10."
   (seed7-test--with-nav-buffer
     (seed7-test--goto-eol 11)
     (beginning-of-defun)
     (should (= (seed7-test--current-line) 10))))
 
 (ert-deftest seed7-nav-nested/backward-from-return-of-striExpr ()
-  "From EOL of return line (line 15), beginning-of-defun reaches line 14."
+  "From EOL line 15 (return), beginning-of-defun reaches line 14."
   (seed7-test--with-nav-buffer
     (seed7-test--goto-eol 15)
     (beginning-of-defun)
     (should (= (seed7-test--current-line) 14))))
 
 (ert-deftest seed7-nav-nested/backward-from-return-of-boolExpr ()
-  "From EOL of return line (line 19), beginning-of-defun reaches line 18."
+  "From EOL line 19 (return), beginning-of-defun reaches line 18."
   (seed7-test--with-nav-buffer
     (seed7-test--goto-eol 19)
     (beginning-of-defun)
     (should (= (seed7-test--current-line) 18))))
 
 (ert-deftest seed7-nav-nested/backward-from-end-of-raisesRangeError ()
-  "From EOL of nested `end func;' (line 37), beginning-of-defun reaches line 25."
+  "From EOL line 37 (inner end func;), beginning-of-defun reaches line 25."
   (seed7-test--with-nav-buffer
     (seed7-test--goto-eol 37)
     (beginning-of-defun)
     (should (= (seed7-test--current-line) 25))))
 
 (ert-deftest seed7-nav-nested/backward-from-end-of-proc ()
-  "From EOL of outer `end func;' (line 39), beginning-of-defun reaches line 22."
+  "From EOL line 39 (outer end func;), beginning-of-defun reaches line 22."
   (seed7-test--with-nav-buffer
     (seed7-test--goto-eol 39)
     (beginning-of-defun)
     (should (= (seed7-test--current-line) 22))))
 
 ;;; --------------------------------------------------------------------------
-;;; Tests — repeated navigation (N > 1)
+;;; Tests — repeated navigation
 ;;
 
 (ert-deftest seed7-nav-nested/forward-twice-from-bigintExpr ()
-  "Two `end-of-defun' calls from line 2 land first on line 7, then on line 11."
+  "Two seed7-end-of-defun calls from line 2: first lands on line 7, second on line 11."
   (seed7-test--with-nav-buffer
     (seed7-test--goto-bol 2)
-    (end-of-defun)
+    (seed7-end-of-defun 1 :silent)
     (should (= (seed7-test--current-line) 7))
-    (end-of-defun)
+    ;; Move past the closing token before the next call.
+    (forward-line 1)
+    (seed7-end-of-defun 1 :silent)
     (should (= (seed7-test--current-line) 11))))
 
 (ert-deftest seed7-nav-nested/backward-twice-from-end-of-proc ()
-  "Two `beginning-of-defun' calls from EOL line 39 land on line 22 then line 18."
+  "Two beginning-of-defun calls from EOL line 39 land on line 22 then line 18."
   (seed7-test--with-nav-buffer
     (seed7-test--goto-eol 39)
     (beginning-of-defun)
