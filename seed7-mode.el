@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.1600
+;; Package-Version: 20260613.1634
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-13T20:00:44+0000 W24-6"
+(defconst seed7-mode-version-timestamp "2026-06-13T20:34:23+0000 W24-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3361,7 +3361,15 @@ Arguments:
          (found-pos nil)
          (item-type nil)
          (item-name nil)
-         (tail-type nil))
+         (tail-type nil)
+         ;; When the search starts from an `end func;'/`end proc;' line,
+         ;; only a long-body callable declaration can be the matching start.
+         ;; Short-function declarations (plain `is') have no matching
+         ;; `end func;' and must not be treated as scope boundaries.
+         (long-body-only
+          (save-excursion
+            (seed7-to-indent)
+            (looking-at-p seed7-procfunc-end-regexp))))
     (if (< n 0)
         (seed7-end-of-defun (abs n) silent dont-push-mark)
       (unless (eq n 0)
@@ -3423,33 +3431,43 @@ Arguments:
                         (cond
                          ;; Group 1: a proc/func declaration start.
                          ((match-beginning 1)
-                          (if (eq nesting 0)
-                              ;; Found the enclosing declaration.
-                              ;; Re-match with `seed7-procfunc-regexp' to
-                              ;; extract properly numbered group metadata.
-                              (progn
-                                (setq searching nil)
-                                (when (looking-at seed7-procfunc-regexp)
-                                  (setq long-func-pos  (point)
-                                        long-item-type
-                                        (substring-no-properties
-                                         (or (match-string
-                                              seed7-procfunc-regexp-item-type-group)
-                                             "?"))
-                                        long-item-name
-                                        (substring-no-properties
-                                         (or (match-string
-                                              seed7-procfunc-regexp-item-name-group)
-                                             "?"))
-                                        long-tail-type
-                                        (substring-no-properties
-                                         (or (match-string
-                                              seed7-procfunc-regexp-tail-type-group)
-                                             "?")))))
-                            ;; A nested declaration that has been fully traversed
-                            ;; going backward: its closing `end func;' was already
-                            ;; counted, so decrement the depth.
-                            (setq nesting (1- nesting))))
+                          (let ((is-long-body
+                                 (string-match-p
+                                  "\\bis[[:blank:]]+\\(?:func\\|proc\\)[[:blank:]]*\\'"
+                                  (match-string-no-properties 1))))
+                            (if (eq nesting 0)
+                                ;; At nesting=0: stop only when this declaration
+                                ;; is compatible with the current search mode.
+                                ;; In long-body-only mode (invoked from `end func;'):
+                                ;;   skip short-function declarations (plain `is');
+                                ;;   they have no matching `end func;'.
+                                ;; In normal mode (invoked from `return …;' etc.):
+                                ;;   stop at any callable declaration.
+                                (when (or is-long-body (not long-body-only))
+                                  (setq searching nil)
+                                  (when (looking-at seed7-procfunc-regexp)
+                                    (setq long-func-pos (point)
+                                          long-item-type
+                                          (substring-no-properties
+                                           (or (match-string
+                                                seed7-procfunc-regexp-item-type-group)
+                                               "?"))
+                                          long-item-name
+                                          (substring-no-properties
+                                           (or (match-string
+                                                seed7-procfunc-regexp-item-name-group)
+                                               "?"))
+                                          long-tail-type
+                                          (substring-no-properties
+                                           (or (match-string
+                                                seed7-procfunc-regexp-tail-type-group)
+                                               "?")))))
+                              ;; nesting > 0: only long-body declarations
+                              ;; (`is func'/`is proc') have a matching `end func;'
+                              ;; that incremented the counter.  Short-function
+                              ;; declarations must not change the nesting depth.
+                              (when is-long-body
+                                (setq nesting (1- nesting))))))
                          ;; Group 2: long-function end or short-function return.
                          ;; Only "end func;" / "end proc;" changes nesting depth.
                          ((match-beginning 2)
@@ -3695,13 +3713,16 @@ Move inside the current if inside one, to the next if outside one.
                             item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
                             tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                       t)
-                    ;; Only accept this short-function candidate if its
-                    ;; declaration begins at or before original-pos.
-                    ;; A declaration that starts after original-pos means the
-                    ;; short function is nested inside the enclosing long-body
-                    ;; callable already handled by the nesting-aware scan above.
-                    (and short-func-decl-pos
-                         (<= short-func-decl-pos original-pos))
+                   ;; Reject this candidate only when it is nested inside the
+                   ;; outer long-body callable already captured (final-pos is
+                   ;; set and short-func-decl-pos falls strictly between
+                   ;; original-pos and final-pos).  When no outer end has been
+                   ;; found yet (final-pos is nil), the short function is a
+                   ;; top-level sibling/successor and must be accepted.
+                   (not (and final-pos
+                             short-func-decl-pos
+                             (> short-func-decl-pos original-pos)
+                             (< short-func-decl-pos final-pos)))
                     (seed7-re-search-forward seed7-short-func-end-regexp)
                     (eq (point) found-pos)
                     (or (not final-pos)
