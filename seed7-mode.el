@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260612.1631
+;; Package-Version: 20260612.2235
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-12T20:31:07+0000 W24-5"
+(defconst seed7-mode-version-timestamp "2026-06-13T02:35:07+0000 W24-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4274,6 +4274,15 @@ navigation command."
            ;; const/var set definition block.
            ((seed7--at-set-definition-end-line-p)
             (seed7-to-block-backward nil :dont-push-mark))
+           ;;
+           ;; Backward: current line is the return statement of a short
+           ;; function (matches `seed7-short-func-end-regexp').
+           ;; Jump to the beginning of the enclosing declaration.
+           ((and (not (memq (char-before) seed7--close-paren-chars))
+                 (save-excursion
+                   (forward-line 0)
+                   (looking-at-p seed7-short-func-end-regexp)))
+            (seed7-beg-of-defun 1 :silent :dont-push-mark))
            ;;
            ;; Backward default: delegate to built-in scanner
            (t
