@@ -67,4 +67,45 @@ exception
     exit(PROGRAM);
 end block;
 
+
+# The following is taken from Seed7 project as an example of use of error.
+
+const proc: process_case_labels (in reference: whenExpression,
+    in reference: caseLabelExpression, inout allWhenValuesType: allWhenValues,
+    inout expr_type: c_expr) is func
+
+  local
+    var reference: caseLabels is NIL;
+    var category: labelCategory is category.value;
+    var bitset: currentWhenValues is bitset.EMPTY_SET;
+    var reference: whenReference is NIL;
+    var bitset: whenValues is bitset.EMPTY_SET;
+  begin
+    caseLabels := evaluate(prog, caseLabelExpression);
+    labelCategory := category(caseLabels);
+    if labelCategory = SETOBJECT then
+      currentWhenValues := getValue(caseLabels, bitset);
+      if currentWhenValues = bitset.EMPTY_SET then
+        error(EMPTY_WHEN_SET, whenExpression);
+      else
+        for whenValues key whenReference range allWhenValues do
+          if whenValues & currentWhenValues <> bitset.EMPTY_SET then
+            error(WHEN_OVERLAPPING, whenValues & currentWhenValues,
+                  whenExpression);
+            error(WHEN_PREVIOUS, whenValues & currentWhenValues,
+                  whenReference);
+          end if;
+        end for;
+      end if;
+      process_bitset(currentWhenValues,
+          diagnosticLine(whenExpression), c_expr);
+      allWhenValues @:= [whenExpression] currentWhenValues;
+    else
+      c_expr.expr &:= "/* case ";
+      c_expr.expr &:= str(labelCategory);
+      c_expr.expr &:= " */";
+    end if;
+  end func;
+
+
 # ----------------------------------------------------------------------------
