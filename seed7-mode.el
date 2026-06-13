@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.1214
+;; Package-Version: 20260613.1742
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-13T16:14:35+0000 W24-6"
+(defconst seed7-mode-version-timestamp "2026-06-13T21:42:46+0000 W24-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1486,7 +1486,7 @@ Match group 1")
   (concat
    "\\(?:end +"
    "\\(?:"
-   (regexp-opt '("case" "enum" "for" "func" "if" "struct" "while"))
+   (regexp-opt '("case" "enum" "for" "func" "global" "if" "struct" "while"))
    ";\\|block\\)\\)"
    "\\|\\(?:until[[:blank:]]\\)")    ; tab allowed after until and rest of logic
   "Regexp for generic end of block.")
@@ -3307,9 +3307,9 @@ Arguments:
 
 ;; [ TODO 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
 (defconst seed7---inner-callables-1
-  ;;         (----------------)              (----------)
-  ;;                                    (--------------------)
-  ;;(-----------------------------------------------------------)
+  ;;          (---------------)               (----------)
+  ;;                                     (--------------------)
+  ;; (-----------------------------------------------------------)
   "\\(const \\(?:func\\|proc\\)[^;]+?is\\(?:\\(?: +func\\)?$\\)\\)"
   "Group 1: complete text.")
 
@@ -3361,7 +3361,8 @@ Arguments:
          (found-pos nil)
          (item-type nil)
          (item-name nil)
-         (tail-type nil))
+         (tail-type nil)
+         (long-body-only nil))
     (if (< n 0)
         (seed7-end-of-defun (abs n) silent dont-push-mark)
       (unless (eq n 0)
@@ -3391,7 +3392,13 @@ Arguments:
            (t
             (end-of-line)))
           (dotimes (_ n)
-            (setq found-pos nil)
+            (setq found-pos nil
+                  ;; When an iteration starts on an `end func;' line,
+                  ;; only a long-body callable declaration can match it.
+                  long-body-only
+                  (save-excursion
+                    (seed7-to-indent)
+                    (looking-at-p seed7-procfunc-end-regexp)))
             ;;
             ;; Block A — nesting-aware backward search for the enclosing
             ;; long-body proc/func declaration (`const proc/func … is func').
@@ -3423,33 +3430,43 @@ Arguments:
                         (cond
                          ;; Group 1: a proc/func declaration start.
                          ((match-beginning 1)
-                          (if (eq nesting 0)
-                              ;; Found the enclosing declaration.
-                              ;; Re-match with `seed7-procfunc-regexp' to
-                              ;; extract properly numbered group metadata.
-                              (progn
-                                (setq searching nil)
-                                (when (looking-at seed7-procfunc-regexp)
-                                  (setq long-func-pos  (point)
-                                        long-item-type
-                                        (substring-no-properties
-                                         (or (match-string
-                                              seed7-procfunc-regexp-item-type-group)
-                                             "?"))
-                                        long-item-name
-                                        (substring-no-properties
-                                         (or (match-string
-                                              seed7-procfunc-regexp-item-name-group)
-                                             "?"))
-                                        long-tail-type
-                                        (substring-no-properties
-                                         (or (match-string
-                                              seed7-procfunc-regexp-tail-type-group)
-                                             "?")))))
-                            ;; A nested declaration that has been fully traversed
-                            ;; going backward: its closing `end func;' was already
-                            ;; counted, so decrement the depth.
-                            (setq nesting (1- nesting))))
+                          (let ((is-long-body
+                                 (string-match-p
+                                  "\\bis[[:blank:]]+\\(?:func\\|proc\\)[[:blank:]]*\\'"
+                                  (match-string-no-properties 1))))
+                            (if (eq nesting 0)
+                                ;; At nesting=0: stop only when this declaration
+                                ;; is compatible with the current search mode.
+                                ;; In long-body-only mode (invoked from `end func;'):
+                                ;;   skip short-function declarations (plain `is');
+                                ;;   they have no matching `end func;'.
+                                ;; In normal mode (invoked from `return …;' etc.):
+                                ;;   stop at any callable declaration.
+                                (when (or is-long-body (not long-body-only))
+                                  (setq searching nil)
+                                  (when (looking-at seed7-procfunc-regexp)
+                                    (setq long-func-pos (point)
+                                          long-item-type
+                                          (substring-no-properties
+                                           (or (match-string
+                                                seed7-procfunc-regexp-item-type-group)
+                                               "?"))
+                                          long-item-name
+                                          (substring-no-properties
+                                           (or (match-string
+                                                seed7-procfunc-regexp-item-name-group)
+                                               "?"))
+                                          long-tail-type
+                                          (substring-no-properties
+                                           (or (match-string
+                                                seed7-procfunc-regexp-tail-type-group)
+                                               "?")))))
+                              ;; nesting > 0: only long-body declarations
+                              ;; (`is func'/`is proc') have a matching `end func;'
+                              ;; that incremented the counter.  Short-function
+                              ;; declarations must not change the nesting depth.
+                              (when is-long-body
+                                (setq nesting (1- nesting))))))
                          ;; Group 2: long-function end or short-function return.
                          ;; Only "end func;" / "end proc;" changes nesting depth.
                          ((match-beginning 2)
@@ -3472,9 +3489,13 @@ Arguments:
                     (fwd-item-name nil)
                     (fwd-tail-type nil))
                 (save-excursion
-                  (when (seed7-re-search-backward-closest
-                         (list seed7-proc-forward-or-action-declaration-re
-                               seed7-procfunc-forward-or-action-declaration-re))
+                  ;; Skip this search when `long-body-only' is set: action and
+                  ;; forward declarations have no `end func;', so they can never
+                  ;; be the matching start of the `end func;' we came from.
+                  (when (and (not long-body-only)
+                             (seed7-re-search-backward-closest
+                              (list seed7-proc-forward-or-action-declaration-re
+                                    seed7-procfunc-forward-or-action-declaration-re)))
                     (setq fwd-pos       (point)
                           fwd-item-type
                           (substring-no-properties
@@ -3684,25 +3705,37 @@ Move inside the current if inside one, to the next if outside one.
                           found-candidate t)))))
             ;; -- Search for next short function. ----------------------------
             (save-excursion
-              (when
-                  (and
-                   (setq found-pos (seed7-re-search-forward seed7-short-func-end-regexp)
-                         top-block-name2 (seed7-top-block-name))
-                   (when (seed7-re-search-backward seed7-procfunc-regexp)
-                     (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
-                           item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
-                           tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
-                     t)
-                   (seed7-re-search-forward seed7-short-func-end-regexp)
-                   (eq (point) found-pos)
-                   (or (not final-pos)
-                       (< found-pos final-pos)))
-                (setq final-pos found-pos
-                      found-candidate t
-                      item-name item-name2
-                      item-type item-type2
-                      tail-type tail-type2
-                      top-block-name top-block-name2)))
+             (let (short-func-decl-pos)
+               (when
+                   (and
+                    (setq found-pos (seed7-re-search-forward seed7-short-func-end-regexp)
+                          top-block-name2 (seed7-top-block-name))
+                    (when (seed7-re-search-backward seed7-procfunc-regexp)
+                      (setq short-func-decl-pos (point)
+                            item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                            item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                            tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
+                      t)
+                   ;; Reject this candidate only when it is nested inside the
+                   ;; outer long-body callable already captured (final-pos is
+                   ;; set and short-func-decl-pos falls strictly between
+                   ;; original-pos and final-pos).  When no outer end has been
+                   ;; found yet (final-pos is nil), the short function is a
+                   ;; top-level sibling/successor and must be accepted.
+                   (not (and final-pos
+                             short-func-decl-pos
+                             (> short-func-decl-pos original-pos)
+                             (< short-func-decl-pos final-pos)))
+                    (seed7-re-search-forward seed7-short-func-end-regexp)
+                    (eq (point) found-pos)
+                    (or (not final-pos)
+                        (< found-pos final-pos)))
+                 (setq final-pos found-pos
+                       found-candidate t
+                       item-name item-name2
+                       item-type item-type2
+                       tail-type tail-type2
+                       top-block-name top-block-name2))))
             ;; -- Search for next forward declaration. -----------------------
             (save-excursion
               (when
@@ -4323,6 +4356,33 @@ cause unbounded recursion back into the dispatcher.")
             (seed7-to-indent)
             (looking-at-p seed7--set-definition-start-regexp)))))))
 
+(defun seed7--at-multiline-short-func-end-p ()
+  "Return non-nil if point at end a multi-line short-function return.
+
+That is: return non-nil when point is after the `;' ending a multi-line
+short-function return.
+
+Handles the case where the `return' keyword is on a line preceding the one
+that holds the terminating `;'.  Example:
+  return [indexRange.minIdx] (tupleType conv
+      someExpression);"
+  (when (eq (char-before) ?\;)
+    (save-excursion
+      (let ((found nil)
+            (stop nil))
+        (while (and (not found) (not stop))
+          (when (/= (forward-line -1) 0)
+            (setq stop t))
+          (unless stop
+            (cond
+             ;; Found the line that begins the return statement.
+             ((looking-at-p "[[:blank:]]+return[[:blank:]]")
+              (setq found t))
+             ;; Another statement ended on this line: stop scanning backward.
+             ((seed7-line-code-ends-with 0 ";")
+              (setq stop t)))))
+        found))))
+
 (defun seed7--forward-sexp-function (&optional arg)
   "Seed7-aware `forward-sexp-function'.
 Handles moving forward, or backward with negative ARG, from start/end of:
@@ -4429,12 +4489,19 @@ navigation command."
             (seed7-to-block-backward nil :dont-push-mark))
            ;;
            ;; Backward: current line is the return statement of a short
-           ;; function (matches `seed7-short-func-end-regexp').
+           ;; function (matches `seed7-short-func-end-regexp'), or point is
+           ;; after the `;' ending a multi-line short-function return where the
+           ;; `return' keyword sits on a preceding line.
            ;; Jump to the beginning of the enclosing declaration.
            ((and (not (memq (char-before) seed7--close-paren-chars))
-                 (save-excursion
-                   (forward-line 0)
-                   (looking-at-p seed7-short-func-end-regexp)))
+                 (or
+                  ;; Single-line return: the current line starts with "return … ;"
+                  (save-excursion
+                    (forward-line 0)
+                    (looking-at-p seed7-short-func-end-regexp))
+                  ;; Multi-line return: "return" is on a preceding line and the
+                  ;; terminating ";" is on the current line.
+                  (seed7--at-multiline-short-func-end-p)))
             (seed7-beg-of-defun 1 :silent :dont-push-mark))
            ;;
            ;; Backward default: delegate to built-in scanner
