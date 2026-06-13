@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.1214
+;; Package-Version: 20260613.1301
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-13T16:14:35+0000 W24-6"
+(defconst seed7-mode-version-timestamp "2026-06-13T17:01:24+0000 W24-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3307,9 +3307,9 @@ Arguments:
 
 ;; [ TODO 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
 (defconst seed7---inner-callables-1
-  ;;         (----------------)              (----------)
-  ;;                                    (--------------------)
-  ;;(-----------------------------------------------------------)
+  ;;          (---------------)               (----------)
+  ;;                                     (--------------------)
+  ;; (-----------------------------------------------------------)
   "\\(const \\(?:func\\|proc\\)[^;]+?is\\(?:\\(?: +func\\)?$\\)\\)"
   "Group 1: complete text.")
 
