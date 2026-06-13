@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.1301
+;; Package-Version: 20260613.1600
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-13T17:01:24+0000 W24-6"
+(defconst seed7-mode-version-timestamp "2026-06-13T20:00:44+0000 W24-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3684,25 +3684,34 @@ Move inside the current if inside one, to the next if outside one.
                           found-candidate t)))))
             ;; -- Search for next short function. ----------------------------
             (save-excursion
-              (when
-                  (and
-                   (setq found-pos (seed7-re-search-forward seed7-short-func-end-regexp)
-                         top-block-name2 (seed7-top-block-name))
-                   (when (seed7-re-search-backward seed7-procfunc-regexp)
-                     (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
-                           item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
-                           tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
-                     t)
-                   (seed7-re-search-forward seed7-short-func-end-regexp)
-                   (eq (point) found-pos)
-                   (or (not final-pos)
-                       (< found-pos final-pos)))
-                (setq final-pos found-pos
-                      found-candidate t
-                      item-name item-name2
-                      item-type item-type2
-                      tail-type tail-type2
-                      top-block-name top-block-name2)))
+             (let (short-func-decl-pos)
+               (when
+                   (and
+                    (setq found-pos (seed7-re-search-forward seed7-short-func-end-regexp)
+                          top-block-name2 (seed7-top-block-name))
+                    (when (seed7-re-search-backward seed7-procfunc-regexp)
+                      (setq short-func-decl-pos (point)
+                            item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                            item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                            tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
+                      t)
+                    ;; Only accept this short-function candidate if its
+                    ;; declaration begins at or before original-pos.
+                    ;; A declaration that starts after original-pos means the
+                    ;; short function is nested inside the enclosing long-body
+                    ;; callable already handled by the nesting-aware scan above.
+                    (and short-func-decl-pos
+                         (<= short-func-decl-pos original-pos))
+                    (seed7-re-search-forward seed7-short-func-end-regexp)
+                    (eq (point) found-pos)
+                    (or (not final-pos)
+                        (< found-pos final-pos)))
+                 (setq final-pos found-pos
+                       found-candidate t
+                       item-name item-name2
+                       item-type item-type2
+                       tail-type tail-type2
+                       top-block-name top-block-name2))))
             ;; -- Search for next forward declaration. -----------------------
             (save-excursion
               (when
@@ -4323,6 +4332,33 @@ cause unbounded recursion back into the dispatcher.")
             (seed7-to-indent)
             (looking-at-p seed7--set-definition-start-regexp)))))))
 
+(defun seed7--at-multiline-short-func-end-p ()
+  "Return non-nil if point at end a multi-line short-function return.
+
+That is: return non-nil when point is after the `;' ending a multi-line
+short-function return.
+
+Handles the case where the `return' keyword is on a line preceding the one
+that holds the terminating `;'.  Example:
+  return [indexRange.minIdx] (tupleType conv
+      someExpression);"
+  (when (eq (char-before) ?\;)
+    (save-excursion
+      (let ((found nil)
+            (stop nil))
+        (while (and (not found) (not stop))
+          (when (/= (forward-line -1) 0)
+            (setq stop t))
+          (unless stop
+            (cond
+             ;; Found the line that begins the return statement.
+             ((looking-at-p "[[:blank:]]+return[[:blank:]]")
+              (setq found t))
+             ;; Another statement ended on this line: stop scanning backward.
+             ((seed7-line-code-ends-with 0 ";")
+              (setq stop t)))))
+        found))))
+
 (defun seed7--forward-sexp-function (&optional arg)
   "Seed7-aware `forward-sexp-function'.
 Handles moving forward, or backward with negative ARG, from start/end of:
@@ -4429,12 +4465,19 @@ navigation command."
             (seed7-to-block-backward nil :dont-push-mark))
            ;;
            ;; Backward: current line is the return statement of a short
-           ;; function (matches `seed7-short-func-end-regexp').
+           ;; function (matches `seed7-short-func-end-regexp'), or point is
+           ;; after the `;' ending a multi-line short-function return where the
+           ;; `return' keyword sits on a preceding line.
            ;; Jump to the beginning of the enclosing declaration.
            ((and (not (memq (char-before) seed7--close-paren-chars))
-                 (save-excursion
-                   (forward-line 0)
-                   (looking-at-p seed7-short-func-end-regexp)))
+                 (or
+                  ;; Single-line return: the current line starts with "return … ;"
+                  (save-excursion
+                    (forward-line 0)
+                    (looking-at-p seed7-short-func-end-regexp))
+                  ;; Multi-line return: "return" is on a preceding line and the
+                  ;; terminating ";" is on the current line.
+                  (seed7--at-multiline-short-func-end-p)))
             (seed7-beg-of-defun 1 :silent :dont-push-mark))
            ;;
            ;; Backward default: delegate to built-in scanner
