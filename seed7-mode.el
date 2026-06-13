@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.1723
+;; Package-Version: 20260613.1742
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-13T21:23:36+0000 W24-6"
+(defconst seed7-mode-version-timestamp "2026-06-13T21:42:46+0000 W24-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3362,14 +3362,7 @@ Arguments:
          (item-type nil)
          (item-name nil)
          (tail-type nil)
-         ;; When the search starts from an `end func;'/`end proc;' line,
-         ;; only a long-body callable declaration can be the matching start.
-         ;; Short-function declarations (plain `is') have no matching
-         ;; `end func;' and must not be treated as scope boundaries.
-         (long-body-only
-          (save-excursion
-            (seed7-to-indent)
-            (looking-at-p seed7-procfunc-end-regexp))))
+         (long-body-only nil))
     (if (< n 0)
         (seed7-end-of-defun (abs n) silent dont-push-mark)
       (unless (eq n 0)
@@ -3399,7 +3392,13 @@ Arguments:
            (t
             (end-of-line)))
           (dotimes (_ n)
-            (setq found-pos nil)
+            (setq found-pos nil
+                  ;; When an iteration starts on an `end func;' line,
+                  ;; only a long-body callable declaration can match it.
+                  long-body-only
+                  (save-excursion
+                    (seed7-to-indent)
+                    (looking-at-p seed7-procfunc-end-regexp)))
             ;;
             ;; Block A — nesting-aware backward search for the enclosing
             ;; long-body proc/func declaration (`const proc/func … is func').
