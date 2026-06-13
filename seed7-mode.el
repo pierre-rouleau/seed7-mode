@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.1742
+;; Package-Version: 20260613.1825
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -170,29 +170,15 @@
 ;;          same face for various elements).  It would allow dual use: one
 ;;          with lots of different renderings and another with not that many,
 ;;          a more conservative approach.
-;;  # 02  Problem: The '#' used as base separator is not detected as a comment
-;;        BUT a comment that follows a digit will not render as a comment
-;;        unless a non alphanumeric character follows it.
-;;        The 'seed7-mode-syntax-propertize' uses a simple regexp to prevent
-;;        interpretation as comment: `seed7-base-x-number-re'.  A more complex
-;;        one could be used, similar to what `seed7-base-x-big-number-re' does
-;;        but by only capturing the '#'.  This however might be too processing
-;;        expensive.  I will only try it once everything else is done.
-;;  # 03  Problem: Escaped single and double quote in strings are now recognized.
+;;  # 02  Problem: Escaped single and double quote in strings are now recognized.
 ;;        However a string continuation that ends with a backslash just before
 ;;        the terminating quote is not supported.
-;;  # 04  Problem: The `seed7-to-block-backward' and `seed7-to-block-forward' can
-;;        detect the other end when point is on the beginning or end line,
-;;        but they fail when point is inside the block.
-;;        I will fix that once I get the auto indentation working properly
-;;        for all code.  I will then have to decide if that's considered a
-;;        defun to allow marking the block just like procedure and functions.
-;;  # 05  Improvement: Check if following Emacs functions can help reduce code
+;;  # 03  Improvement: Check if following Emacs functions can help reduce code
 ;;        size: `indent-line-to', `indent-next-tab-stop'
-;;  # 06  Improvement: The <f12><left> should move to the top of current block,
+;;  # 04  Improvement: The <f12><left> should move to the top of current block,
 ;;        <f12><right> to the end of current block. <f12><<left> several times
 ;;        would move toward the top of the current function or procedure.
-;;        And <f12><right?> several time would move toward the end of the
+;;        And <f12><right> several time would move toward the end of the
 ;;        current function/procedure.
 ;; ]
 ;;
@@ -543,7 +529,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-13T21:42:46+0000 W24-6"
+(defconst seed7-mode-version-timestamp "2026-06-13T22:25:17+0000 W24-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
