@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260612.2235
+;; Package-Version: 20260613.0932
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-13T02:35:07+0000 W24-6"
+(defconst seed7-mode-version-timestamp "2026-06-13T13:32:18+0000 W24-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3333,16 +3333,136 @@ Arguments:
             (end-of-line))
           (dotimes (_ n)
             (setq found-pos nil)
-            (when (seed7-re-search-backward-closest
-                   (list
-                    seed7-procfunc-regexp
-                    seed7-procfunc-start-regexp
-                    seed7-proc-forward-or-action-declaration-re
-                    seed7-procfunc-forward-or-action-declaration-re))
-              (setq found-pos (point)
-                    item-type (substring-no-properties (or (match-string seed7-procfunc-regexp-item-type-group) "?"))
-                    item-name (substring-no-properties (or (match-string seed7-procfunc-regexp-item-name-group) "?"))
-                    tail-type (substring-no-properties (or (match-string seed7-procfunc-regexp-tail-type-group) "?"))))))
+            ;;
+            ;; Block A — nesting-aware backward search for the enclosing
+            ;; long-body proc/func declaration (`const proc/func … is func').
+            ;;
+            ;; Scan backward with `seed7--inner-callables-triplets-re':
+            ;;
+            ;;   Group 1 — proc/func declaration start:
+            ;;     nesting = 0 → this is the enclosing declaration; record it.
+            ;;     nesting > 0 → a previously entered nested scope has been fully
+            ;;                   traversed; decrement depth and continue.
+            ;;
+            ;;   Group 2 — "end func;" / "end proc;" or "return …;" (short func):
+            ;;     Only text starting with "end " increments the nesting counter.
+            ;;     Short-function return lines do not open a new scope, so they
+            ;;     are silently skipped.
+            ;;
+            ;;   Group 3 — forward / action declaration:
+            ;;     Not a nesting boundary; ignored here.  Handled in Block B.
+            ;;
+            (let ((long-func-pos  nil)
+                  (long-item-type nil)
+                  (long-item-name nil)
+                  (long-tail-type nil))
+              (save-excursion
+                (let ((nesting   0)
+                      (searching t))
+                  (while (and searching (not (bobp)))
+                    (if (seed7-re-search-backward seed7--inner-callables-triplets-re)
+                        (cond
+                         ;; Group 1: a proc/func declaration start.
+                         ((match-beginning 1)
+                          (if (eq nesting 0)
+                              ;; Found the enclosing declaration.
+                              ;; Re-match with `seed7-procfunc-regexp' to
+                              ;; extract properly numbered group metadata.
+                              (progn
+                                (setq searching nil)
+                                (when (looking-at seed7-procfunc-regexp)
+                                  (setq long-func-pos  (point)
+                                        long-item-type
+                                        (substring-no-properties
+                                         (or (match-string
+                                              seed7-procfunc-regexp-item-type-group)
+                                             "?"))
+                                        long-item-name
+                                        (substring-no-properties
+                                         (or (match-string
+                                              seed7-procfunc-regexp-item-name-group)
+                                             "?"))
+                                        long-tail-type
+                                        (substring-no-properties
+                                         (or (match-string
+                                              seed7-procfunc-regexp-tail-type-group)
+                                             "?")))))
+                            ;; A nested declaration that has been fully traversed
+                            ;; going backward: its closing `end func;' was already
+                            ;; counted, so decrement the depth.
+                            (setq nesting (1- nesting))))
+                         ;; Group 2: long-function end or short-function return.
+                         ;; Only "end func;" / "end proc;" changes nesting depth.
+                         ((match-beginning 2)
+                          (let ((matched-text (match-string 2)))
+                            (when (and matched-text
+                                       (string-match-p "\\`end " matched-text))
+                              (setq nesting (1+ nesting)))))
+                         ;; Group 3: forward/action declaration.
+                         ;; Not a nesting boundary; skip silently.
+                         (t nil))
+                      ;; No more matches: stop the search.
+                      (setq searching nil)))))
+              ;;
+              ;; Block B — non-nesting search for the nearest forward or action
+              ;; declaration.  These declarations cannot contain nested functions,
+              ;; so no nesting counter is needed.
+              ;;
+              (let ((fwd-pos       nil)
+                    (fwd-item-type nil)
+                    (fwd-item-name nil)
+                    (fwd-tail-type nil))
+                (save-excursion
+                  (when (seed7-re-search-backward-closest
+                         (list seed7-proc-forward-or-action-declaration-re
+                               seed7-procfunc-forward-or-action-declaration-re))
+                    (setq fwd-pos       (point)
+                          fwd-item-type
+                          (substring-no-properties
+                           (or (match-string seed7-procfunc-regexp-item-type-group) "?"))
+                          fwd-item-name
+                          (substring-no-properties
+                           (or (match-string seed7-procfunc-regexp-item-name-group) "?"))
+                          fwd-tail-type
+                          (substring-no-properties
+                           (or (match-string seed7-procfunc-regexp-tail-type-group) "?")))))
+                ;;
+                ;; Choose the candidate that is closer to the starting point,
+                ;; i.e., the one with the greater buffer position (since we
+                ;; searched backward, a higher position means it is nearer).
+                ;;
+                (cond
+                 ;; Both candidates found: keep the one closest to the start.
+                 ((and long-func-pos fwd-pos)
+                  (if (> long-func-pos fwd-pos)
+                      (setq found-pos  long-func-pos
+                            item-type  long-item-type
+                            item-name  long-item-name
+                            tail-type  long-tail-type)
+                    (setq found-pos  fwd-pos
+                          item-type  fwd-item-type
+                          item-name  fwd-item-name
+                          tail-type  fwd-tail-type)))
+                 ;; Only the long-func candidate was found.
+                 (long-func-pos
+                  (setq found-pos long-func-pos
+                        item-type long-item-type
+                        item-name long-item-name
+                        tail-type long-tail-type))
+                 ;; Only the forward/action candidate was found.
+                 (fwd-pos
+                  (setq found-pos fwd-pos
+                        item-type fwd-item-type
+                        item-name fwd-item-name
+                        tail-type fwd-tail-type)))))
+            ;;
+            ;; Advance point to the found position so that the next dotimes
+            ;; iteration starts from there (Block A and Block B each run
+            ;; under their own `save-excursion', so point must be moved
+            ;; explicitly here, inside the outer `save-excursion').
+            ;;
+            (when found-pos
+              (goto-char found-pos))))
         (if found-pos
             (let ((top-block-name (seed7-top-block-name nil original-pos)))
               (when (and top-block-name
@@ -3412,6 +3532,7 @@ Arguments:
 
 (defun seed7-end-of-defun (&optional n silent dont-push-mark)
   "Move forward to the end of the current or next function or procedure.
+
 Move inside the current if inside one, to the next if outside one.
 - With optional argument N, repeat the search that many times and succeed
   only when that many function or procedures are found.
@@ -3444,26 +3565,54 @@ Move inside the current if inside one, to the next if outside one.
                   found-pos nil)
             ;; Search for all possible function/procedure end.
             ;; - Retain the one that is closest to point.
-            ;; Search for next procedure or long function
+
+            ;; -- Search for next procedure or long function, nesting-aware. -
+            ;; Uses `seed7--inner-callables-triplets-re' to count open/close
+            ;; func/proc scopes so that a nested function does not cause an
+            ;; early stop.
+            ;;   Group 1: proc/func declaration start   → nesting depth increases
+            ;;   Group 2: proc/func end  ("end func/proc;") or short-func return
+            ;;            → only "end func/proc;" affects nesting; "return ...;"
+            ;;              belongs to an inner short function and is ignored here.
+            ;;   Group 3: action/forward declaration    → not a nesting boundary
             (save-excursion
-              (when
-                  (and
-                   (setq final-pos (seed7-re-search-forward seed7-procfunc-end-regexp)
-                         top-block-name2 (seed7-top-block-name))
-                   (when (seed7-re-search-backward seed7-procfunc-regexp)
-                     ;; [ TODO 2025-06-12, by Pierre Rouleau: when at end of
-                     ;; func that has nested func/proc, the spec extracted below
-                     ;; are the spec of the last nested func/proc NOT the spec
-                     ;; of the top one. Need a way to distinguish the 2...]
-                     (setq item-type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
-                           item-name (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
-                           tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group))
-                           top-block-name top-block-name2)
-                     t)
-                   (seed7-re-search-forward  seed7-procfunc-end-regexp)
-                   (eq (point) final-pos))
-                (setq found-candidate t)))
-            ;; Search for next short function
+              (let ((nesting 0)
+                    (searching t)
+                    matched-end-pos)
+                (while (and searching (not (eobp)))
+                  (if (seed7-re-search-forward seed7--inner-callables-triplets-re)
+                      (cond
+                       ;; Group 1: another proc/func declaration opens → go deeper.
+                       ((match-beginning 1)
+                        (setq nesting (1+ nesting)))
+                       ;; Group 2: end func/proc; or return ...;
+                       ((match-beginning 2)
+                        (let ((matched-text (match-string 2)))
+                          (when (and matched-text
+                                     (string-match-p "\\`end " matched-text))
+                            ;; It is a long-function end ("end func;" or "end proc;").
+                            (if (> nesting 0)
+                                ;; Closes a nested inner block.
+                                (setq nesting (1- nesting))
+                              ;; nesting = 0: this is the end that matches our
+                              ;; starting declaration.
+                              (setq matched-end-pos (point)
+                                    searching nil)))))
+                       ;; Group 3: action/forward declaration — not a nesting boundary.
+                       (t nil))
+                    ;; No more matches in the buffer.
+                    (setq searching nil)))
+                ;; after the loop, run the backward search and assign all metadata variables
+                (when matched-end-pos
+                  (setq top-block-name2 (seed7-top-block-name))
+                  (when (seed7-re-search-backward seed7-procfunc-regexp)
+                    (setq item-type (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                          item-name (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                          tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group))
+                          top-block-name top-block-name2
+                          final-pos matched-end-pos
+                          found-candidate t)))))
+            ;; -- Search for next short function. ----------------------------
             (save-excursion
               (when
                   (and
@@ -3484,7 +3633,7 @@ Move inside the current if inside one, to the next if outside one.
                       item-type item-type2
                       tail-type tail-type2
                       top-block-name top-block-name2)))
-            ;; Search for next forward declaration
+            ;; -- Search for next forward declaration. -----------------------
             (save-excursion
               (when
                   (and
@@ -3506,7 +3655,7 @@ Move inside the current if inside one, to the next if outside one.
                       item-type item-type2
                       tail-type tail-type2
                       top-block-name top-block-name2)))
-            ;; Search for next function implementation declaration
+            ;; -- Search for next function implementation declaration. -------
             (save-excursion
               (when
                   (and
@@ -3528,40 +3677,13 @@ Move inside the current if inside one, to the next if outside one.
                       item-type item-type2
                       tail-type tail-type2
                       top-block-name top-block-name2)))
-
-            ;; search for forward or action declaration of function or procedures
-            ;; that have a complex parameter list not detected by the previous
-            ;; searches.
-            ;; [ TODO 2025-07-17, by Pierre Rouleau: remove once other regexps are
-            ;;                    able to match all formats of parameters.
-            ;;                    This is currently not needed.]
-            ;; (save-excursion
-            ;;   (when
-            ;;       (and
-            ;;        (setq found-pos
-            ;;              (seed7-re-search-forward seed7-proc-forward-or-action-declaration-re)
-            ;;              top-block-name2 (seed7-top-block-name))
-            ;;        (when (seed7-re-search-backward seed7-procfunc-regexp)
-            ;;          (setq item-type2 (if (seed7-line-starts-with 0 "const proc") "proc" "func")
-            ;;                item-name2 "?"
-            ;;                tail-type2 "??")
-            ;;          t)
-            ;;        (seed7-re-search-forward seed7-proc-forward-or-action-declaration-re)
-            ;;        (eq (point) found-pos)
-            ;;        (or (not final-pos)
-            ;;            (< found-pos final-pos)))
-            ;;     (setq final-pos found-pos
-            ;;           found-candidate t
-            ;;           item-name item-name2
-            ;;           item-type item-type2
-            ;;           tail-type tail-type2
-            ;;           top-block-name top-block-name2)))
-
+            ;; --
             (if found-candidate
                 ;; move to the end of first function to allow next search in loop
                 (goto-char final-pos)
               ;; Nothing found in this loop.  Quit searching right away
               (user-error (seed7--no-defun-found-msg-for n 'forward)))))
+        ;; --
         (when (and top-block-name
                    (not (string= top-block-name item-name)))
           (setq item-name (format "%s %s" top-block-name item-name)))
