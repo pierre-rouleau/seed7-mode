@@ -123,6 +123,9 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 
 ** Bug Fixes
 
+- Fix navigation in nested functions with internal const proc declarations
+  like code in Seed7 lib/array.s7i reported in [[https://github.com/pierre-rouleau/seed7-mode/issues/22][bug-22]].
+
 - Fix some of the navigation across nested function and procedures, but not all.
   The new code allow proper navigation in the Seed7 =prg/chkbig.sd7= code.
   Some more fixes are required but the current code is better than the previous
@@ -130,7 +133,7 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
   regression test suite to add and activate later.
 
 - Fix *excessive indentation of sibling catch and error statements*.  Issue reported by /barankegnu/
-  in [[https://github.com/pierre-rouleau/seed7-mode/issues/79][bug-79]].
+  in [[https://github.com/pierre-rouleau/seed7-mode/issues/79][bug-79] .
 
 - Fix *seed7-line-inside-parens-pair*: was using the wrong variable for
   the line-beginning position.

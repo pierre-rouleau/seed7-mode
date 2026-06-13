@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.1634
+;; Package-Version: 20260613.1723
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-13T20:34:23+0000 W24-6"
+(defconst seed7-mode-version-timestamp "2026-06-13T21:23:36+0000 W24-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1486,7 +1486,7 @@ Match group 1")
   (concat
    "\\(?:end +"
    "\\(?:"
-   (regexp-opt '("case" "enum" "for" "func" "if" "struct" "while"))
+   (regexp-opt '("case" "enum" "for" "func" "global" "if" "struct" "while"))
    ";\\|block\\)\\)"
    "\\|\\(?:until[[:blank:]]\\)")    ; tab allowed after until and rest of logic
   "Regexp for generic end of block.")
@@ -3490,9 +3490,13 @@ Arguments:
                     (fwd-item-name nil)
                     (fwd-tail-type nil))
                 (save-excursion
-                  (when (seed7-re-search-backward-closest
-                         (list seed7-proc-forward-or-action-declaration-re
-                               seed7-procfunc-forward-or-action-declaration-re))
+                  ;; Skip this search when `long-body-only' is set: action and
+                  ;; forward declarations have no `end func;', so they can never
+                  ;; be the matching start of the `end func;' we came from.
+                  (when (and (not long-body-only)
+                             (seed7-re-search-backward-closest
+                              (list seed7-proc-forward-or-action-declaration-re
+                                    seed7-procfunc-forward-or-action-declaration-re)))
                     (setq fwd-pos       (point)
                           fwd-item-type
                           (substring-no-properties
