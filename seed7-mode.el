@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.1153
+;; Package-Version: 20260613.1214
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-13T15:53:45+0000 W24-6"
+(defconst seed7-mode-version-timestamp "2026-06-13T16:14:35+0000 W24-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3381,7 +3381,7 @@ Arguments:
               (looking-at-p seed7-procfunc-beg-of-decl-re))
             (forward-line 0))
            ((save-excursion
-              (forward-line 0)
+              (seed7-to-indent)
               (looking-at-p seed7-block-end-regexp))
             (forward-line 0))
            ((save-excursion
