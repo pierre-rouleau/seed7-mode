@@ -123,6 +123,12 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 
 ** Bug Fixes
 
+- Fix some of the navigation across nested function and procedures, but not all.
+  The new code allow proper navigation in the Seed7 =prg/chkbig.sd7= code.
+  Some more fixes are required but the current code is better than the previous
+  code.  I started accumulating regression test code to create a complete
+  regression test suite to add and activate later.
+
 - Fix *excessive indentation of sibling catch and error statements*.  Issue reported by /barankegnu/
   in [[https://github.com/pierre-rouleau/seed7-mode/issues/79][bug-79]].
 
