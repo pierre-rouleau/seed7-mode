@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.0932
+;; Package-Version: 20260613.1123
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-13T13:32:18+0000 W24-6"
+(defconst seed7-mode-version-timestamp "2026-06-13T15:23:43+0000 W24-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3305,6 +3305,43 @@ Arguments:
 ;;*** Seed7 Procedure/Function Navigation Commands
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+;; [ TODO 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
+(defconst seed7---inner-callables-1
+  ;;         (----------------)              (----------)
+  ;;                                    (--------------------)
+  ;;(-----------------------------------------------------------)
+  "\\(const \\(?:func\\|proc\\)[^;]+?is\\(?:\\(?: +func\\)?$\\)\\)"
+  "Group 1: complete text.")
+
+;; [ TODO 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
+(defconst seed7---inner-callables-2
+  ;;              (---------------)
+  ;;     (----------------------------)     (--------------)
+  ;;  (--------------------------------------------------------)
+  (format
+   "\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s+?;\\)\\)"
+   seed7--any-wp-text-re)
+  "Group 1: entire text.")
+
+
+(defconst seed7---inner-callables-4
+  "const proc: .+? is forward;")
+
+(defconst seed7--callable-return-re
+  (format "return%s+?;"
+          seed7--any-wp-text-re))
+
+(defconst seed7--inner-callables-triplets-re
+  (format
+   "^[[:blank:]]*?\\(?:%s\\|%s\\|%s\\)"
+   seed7---inner-callables-1                        ; G1
+   seed7---inner-callables-2                        ; G2
+   seed7-func-forward-or-action-declaration-nc-re)  ; G3
+  "A regexp with 3 groups:
+- group 1: function/procedure start,
+- group 2: function/procedure end,
+- group 3: action or forward function declaration.")
+
 (defun seed7-beg-of-defun (&optional n silent dont-push-mark)
   "Move backward to the beginning of the current function or procedure.
 
@@ -3769,45 +3806,6 @@ Negative N starts counting from the end of the line: -1 is the last word."
       (when (and (>= (point) line-start)
                  (<= (point) line-end))
         (thing-at-point 'word :no-properties)))))
-
-;; [ TODO 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
-(defconst seed7---inner-callables-1
-  ;;         (----------------)              (----------)
-  ;;                                    (--------------------)
-  ;;(-----------------------------------------------------------)
-  "\\(const \\(?:func\\|proc\\)[^;]+?is\\(?:\\(?: +func\\)?$\\)\\)"
-  "Group 1: complete text.")
-
-;; [ TODO 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
-(defconst seed7---inner-callables-2
-  ;;              (---------------)
-  ;;     (----------------------------)     (--------------)
-  ;;  (--------------------------------------------------------)
-  (format
-   "\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s+?;\\)\\)"
-   seed7--any-wp-text-re)
-  "Group 1: entire text.")
-
-
-(defconst seed7---inner-callables-4
-  "const proc: .+? is forward;")
-
-
-(defconst seed7--callable-return-re
-  (format "return%s+?;"
-          seed7--any-wp-text-re))
-
-(defconst seed7--inner-callables-triplets-re
-  (format
-   "^[[:blank:]]*?\\(?:%s\\|%s\\|%s\\)"
-   seed7---inner-callables-1                        ; G1
-   seed7---inner-callables-2                        ; G2
-   seed7-func-forward-or-action-declaration-nc-re)  ; G3
-  "A regexp with 3 groups:
-- group 1: function/procedure start,
-- group 2: function/procedure end,
-- group 3: action or forward function declaration.")
-
 
 ;; -- Compilation Behavior Control for forward-sexp/backward-sexp protection
 (eval-and-compile
