@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.2302
+;; Package-Version: 20260613.2334
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -529,7 +529,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-14T03:02:20+0000 W24-7"
+(defconst seed7-mode-version-timestamp "2026-06-14T03:34:46+0000 W24-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4615,7 +4615,7 @@ performs a nesting-aware backward scan using
           (let ((scan-start (point))   ; remember where this iteration begins
                 (nesting    0)
                 (searching  t))
-            (while (and searching (not (bobp)))
+             (while (and searching (not (bobp)))
               (if (seed7-re-search-backward seed7--inner-callables-triplets-re)
                   (cond
                    ;; ---- Group 1: proc/func declaration start ---------------
@@ -4717,23 +4717,99 @@ Initialized to `seed7-menu-list-functions-and-procedures-together' user-option
 value which can then be dynamically modified by the
 `seed7-toggle-menu-callable-list' command.")
 
+(defun seed7--imenu-index-for-regexp (regexp group)
+  "Scan the buffer for REGEXP and return an (name . pos) alist.
+GROUP identifies the sub-expression whose text becomes the name.
+Results are in document order."
+  (let ((items '()))
+    (save-excursion
+      (goto-char (point-min))
+      (while (seed7-re-search-forward regexp)
+        (push (cons (match-string-no-properties group)
+                    (match-beginning 0))
+              items)))
+    (nreverse items)))
+
+(defun seed7--imenu-create-index ()
+  "Build an imenu index for the current Seed7 buffer using qualified names.
+
+Non-callable entries (Enum, Interface, Struct) are listed under their own
+category sub-menu using their simple names.
+
+Callable entries (proc/func) use fully-qualified names built by
+`seed7--qualified-name-at-pos', so nested callables appear as
+\"parent:child:grand_child\" instead of just \"grand_child\".  This drives
+both imenu and Speedbar.  The flag
+`seed7--menu-list-functions-and-procedures-together' controls whether
+procedures and functions share a single \"Callable\" sub-menu or are split
+into separate \"Procedure\" / \"Function\" sub-menus."
+  (let ((procs      '())
+        (funcs      '())
+        (enums      (seed7--imenu-index-for-regexp seed7-enum-regexp-4imenu      1))
+        (interfaces (seed7--imenu-index-for-regexp seed7-interface-regexp-4imenu 1))
+        (structs    (seed7--imenu-index-for-regexp seed7-struct-regexp-4imenu    1)))
+    ;; Single pass over the buffer: collect all callable declarations.
+    (save-excursion
+      (goto-char (point-min))
+      (while (seed7-re-search-forward seed7-procfunc-regexp)
+        (let* ((decl-pos (match-beginning 0))
+               ;; Detect procedure vs. function from the declaration text.
+               ;; Procedure declarations contain "proc:" (e.g. "const proc: foo").
+               (is-proc  (string-match-p "\\bproc:" (match-string-no-properties 0)))
+               ;; Get the fully-qualified name (handles nesting).
+               (qname    (save-excursion
+                           (goto-char decl-pos)
+                           (seed7--qualified-name-at-pos))))
+          (when qname
+            (if is-proc
+                (push (cons qname decl-pos) procs)
+              (push (cons qname decl-pos) funcs))))))
+    ;; Restore document order (we pushed, so lists are reversed).
+    (setq procs (nreverse procs)
+          funcs (nreverse funcs))
+    ;; Assemble the final index alist.
+    (let ((index '()))
+      (when structs    (push (cons "Struct"    structs)    index))
+      (when interfaces (push (cons "Interface" interfaces) index))
+      (when enums      (push (cons "Enum"      enums)      index))
+      (if seed7--menu-list-functions-and-procedures-together
+          ;; Merge procs + funcs into one list, sorted by document position.
+          (let ((callables (sort (append procs funcs)
+                                 (lambda (a b) (< (cdr a) (cdr b))))))
+            (when callables
+              (push (cons "Callable" callables) index)))
+        ;; Keep them in separate sub-menus.
+        (when funcs (push (cons "Function"  funcs) index))
+        (when procs (push (cons "Procedure" procs) index)))
+      (nreverse index))))
+
 (defun seed7--setup-imenu ()
-  "Configure the way imenu lists its items."
-  (setq-local
-   imenu-generic-expression
-   (if seed7--menu-list-functions-and-procedures-together
-       (list
-        (list "Enum"      seed7-enum-regexp-4imenu 1)
-        (list "Interface" seed7-interface-regexp-4imenu 1)
-        (list "Struct"    seed7-struct-regexp-4imenu 1)
-        (list "Callable"  seed7-procfunc-regexp
-              seed7-procfunc-regexp-item-name-group))
-     (list
-      (list "Enum"      seed7-enum-regexp-4imenu 1)
-      (list "Interface" seed7-interface-regexp-4imenu 1)
-      (list "Struct"    seed7-struct-regexp-4imenu 1)
-      (list "Procedure" seed7-procedure-regexp-4imenu 1)
-      (list "Function"  seed7-function-regexp-4imenu  2)))))
+  "Configure the way imenu lists its items.
+Uses `seed7--imenu-create-index' as the index function so that nested
+callables appear with their fully-qualified \"parent:child\" names in imenu
+and in Speedbar.  The `imenu-generic-expression' mechanism is not used."
+  ;; Use our custom index builder instead of the regexp-table approach.
+  ;; imenu-create-index-function takes priority over imenu-generic-expression.
+  (setq-local imenu-create-index-function #'seed7--imenu-create-index)
+  (setq-local imenu-generic-expression    nil))
+
+;; (defun seed7--setup-imenu ()
+;;   "Configure the way imenu lists its items."
+;;   (setq-local
+;;    imenu-generic-expression
+;;    (if seed7--menu-list-functions-and-procedures-together
+;;        (list
+;;         (list "Enum"      seed7-enum-regexp-4imenu 1)
+;;         (list "Interface" seed7-interface-regexp-4imenu 1)
+;;         (list "Struct"    seed7-struct-regexp-4imenu 1)
+;;         (list "Callable"  seed7-procfunc-regexp
+;;               seed7-procfunc-regexp-item-name-group))
+;;      (list
+;;       (list "Enum"      seed7-enum-regexp-4imenu 1)
+;;       (list "Interface" seed7-interface-regexp-4imenu 1)
+;;       (list "Struct"    seed7-struct-regexp-4imenu 1)
+;;       (list "Procedure" seed7-procedure-regexp-4imenu 1)
+;;       (list "Function"  seed7-function-regexp-4imenu  2)))))
 
 
 (defun seed7--refresh-imenu ()
@@ -9388,6 +9464,14 @@ compilation requires a working installation of Seed7.
 
   ;; Seed7 iMenu Support
   (seed7--setup-imenu)
+
+  ;; Seed7 which-function-mode support
+  ;; `which-func-functions' is tried in turn; first non-nil result wins.
+  ;; `add-log-current-defun-function' drives `C-x 4 a' and ChangeLog entries.
+  (setq-local which-func-functions
+              (list #'seed7--qualified-name-at-pos))
+  (setq-local add-log-current-defun-function
+              #'seed7--qualified-name-at-pos)
 
   ;; Seed7 Comments Control
   (seed7--set-comment-style seed7-uses-block-comment)
