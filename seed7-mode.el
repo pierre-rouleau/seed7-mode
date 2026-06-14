@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.1825
+;; Package-Version: 20260613.2048
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -529,7 +529,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-13T22:25:17+0000 W24-6"
+(defconst seed7-mode-version-timestamp "2026-06-14T00:48:25+0000 W24-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4494,6 +4494,209 @@ navigation command."
            (t
             (goto-char (or (scan-sexps (point) -1)
                            (buffer-end arg)))))))))))
+
+;; ---------------------------------------------------------------------------
+;;* Nested function/procedure lineage naming
+;;  ========================================
+
+(defun seed7--pos-after-decl-header ()
+  "Return end-of-line of the `is func'/`is' terminator if point is inside or
+at the start of a multi-line callable declaration header, else return nil.
+
+When `re-search-backward' is used on a multi-line G1 pattern (see
+`seed7---inner-callables-1'), the match ends on the `... is func' or `... is'
+line.  If point lies on or before that line (but before its end), the match-end
+is AFTER point and `re-search-backward' cannot find the declaration.
+
+This helper detects that situation — including the case where point is on the
+very first line of the header (`const proc/func ...') — and returns a position
+past the terminator line so the caller can advance point before searching.
+
+Returns nil when no adjustment is needed:
+  - point is on a body/end line (`begin', `local', `end ...'), i.e. already
+    inside or past the callable body; or
+  - the current line itself ends with `is func' or `is' (single-line
+    terminator), which `re-search-backward' can already find."
+  (save-excursion
+    (forward-line 0)                    ; move to BOL
+    (cond
+     ;; Already inside or past the callable body: no adjustment needed.
+     ((looking-at-p
+       "^[[:blank:]]*\\(?:begin\\b\\|local\\b\\|end \\)")
+      nil)
+     ;; The current line IS the `is func'/`is' terminator: re-search-backward
+     ;; can find this match already.  No adjustment needed.
+     ((looking-at
+       "^[[:blank:]]*[^;]*?is\\(?: +func\\)?[[:blank:]]*$")
+      nil)
+     ;; Otherwise — whether this is the opening `const proc/func' line of a
+     ;; multi-line header or a continuation line — scan forward for the
+     ;; terminator.
+     (t
+      (let ((found nil)
+            (limit (save-excursion (forward-line 10) (point))))
+        (while (and (not found) (< (point) limit))
+          (forward-line 1)
+          (cond
+           ;; Found the `is func' / `is' terminator.
+           ((looking-at
+             "^[[:blank:]]*[^;]*?is\\(?: +func\\)?[[:blank:]]*$")
+            (setq found (line-end-position)))
+           ;; Hit a body start, a new declaration, or a complete statement
+           ;; (ends with `;'): no terminator in this direction.
+           ((or (looking-at-p
+                 (concat "^[[:blank:]]*\\(?:begin\\b\\|local\\b\\|end \\|"
+                         "const[[:blank:]]+\\(?:func\\|proc\\)\\)"))
+                (looking-at-p "^.*?;[[:blank:]]*$"))
+            (setq found 'stop))))
+        (when (numberp found) found))))))
+
+(defun seed7--callable-ancestors ()
+  "Return a list of callable names enclosing the current position.
+The list is ordered from outermost to innermost; each element is a string.
+For example, if point is inside `grand_child' which is defined inside `child',
+itself defined inside `parent', the returned list is
+  (\"parent\" \"child\" \"grand_child\")
+Returns nil when point is not inside any callable.
+
+Algorithm
+---------
+The outer while loop iterates once per nesting level.  Each iteration
+performs a nesting-aware backward scan using
+`seed7--inner-callables-triplets-re':
+
+  Group 1 — proc/func declaration start:
+    nesting = 0, long-body (`is func'): this is the enclosing callable;
+      record and stop.
+    nesting = 0, short-body (`is' only): scan forward for the matching
+      `return …;'.  If its end is AFTER the iteration's scan-start, point
+      is inside this short function — record and stop.  Otherwise point is
+      past the function (it is a preceding sibling) — skip and continue.
+    nesting > 0, long-body: a previously entered nested long-body scope has
+      been fully traversed; decrement depth and continue.
+    nesting > 0, short-body: leave depth unchanged and continue.
+
+  Group 2 — `end func;' / `end proc;' or `return …;':
+    Only text starting with `end ' increments the nesting counter.
+    Short-function return lines do not open a long-body scope.
+
+  Group 3 — forward / action declaration: not a nesting boundary; ignored."
+  (save-excursion
+    (let ((ancestors  nil)
+          (keep-going t))
+      (while keep-going
+        (let ((found-pos  nil)
+              (found-name nil))
+          ;; ------------------------------------------------------------------
+          ;; PRE-ADJUSTMENT
+          ;; If point falls inside a multi-line callable declaration header
+          ;; (e.g. on the continuation line of `const proc: for … do /
+          ;; (in proc: statements) / end for is func'), re-search-backward
+          ;; cannot find the declaration because its match ends AFTER point.
+          ;; Advance point past the header terminator so the backward scan
+          ;; can find the match.
+          ;; ------------------------------------------------------------------
+          (let ((adj (seed7--pos-after-decl-header)))
+            (when adj (goto-char adj)))
+          ;; ------------------------------------------------------------------
+          ;; NESTING-AWARE BACKWARD SCAN
+          ;; ------------------------------------------------------------------
+          (let ((scan-start (point))   ; remember where this iteration begins
+                (nesting    0)
+                (searching  t))
+            (while (and searching (not (bobp)))
+              (if (seed7-re-search-backward seed7--inner-callables-triplets-re)
+                  (cond
+                   ;; ---- Group 1: proc/func declaration start ---------------
+                   ((match-beginning 1)
+                    (let* ((match-str    (match-string-no-properties 1))
+                           (is-long-body
+                            (string-match-p
+                             "\\bis[[:blank:]]+\\(?:func\\|proc\\)[[:blank:]]*\\'"
+                             match-str)))
+                      (if (eq nesting 0)
+                          (if is-long-body
+                              ;; Long-body at nesting 0: definitely enclosing.
+                              (progn
+                                (setq searching nil)
+                                (when (looking-at seed7-procfunc-regexp)
+                                  (setq found-pos  (point)
+                                        found-name
+                                        (substring-no-properties
+                                         (or (match-string
+                                              seed7-procfunc-regexp-item-name-group)
+                                             "?")))))
+                            ;; Short-body at nesting 0: determine whether
+                            ;; scan-start is INSIDE or PAST this function.
+                            ;;
+                            ;; A short function's scope spans from its
+                            ;; declaration (`const … is$') to the end of its
+                            ;; `return …;' line.  If scan-start lies within
+                            ;; that span, point was inside this function →
+                            ;; record it.  Otherwise it is a preceding sibling
+                            ;; → skip it silently and continue scanning.
+                            (let* ((decl-pos (point))
+                                   (ret-end
+                                    (save-excursion
+                                      (goto-char decl-pos)
+                                      (seed7-re-search-forward
+                                       seed7--callable-return-re))))
+                              (if (and ret-end (> ret-end scan-start))
+                                  ;; Inside the short function: record it.
+                                  (progn
+                                    (setq searching nil)
+                                    (when (looking-at seed7-procfunc-regexp)
+                                      (setq found-pos  decl-pos
+                                            found-name
+                                            (substring-no-properties
+                                             (or (match-string
+                                                  seed7-procfunc-regexp-item-name-group)
+                                                 "?")))))
+                                ;; Past the short function: it is a sibling.
+                                ;; Point is already before decl-pos (due to
+                                ;; re-search-backward); the loop continues
+                                ;; backward automatically — no action needed.
+                                )))
+                        ;; nesting > 0: only long-body declarations have a
+                        ;; matching `end func;'.  Short-body declarations do
+                        ;; not change depth.
+                        (when is-long-body
+                          (setq nesting (1- nesting))))))
+                   ;; ---- Group 2: callable end marker ----------------------
+                   ;; Only `end func;' / `end proc;' increments nesting.
+                   ;; Short-function `return …;' lines are silently skipped.
+                   ((match-beginning 2)
+                    (let ((matched-text (match-string 2)))
+                      (when (and matched-text
+                                 (string-match-p "\\`end " matched-text))
+                        (setq nesting (1+ nesting)))))
+                   ;; ---- Group 3: forward/action declaration ---------------
+                   (t nil))
+                ;; No match found: stop the inner scan.
+                (setq searching nil))))
+          ;; ------------------------------------------------------------------
+          ;; PROCESS RESULT
+          ;; ------------------------------------------------------------------
+          (if found-pos
+              (progn
+                ;; Prepend so the final list is outermost-first.
+                (setq ancestors (cons found-name ancestors))
+                ;; Move to the found declaration to search for its own
+                ;; enclosing callable in the next iteration.
+                (goto-char found-pos))
+            (setq keep-going nil))))
+      ancestors)))
+
+
+(defun seed7--qualified-name-at-pos ()
+  "Return the fully qualified callable name enclosing point.
+Nesting levels are joined with \":\" as the separator, producing names such as
+  \"parent:child:grand_child\"
+for a procedure `grand_child' defined inside `child', itself inside `parent'.
+Returns nil when point is not inside any callable."
+  (let ((ancestors (seed7--callable-ancestors)))
+    (when ancestors
+      (string-join ancestors ":"))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 iMenu Support
