@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.2334
+;; Package-Version: 20260614.0716
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -514,6 +514,8 @@
 ;;                    ;      `compilation-num-infos-found'
 (require 'rx)         ; use: `rx-to-string'
 (require 'seq)        ; use: `seq-filter'
+(require 'which-func) ; use: `which-func-functions'
+(require 'add-log)    ; use: `add-log-current-defun-function'
 
 ;;; --------------------------------------------------------------------------
 ;;; Code:
@@ -529,7 +531,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-14T03:34:46+0000 W24-7"
+(defconst seed7-mode-version-timestamp "2026-06-14T11:16:51+0000 W24-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -9467,9 +9469,9 @@ compilation requires a working installation of Seed7.
 
   ;; Seed7 which-function-mode support
   ;; `which-func-functions' is tried in turn; first non-nil result wins.
-  ;; `add-log-current-defun-function' drives `C-x 4 a' and ChangeLog entries.
   (setq-local which-func-functions
               (list #'seed7--qualified-name-at-pos))
+  ;; `add-log-current-defun-function' drives `C-x 4 a' and ChangeLog entries.
   (setq-local add-log-current-defun-function
               #'seed7--qualified-name-at-pos)
 
