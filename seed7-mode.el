@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.2048
+;; Package-Version: 20260613.2253
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -529,7 +529,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-14T00:48:25+0000 W24-7"
+(defconst seed7-mode-version-timestamp "2026-06-14T02:53:37+0000 W24-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4533,9 +4533,8 @@ Returns nil when no adjustment is needed:
      ;; multi-line header or a continuation line — scan forward for the
      ;; terminator.
      (t
-      (let ((found nil)
-            (limit (save-excursion (forward-line 10) (point))))
-        (while (and (not found) (< (point) limit))
+      (let ((found nil))
+        (while (and (not found) (not (eobp)))
           (forward-line 1)
           (cond
            ;; Found the `is func' / `is' terminator.
@@ -4583,21 +4582,30 @@ performs a nesting-aware backward scan using
   Group 3 — forward / action declaration: not a nesting boundary; ignored."
   (save-excursion
     (let ((ancestors  nil)
-          (keep-going t))
+          (keep-going t)
+          (first-iter t))        ; track whether this is the first iteration
       (while keep-going
         (let ((found-pos  nil)
               (found-name nil))
           ;; ------------------------------------------------------------------
-          ;; PRE-ADJUSTMENT
+          ;; PRE-ADJUSTMENT (first iteration only)
           ;; If point falls inside a multi-line callable declaration header
-          ;; (e.g. on the continuation line of `const proc: for … do /
-          ;; (in proc: statements) / end for is func'), re-search-backward
-          ;; cannot find the declaration because its match ends AFTER point.
-          ;; Advance point past the header terminator so the backward scan
-          ;; can find the match.
+          ;; (e.g. on the first line `const proc: for … do', or on a
+          ;; continuation line), re-search-backward cannot find the declaration
+          ;; because its multi-line match ends AFTER point.  Advance point past
+          ;; the header terminator so the backward scan can find the match.
+          ;;
+          ;; This adjustment is applied ONLY on the first iteration.  On
+          ;; subsequent iterations point has been placed one character before
+          ;; the previously found declaration (see PROCESS RESULT below), so
+          ;; no adjustment is needed — and applying it would incorrectly
+          ;; re-advance past the same declaration, causing the loop to find
+          ;; the same callable repeatedly.
           ;; ------------------------------------------------------------------
-          (let ((adj (seed7--pos-after-decl-header)))
-            (when adj (goto-char adj)))
+          (when first-iter
+            (let ((adj (seed7--pos-after-decl-header)))
+              (when adj (goto-char adj)))
+            (setq first-iter nil))
           ;; ------------------------------------------------------------------
           ;; NESTING-AWARE BACKWARD SCAN
           ;; ------------------------------------------------------------------
@@ -4628,13 +4636,6 @@ performs a nesting-aware backward scan using
                                              "?")))))
                             ;; Short-body at nesting 0: determine whether
                             ;; scan-start is INSIDE or PAST this function.
-                            ;;
-                            ;; A short function's scope spans from its
-                            ;; declaration (`const … is$') to the end of its
-                            ;; `return …;' line.  If scan-start lies within
-                            ;; that span, point was inside this function →
-                            ;; record it.  Otherwise it is a preceding sibling
-                            ;; → skip it silently and continue scanning.
                             (let* ((decl-pos (point))
                                    (ret-end
                                     (save-excursion
@@ -4652,10 +4653,8 @@ performs a nesting-aware backward scan using
                                              (or (match-string
                                                   seed7-procfunc-regexp-item-name-group)
                                                  "?")))))
-                                ;; Past the short function: it is a sibling.
-                                ;; Point is already before decl-pos (due to
-                                ;; re-search-backward); the loop continues
-                                ;; backward automatically — no action needed.
+                                ;; Past the short function: it is a sibling —
+                                ;; continue scanning backward.
                                 )))
                         ;; nesting > 0: only long-body declarations have a
                         ;; matching `end func;'.  Short-body declarations do
@@ -4663,8 +4662,6 @@ performs a nesting-aware backward scan using
                         (when is-long-body
                           (setq nesting (1- nesting))))))
                    ;; ---- Group 2: callable end marker ----------------------
-                   ;; Only `end func;' / `end proc;' increments nesting.
-                   ;; Short-function `return …;' lines are silently skipped.
                    ((match-beginning 2)
                     (let ((matched-text (match-string 2)))
                       (when (and matched-text
@@ -4681,12 +4678,17 @@ performs a nesting-aware backward scan using
               (progn
                 ;; Prepend so the final list is outermost-first.
                 (setq ancestors (cons found-name ancestors))
-                ;; Move to the found declaration to search for its own
-                ;; enclosing callable in the next iteration.
-                (goto-char found-pos))
+                ;; Move to ONE CHARACTER BEFORE the found declaration's BOL.
+                ;; This places point at EOL of the preceding line, ensuring
+                ;; the next iteration's backward scan searches for what
+                ;; ENCLOSES the just-found callable — not the callable itself.
+                ;;
+                ;; Using `found-pos' directly (BOL of the declaration) would
+                ;; cause `seed7--pos-after-decl-header' to forward-scan past
+                ;; the same declaration again and re-find the same callable.
+                (goto-char (max (point-min) (1- found-pos))))
             (setq keep-going nil))))
       ancestors)))
-
 
 (defun seed7--qualified-name-at-pos ()
   "Return the fully qualified callable name enclosing point.
