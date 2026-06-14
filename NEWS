@@ -53,6 +53,17 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 
 ** Improvements
 
+- *Add support for which-function-mode* showing the name of Seed7 function or procedure
+  located at point inside the mode-line.
+
+- *Add support for Changelog* with ~C-x 4 a~; it creates a log entry with the
+  current Seed7 function or procedure name.
+
+- *Show nested function/procedure lineage names* in iMenu and Speedbar and all
+  tools using those (such as ivy).  The Seed7 language does not have a
+  notation for nested function/procedures;  seed7-mode uses one colon to
+  separate the parent from the child as in =array:times=.
+
 - Regular expressions used to detect keywords and used in navigation now
   allow hard tabs as whitespace following keywords.
   Hard tabs are not encouraged; Seed7 recommends spaces.  They are tolerated
