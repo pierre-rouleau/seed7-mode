@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260613.2253
+;; Package-Version: 20260613.2302
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -529,7 +529,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-14T02:53:37+0000 W24-7"
+(defconst seed7-mode-version-timestamp "2026-06-14T03:02:20+0000 W24-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4524,11 +4524,14 @@ Returns nil when no adjustment is needed:
      ((looking-at-p
        "^[[:blank:]]*\\(?:begin\\b\\|local\\b\\|end \\)")
       nil)
-     ;; The current line IS the `is func'/`is' terminator: re-search-backward
-     ;; can find this match already.  No adjustment needed.
+     ;; The current line IS the `is func'/`is' terminator.  Returning
+     ;; line-end-position ensures the backward scan can always find the
+     ;; declaration, regardless of where on the line point sits.
+     ;; (Only when point is exactly at line-end-position is re-search-backward
+     ;; already able to find the match; for any earlier position it cannot.)
      ((looking-at
        "^[[:blank:]]*[^;]*?is\\(?: +func\\)?[[:blank:]]*$")
-      nil)
+      (line-end-position))
      ;; Otherwise — whether this is the opening `const proc/func' line of a
      ;; multi-line header or a continuation line — scan forward for the
      ;; terminator.
