@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260614.0716
+;; Package-Version: 20260614.0743
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -531,7 +531,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-14T11:16:51+0000 W24-7"
+(defconst seed7-mode-version-timestamp "2026-06-14T11:43:18+0000 W24-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4755,17 +4755,26 @@ into separate \"Procedure\" / \"Function\" sub-menus."
       (goto-char (point-min))
       (while (seed7-re-search-forward seed7-procfunc-regexp)
         (let* ((decl-pos (match-beginning 0))
-               ;; Detect procedure vs. function from the declaration text.
-               ;; Procedure declarations contain "proc:" (e.g. "const proc: foo").
-               (is-proc  (string-match-p "\\bproc:" (match-string-no-properties 0)))
+               (bare-name (match-string-no-properties
+                           seed7-procfunc-regexp-item-name-group))
+               (item-type (match-string-no-properties
+                           seed7-procfunc-regexp-item-type-group))
+               (is-proc   (string= item-type "proc"))
                ;; Get the fully-qualified name (handles nesting).
                (qname    (save-excursion
                            (goto-char decl-pos)
-                           (seed7--qualified-name-at-pos))))
-          (when qname
-            (if is-proc
-                (push (cons qname decl-pos) procs)
-              (push (cons qname decl-pos) funcs))))))
+                           (seed7--qualified-name-at-pos)))
+               (menu-name
+                (cond
+                 ((not qname) bare-name)
+                 ((or (string= qname bare-name)
+                      (string-suffix-p (concat ":" bare-name) qname))
+                  qname)
+                 (t
+                  (concat qname ":" bare-name)))))
+          (if is-proc
+              (push (cons menu-name decl-pos) procs)
+            (push (cons menu-name decl-pos) funcs)))))
     ;; Restore document order (we pushed, so lists are reversed).
     (setq procs (nreverse procs)
           funcs (nreverse funcs))
@@ -4794,25 +4803,6 @@ and in Speedbar.  The `imenu-generic-expression' mechanism is not used."
   ;; imenu-create-index-function takes priority over imenu-generic-expression.
   (setq-local imenu-create-index-function #'seed7--imenu-create-index)
   (setq-local imenu-generic-expression    nil))
-
-;; (defun seed7--setup-imenu ()
-;;   "Configure the way imenu lists its items."
-;;   (setq-local
-;;    imenu-generic-expression
-;;    (if seed7--menu-list-functions-and-procedures-together
-;;        (list
-;;         (list "Enum"      seed7-enum-regexp-4imenu 1)
-;;         (list "Interface" seed7-interface-regexp-4imenu 1)
-;;         (list "Struct"    seed7-struct-regexp-4imenu 1)
-;;         (list "Callable"  seed7-procfunc-regexp
-;;               seed7-procfunc-regexp-item-name-group))
-;;      (list
-;;       (list "Enum"      seed7-enum-regexp-4imenu 1)
-;;       (list "Interface" seed7-interface-regexp-4imenu 1)
-;;       (list "Struct"    seed7-struct-regexp-4imenu 1)
-;;       (list "Procedure" seed7-procedure-regexp-4imenu 1)
-;;       (list "Function"  seed7-function-regexp-4imenu  2)))))
-
 
 (defun seed7--refresh-imenu ()
   "Force re-display of the imenu."
