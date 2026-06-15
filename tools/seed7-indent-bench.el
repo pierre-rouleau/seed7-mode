@@ -2,7 +2,7 @@
 
 ;; Created   : ...
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-14 19:29:21 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-15 12:21:31 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -62,6 +62,36 @@
 ;;; --------------------------------------------------------------------------
 ;;; Dependencies:
 ;;
+;; Note: this file is *not* located in Emacs load-path on purpose: it's
+;;       a tool meant only for special tests.  Therefore, to allow
+;;       compilation interactively the following special code is required
+;;       to explicitly make it accessible.
+;;
+;; Allow byte-compiling this file from an interactive Emacs session
+;; (e.g. M-x byte-compile-file) without needing the directories to be
+;; pre-configured in `load-path'.
+;;
+;; Variable availability by context:
+;;   `load-file-name'           – set when a file is loaded via `load'/`require'
+;;   `byte-compile-current-file'– set by the byte compiler during batch/interactive
+;;                                byte compilation (the missing case in the previous fix)
+;;   `buffer-file-name'         – fallback for an interactively visited buffer
+;;
+;; The `when this-file' guard makes the block a safe no-op if none of the
+;; three variables is bound (should not happen in practice, but defensive).
+(eval-and-compile
+  (let* ((this-file (or load-file-name
+                        (and (boundp 'byte-compile-current-file)
+                             (stringp byte-compile-current-file)
+                             byte-compile-current-file)
+                        buffer-file-name)))
+    (when this-file
+      (let* ((tools-dir (file-name-directory (expand-file-name this-file)))
+             (root-dir  (expand-file-name ".." tools-dir)))
+        (dolist (dir (list root-dir tools-dir))
+          (unless (member dir load-path)
+            (push dir load-path)))))))
+
 (require 'seed7-mode)
 (require 'seed7-mode-time)
 
@@ -108,12 +138,14 @@ Use this interactively or call it from `seed7-indent-bench-files'."
   (interactive "fSeed7 file to benchmark: ")
   (message "")
   (message "=== seed7-indent-bench: %s ===" (abbreviate-file-name filename))
-  (let ((buf (find-file-noselect filename)))
-    (with-current-buffer buf
-      (seed7-indent-bench-buffer)
-      (save-buffer))
-    (kill-buffer buf)))
-
+  (let* ((existing-buf (get-file-buffer filename))
+         (buf (or existing-buf (find-file-noselect filename))))
+    (unwind-protect
+        (with-current-buffer buf
+          (seed7-indent-bench-buffer)
+          (save-buffer))
+      (unless existing-buf
+        (kill-buffer buf)))))
 
 (defun seed7-indent-bench-files (files)
   "Benchmark re-indentation for each file path in the list FILES.
