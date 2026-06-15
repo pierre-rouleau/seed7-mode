@@ -6,7 +6,7 @@ Development Notes
 :Project:  Major Mode for Seed7 Programming Language
 :Created:  Wednesday, June  3 2026.
 :Author:  Pierre Rouleau <prouleau001@gmail.com>
-:Modified: 2026-06-03 11:51:57 EDT, updated by Pierre Rouleau.
+:Modified: 2026-06-14 10:53:10 EDT, updated by Pierre Rouleau.
 :Copyright: © 2026, Pierre Rouleau
 
 
@@ -30,10 +30,30 @@ seed7-calc-indent in prg/chkbig.sd7
 = ======================================== ===============================================================================
 . Commit                                   Stats
 = ======================================== ===============================================================================
-. bdd10d74b8ae7ccc3e1d26ec827ade13a129d67e ``10 calls  | total=1.6654s  | mean=166.5363ms | min=0.0079ms   | max=338.4309ms``
-.                                          ``86 calls  | total=16.3318s | mean=189.9041ms | min=0.0060ms   | max=1176.1169ms``
+                                           - ``98 calls | total=17.1135s | mean=174.6272ms | min=0.0069ms | max=355.4420ms``
 
-. Without the unless white line check      ``106 calls | total=36.9454s | mean=348.5413ms | min=303.5409ms | max=1175.5240ms``
+20 calls | total=3.7039s | mean=185.1946ms | min=22.1660ms | max=359.1101ms ; just using the syntax-ppss based function
+20 calls | total=3.7033s | mean=185.1636ms | min=21.8410ms | max=351.4032ms
+20 calls | total=3.7104s | mean=185.5190ms | min=21.9941ms | max=354.1939ms
+
+
+.                                          - `` 2 calls | total=0.4014s | mean=200.6860ms | min=22.7189ms | max=378.6530ms``
+.                                          - ``2 calls | total=0.3702s | mean=185.1056ms | min=22.3110ms | max=347.9002ms``
+
+
+. chkbig.sd7m line 28952, cntd-expr        - ``4 calls   | total=1.3421s  | mean=335.5125ms | min=319.8740ms | max=350.6861ms``
+.                                          - ``96 calls  | total=16.6991s | mean=173.9492ms | min=0.0060ms   | max=354.1200ms``
+
+. 0fcef8e1dfcd090229851f1f2e01eadca23b633e - ``104 calls | total=17.9628s | mean=172.7193ms | min=0.0050ms   | max=652.3530ms``
+.                                          - ``104 calls | total=17.7002s | mean=170.1944ms | min=0.0048ms   | max=909.0631ms``
+. - Sat Jun 6 15:24:47 2026 -04006         - ``98 calls  | total=15.2658s | mean=155.7736ms | min=0.0048ms   | max=336.2381ms``
+. - last: after (garbage-collect)          - ``98 calls  | total=15.6253s | mean=159.4416ms | min=0.0048ms   | max=359.7620ms``
+. chkbig.sd7m line 28952, cntd-expr        - ``6 calls   | total=1.1086s  | mean=184.7749ms | min=21.8940ms  | max=350.6000ms``
+
+. bdd10d74b8ae7ccc3e1d26ec827ade13a129d67e - ``10 calls  | total=1.6654s  | mean=166.5363ms | min=0.0079ms   | max=338.4309ms``
+                                           - ``86 calls  | total=16.3318s | mean=189.9041ms | min=0.0060ms   | max=1176.1169ms``
+
+. Without the unless white line check      - ``106 calls | total=36.9454s | mean=348.5413ms | min=303.5409ms | max=1175.5240ms``
 = ======================================== ===============================================================================
 
 

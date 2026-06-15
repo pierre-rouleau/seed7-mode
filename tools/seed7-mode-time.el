@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, June  3 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-03 11:39:22 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-08 16:34:58 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -71,6 +71,7 @@
 ;;; Dependencies:
 ;;
 ;;
+(require 'seed7-mode)
 (require 'cl-lib)   ; use: `cl-incf'
 
 ;;; --------------------------------------------------------------------------

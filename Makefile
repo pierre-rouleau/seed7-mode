@@ -5,12 +5,15 @@
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
 
 # ----------------------------------------------------------------------------
-# Module Description
-# ------------------
+# Description
+# -----------
 #
 # Controls byte and native compilation of all Emacs Lisp files used by the
-# Seed7 support.  The build only succeeds when all compilations succeed with
-# no error and no warning.
+# Seed7 support: seed7-mode.  The build only succeeds when all compilations
+# succeed with no error and no warning.
+#
+# Used on GitHub CI build workflows to validate the code on multiple
+# Emacs versions running on Linux, macOS and Windows.
 
 # ----------------------------------------------------------------------------
 # Dependencies
@@ -20,11 +23,18 @@
 
 
 # ----------------------------------------------------------------------------
-# Code
-# ----
+# Technical Details - Make syntax notes
+# -------------------------------------
 #
+# Macros
+# - all macro names are in uppercase
+#   - Operator used:
+#   -  =   Recursive assignment, re-evaluated on each use: if has other
+#          expansions these are done on each expansion and may therefore
+#          change if the content of a variable used in the expression changes.
+#   -  :=  Single time assignment.  Fixed, never changes.
+#   -  ?=  Set variable only if it does not already have a value.
 #
-
 # ----------------------------------------------------------------------------
 # Portable makefile
 .POSIX:
@@ -42,7 +52,21 @@ EMACS ?= emacs
 #    make EMACS=emacs-24.3 pel test
 
 # ----------------------------------------------------------------------------
-# Define abilities of Emacs - native compilation.
+# Detect OS platform
+# ------------------
+# On Windows $(OS) is always set to 'Windows_NT' (cmd.exe, PowerShell, Git Bash).
+# On POSIX systems (Linux, macOS) $(OS) is unset or not 'Windows_NT'.
+ifeq ($(OS),Windows_NT)
+    ERT_TEST_CMD = powershell -NoProfile -ExecutionPolicy Bypass -File bin\ert-test.ps1
+    ERT_TEST_DEP = bin/ert-test.ps1
+else
+    ERT_TEST_CMD = bin/ert-test
+    ERT_TEST_DEP = bin/ert-test
+endif
+
+# ----------------------------------------------------------------------------
+# Define Emacs capabilities - native compilation
+# ----------------------------------------------
 
 EMACS_NATIVE_COMP_AVAILABLE := $(shell $(EMACS) --batch --eval '(when \
                                                                   (and (fboundp (quote native-comp-available-p)) \
@@ -50,15 +74,99 @@ EMACS_NATIVE_COMP_AVAILABLE := $(shell $(EMACS) --batch --eval '(when \
                                                                     (princ "yes"))')
 
 # -----------------------------------------------------------------------------
-# Identify the files used in the package.
+# Identify Directories
+# --------------------
 
+# SRC_DIR   : where all .el file are stored
+SRC_DIR := .
+
+# DEST_ERL_TEST_DIR : the directory where ERL-based test source code files located.
+DEST_ERL_TEST_DIR    := $(DEST_DIR)/tests/erl-tests
+
+# -----------------------------------------------------------------------------
+# Identify package files
+# ----------------------
+
+# - Emacs Lisp package files
+#   - source
 EL_FILES := seed7-mode.el
-
-# ELC_FILES used for this project.
+#   - byte compiled
 ELC_FILES := $(subst .el,.elc,$(EL_FILES))
 
 # ----------------------------------------------------------------------------
-# RULES:  to byte-compile the Emacs-Lisp source code files
+# Building Emacs Lisp Tools
+# -------------------------
+#
+# The repository provide a set of tools to help development of the seed7-mode
+# package.
+#
+# Two files live under tools/ and have their own dependency chain:
+#
+#   seed7-mode.elc
+#       └── tools/seed7-mode-time.elc
+#               └── tools/seed7-indent-bench.elc
+#
+# Both tools/ files need the root directory on the load-path (-L .) so they
+# can (require 'seed7-mode), and the tools/ directory itself (-L tools) so
+# they can (require 'seed7-mode-time).
+
+TOOLS_EL_FILES  := tools/seed7-mode-time.el \
+                   tools/seed7-indent-bench.el
+TOOLS_ELC_FILES := $(subst .el,.elc,$(TOOLS_EL_FILES))
+
+
+# ----------------------------------------------------------------------------
+# RULE - Default rule: compile seed7-mode
+# ----------------------------------------
+#
+# byte compile and native compile if supported by Emacs.
+
+.PHONY:	compile
+compile: seed7-mode.elc
+
+# ----------------------------------------------------------------------------
+# RULE - compile-tools: compile development tools
+# ------------------------------------------------
+
+.PHONY: compile-tools
+compile-tools: $(TOOLS_ELC_FILES)
+
+# ----------------------------------------------------------------------------
+# RULE - all: build all files; seed7-mode and all tools.
+# ------------------------------------------------------
+
+.PHONY:	all
+all: compile compile-tools
+
+# ----------------------------------------------------------------------------
+# RULE - clean: remove all generated byte-code and native-code files.
+# --------------------------------------------------------------------
+
+.PHONY: clean
+clean:
+	rm -f $(ELC_FILES) $(TOOLS_ELC_FILES)
+	@# Remove native-compiled .eln files if any exist.
+	@find . -name '*.eln' -delete 2>/dev/null || true
+
+# -----------------------------------------------------------------------------
+# RULE - help: Self-descriptive rule
+# ----------------------------------
+
+.PHONY: help
+help:
+	@printf "\nBuild seed7-mode.\n"
+	@printf "Usage:\n"
+	@printf " * make               - Same as 'make compile'.\n"
+	@printf " * make compile       - Byte/native compile seed7-mode.el.\n"
+	@printf " * make compile-tools - Byte/native compile tools programs.\n"
+	@printf " * make all           - Byte/native compile seed7-mode and tools programs.\n"
+	@printf " * make clean         - Remove all generated files.\n"
+
+# ----------------------------------------------------------------------------
+# RULE - how to compile the Emacs-Lisp source code files - package files
+# -----------------------------------------------------------------------
+#
+# Byte compile the file and native compile it if Emacs supports it.
 
 # Single .el file byte-compile to .elc rule
 .SUFFIXES: .el .elc
@@ -72,10 +180,102 @@ else
 	$(EMACS) -Q --batch -L . --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile $<
 endif
 
+# ----------------------------------------------------------------------------
+# RULE - how to compile the Emacs-Lisp source code files - tools files
+# ---------------------------------------------------------------------
+# Explicit compile rules for the tools files.
+# Suffix rules (.el.elc) do not cross directory boundaries, so explicit rules
+# are used here.
+
+ifeq ($(EMACS_NATIVE_COMP_AVAILABLE), yes)
+
+tools/seed7-mode-time.elc: tools/seed7-mode-time.el \
+                           seed7-mode.elc
+	$(EMACS) -Q --batch -L . -L tools --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile $<
+	$(EMACS) -Q --batch -L . -L tools --eval '(setq byte-compile-error-on-warn t)' -f batch-native-compile $<
+
+tools/seed7-indent-bench.elc: tools/seed7-indent-bench.el \
+                              seed7-mode.elc \
+                              tools/seed7-mode-time.elc
+	$(EMACS) -Q --batch -L . -L tools --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile $<
+	$(EMACS) -Q --batch -L . -L tools --eval '(setq byte-compile-error-on-warn t)' -f batch-native-compile $<
+
+else
+
+tools/seed7-mode-time.elc: tools/seed7-mode-time.el \
+                           seed7-mode.elc
+	$(EMACS) -Q --batch -L . -L tools --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile $<
+
+tools/seed7-indent-bench.elc: tools/seed7-indent-bench.el \
+                              seed7-mode.elc \
+                              tools/seed7-mode-time.elc
+	$(EMACS) -Q --batch -L . -L tools --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile $<
+
+endif
 
 # ----------------------------------------------------------------------------
-# Targets
+# Indentation benchmark targets
+#
+# Run the re-indentation timing benchmark on every .sd7 and .s7i file found
+# inside SEED7_BENCH_DIR.
+#
+# SEED7_BENCH_DIR defaults to the standard seed7 library directory but can be
+# overridden on the command line:
+#
+#   make bench                                  # use the default directory
+#   make bench SEED7_BENCH_DIR=/path/to/files   # use a custom directory
+#
+# For each file the benchmark prints one timing-report line:
+#
+#   seed7-calc-indent: N calls | total=Xs | mean=Xms | min=Xms | max=Xms
+#
+# The file is re-saved after benchmarking; a diff of the file before and
+# after the run is a good correctness check (content should be identical).
+#
+# Targets:
+#   bench-check   verify SEED7_BENCH_DIR contains at least one matching file
+#   bench         run the benchmark on all .sd7 and .s7i files
 
-all: $(ELC_FILES)
+# Directory that contains the .sd7 / .s7i files to benchmark.
+# Typical locations:
+#   - /usr/local/lib/seed7      (system-wide installation)
+#   - $(HOME)/seed7/lib         (per-user installation)
+
+
+# Indentation benchmark targets
+#
+# Run the re-indentation timing benchmark on every .sd7 and .s7i file found
+# inside SEED7_BENCH_DIR.
+#
+# SEED7_BENCH_DIR defaults to the standard seed7 library directory but can be
+# overridden on the command line:
+#
+#   make bench                                  # use the default directory
+#   make bench SEED7_BENCH_DIR=/path/to/files   # use a custom directory
+#
+# Targets:
+#   bench-check   verify SEED7_BENCH_DIR contains at least one matching file
+#   bench         run the benchmark on all .sd7 and .s7i files
+
+# Directory that contains the .sd7 / .s7i files to benchmark.
+SEED7_BENCH_DIR ?= /usr/local/lib/seed7
+
+.PHONY: bench bench-check
+
+bench-check:
+	@files=$$(ls $(SEED7_BENCH_DIR)/*.sd7 $(SEED7_BENCH_DIR)/*.s7i 2>/dev/null); \
+	 if [ -z "$$files" ]; then \
+	     echo "ERROR: no .sd7 or .s7i files found in: $(SEED7_BENCH_DIR)"; \
+	     echo "       Override with: make bench SEED7_BENCH_DIR=/your/path"; \
+	     exit 1; \
+	 fi
+
+bench: bench-check
+	$(EMACS) -Q --batch \
+	    -L . \
+	    -l seed7-mode.el \
+	    -l tools/seed7-mode-time.el \
+	    -l tools/seed7-indent-bench.el \
+	    -- $(SEED7_BENCH_DIR)/*.sd7 $(SEED7_BENCH_DIR)/*.s7i
 
 # ----------------------------------------------------------------------------
