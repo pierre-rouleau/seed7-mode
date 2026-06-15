@@ -2,12 +2,12 @@
 
 ;; Created   : Friday, July 11 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-14 10:25:50 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-05-27 22:26:27 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
 
-;; Copyright (C) 2025  Pierre Rouleau
+;; Copyright (C) 2025, 2026  Pierre Rouleau
 ;;
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -32,9 +32,47 @@
 ;;
 ;; This uses PEL ERT support.
 ;;  See: https://github.com/pierre-rouleau/pel/blob/master/pel-ert.el
-(require 'pel-ert)
 (require 'ert)
 (require 'seed7-mode)
+
+;; ---------------------------------------------------------------------------
+;; Copy of pel-eq.el from my PEL project
+
+(defun pel-eq (v1 v2 &rest _)
+  "Return t when value V1 and V2 are eq, nil otherwise.
+Ignore all other arguments that are placed passed for the sole
+purpose of showing their values in the ert report when the test fails."
+  (eq v1 v2))
+
+(defun pel-equal (v1 v2 &rest _)
+  "Return t when value V1 and V2 are equal, nil otherwise.
+Ignore all other arguments that are placed passed for the sole
+purpose of showing their values in the ert report when the test fails."
+  (equal v1 v2))
+
+(defun pel-string= (s1 s2 &rest _)
+  "Return t when string S1 and S2 are equal, nil otherwise.
+Ignore all other arguments that are placed passed for the sole
+purpose of showing their values in the ert report when the test fails."
+  (string= s1 s2))
+
+(defun pel-neq (v1 v2 &rest _)
+  "Return t when value V1 and V2 are not eq, nil otherwise.
+Ignore all other arguments that are placed passed for the sole
+purpose of showing their values in the ert report when the test fails."
+  (not (eq v1 v2)))
+
+(defun pel-nequal (v1 v2 &rest _)
+  "Return t when value V1 and V2 are not equal, nil otherwise.
+Ignore all other arguments that are placed passed for the sole
+purpose of showing their values in the ert report when the test fails."
+  (not (equal v1 v2)))
+
+(defun pel-string!= (s1 s2 &rest _)
+  "Return t when string S1 and S2 are not equal, nil otherwise.
+Ignore all other arguments that are placed passed for the sole
+purpose of showing their values in the ert report when the test fails."
+  (not (string= s1 s2)))
 
 ;;; --------------------------------------------------------------------------
 ;;; Code:
