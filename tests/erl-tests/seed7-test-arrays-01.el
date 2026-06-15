@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, July 11 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-05-27 22:26:27 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-15 11:59:24 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -30,13 +30,13 @@
 ;;; --------------------------------------------------------------------------
 ;;; Dependencies:
 ;;
-;; This uses PEL ERT support.
-;;  See: https://github.com/pierre-rouleau/pel/blob/master/pel-ert.el
+
 (require 'ert)
 (require 'seed7-mode)
 
 ;; ---------------------------------------------------------------------------
 ;; Copy of pel-eq.el from my PEL project
+;;  See: https://github.com/pierre-rouleau/pel/blob/master/pel-ert.el
 
 (defun pel-eq (v1 v2 &rest _)
   "Return t when value V1 and V2 are eq, nil otherwise.
