@@ -111,19 +111,19 @@ not all.
 
 See the following example screenshots:
 
-=========================== ================================================
-Screenshot                  Description
-=========================== ================================================
-`Terminal-mode Emacs`_      Shows the default highlighting of Seed7 code on
-                            Emacs running in a macOS Terminal.
+============================= ================================================
+Screenshot                    Description
+============================= ================================================
+`Terminal-mode Emacs`_        Shows the default highlighting of Seed7 code on
+                              Emacs running in a macOS Terminal.
 
-`Graphical Emacs`_          Shows the default highlighting of Seed7 code on
-                            a basic GUI Emacs running in a macOS with the
-                            default scheme.
+`Graphical Emacs`_            Shows the default highlighting of Seed7 code on
+                              a basic GUI Emacs running in a macOS with the
+                              default scheme.
 
-`Graphics Emacs dark mode`_ Graphics Emacs in dark mode using modus-vivendi
-                            theme.
-=========================== ================================================
+`Graphical Emacs dark mode`_  Graphical Emacs in dark mode using modus-vivendi
+                              theme.
+============================= ================================================
 
 Emacs outline minor mode support
 --------------------------------
@@ -1355,7 +1355,7 @@ Any help, questions, suggestions are welcome!
 .. _Comments menu:                   screenshots/menu-comments.png
 .. _Template insertion menu:         screenshots/menu-insert.png
 .. _Align commands menu:             screenshots/menu-align.png
-.. _Graphics Emacs dark mode:        screenshots/dark-modus-vivendi-theme.png
+.. _Graphical Emacs dark mode:       screenshots/dark-modus-vivendi-theme.png
 .. _Emacs xref framework:                       https://www.gnu.org/software/emacs/manual/html_node/emacs/Xref.html
 .. _Emacs imenu mode:                           https://www.gnu.org/software/emacs/manual/html_node/elisp/Imenu.html
 .. _Emacs Speedbar:                             https://www.gnu.org/software/emacs/manual/html_node/speedbar/
