@@ -105,6 +105,16 @@ Screenshot                    Description
 ============================= ================================================
 `Seed7 Syntax Test`_          Shows the Seed7 syntax check file rendered by
                               seed7-mode on Emacs running in terminal mode.
+                              Everything renders properly.  Spelling errors
+                              inside comments and strings are highlighted with
+                              ``flyspec-incorect`` face and Syntax errors are
+                              rendered with
+                              ``font-lock-warning-face``.
+                              seed7-mode provides a different face for
+                              integers, big-integers and floats. Seed7
+                              identifiers are highlighted with a different
+                              face than Seed7 reserved keywords.
+
 
 `Terminal-mode Emacs`_        Shows the default highlighting of Seed7 code on
                               Emacs running in a macOS Terminal.
