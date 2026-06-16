@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260615.2310
+;; Package-Version: 20260616.1102
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -165,7 +165,6 @@
 ;; [ TODO 2025-04-06, by Pierre Rouleau: Fix following problems:
 ;;  Known problems and improvements:
 ;;  # 01  Problem: Complete defface definitions:
-;;        - Complete the dark backgrounds coloring.
 ;;        - Maybe add ability to reduce number of faces used (or re-use the
 ;;          same face for various elements).  It would allow dual use: one
 ;;          with lots of different renderings and another with not that many,
@@ -531,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-16T03:10:06+0000 W25-2"
+(defconst seed7-mode-version-timestamp "2026-06-16T15:02:21+0000 W25-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
