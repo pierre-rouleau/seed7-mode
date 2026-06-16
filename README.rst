@@ -103,6 +103,9 @@ See the following example screenshots:
 ============================= ================================================
 Screenshot                    Description
 ============================= ================================================
+`Seed7 Syntax Test`_          Shows the Seed7 syntax check file rendered by
+                              seed7-mode on Emacs running in terminal mode.
+
 `Terminal-mode Emacs`_        Shows the default highlighting of Seed7 code on
                               Emacs running in a macOS Terminal.
 
@@ -1348,6 +1351,7 @@ Any help, questions, suggestions are welcome!
 .. _Template insertion menu:         screenshots/menu-insert.png
 .. _Align commands menu:             screenshots/menu-align.png
 .. _Graphical Emacs dark mode:       screenshots/dark-modus-vivendi-theme.png
+.. _Seed7 Syntax Test:               screenshots/syntaxhl.png
 .. _Emacs xref framework:                       https://www.gnu.org/software/emacs/manual/html_node/emacs/Xref.html
 .. _Emacs imenu mode:                           https://www.gnu.org/software/emacs/manual/html_node/elisp/Imenu.html
 .. _Emacs Speedbar:                             https://www.gnu.org/software/emacs/manual/html_node/speedbar/
