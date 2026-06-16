@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260614.0743
+;; Package-Version: 20260615.2011
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -531,7 +531,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-14T11:43:18+0000 W24-7"
+(defconst seed7-mode-version-timestamp "2026-06-16T00:11:29+0000 W25-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2197,10 +2197,25 @@ Allows selecting similar colors for various systems."
       (setq list (cdr list)))
     answer))
 
-(defvar seed7-dark-background
-  (seed7-choose-color "navy" "os2blue" "darkgreen"))
-(defvar seed7-dark-foreground
-  (seed7-choose-color "orchid1" "orange"))
+(defcustom seed7-dark-background
+  'unspecified
+  "Background color for Seed7 faces when Emacs uses a dark background display.
+
+The default value `unspecified' lets faces inherit the background from the
+user's active theme, which is the modern Emacs convention and works correctly
+with popular dark themes (Modus Vivendi, Doom, Solarized Dark, etc.).
+
+Set this to a color name string (e.g. \"navy\") if you prefer an explicit
+background stripe behind Seed7 syntax elements.
+
+You may also use the following in youe Emacs init file if you want to use
+the original seed7-mode logic:
+(setopt seed7-dark-background
+             (seed7-choose-color \"navy\" \"os2blue\" darkgreen\"))"
+  :group 'seed7-faces
+  :type '(choice (const  :tag "Inherit from theme (recommended)" unspecified)
+                 (color  :tag "Explicit background color")))
+
 
 ;;** Seed7 Faces Customization
 
@@ -2430,7 +2445,7 @@ Allows selecting similar colors for various systems."
     (((class color) (background light))
      (:foreground "black"  :weight bold))
     (((class color) (background dark))
-     (:foreground "black" :background ,seed7-dark-background
+     (:foreground "gray80" :background ,seed7-dark-background
                   :weight bold))
 
     (t (:weight bold)))
