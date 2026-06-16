@@ -29,7 +29,7 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 
 **Highlights**
 
-- Extensive and precise syntax highlighting for light and dark themes
+- `Seed7`_ extensive and precise syntax highlighting for light and dark themes
 - Context-aware indentation
 - Context-aware navigation
 - Cross-reference integration with xref support that uses a Seed7 code
@@ -41,31 +41,19 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 - Static analysis, compilation and execution of Seed7 programs
 - Seed7 top-level menu
 
-There are some areas that need improvements or fixes, mainly for the
-complete support of .s7i files.
-Please create a bug report for any problem you detect.
+**Installation**
 
-   **Note:**
-   While the seed7-mode code is a stand-alone major mode and can be
-   installed on plain-vanilla Emacs as described in the installation section
-   titled `How To Install seed7-mode with plain vanilla Emacs`_,
-   another of my projects, the `PEL project`_ supports several Emacs
-   extensions that can be useful when programming in `Seed7`_ and simplifies
-   installation and upgrades (see sections `How to install and use seed7-mode
-   with PEL`_ and `How to Update Seed7-Mode with PEL`_).
+- This package is not on MELPA yet but is easy to install from the repository
+  as you need only one file: seed7-mode.el
+- To install manually, see: `How To Install seed7-mode with plain vanilla
+  Emacs`_.
+- To install with use-package, see `How To Install with use-package_.
+- To update seed7-mode, see `How To update seed7-mode`_.
+- If you use the `PEL project`_, see:
 
-   - PEL also provides a large set of specialized information PDFs.
-   - The `PEL Seed7 PDF`_ provides more information.  This document also
-     provides links to other relevant `PEL PDFs`_.
-     PEL is absolutely not required to use seed7-mode.
-     PEL just provides some useful information and commands that complement
-     what Emacs provides and what seed7-mode can provide while staying
-     independent from PEL (and it is).
-   - These PEL PDF files are best viewed with a browser that can render them
-     online (instead of downloading each one separately) because these PDF
-     files hold a large number of hyperlinks to Emacs documentation, package
-     and project website pages.
-
+  - `How to install and use seed7-mode with PEL`_
+  - `How to Update Seed7-Mode with PEL`_).
+  - See the `PEL Seed7 PDF`_ for extra PEL-specific key bindings for `Seed7`_.
 
 Currently Implemented Features
 ==============================
@@ -1276,20 +1264,22 @@ You can do it by adding the following code to your Emacs init file:
 
 .. ---------------------------------------------------------------------------
 
-How To update seed7-mode in plain Emacs
----------------------------------------
+How To update seed7-mode
+------------------------
 
-To update to a later revision,
+To update to a later revision, once you have synchronized your repository with
+the latest version, do the following with a shell:
 
-- Erase the following files from the utils directory where you stored them:
+- Change the directory to the root of the seed7-mode repository.
+- If you have GNU Make available:
 
-  - seed7-mode.el
-  - seed7-mode.elc
-  - s7xref.sd7
+  - Type: ``make``
+  - This byte-compiles seed7-mode.el and also native-compiles it if your
+    Emacs supports native compilation.  It also compiles tools.
 
-- Download the new revision of the same files, and store them in the same
-  directories they previously were located.
-- Byte-compile the new ``seed7-mode.el`` file as described in the previous section.
+- The new version of ``s7xref.sd7`` is available in the tools directory.
+
+  - If you use the compiled version, compile it with s7c.
 
 .. ---------------------------------------------------------------------------
 
