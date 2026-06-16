@@ -29,13 +29,15 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 
 **Highlights**
 
-- Extensive and precise syntax highlighting
+- Extensive and precise syntax highlighting for light and dark themes
 - Context-aware indentation
 - Context-aware navigation
-- Cross-reference integration with xref support that uses a Seed7 code analyzer back-end
+- Cross-reference integration with xref support that uses a Seed7 code
+  analyzer back-end
+- Explicit outline-minor-mode support
 - Intelligent template and keyword expansion
 - Context-aware marking
-- Deep integration with iMenu and Speedbar
+- Deep integration with iMenu and Speedbar with nested callable lineage
 - Static analysis, compilation and execution of Seed7 programs
 - Seed7 top-level menu
 
@@ -118,6 +120,9 @@ Screenshot                  Description
 `Graphical Emacs`_          Shows the default highlighting of Seed7 code on
                             a basic GUI Emacs running in a macOS with the
                             default scheme.
+
+`Graphics Emacs dark mode`_ Graphics Emacs in dark mode using modus-vivendi
+                            theme.
 =========================== ================================================
 
 Emacs outline minor mode support
@@ -1350,6 +1355,7 @@ Any help, questions, suggestions are welcome!
 .. _Comments menu:                   screenshots/menu-comments.png
 .. _Template insertion menu:         screenshots/menu-insert.png
 .. _Align commands menu:             screenshots/menu-align.png
+.. _Graphics Emacs dark mode:        screenshots/dark-modus-vivendi-theme.png
 .. _Emacs xref framework:                       https://www.gnu.org/software/emacs/manual/html_node/emacs/Xref.html
 .. _Emacs imenu mode:                           https://www.gnu.org/software/emacs/manual/html_node/elisp/Imenu.html
 .. _Emacs Speedbar:                             https://www.gnu.org/software/emacs/manual/html_node/speedbar/
