@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260616.1102
+;; Package-Version: 20260616.1424
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-16T15:02:21+0000 W25-2"
+(defconst seed7-mode-version-timestamp "2026-06-16T18:24:16+0000 W25-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -903,13 +903,21 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
 ;;
 ;; Ref: https://seed7.sourceforge.net/manual/tokens.htm#BigInteger_literals
 ;;
-(defconst seed7-big-number-re
+(defvaralias 'seed7-big-number-re 'seed7-big-integer-re)
+(make-obsolete-variable 'seed7-big-number-re 'seed7-big-integer-re
+                        "2026-06-16")
+
+(defconst seed7-big-integer-re
   "\\(\\(?:\\(?:\\([2-9]\\|1[0-9]\\|2[0-9]\\|3[0-6]\\)#\\)?[0-9]+_\\)\\)"
   ;; 1            2
   ;; Group 1: Complete Big Number with or without base. "1_" or "1234322_" or "2#0001_", etc...
   ;; Group 2: base: "2" to "36".  nil if no base.
-  "Big number with/without base.  Group 1: number, group 2: base or nil.")
+  "Big number with/without base.  Group 1: number, group 2: base or nil.
+The old name, seed7-big-number-re remains available until then end of 2026.
+Please update your code to use the new name before this deadline.")
 
+;; Backward compatibility for renamed big-integer symbols.
+;; Keep old names working for external user configs/extensions.
 
 ;;*** Seed7 Integer Literals
 ;;
@@ -963,9 +971,10 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
                   "(?:"
                   "")))
 
-(defconst seed7-base-x-big-number-re (format seed7--base-x-integer-re-format
-                                             "(\\(?:"
-                                             "_\\)[^#0-9a-zA-Z]"))
+(defconst seed7-base-x-big-integer-re (format seed7--base-x-integer-re-format
+                                              "(\\(?:"
+                                              "_\\)[^#0-9a-zA-Z]")
+  "Seed7 big integer regular expression.")
 
 ;;** Seed7 Pragmas
 ;;   -------------
@@ -2413,7 +2422,11 @@ background stripe behind Seed7 syntax elements."
   "Font Lock mode face that highlights integer values."
   :group 'seed7-faces)
 
-(defface seed7-number-face
+
+(define-obsolete-face-alias 'seed7-number-face 'seed7-big-integer-face
+                             "2026-06-16")
+
+(defface seed7-big-integer-face
   `((((class grayscale) (background light))
      (:background "Gray90" :weight bold))
     (((class grayscale) (background dark))
@@ -2426,7 +2439,9 @@ background stripe behind Seed7 syntax elements."
                   :weight bold))
 
     (t (:weight bold)))
-  "Font Lock mode face that highlights number values."
+  "Font Lock mode face that highlights number values.
+The old name, seed7-number-face, remains available until the end of 2026.
+Please update your code to use the new name before this deadline."
   :group 'seed7-faces)
 
 ;; --
@@ -2498,7 +2513,7 @@ background stripe behind Seed7 syntax elements."
    (cons seed7-float-number-re                       (list 0 ''seed7-float-face))
    ;; numbers: order is significant : base-x numbers use '#' and can have a 'e'
    ;; therefore , those must be checked before numbers with exponent (that can also use a 'e')
-   (cons seed7-base-x-big-number-re                  (list 1 ''seed7-number-face))
+   (cons seed7-base-x-big-integer-re                 (list 1 ''seed7-big-integer-face))
    (cons seed7-base-x-integer-re                     (list 1 ''seed7-integer-face))
    (cons seed7-number-with-negative-exponent-re      (list 0 ''font-lock-warning-face))
    (cons seed7-number-with-exponent-re               (list 0 ''seed7-integer-face))
@@ -2524,12 +2539,12 @@ background stripe behind Seed7 syntax elements."
    (cons seed7--invalid-char-literal-re              (list 1 ''font-lock-warning-face))
 
    ;; identifiers: include the underscore (must be done before
-   ;; seed7-big-number-re to prevent something like 'f10_fct' from being
+   ;; seed7-big-integer-re to prevent something like 'f10_fct' from being
    ;; rendered as a partial number.)
    (cons seed7-name-identifier-re                    (list 1 ''seed7-name-identifier-face))
 
    ;; big numbers: have an underscore
-   (cons seed7-big-number-re                         (list 1 ''seed7-number-face))
+   (cons seed7-big-integer-re                         (list 1 ''seed7-big-integer-face))
 
    ;; other numbers
    (cons seed7-integer-re                            (list 1 ''seed7-integer-face))
@@ -8801,7 +8816,7 @@ Return a list of 4-element lists, where each 4-element list has:
       (user-error "This is a string: no reference available"))
      ((memq point-face '(seed7-float-face
                          seed7-integer-face
-                         seed7-number-face))
+                         seed7-big-integer-face))
       (user-error "This is a number: no reference available!"))
 
      ;; For identifiers, look in local block first, then in the s7xref built
