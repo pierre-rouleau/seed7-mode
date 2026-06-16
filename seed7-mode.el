@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260616.1211
+;; Package-Version: 20260616.1424
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-16T16:11:37+0000 W25-2"
+(defconst seed7-mode-version-timestamp "2026-06-16T18:24:16+0000 W25-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -903,13 +903,21 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
 ;;
 ;; Ref: https://seed7.sourceforge.net/manual/tokens.htm#BigInteger_literals
 ;;
+(defvaralias 'seed7-big-number-re 'seed7-big-integer-re)
+(make-obsolete-variable 'seed7-big-number-re 'seed7-big-integer-re
+                        "2026-06-16")
+
 (defconst seed7-big-integer-re
   "\\(\\(?:\\(?:\\([2-9]\\|1[0-9]\\|2[0-9]\\|3[0-6]\\)#\\)?[0-9]+_\\)\\)"
   ;; 1            2
   ;; Group 1: Complete Big Number with or without base. "1_" or "1234322_" or "2#0001_", etc...
   ;; Group 2: base: "2" to "36".  nil if no base.
-  "Big number with/without base.  Group 1: number, group 2: base or nil.")
+  "Big number with/without base.  Group 1: number, group 2: base or nil.
+The old name, seed7-big-number-re remains available until then end of 2026.
+Please update your code to use the new name before this deadline.")
 
+;; Backward compatibility for renamed big-integer symbols.
+;; Keep old names working for external user configs/extensions.
 
 ;;*** Seed7 Integer Literals
 ;;
@@ -965,7 +973,8 @@ These are known by the Seed7 compiler and interpreter and run at compile time.")
 
 (defconst seed7-base-x-big-integer-re (format seed7--base-x-integer-re-format
                                               "(\\(?:"
-                                              "_\\)[^#0-9a-zA-Z]"))
+                                              "_\\)[^#0-9a-zA-Z]")
+  "Seed7 big integer regular expression.")
 
 ;;** Seed7 Pragmas
 ;;   -------------
@@ -2413,6 +2422,10 @@ background stripe behind Seed7 syntax elements."
   "Font Lock mode face that highlights integer values."
   :group 'seed7-faces)
 
+
+(define-obsolete-face-alias 'seed7-number-face 'seed7-big-integer-face
+                             "2026-06-16")
+
 (defface seed7-big-integer-face
   `((((class grayscale) (background light))
      (:background "Gray90" :weight bold))
@@ -2426,7 +2439,9 @@ background stripe behind Seed7 syntax elements."
                   :weight bold))
 
     (t (:weight bold)))
-  "Font Lock mode face that highlights number values."
+  "Font Lock mode face that highlights number values.
+The old name, seed7-number-face, remains available until the end of 2026.
+Please update your code to use the new name before this deadline."
   :group 'seed7-faces)
 
 ;; --
