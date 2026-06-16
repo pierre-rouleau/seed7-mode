@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260616.1424
+;; Package-Version: 20260616.1535
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-16T18:24:16+0000 W25-2"
+(defconst seed7-mode-version-timestamp "2026-06-16T19:35:52+0000 W25-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1335,7 +1335,7 @@ Please update your code to use the new name before this deadline.")
     "IN_ERROR"))
 
 ;; Note: the < > are important to prevent detection of words inside other words.
-(defconst seed7-errinfo-values-regexp
+(defconst `seed7-errinfo-values-regexp
   (format "%s\\(%s\\)%s"
           "\\<"
           (rx-to-string
@@ -2460,22 +2460,6 @@ Please update your code to use the new name before this deadline."
     (t (:weight bold)))
   "Font Lock mode face that highlights identifiers."
   :group 'seed7-faces)
-
-;; (defface seed7-spec-name-identifier-face
-;;   `((((class grayscale) (background light))
-;;      (:background "Gray90" :weight bold))
-;;     (((class grayscale) (background dark))
-;;      (:foreground "Gray80" :weight bold))
-;;
-;;     (((class color) (background light))
-;;      (:foreground "blue3"  :weight bold))
-;;     (((class color) (background dark))
-;;      (:foreground "blue3" :background ,seed7-dark-background
-;;                   :weight bold))
-;;
-;;     (t (:weight bold)))
-;;   "Font Lock mode face that highlights errinfo values."
-;;   :group 'seed7-faces)
 
 ;;* Seed7 Font Locking Control
 ;;  ==========================
