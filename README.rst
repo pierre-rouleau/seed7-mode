@@ -74,7 +74,7 @@ Customize seed7-mode
 --------------------
 
 Several features of the ``seed7-mode`` are customizable.
-Use the ``seed7-mode-customize`` command, bound to ``C-c C`` to quickly open the
+Use the ``seed7-mode-customize`` command, bound to ``C-c <f3>`` to quickly open the
 ``seed7-mode`` customization buffer.
 
 The command is also accessible from the top menu as can be seen
@@ -107,7 +107,7 @@ Screenshot                    Description
                               seed7-mode on Emacs running in terminal mode.
                               Everything renders properly.  Spelling errors
                               inside comments and strings are highlighted with
-                              ``flyspec-incorect`` face and Syntax errors are
+                              ``flyspec-incorrect`` face and Syntax errors are
                               rendered with
                               ``font-lock-warning-face``.
                               seed7-mode provides a different face for
@@ -263,6 +263,14 @@ Screenshot                  Description
                             Seed7 element.
                             Shown inside a terminal Emacs.
 =========================== ================================================
+
+
+By default Seed7 functions and procedures are listed together bu imenu,
+Speedbar and other facilities, like Ido and Ivy, that list entries.
+If  the ``seed7-menu-list-functions-and-procedures-together`` customize
+user-option is nil they are listed separately.  You can also execute the
+**seed-toggle-menu-callable-list** command, bound to ``C-c %`` to toggle the
+behaviour in the current session.
 
 
 Indentation Control / Automatic Indentation
