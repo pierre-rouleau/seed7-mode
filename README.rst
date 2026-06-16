@@ -29,17 +29,17 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 
 **Highlights**
 
-- `Seed7`_ extensive and precise syntax highlighting for light and dark themes
-- Context-aware indentation
-- Context-aware navigation
+- `Seed7`_ extensive and precise syntax highlighting for light and dark themes.
+- Context-aware indentation.
+- Context-aware navigation.
 - Cross-reference integration with xref support that uses a Seed7 code
-  analyzer back-end
-- Explicit outline-minor-mode support
-- Intelligent template and keyword expansion
-- Context-aware marking
-- Deep integration with iMenu and Speedbar with nested callable lineage
-- Static analysis, compilation and execution of Seed7 programs
-- Seed7 top-level menu
+  analyzer back-end - you must have Seed7 installed to use it.
+- Explicit outline-minor-mode support.
+- Intelligent template and keyword expansion.
+- Context-aware marking.
+- Deep integration with iMenu and Speedbar with nested callable lineage.
+- Static analysis, compilation and execution of Seed7 programs.
+- Seed7 top-level menu.
 
 **Installation**
 
