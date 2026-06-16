@@ -44,10 +44,11 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 **Installation**
 
 - This package is not on MELPA yet but is easy to install from the repository
-  as you need only one file: seed7-mode.el
+  as you need only one file, `seed7-mode.el`_, and that file must be placed
+  inside a directory that is identified in your Emacs ``load-path``.
 - To install manually, see: `How To Install seed7-mode with plain vanilla
   Emacs`_.
-- To install with use-package, see `How To Install with use-package_.
+- To install with use-package, see `How To Install with use-package`_.
 - To update seed7-mode, see `How To update seed7-mode`_.
 - If you use the `PEL project`_, see:
 
@@ -55,8 +56,8 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
   - `How to Update Seed7-Mode with PEL`_).
   - See the `PEL Seed7 PDF`_ for extra PEL-specific key bindings for `Seed7`_.
 
-Currently Implemented Features
-==============================
+Seed7 Support Features
+======================
 
 
 Display seed7-mode version information
@@ -1331,6 +1332,7 @@ Any help, questions, suggestions are welcome!
 .. links
 
 
+.. _seed7-mode.el:                   seed7-mode.el
 .. _Terminal-mode Emacs:             screenshots/terminal-example-01.png
 .. _Graphical Emacs:                 screenshots/graphic-light-example-01.png
 .. _Terminal Emacs Speedbar:         screenshots/terminal-seed7-speedbar-01.png
