@@ -79,6 +79,8 @@ jobs:
           emacs --version
 
       - name: Install Emacs (macOS)
+        # Install the latest version available.
+        # It's OK, other files test on specific versions of Emacs.
         if: runner.os == 'macOS'
         run: |
           brew install emacs
