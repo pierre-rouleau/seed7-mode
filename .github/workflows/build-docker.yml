@@ -51,6 +51,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     container:
       image: silex/emacs:${{ matrix.emacs_version }}
     strategy:

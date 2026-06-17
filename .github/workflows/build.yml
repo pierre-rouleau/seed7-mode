@@ -3,7 +3,7 @@
 # Purpose   : Automated build control.
 # Created   : Wednesday, May 27 2026.
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
-# Time-stamp: <2026-05-28 14:05:21 EDT, updated by Pierre Rouleau>
+# Time-stamp: <2026-06-17 11:45:30 EDT, updated by Pierre Rouleau>
 # ----------------------------------------------------------------------------
 # Module Description
 # ------------------
@@ -60,6 +60,7 @@ jobs:
     env:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
       matrix:
         include:
@@ -100,6 +101,7 @@ jobs:
 
       - name: Setup Emacs
         uses: purcell/setup-emacs@master
+        timeout-minutes: 8
         with:
           version: ${{ matrix.emacs_version }}
 
