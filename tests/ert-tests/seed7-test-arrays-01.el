@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, July 11 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-15 11:59:24 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-17 11:09:03 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -30,49 +30,30 @@
 ;;; --------------------------------------------------------------------------
 ;;; Dependencies:
 ;;
+;; Allow byte-compiling and loading this file from an interactive Emacs session
+;; or in batch mode without needing `tests/ert-tests/' to be pre-configured in
+;; `load-path'.
+;;
+;; Variable availability by context:
+;;   `load-file-name'            – set when a file is loaded via `load'/`require'
+;;                                 (i.e. via the -l flag in batch mode)
+;;   `byte-compile-current-file' – set by the byte compiler during batch/interactive
+;;                                 byte compilation
+;;   `buffer-file-name'          – fallback for an interactively visited buffer
+(eval-and-compile
+  (let* ((this-file (or load-file-name
+                        (and (boundp 'byte-compile-current-file)
+                             (stringp byte-compile-current-file)
+                             byte-compile-current-file)
+                        buffer-file-name)))
+    (when this-file
+      (let* ((ert-tests-dir (file-name-directory (expand-file-name this-file))))
+        (unless (member ert-tests-dir load-path)
+          (push ert-tests-dir load-path))))))
 
 (require 'ert)
 (require 'seed7-mode)
-
-;; ---------------------------------------------------------------------------
-;; Copy of pel-eq.el from my PEL project
-;;  See: https://github.com/pierre-rouleau/pel/blob/master/pel-ert.el
-
-(defun pel-eq (v1 v2 &rest _)
-  "Return t when value V1 and V2 are eq, nil otherwise.
-Ignore all other arguments that are placed passed for the sole
-purpose of showing their values in the ert report when the test fails."
-  (eq v1 v2))
-
-(defun pel-equal (v1 v2 &rest _)
-  "Return t when value V1 and V2 are equal, nil otherwise.
-Ignore all other arguments that are placed passed for the sole
-purpose of showing their values in the ert report when the test fails."
-  (equal v1 v2))
-
-(defun pel-string= (s1 s2 &rest _)
-  "Return t when string S1 and S2 are equal, nil otherwise.
-Ignore all other arguments that are placed passed for the sole
-purpose of showing their values in the ert report when the test fails."
-  (string= s1 s2))
-
-(defun pel-neq (v1 v2 &rest _)
-  "Return t when value V1 and V2 are not eq, nil otherwise.
-Ignore all other arguments that are placed passed for the sole
-purpose of showing their values in the ert report when the test fails."
-  (not (eq v1 v2)))
-
-(defun pel-nequal (v1 v2 &rest _)
-  "Return t when value V1 and V2 are not equal, nil otherwise.
-Ignore all other arguments that are placed passed for the sole
-purpose of showing their values in the ert report when the test fails."
-  (not (equal v1 v2)))
-
-(defun pel-string!= (s1 s2 &rest _)
-  "Return t when string S1 and S2 are not equal, nil otherwise.
-Ignore all other arguments that are placed passed for the sole
-purpose of showing their values in the ert report when the test fails."
-  (not (string= s1 s2)))
+(require 'pel-ert)
 
 ;;; --------------------------------------------------------------------------
 ;;; Code:
@@ -84,9 +65,9 @@ purpose of showing their values in the ert report when the test fails."
                                           (directory-file-name
                                            (file-name-directory
                                             (directory-file-name
-                                             (buffer-file-name))))))
-  ;; That directory is the peer of the directory holing this emacs lisp file.
-  ;; The current file is in          : seed7-mode/tests/erl-tests
+                                             (or load-file-name buffer-file-name))))))
+  ;; That directory is the peer of the directory holding this emacs lisp file.
+  ;; The current file is in          : seed7-mode/tests/ert-tests
   ;; The Seed7 test code files are in: seed7-mode/tests/seed7-code
   "Absolute path of the directory that holds the Seed7 test code files.")
 

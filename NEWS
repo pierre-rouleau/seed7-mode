@@ -53,6 +53,11 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 
 ** Improvements
 
+- *ERT-based test code*: add regression tests automatically executed
+  under GitHub CI on all supported Emacs versions and platforms.
+  The test coverage is small but will expand over time.
+  Execution of tests is controlled by the GNU make file.
+
 - *Add support for which-function-mode* showing the name of Seed7 function or procedure
   located at point inside the mode-line.
 
@@ -129,7 +134,7 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
   the global match data on return corresponds to the regexp search that
   found the closest element.
 
-- =s7xref= tool: command-line help (=--help=) and argument validation
+- *s7xref tool**: command-line help (=--help=) and argument validation
   added.
 
 ** Bug Fixes

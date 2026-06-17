@@ -1,6 +1,9 @@
 # Identifies files to be ignored by Git.
 # Also used by fd|fdfind  to identify directories and files to ignore
 
+# Optional local Emacs control
+\.dir-local.el
+
 # Compiled
 *.elc
 
@@ -36,5 +39,12 @@ old/*
 
 # Local html rendering of reStructuredText or markdown files
 *.html
+
+# Test passed tag files
+*.test-passed
+
+# Generated s7xref executable
+tools/s7xref
+
 
 # ----------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 
 ;; Created   : Saturday, June 13 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-13 12:51:10 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-17 10:49:27 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -66,7 +66,7 @@
 ;; To run from the command line use:
 ;;
 ;;      emacs --batch -l seed7-mode.el \
-;;            -l tests/erl-tests/seed7-test-nav-nested-01.el \
+;;            -l tests/ert-tests/seed7-test-nav-nested-01.el \
 ;;            -f ert-run-tests-batch-and-exit
 
 ;;; --------------------------------------------------------------------------
