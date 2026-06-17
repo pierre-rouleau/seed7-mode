@@ -66,7 +66,7 @@ S7C ?= s7c
 # On POSIX systems (Linux, macOS) $(OS) is unset or not 'Windows_NT'.
 
 ifeq ($(OS),Windows_NT)
-    ERT_TEST_CMD = powershell -NoProfile -ExecutionPolicy Bypass -File bin\ert-test.ps1
+    ERT_TEST_CMD = powershell -NoProfile -ExecutionPolicy Bypass -File tools\ert-test.ps1
     ERT_TEST_DEP = tools/ert-test.ps1
 else
     ERT_TEST_CMD = tools/ert-test
@@ -110,7 +110,7 @@ ELC_FILES := $(subst .el,.elc,$(EL_FILES))
 # - All test files are located inside the tests/erl-tests sub-directory
 #   and have a name that matches: seed7-test-*.el.
 # - All ERT tests are performed by the tools/ert-test script.
-# - When a test passes, bin/ert-test creates a file that has the same name
+# - When a test passes, tools/ert-test creates a file that has the same name
 #   as the file with the .test-passed suffix added to the file name.
 # - Those files are used as markers for make and prevent re-execution of
 #   the tests that have already passed.
@@ -208,7 +208,7 @@ help:
 	@printf " * make main         - Byte/native compile seed7-mode.el.\n"
 	@printf " * make tools        - Byte/native compile tools programs.\n"
 	@printf " * make test         - Compile and run ERT-based tests.\n"
-	@printf " * make clean        - Remove all generated files (ncluding test passed tags).\n"
+	@printf " * make clean        - Remove all generated files, including test passed tags.\n"
 	@printf " * make clean-test   - Remove test passed tags to force test next time.\n"
 	@printf " * make check-seed7  - Check availabily of Seed7 compiler.\n"
 
@@ -286,7 +286,7 @@ test:	$(ALL_TEST_PASSED)
 
 # The rm -f option prevents complaints from rm when the file is not present.
 clean-test:
-	-rm -f tests/el-tests/*.test-passed
+	-rm -f tests/erl-tests/*.test-passed
 
 # ----------------------------------------------------------------------------
 # RULE - check if Seed7 is installed by checking if s7c is accessible
