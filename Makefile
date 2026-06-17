@@ -89,8 +89,8 @@ EMACS_NATIVE_COMP_AVAILABLE := $(shell $(EMACS) --batch --eval '(when \
 # SRC_DIR   : where all .el file are stored
 SRC_DIR := .
 
-# DEST_ERL_TEST_DIR : the directory where ERL-based test source code files located.
-DEST_ERL_TEST_DIR    := $(DEST_DIR)/tests/erl-tests
+# DEST_ERT_TEST_DIR : the directory where ERT-based test source code files located.
+DEST_ERT_TEST_DIR    := $(DEST_DIR)/tests/ert-tests
 
 # -----------------------------------------------------------------------------
 # Identify package files
@@ -107,7 +107,7 @@ ELC_FILES := $(subst .el,.elc,$(EL_FILES))
 # ---------------------------------
 
 # Emacs Regression Test files use ERT.
-# - All test files are located inside the tests/erl-tests sub-directory
+# - All test files are located inside the tests/ert-tests sub-directory
 #   and have a name that matches: seed7-test-*.el.
 # - All ERT tests are performed by the tools/ert-test script.
 # - When a test passes, tools/ert-test creates a file that has the same name
@@ -115,12 +115,12 @@ ELC_FILES := $(subst .el,.elc,$(EL_FILES))
 # - Those files are used as markers for make and prevent re-execution of
 #   the tests that have already passed.
 
-# ALL_TEST_FILES := $(wildcard tests/erl-tests/seed7-test-*.el)
-ALL_TEST_FILES := tests/erl-tests/seed7-test-nav-array-01.el \
-    tests/erl-tests/seed7-test-nav-nested-01.el
+# ALL_TEST_FILES := $(wildcard tests/ert-tests/seed7-test-*.el)
+ALL_TEST_FILES := tests/ert-tests/seed7-test-nav-array-01.el \
+    tests/ert-tests/seed7-test-nav-nested-01.el
 
-# tests/erl-tests/seed7-test-sets-01.el
-# tests/erl-tests/seed7-test-arrays-01.el
+# tests/ert-tests/seed7-test-sets-01.el
+# tests/ert-tests/seed7-test-arrays-01.el
 
 ALL_TEST_PASSED := $(ALL_TEST_FILES:.el=.el.test-passed)
 
@@ -268,16 +268,16 @@ endif
 # ----------------------
 
 
-tests/erl-tests/seed7-test-arrays-01.el.test-passed:        seed7-mode.elc tests/erl-tests/seed7-test-arrays-01.elc
-tests/erl-tests/seed7-test-nav-array-01.el.test-passed:     seed7-mode.elc tests/erl-tests/seed7-test-nav-array-01.elc
-tests/erl-tests/seed7-test-nav-nested-01.el.test-passed:    seed7-mode.elc tests/erl-tests/seed7-test-nav-nested-01.elc
-tests/erl-tests/seed7-test-sets-01.el.test-passed:          seed7-mode.elc tests/erl-tests/seed7-test-sets-01.elc
+tests/ert-tests/seed7-test-arrays-01.el.test-passed:        seed7-mode.elc tests/ert-tests/seed7-test-arrays-01.elc
+tests/ert-tests/seed7-test-nav-array-01.el.test-passed:     seed7-mode.elc tests/ert-tests/seed7-test-nav-array-01.elc
+tests/ert-tests/seed7-test-nav-nested-01.el.test-passed:    seed7-mode.elc tests/ert-tests/seed7-test-nav-nested-01.elc
+tests/ert-tests/seed7-test-sets-01.el.test-passed:          seed7-mode.elc tests/ert-tests/seed7-test-sets-01.elc
 
 # ----------------------------------------------------------------------------
 # RULE- execute ERT tests
 
 #  Pattern Rule: How to create a .el.test-passed file from a .el file
-tests/erl-tests/seed7-test-%.el.test-passed: tests/erl-tests/seed7-test-%.el $(ERT_TEST_DEP)
+tests/ert-tests/seed7-test-%.el.test-passed: tests/ert-tests/seed7-test-%.el $(ERT_TEST_DEP)
 	$(ERT_TEST_CMD) $<
 
 .PHONY:	test clean-test
@@ -286,7 +286,7 @@ test:	$(ALL_TEST_PASSED)
 
 # The rm -f option prevents complaints from rm when the file is not present.
 clean-test:
-	-rm -f tests/erl-tests/*.test-passed
+	-rm -f tests/ert-tests/*.test-passed
 
 # ----------------------------------------------------------------------------
 # RULE - check if Seed7 is installed by checking if s7c is accessible
