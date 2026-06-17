@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260616.1554
+;; Package-Version: 20260617.1630
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -530,7 +530,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-16T19:54:21+0000 W25-2"
+(defconst seed7-mode-version-timestamp "2026-06-17T20:30:06+0000 W25-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6529,6 +6529,73 @@ N is: - :previous-non-empty for the previous non-empty line,
               (when (eq endline-pos endline-pos-2)
                 previous-defun-column)))))))))
 
+;; ---------------------------------------------------------------------------
+;;** Gradual Block Selection Support for expand-region
+;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(defun seed7-er-mark-enclosing-block ()
+  "Mark the innermost Seed7 block strictly enclosing the current region.
+If the region already covers a block, mark the next outer (parent) block.
+Intended for use with the `expand-region' library.
+
+This provides block-by-block expansion between line selection and full
+defun (function/procedure) selection."
+  (let* ((orig-beg (if (use-region-p) (region-beginning) (point)))
+         (orig-end (if (use-region-p) (region-end) (point)))
+         (found nil))
+    ;; Search outward until we find a block strictly larger than the region.
+    (save-excursion
+      (goto-char orig-beg)
+      (let ((done nil))
+        (while (not done)
+          (let ((info (seed7-line-inside-a-block 0)))
+            (if info
+                (let ((blk-beg (nth 2 info))
+                      (blk-end (nth 3 info)))
+                  (cond
+                   ;; Found a block strictly larger: use it.
+                   ((and blk-beg blk-end
+                         (or (< blk-beg orig-beg)
+                             (> blk-end orig-end)))
+                    (setq found (cons blk-beg blk-end)
+                          done t))
+                   ;; Block matches the region exactly (or is smaller):
+                   ;; step above its start line to find the parent.
+                   ((and blk-beg (> blk-beg (point-min)))
+                    (goto-char blk-beg)
+                    (forward-line -1))
+                   ;; At buffer top with no larger block found.
+                   (t (setq done t))))
+              ;; seed7-line-inside-a-block returned nil: no block found.
+              (setq done t))))))
+    ;; Apply region only when a strictly larger block was found.
+    (when found
+      (goto-char (car found))
+      (set-mark (cdr found)))))
+
+(defun seed7--setup-expand-region ()
+  "Insert `seed7-er-mark-enclosing-block' into `er/try-expand-list'.
+Places block expansion just before `er/mark-defun' so that expand-region
+cycles: word → symbol → line → [block …] → defun."
+  (when (boundp 'er/try-expand-list)
+    (make-local-variable 'er/try-expand-list)
+    (let ((pos (cl-position 'er/mark-defun er/try-expand-list)))
+      (if pos
+          ;; Insert before er/mark-defun
+          (setq er/try-expand-list
+                (append (cl-subseq er/try-expand-list 0 pos)
+                        '(seed7-er-mark-enclosing-block)
+                        (cl-subseq er/try-expand-list pos)))
+        ;; Fallback: append at the end
+        (setq er/try-expand-list
+              (append er/try-expand-list
+                      '(seed7-er-mark-enclosing-block)))))))
+
+;; Register when expand-region is available.
+(with-eval-after-load 'expand-region
+  (add-hook 'seed7-mode-hook #'seed7--setup-expand-region))
+
+;; ---------------------------------------------------------------------------
 ;;** Seed7 Indentation Comment Checking Function
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
