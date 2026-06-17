@@ -87,7 +87,7 @@
 ;; To run from the command line:
 ;;
 ;;   emacs --batch -l seed7-mode.el \
-;;         -l tests/erl-tests/seed7-test-nav-array-01.el \
+;;         -l tests/ert-tests/seed7-test-nav-array-01.el \
 ;;         -f ert-run-tests-batch-and-exit
 
 ;;; --------------------------------------------------------------------------

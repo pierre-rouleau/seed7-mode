@@ -1,6 +1,6 @@
 # PS1 FILE: ert-test.ps1
 #
-# Purpose   : Run an Ert test  (Windows PowerShell equivalent of bin/ert-test)
+# Purpose   : Run an Ert test  (Windows PowerShell equivalent of tools/ert-test)
 # Created   : Wednesday, February 25 2026.
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
 # ----------------------------------------------------------------------------
@@ -9,7 +9,7 @@
 #
 # Run an Ert test file specified on the command line argument.
 # Activate the maximum level of back-trace capability.
-# Windows PowerShell equivalent of the POSIX bin/ert-test shell script.
+# Windows PowerShell equivalent of the POSIX tools/ert-test shell script.
 #
 # Usage: ert-test.ps1  TEST-FILE  [EMACS-BIN]
 #        ert-test.ps1  -h | --help

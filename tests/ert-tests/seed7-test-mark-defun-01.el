@@ -2,7 +2,7 @@
 
 ;; Created   : Sunday, July 20 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-17 10:20:20 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-17 10:50:58 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -85,8 +85,8 @@ purpose of showing their values in the ert report when the test fails."
                                            (file-name-directory
                                             (directory-file-name
                                              (or load-file-name buffer-file-name))))))
-  ;; That directory is the peer of the directory holing this emacs lisp file.
-  ;; The current file is in          : seed7-mode/tests/erl-tests
+  ;; That directory is the peer of the directory holding this emacs lisp file.
+  ;; The current file is in          : seed7-mode/tests/ert-tests
   ;; The Seed7 test code files are in: seed7-mode/tests/seed7-code
   "Absolute path of the directory that holds the Seed7 test code files.")
 
@@ -179,7 +179,7 @@ Each element consist of a list holding the following elements:
 - 0: starting point
 - 1: starting line
 - 2: starting column
-- 3: Value returned by `seed7-nav-end-of-defun'
+- 3: Value returned by `seed7-nav-beginning-of-defun'
 - 4: landing point
 - 5: landing line
 - 6: landing column.")
