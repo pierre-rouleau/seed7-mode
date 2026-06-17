@@ -3,7 +3,7 @@
 # Purpose   : build for Windows.
 # Created   : Thursday, May 28 2026.
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
-# Time-stamp: <2026-05-28 12:40:38 EDT, updated by Pierre Rouleau>
+# Time-stamp: <2026-06-17 15:03:56 EDT, updated by Pierre Rouleau>
 # ----------------------------------------------------------------------------
 # Module Description
 # ------------------
@@ -50,6 +50,9 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -60,10 +63,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup Emacs ${{ matrix.emacs_version }}
-        uses: jcs090218/setup-emacs@master
+        uses: jcs090218/setup-emacs@ffd830bca5865932d99c3d179263d8b0ebdd00c0 # v3
         with:
           version: ${{ matrix.emacs_version }}
 
