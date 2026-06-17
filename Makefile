@@ -21,7 +21,6 @@
 #
 # - GNU Make, Emacs.
 
-
 # ----------------------------------------------------------------------------
 # Technical Details - Make syntax notes
 # -------------------------------------
@@ -40,10 +39,16 @@
 .POSIX:
 
 # -----------------------------------------------------------------------------
-# Identify Emacs
-# --------------
+# Identify Program Names
+# ----------------------
+#
+# - Emacs
 # Allow overriding the Emacs binary at the Make command line
 EMACS ?= emacs
+
+# - Seed7 Compiler
+# Allow overriding the Seed7 compiler binary at the Make command line.
+S7C ?= s7c
 
 # Note: the above macro allows the following use of make with
 # other Emacs binaries:
@@ -52,12 +57,6 @@ EMACS ?= emacs
 #    make EMACS=emacs-26.1 pel test
 #    make clean
 #    make EMACS=emacs-24.3 pel test
-
-# ----------------------------------------------------------------------------
-# Identify the Seed7 Compiler
-# ---------------------------
-# Allow overriding the Seed7 compiler binary at the Make command line.
-S7C ?= s7c
 
 # ----------------------------------------------------------------------------
 # Detect OS platform
@@ -93,34 +92,30 @@ SRC_DIR := .
 DEST_ERT_TEST_DIR    := $(DEST_DIR)/tests/ert-tests
 
 # -----------------------------------------------------------------------------
-# Identify package files
-# ----------------------
+# Identify files
+# --------------
 
-# - Emacs Lisp package files
-#   - source
+# - Package file:
+#
+#   - Emacs Lisp package files
+#     - source
 EL_FILES := seed7-mode.el
-#   - byte compiled
+#     - byte compiled
 ELC_FILES := $(subst .el,.elc,$(EL_FILES))
 
-# ----------------------------------------------------------------------------
-# Identify the Emacs ERT test files
-# ---------------------------------
-
-# Emacs Regression Test files use ERT.
-# - All test files are located inside the tests/ert-tests sub-directory
-#   and have a name that matches: seed7-test-*.el.
-# - All ERT tests are performed by the tools/ert-test script.
-# - When a test passes, tools/ert-test creates a file that has the same name
-#   as the file with the .test-passed suffix added to the file name.
-# - Those files are used as markers for make and prevent re-execution of
-#   the tests that have already passed.
+# - Emacs ERT Test files:
+#   - All test files are located inside the tests/ert-tests sub-directory
+#     and have a name that matches: seed7-test-*.el.
+#   - All ERT tests are performed by the tools/ert-test script.
+#   - When a test passes, tools/ert-test creates a file that has the same name
+#     as the file with the .test-passed suffix added to the file name.
+#   - Those files are used as markers for make and prevent re-execution of
+#     the tests that have already passed.
 
 # ALL_TEST_FILES := $(wildcard tests/ert-tests/seed7-test-*.el)
 ALL_TEST_FILES := tests/ert-tests/seed7-test-nav-array-01.el \
-    tests/ert-tests/seed7-test-nav-nested-01.el
-
-# tests/ert-tests/seed7-test-sets-01.el
-# tests/ert-tests/seed7-test-arrays-01.el
+                  tests/ert-tests/seed7-test-nav-nested-01.el
+#                 tests/ert-tests/seed7-test-arrays-01.el
 
 ALL_TEST_PASSED := $(ALL_TEST_FILES:.el=.el.test-passed)
 
@@ -274,7 +269,8 @@ tests/ert-tests/seed7-test-nav-nested-01.el.test-passed:    seed7-mode.elc tests
 tests/ert-tests/seed7-test-sets-01.el.test-passed:          seed7-mode.elc tests/ert-tests/seed7-test-sets-01.elc
 
 # ----------------------------------------------------------------------------
-# RULE- execute ERT tests
+# RULE - execute ERT tests
+# ------------------------
 
 #  Pattern Rule: How to create a .el.test-passed file from a .el file
 tests/ert-tests/seed7-test-%.el.test-passed: tests/ert-tests/seed7-test-%.el $(ERT_TEST_DEP)
