@@ -67,10 +67,10 @@ S7C ?= s7c
 
 ifeq ($(OS),Windows_NT)
     ERT_TEST_CMD = powershell -NoProfile -ExecutionPolicy Bypass -File bin\ert-test.ps1
-    ERT_TEST_DEP = bin/ert-test.ps1
+    ERT_TEST_DEP = tools/ert-test.ps1
 else
-    ERT_TEST_CMD = bin/ert-test
-    ERT_TEST_DEP = bin/ert-test
+    ERT_TEST_CMD = tools/ert-test
+    ERT_TEST_DEP = tools/ert-test
 endif
 
 # ----------------------------------------------------------------------------
@@ -101,6 +101,28 @@ DEST_ERL_TEST_DIR    := $(DEST_DIR)/tests/erl-tests
 EL_FILES := seed7-mode.el
 #   - byte compiled
 ELC_FILES := $(subst .el,.elc,$(EL_FILES))
+
+# ----------------------------------------------------------------------------
+# Identify the Emacs ERT test files
+# ---------------------------------
+
+# Emacs Regression Test files use ERT.
+# - All test files are located inside the tests/erl-tests sub-directory
+#   and have a name that matches: seed7-test-*.el.
+# - All ERT tests are performed by the tools/ert-test script.
+# - When a test passes, bin/ert-test creates a file that has the same name
+#   as the file with the .test-passed suffix added to the file name.
+# - Those files are used as markers for make and prevent re-execution of
+#   the tests that have already passed.
+
+# ALL_TEST_FILES := $(wildcard tests/erl-tests/seed7-test-*.el)
+ALL_TEST_FILES := tests/erl-tests/seed7-test-nav-array-01.el \
+    tests/erl-tests/seed7-test-nav-nested-01.el
+
+# tests/erl-tests/seed7-test-sets-01.el
+# tests/erl-tests/seed7-test-arrays-01.el
+
+ALL_TEST_PASSED := $(ALL_TEST_FILES:.el=.el.test-passed)
 
 # ----------------------------------------------------------------------------
 # Building Emacs Lisp Tools
@@ -135,10 +157,10 @@ TOOLS_ELC_FILES := $(subst .el,.elc,$(TOOLS_EL_FILES))
 
 ifeq ($(GITHUB_WORKSPACE),)
 # On user's systems
-all: main tools check-seed7 tools/s7xref
+all: main tools tools/s7xref test
 else
 # On GitHub CI systems
-all: main tools
+all: main tools test
 endif
 
 # ----------------------------------------------------------------------------
@@ -166,8 +188,10 @@ s7tools: tools/s7xref
 # --------------------------------------------------------------------
 
 .PHONY: clean
-clean:
-	rm -f $(ELC_FILES) $(TOOLS_ELC_FILES)
+clean:  clean-test
+	-rm -f $(ELC_FILES)
+	-rm -f $(TOOLS_ELC_FILES)
+	-rm -f tools/s7xref
 	@# Remove native-compiled .eln files if any exist.
 	@find . -name '*.eln' -delete 2>/dev/null || true
 
@@ -180,10 +204,13 @@ help:
 	@printf "\nBuild seed7-mode.\n"
 	@printf "Usage:\n"
 	@printf " * make              - Same as 'make all'.\n"
-	@printf " * make all          - Same as 'make main tools'.\n"
+	@printf " * make all          - Same as 'make main tools test'.\n"
 	@printf " * make main         - Byte/native compile seed7-mode.el.\n"
 	@printf " * make tools        - Byte/native compile tools programs.\n"
-	@printf " * make clean        - Remove all generated files.\n"
+	@printf " * make test         - Compile and run ERT-based tests.\n"
+	@printf " * make clean        - Remove all generated files (ncluding test passed tags).\n"
+	@printf " * make clean-test   - Remove test passed tags to force test next time.\n"
+	@printf " * make check-seed7  - Check availabily of Seed7 compiler.\n"
 
 # ----------------------------------------------------------------------------
 # RULE - how to compile the Emacs-Lisp source code files - package files
@@ -236,7 +263,30 @@ tools/seed7-indent-bench.elc: tools/seed7-indent-bench.el \
 
 endif
 
+# ----------------------------------------------------------------------------
+# Test Code dependencies
+# ----------------------
 
+
+tests/erl-tests/seed7-test-arrays-01.el.test-passed:        seed7-mode.elc tests/erl-tests/seed7-test-arrays-01.elc
+tests/erl-tests/seed7-test-nav-array-01.el.test-passed:     seed7-mode.elc tests/erl-tests/seed7-test-nav-array-01.elc
+tests/erl-tests/seed7-test-nav-nested-01.el.test-passed:    seed7-mode.elc tests/erl-tests/seed7-test-nav-nested-01.elc
+tests/erl-tests/seed7-test-sets-01.el.test-passed:          seed7-mode.elc tests/erl-tests/seed7-test-sets-01.elc
+
+# ----------------------------------------------------------------------------
+# RULE- execute ERT tests
+
+#  Pattern Rule: How to create a .el.test-passed file from a .el file
+tests/erl-tests/seed7-test-%.el.test-passed: tests/erl-tests/seed7-test-%.el $(ERT_TEST_DEP)
+	$(ERT_TEST_CMD) $<
+
+.PHONY:	test clean-test
+
+test:	$(ALL_TEST_PASSED)
+
+# The rm -f option prevents complaints from rm when the file is not present.
+clean-test:
+	-rm -f tests/el-tests/*.test-passed
 
 # ----------------------------------------------------------------------------
 # RULE - check if Seed7 is installed by checking if s7c is accessible
