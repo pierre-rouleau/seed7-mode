@@ -3,7 +3,7 @@
 # Purpose   : build for Windows.
 # Created   : Thursday, May 28 2026.
 # Author    : Pierre Rouleau <prouleau001@gmail.com>
-# Time-stamp: <2026-06-17 14:53:07 EDT, updated by Pierre Rouleau>
+# Time-stamp: <2026-06-17 15:03:56 EDT, updated by Pierre Rouleau>
 # ----------------------------------------------------------------------------
 # Module Description
 # ------------------
@@ -50,6 +50,9 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:

@@ -53,6 +53,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: silex/emacs:${{ matrix.emacs_version }}
+    permissions:
+      contents: read
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
