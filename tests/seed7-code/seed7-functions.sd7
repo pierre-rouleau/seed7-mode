@@ -1,0 +1,220 @@
+# SEED7 FILE: seed7-functions.sd7
+#
+# Purpose   : Examples of Seed7 functions declaration and definitions.
+# Created   : Tuesday, July 15 2025.
+# Author    : Pierre Rouleau <prouleau001@gmail.com> using some code from Thomas Mertes Seed7.
+# Time-stamp: <2025-07-18 11:44:17 EDT, updated by Pierre Rouleau>
+# ----------------------------------------------------------------------------
+# Description
+# ===========
+#
+# This file contains examples of all currently supported kind of Seed7
+# function declarations as described in Seed7 manual FAQ section
+# titled 'What are the possible syntaxes of function declarations?'
+# at https://seed7.net/faq.htm#possible_function_declaration_syntaxes
+
+# This Seed7 code is valid but is not meant to do anything useful, it only
+# exists as example code to test seed7-mode functionality.
+
+# Some of the code here was copied from Thomas Mertes Seed repository,
+# licensed as GNU LGPL 2.1.  The code source of that code is identified in a
+# block comment above the code.
+
+# ----------------------------------------------------------------------------
+# Dependencies
+# ============
+#
+#
+$ include "seed7_05.s7i";
+  include "float.s7i";
+
+# ----------------------------------------------------------------------------
+# Code
+# ====
+#
+# The code below defines and declares several Seed7 functions, placed in order
+# of their syntax kinds.
+#
+# One important aspect of Seed7 is the variety of parameter syntaxes that can
+# be used, specially for code implementing operators as well as arrays and
+# hash operations for instance.
+#
+#  The examples should include a sample of every possible syntax and parameter
+#  layout possible.
+#
+# The code is indented the way seed7-mode indents it.  If you insert space
+# before code and press tab it should get back to its original shape.
+#
+#
+# The list of possible Seed7 function syntax forms is described in the Seed7
+# manual at: https://seed7.net/faq.htm#possible_function_declaration_syntaxes
+
+
+# 1: Primitive action functions
+# -----------------------------
+#
+# Declarations with the keyword action use a primitive action to specify
+# what the function should do.
+
+
+(* From seed7/lib/utf8.s7i  *)
+const func char: utf8_getc (ref clib_file: inFile)                    is action "UT8_GETC";
+
+const func string: utf8_gets (in clib_file: inFile, in integer: maxLength) is action "UT8_GETS";
+
+const func string: utf8_word_read (ref clib_file: inFile,
+                                   inout char: terminationChar)       is action "UT8_WORD_READ";
+
+const func string: utf8_line_read (ref clib_file: inFile,
+                                   inout char: terminationChar)       is
+         action "UT8_LINE_READ"; # with trailing
+        # comment   : <<< TODO: check indentation of this line and the above
+
+
+const proc: utf8_write (ref clib_file: outFile, in string: stri)      is action "UT8_WRITE";
+
+const proc: utf8_seek (ref clib_file: aFile, in integer: position)    is action "UT8_SEEK";
+
+
+
+#
+const func boolean: not (in boolean: boolValue) is action "BLN_NOT";
+
+const func boolean: (in boolean: boolValue1) and (ref func boolean: boolValue2) is action "BLN_AND";
+
+
+const func boolean: whilerun (in func boolean: condition) do
+                (in proc: statement) end while is action "PRC_WHILE";
+
+
+# procedures
+
+const proc: while (in func boolean: condition) do
+                (in proc: statement) end while is action "PRC_WHILE";
+
+# ----------------------------------------------------------------------------
+# 2: func .. end func construct
+# -----------------------------
+#
+# Declarations with the keyword func use a func ... end func construct.
+
+# functions
+
+const func boolean:  f2_flipCoin is func
+  result
+    var boolean: coinState is FALSE;
+  begin
+    coinState := rand(FALSE, TRUE);
+  end func;
+
+
+# procedures
+# ~~~~~~~~~~
+
+# Using a label parameter
+const proc: process (INT_ADD, in reference: function,
+    in ref_list: params, inout expr_type: c_expr) is func
+
+  begin
+    c_expr.expr &:= "(";
+    process_expr(params[1], c_expr);
+    c_expr.expr &:= ") + (";
+    process_expr(params[3], c_expr);
+    c_expr.expr &:= ")";
+  end func;
+
+# ----------------------------------------------------------------------------
+# 3: functions with expression return
+# -----------------------------------
+#
+# Declarations with the keyword return use an expression which is returned (Be
+# aware that return is not a statement).
+
+const func boolean: f1_flipCoin is
+  return rand(FALSE, TRUE);
+
+
+const func float: f3_inverse (in float: number) is
+  return 1.0 / number;
+
+const func float: f4_power (in float: number, in integer: base) is
+  return number ** base;
+
+# ----------------------------------------------------------------------------
+# 4: varfunc functions
+# --------------------
+#
+# Declarations with the keywords return var support the declaration of varfunc
+# functions. This allows that the function can be placed as left argument of
+# an assignment.
+
+# ----------------------------------------------------------------------------
+# 5: Function with return as infix operator
+# -----------------------------------------
+#
+# Declarations with the keyword return as infix operator allow the
+# specification of a type as left argument of the return. There is also an
+# infix return var.
+
+const func baseType: (in hashType: aHash) [ (in keyType: aKey) ] is
+  return INDEX(aHash, aKey, hashCode(aKey), hashType.keyCompare);
+
+
+
+const varfunc baseType: (inout hashType: aHash) [ (in keyType: aKey) ] is
+  return var INDEX(aHash, aKey, hashCode(aKey), hashType.keyCompare);
+
+# ----------------------------------------------------------------------------
+# 6: Interface declarations
+# -------------------------
+#
+# Declarations with the keyword DYNAMIC are interface declarations.
+
+# functions
+const func bigInteger: bigLength (ref file: aFile)           is DYNAMIC;
+
+const func string: bytes (in integer: number,
+                          in signedness: signed, in endianness: endian) is DYNAMIC;
+
+const func string: encode (inout cipherState: state, in string: plaintext) is DYNAMIC;
+
+
+# procedures
+const proc: seek (ref file: aFile, ref bigInteger: position) is DYNAMIC;
+
+
+
+const proc: assignName (inout dialogElement: aDialog, inout integer: id)       is DYNAMIC;
+
+# ----------------------------------------------------------------------------
+# 7: Forward Declarations
+# -----------------------
+#
+# Declarations with the keyword forward are forward declarations.
+
+# functions
+
+const func string: exec_str_expr (inout string: symbol,
+                                  inout string: line,
+                                  inout string: variable_name) is forward;
+
+const func bactColor: view (in direction: direct) is forward;
+
+
+const func color: trace (in rayTraceCanvas: aCanvas, in ray: aRay, in float: depth) is forward;
+
+# procedures
+const proc: drawDown (inout integer: x, inout integer: y, in integer: n) is forward;
+
+
+const proc: show_free_NW (in integer: line, in integer: column) is forward;
+
+const proc: eat (in direction: direct, in power: quantity) is forward;
+
+const proc: kill (in direction: direct) is forward;
+
+const proc: split (in direction: direct, in power: quantity1, in power: quantity2) is forward;
+
+const proc: DECLARE_PARSE_JSON_STRUCT (in type: dataType, in type: parseType) is forward;
+
+# ----------------------------------------------------------------------------

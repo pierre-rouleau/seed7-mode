@@ -1,0 +1,46 @@
+# SEED7 FILE: set-01.sd7
+#
+# Purpose   : Seed7 test code - Seed7 set definition statements.
+# Created   : Friday, July 11 2025.
+# Author    : Pierre Rouleau <prouleau001@gmail.com>
+# Time-stamp: <2025-07-11 17:29:57 EDT, updated by Pierre Rouleau>
+# ----------------------------------------------------------------------------
+# Module Description
+# ------------------
+#
+# The file holds Seed7 code that is used to test seed7-mode functionality.
+# The Seed7 code should compile but does not need to do anything useful.
+#
+# This test code consists of picked snippets from Thomas Mertes Seed7 code
+# located at https://github.com/ThomasMertes/seed7.  The original code from
+# which this is copied is Copyright Thomas Mertes, with GPL-2.0 license.  The
+# Seed7 code used here is not meant to be functional and should only be used
+# for testing the validity of seed7-mode.el logic applied to valid Seed7
+# source code.
+#
+# DO NOT MODIFY the code.  It is used by seed7-mode test code which expects
+#                          lines to be at specific locations.
+
+# ----------------------------------------------------------------------------
+# Test Code
+# ---------
+
+$ include "seed7_05.s7i";
+
+var set of string: numeric_functions is {
+  "ABS",      "ASC",      "ATN",      "CDBL",     "CINT",     "CLNG",
+  "SGN",      "SIN",      "SQR",      "STRIG",    "TAN",      "TIMER",
+  "UBOUND",   "VAL",      "VARPTR"};
+
+const set of string: not_allowed_as_label is {
+  "BEEP",      "CLEAR",     "CLOSE",     "CLS",       "COLOR",     "COMMON",
+  "INPUT",     "KEY",       "LET",       "LOCATE",    "LOOP",      "LPRINT",
+  "SUB",       "SYSTEM",    "WEND",      "WRITE"};
+
+
+const set of char: illegalControlChar is {'\0;'  .. '\8;'}
+                                      |  {'\11;' .. '\12;'}
+                                      |  {'\14;' .. '\31;'}
+                                      |  {'\127;'};
+
+# ----------------------------------------------------------------------------

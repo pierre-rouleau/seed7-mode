@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, July 11 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-15 11:59:24 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-17 10:11:22 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -84,7 +84,7 @@ purpose of showing their values in the ert report when the test fails."
                                           (directory-file-name
                                            (file-name-directory
                                             (directory-file-name
-                                             (buffer-file-name))))))
+                                             (or load-file-name buffer-file-name))))))
   ;; That directory is the peer of the directory holing this emacs lisp file.
   ;; The current file is in          : seed7-mode/tests/erl-tests
   ;; The Seed7 test code files are in: seed7-mode/tests/seed7-code
