@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260618.1013
+;; Package-Version: 20260618.1028
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-18T14:13:08+0000 W25-4"
+(defconst seed7-mode-version-timestamp "2026-06-18T14:28:37+0000 W25-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6589,23 +6589,25 @@ defun (function/procedure) selection."
 Places block expansion just before `er/mark-defun' so that expand-region
 cycles: word → symbol → line → [block …] → defun."
   ;; Only allowed to proceed in a seed7-mode buffer.
-  (unless (and (eq major-mode 'seed7-mode)
-               (boundp 'er/try-expand-list))
+  (if (and (eq major-mode 'seed7-mode)
+           (boundp 'er/try-expand-list))
+      (progn
+        ;; All is OK: proceed.
+        (make-local-variable 'er/try-expand-list)
+        (let ((pos (cl-position 'er/mark-defun er/try-expand-list)))
+          (if pos
+              ;; Insert before er/mark-defun
+              (setq er/try-expand-list
+                    (append (cl-subseq er/try-expand-list 0 pos)
+                            '(seed7-er-mark-enclosing-block)
+                            (cl-subseq er/try-expand-list pos)))
+            ;; Fallback: append at the end
+            (setq er/try-expand-list
+                  (append er/try-expand-list
+                          '(seed7-er-mark-enclosing-block))))))
+    ;; invalid call - should never happen
     (error "seed7--setup-expand-region called from a non Seed7 buffer: %S"
-           (current-buffer)))
-  ;; All is OK: proceed.
-  (make-local-variable 'er/try-expand-list)
-  (let ((pos (cl-position 'er/mark-defun er/try-expand-list)))
-    (if pos
-        ;; Insert before er/mark-defun
-        (setq er/try-expand-list
-              (append (cl-subseq er/try-expand-list 0 pos)
-                      '(seed7-er-mark-enclosing-block)
-                      (cl-subseq er/try-expand-list pos)))
-      ;; Fallback: append at the end
-      (setq er/try-expand-list
-            (append er/try-expand-list
-                    '(seed7-er-mark-enclosing-block))))))
+           (current-buffer))))
 
 
 (defun seed7--activate-expand-region ()
