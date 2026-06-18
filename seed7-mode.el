@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260618.1553
+;; Package-Version: 20260618.1618
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-18T19:53:07+0000 W25-4"
+(defconst seed7-mode-version-timestamp "2026-06-18T20:18:35+0000 W25-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2124,21 +2124,20 @@ Matches either the opening `(*' or the closing `*)'.")
 ;; Each syntax-entry code ends with 'n' because Seed7 (* *) style
 ;; comments can be nested.
 
-
 (defun seed7-mode-syntax-propertize (start end)
   "Apply syntax-table text properties between START and END.
 
-Handle four cases:
+Handle two cases:
 - the `#' number-base separator,
-- single-quoted character literals,
-- the `(*' and
-- the `*)' two-characters block-comment delimiters."
+- single-quoted character literals.
+
+The `(*' and `*)' block-comment delimiters are handled entirely by
+the style-a entries in `seed7-mode-syntax-table' (`\"()1n\"', `\". 23\"',
+`\")(4n\"') via Emacs's C-level scanner; no text properties are needed."
   ;; See:  (info "(elisp)Syntax Properties")
-  ;;
   (with-silent-modifications
     (save-excursion
       (save-match-data
-        ;; Loop 1: handle # and char literals (fires only at [[:digit:]] and ')
         (goto-char start)
         (while (re-search-forward seed7-char-literal-re-no-comments end t)
           (cond
@@ -2149,22 +2148,7 @@ Handle four cases:
             (put-text-property (match-beginning 2) (1+ (match-beginning 2))
                                'syntax-table '(7 . ?'))
             (put-text-property (1- (match-end 2)) (match-end 2)
-                               'syntax-table '(7 . ?')))))
-        ;; Loop 2: handle (* and *) — use simple two-char search, no 35-branch alternation
-        (goto-char start)
-        (while (re-search-forward seed7-block-comment-delim-re end t)
-          (let ((beg (match-beginning 0)))
-            (if (eq (char-after beg) ?\()
-                (progn                  ; (* opener
-                  (put-text-property beg (1+ beg)
-                                     'syntax-table (string-to-syntax "< 1bn"))
-                  (put-text-property (1+ beg) (+ beg 2)
-                                     'syntax-table (string-to-syntax "< 2bn")))
-              (progn                    ; *) closer
-                (put-text-property beg (1+ beg)
-                                   'syntax-table (string-to-syntax "> 3bn"))
-                (put-text-property (1+ beg) (+ beg 2)
-                                   'syntax-table (string-to-syntax "> 4bn"))))))))))
+                               'syntax-table '(7 . ?')))))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
@@ -2541,27 +2525,7 @@ Please update your code to use the new name before this deadline."
 
    ;; other low priority characters
    ;; [ TODO 2025-07-09, by Pierre Rouleau: check if any missing and improve control of ..]
-   (cons "[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]"   (list 1 ''font-lock-keyword-face))
-
-   ;; Fontify the `*)' block-comment end delimiter entirely with
-   ;; `font-lock-comment-face'.
-   ;;
-   ;; Syntactic fontification applies `font-lock-comment-delimiter-face'
-   ;; to `*' (syntax property "> 3bn": first char of style-b comment-end)
-   ;; and leaves `)' ("> 4bn": second char) with no face, because
-   ;; `syntax-ppss' at the `)' position already reports "outside comment"
-   ;; — the comment was fully closed by the complete `*)' pair.
-   ;;
-   ;; This rule overrides both characters to `font-lock-comment-face',
-   ;; consistent with the interior of the block.  The
-   ;; `(nth 4 (syntax-ppss ...))' guard ensures the rule fires only when
-   ;; `*)' genuinely closes a `(* ... *)' block comment and not when
-   ;; those two characters appear elsewhere (e.g. inside a string).
-   (list "\\*)"
-         '(0 (when (equal (get-text-property (match-beginning 0) 'syntax-table)
-                          (string-to-syntax "> 3bn"))
-               font-lock-comment-face)
-             t)))
+   (cons "[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]"   (list 1 ''font-lock-keyword-face)))
   "Associates regexp to a regexp group and a face to render it.")
 
 ;; ---------------------------------------------------------------------------
