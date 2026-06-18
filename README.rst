@@ -980,6 +980,20 @@ Code Marking Commands
 = ============================ =========== =============================================================
 
 
+Increase Selected Regions by Increased Blocks with expand-region
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you used Magnar Sveen's excellent expand-region package you can use the
+**er/expand-region** command to select a region by word, line, block starting
+with the innermost block, then its enclosing block up to the entire function
+or procedure and then the entire file by repeating the command.
+
+Here's how it looks when using the command receptively.
+
+.. image:: doc/res/seed7-expand-region-by-block.gif
+   :scale: 50%
+
+
 Compilation Command
 -------------------
 
