@@ -980,6 +980,29 @@ Code Marking Commands
 = ============================ =========== =============================================================
 
 
+Increase Selected Regions by Increased Blocks with expand-region
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you use Magnar Sveen's excellent `expand-region package`_ you can use the
+**er/expand-region** command to select a region by word, line, block starting
+with the innermost block, then its enclosing block up to the entire function
+or procedure and then the entire file by repeating the command.
+
+Here's how it looks when using the ``er/expand-region`` command receptively
+without explicitly moving point (Emacs name for the cursor).
+
+.. image:: screenshots/seed7-expand-region-by-block.gif
+   :scale: 50%
+
+
+With `PEL`_ you can install the required package and activate it by simply customizing
+**pel-use-expand-region** to ``t``.  PEL binds the ``er/expand-region``
+command to the ``M-=`` key and also to the ``<f11> . =`` key sequence.
+
+If you do not use PEL you will have to use method of choice to install the
+`expand-region package`_ and map the ``er/expand-region`` command to a
+specific key.
+
 Compilation Command
 -------------------
 
@@ -1411,6 +1434,7 @@ Any help, questions, suggestions are welcome!
 .. _expand-region:                              https://github.com/magnars/expand-region.el?tab=readme-ov-file#readme
 .. _hide-comnt:                                 https://github.com/emacsmirror/hide-comnt
 .. _The Emacs Initialization File:              https://www.gnu.org/software/emacs/manual/html_node/emacs/Init-File.html
+.. _PEL:
 .. _PEL Emacs project:                          https://github.com/pierre-rouleau/pel?tab=readme-ov-file#readme
 .. _install PEL as described in the PEL manual: https://github.com/pierre-rouleau/pel/blob/master/doc/pel-manual.rst#how-to-install-pel
 .. _value-parameter:                            https://seed7.sourceforge.net/manual/params.htm#val_parameter
@@ -1451,6 +1475,7 @@ Any help, questions, suggestions are welcome!
 .. _Seed7 interfaces:                           https://seed7.net/manual/decls.htm#Interface_declarations
 .. _Seed7 structures:                           https://seed7.net/manual/types.htm#struct
 .. _Seed7 enums:                                https://seed7.net/manual/types.htm#enumeration
+.. _expand-region package:
 .. _er/expand-region:                           https://github.com/magnars/expand-region.el?tab=readme-ov-file
 
 .. ---------------------------------------------------------------------------
