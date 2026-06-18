@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260618.1057
+;; Package-Version: 20260618.1553
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-18T14:57:26+0000 W25-4"
+(defconst seed7-mode-version-timestamp "2026-06-18T19:53:07+0000 W25-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2088,22 +2088,25 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
 ;;** Seed7 Mode Syntax Propertize Function
 ;;   -------------------------------------
 
-(defconst seed7-char-literal-re
+(defconst seed7-char-literal-re-no-comments
   (format
-   "\\(?:\\(?:[[:digit:]]\\(#\\)[[:alnum:]]\\)\\|\\(\\(?:'\\\\''\\)\\|\\(?:'.'\\)\\|\\(?:'\\\\[abefnrtv\"A-Z\\\\]'\\)\\|\\(?:%s\\)\\)\\)\\|\\((\\*\\)\\|\\(\\*)\\)"
-   ;; (----(----------------------------------)----(--------------------------------------------------------------------------------)--)-----(------)-----(------)
+   "\\(?:\\(?:[[:digit:]]\\(#\\)[[:alnum:]]\\)\\|\\(\\(?:'\\\\''\\)\\|\\(?:'.'\\)\\|\\(?:'\\\\[abefnrtv\"A-Z\\\\]'\\)\\|\\(?:%s\\)\\)\\)"
+   ;; (----(----------------------------------)----(--------------------------------------------------------------------------------)--)
    ;;                      (---)                   (-----------------------------------------------------------------------------------)
-   ;;                                                 (-----------)     (-------)     (-----------------------------)     (------)           (------)     (------)
-   ;;                      G1                      G2                                  backslash-character                   %s              G3           G4
+   ;;                                                 (-----------)     (-------)     (-----------------------------)     (------)
+   ;;                      G1                      G2                                  backslash-character                   %s
    ;; format argument number:                                                                                                 1
    ;;
    ;; G1: #
    ;; G2: single quote character expression
-   ;; G3: opening block comment: (*
-   ;; G4: closing block comment: *)
    ;; backslash characters: \a, \b... :standard named escape letters, including \e for the Escape character.
    ;; backslash characters: \A .. \Z  : standard Seed7 control characters: Ctrl-A .. Ctrl-Z
-   seed7-any-valid-char-integer-semicolon-re))
+   seed7-any-valid-char-integer-semicolon-re)
+  "Regexp for # and char literals only — no block-comment delimiters.")
+
+(defconst seed7-block-comment-delim-re "(\\*\\|\\*)"
+  "Regexp matching the two-character Seed7 block-comment delimiters.
+Matches either the opening `(*' or the closing `*)'.")
 
 ;; Emacs supports two-character comment delimiters via "style b"
 ;; syntax text properties. The characters of each delimiter are
@@ -2135,36 +2138,33 @@ Handle four cases:
   (with-silent-modifications
     (save-excursion
       (save-match-data
+        ;; Loop 1: handle # and char literals (fires only at [[:digit:]] and ')
         (goto-char start)
-        (while (re-search-forward seed7-char-literal-re end t)
+        (while (re-search-forward seed7-char-literal-re-no-comments end t)
           (cond
-           ;; deal with '#'
-           ((match-beginning 1)
+           ((match-beginning 1)         ; # number-base separator
             (put-text-property (match-beginning 1) (match-end 1)
                                'syntax-table (string-to-syntax "_")))
-
-           ;; Deal with single quoted character expression
-           ((match-beginning 2)
+           ((match-beginning 2)         ; single-quoted char literal
             (put-text-property (match-beginning 2) (1+ (match-beginning 2))
                                'syntax-table '(7 . ?'))
-            (put-text-property (1- (match-end 2))  (match-end 2)
-                               'syntax-table '(7 . ?')))
-
-           ;; Mark (* as a two-character comment-start (style b).
-           ;; Override the paren-open syntax on '(' for this occurrence.
-           ((match-beginning 3)
-            (put-text-property (match-beginning 3) (1+ (match-beginning 3))
-                               'syntax-table (string-to-syntax "< 1bn"))
-            (put-text-property (1+ (match-beginning 3)) (match-end 3)
-                               'syntax-table (string-to-syntax "< 2bn")))
-
-           ;; Mark *) as a two-character comment-end (style b).
-           ;; Override the paren-close syntax on ')' for this occurrence.
-           ((match-beginning 4)
-            (put-text-property (match-beginning 4) (1+ (match-beginning 4))
-                               'syntax-table (string-to-syntax "> 3bn"))
-            (put-text-property (1+ (match-beginning 4)) (match-end 4)
-                               'syntax-table (string-to-syntax "> 4bn")))))))))
+            (put-text-property (1- (match-end 2)) (match-end 2)
+                               'syntax-table '(7 . ?')))))
+        ;; Loop 2: handle (* and *) — use simple two-char search, no 35-branch alternation
+        (goto-char start)
+        (while (re-search-forward seed7-block-comment-delim-re end t)
+          (let ((beg (match-beginning 0)))
+            (if (eq (char-after beg) ?\()
+                (progn                  ; (* opener
+                  (put-text-property beg (1+ beg)
+                                     'syntax-table (string-to-syntax "< 1bn"))
+                  (put-text-property (1+ beg) (+ beg 2)
+                                     'syntax-table (string-to-syntax "< 2bn")))
+              (progn                    ; *) closer
+                (put-text-property beg (1+ beg)
+                                   'syntax-table (string-to-syntax "> 3bn"))
+                (put-text-property (1+ beg) (+ beg 2)
+                                   'syntax-table (string-to-syntax "> 4bn"))))))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
@@ -2558,9 +2558,8 @@ Please update your code to use the new name before this deadline."
    ;; `*)' genuinely closes a `(* ... *)' block comment and not when
    ;; those two characters appear elsewhere (e.g. inside a string).
    (list "\\*)"
-         '(0 (when (save-excursion
-                     (goto-char (match-beginning 0))
-                     (nth 4 (syntax-ppss)))
+         '(0 (when (equal (get-text-property (match-beginning 0) 'syntax-table)
+                          (string-to-syntax "> 3bn"))
                font-lock-comment-face)
              t)))
   "Associates regexp to a regexp group and a face to render it.")
