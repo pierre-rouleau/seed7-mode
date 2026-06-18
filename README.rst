@@ -988,7 +988,8 @@ If you use Magnar Sveen's excellent `expand-region package`_ you can use the
 with the innermost block, then its enclosing block up to the entire function
 or procedure and then the entire file by repeating the command.
 
-Here's how it looks when using the command receptively.
+Here's how it looks when using the ``er/expand-region`` command receptively
+without explicitly moving point (Emacs name for the cursor).
 
 .. image:: screenshots/seed7-expand-region-by-block.gif
    :scale: 50%
