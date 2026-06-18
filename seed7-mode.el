@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260618.1028
+;; Package-Version: 20260618.1057
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-18T14:28:37+0000 W25-4"
+(defconst seed7-mode-version-timestamp "2026-06-18T14:57:26+0000 W25-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6539,6 +6539,12 @@ N is: - :previous-non-empty for the previous non-empty line,
 
 (defun seed7-er-mark-enclosing-block ()
   "Mark the innermost Seed7 block strictly enclosing the current region.
+
+As a first step if the exiting block does not include the end of the line,
+return a marked area that includes the end of the line, otherwise return
+the are corresponding to the innermost block that includes the currently
+selected region.
+
 If the region already covers a block, mark the next outer (parent) block.
 Intended for use with the `expand-region' library.
 
@@ -6608,7 +6614,6 @@ cycles: word → symbol → line → [block …] → defun."
     ;; invalid call - should never happen
     (error "seed7--setup-expand-region called from a non Seed7 buffer: %S"
            (current-buffer))))
-
 
 (defun seed7--activate-expand-region ()
   "Activate Seed7 enhanced expansion for all existing Seed7 buffers."
