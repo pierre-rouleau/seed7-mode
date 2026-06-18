@@ -36,7 +36,7 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
   analyzer back-end - you must have Seed7 installed to use it.
 - Explicit outline-minor-mode support.
 - Intelligent template and keyword expansion.
-- Context-aware marking.
+- Context-aware marking with block-aware extension to `er/expand-region`_ command.
 - Deep integration with iMenu and Speedbar with nested callable lineage.
 - Static analysis, compilation and execution of Seed7 programs.
 - Seed7 top-level menu.
@@ -1451,6 +1451,7 @@ Any help, questions, suggestions are welcome!
 .. _Seed7 interfaces:                           https://seed7.net/manual/decls.htm#Interface_declarations
 .. _Seed7 structures:                           https://seed7.net/manual/types.htm#struct
 .. _Seed7 enums:                                https://seed7.net/manual/types.htm#enumeration
+.. _er/expand-region:                           https://github.com/magnars/expand-region.el?tab=readme-ov-file
 
 .. ---------------------------------------------------------------------------
 
