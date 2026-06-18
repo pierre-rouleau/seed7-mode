@@ -983,14 +983,14 @@ Code Marking Commands
 Increase Selected Regions by Increased Blocks with expand-region
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you used Magnar Sveen's excellent expand-region package you can use the
+If you use Magnar Sveen's excellent `expand-region package`_ you can use the
 **er/expand-region** command to select a region by word, line, block starting
 with the innermost block, then its enclosing block up to the entire function
 or procedure and then the entire file by repeating the command.
 
 Here's how it looks when using the command receptively.
 
-.. image:: doc/res/seed7-expand-region-by-block.gif
+.. image:: screenshots/seed7-expand-region-by-block.gif
    :scale: 50%
 
 
@@ -1465,6 +1465,7 @@ Any help, questions, suggestions are welcome!
 .. _Seed7 interfaces:                           https://seed7.net/manual/decls.htm#Interface_declarations
 .. _Seed7 structures:                           https://seed7.net/manual/types.htm#struct
 .. _Seed7 enums:                                https://seed7.net/manual/types.htm#enumeration
+.. _expand-region package:
 .. _er/expand-region:                           https://github.com/magnars/expand-region.el?tab=readme-ov-file
 
 .. ---------------------------------------------------------------------------
