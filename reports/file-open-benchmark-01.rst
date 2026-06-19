@@ -387,3 +387,157 @@ Time Distribution (Histogram)
   0.1437s - 0.1799s : 1
 
 .. ---------------------------------------------------------------------------
+
+Profiler stats on opening chkint.sd7
+====================================
+
+CPU report::
+
+         128  49% + command-execute
+          96  37% + redisplay_internal (C function)
+          34  13%   Automatic GC
+           0   0%   ...
+
+Memory report::
+
+     20,295,335  89% + command-execute
+      2,273,104  10% + redisplay_internal (C function)
+         24,959   0%   Automatic GC
+          8,288   0% + winner-save-old-configurations
+          4,619   0% + flyspell-post-command-hook
+            512   0% + timer-event-handler
+              0   0%   ...
+
+
+font-profiler report rendering prg/chkint.sd7
+=============================================
+
+This is the largest file but it is a test for the integers.
+
+::
+
+   0             0             0%  ("^\\<\\(\\$ +\\(?:decls\\|info\\|library\\|message\\|names\\|sy\\(?:ntax\\|stem\\)\\|trace\\)\\)\\>" (1 'seed7-pragma-keyword-face))
+   1             0             0%  ("^\\(\\$? *\\(?:include\\)\\) " (1 'seed7-include-face))
+   2             1             0%  ("^ *\\<\\(\\(?:r\\(?:aise\\|eturn\\)\\)\\)\\>" (1 'seed7-in-statement-keyword-face1))
+   3           528             2%  (". \\<\\(\\(?:is\\|noop\\)\\)\\>" (1 'seed7-in-statement-keyword-face2))
+   4          2897             1%  ("^[[:blank:]]*\\<\\(\\(?:block\\|ca\\(?:se\\|tch\\)\\|e\\(?:ls\\(?:e\\|if\\)\\|n\\(?:d \\(?:block\\|case\\|enum\\|f\\(?:or\\|unc\\)\\|global\\|if\\|struct\\|while\\)\\|um\\)\\|xception\\)\\|f\\(?:or\\|unc\\)\\|global\\|if\\|o\\(?:f\\|therwise\\)\\|proc\\|repeat\\|struct\\|until\\|varfunc\\|wh\\(?:en\\|ile\\)\\)\\)\\>" (1 'seed7-statement-introducing-keyword-face))
+   5             0             1%  (" is\\(?:[[:blank:]\n]+?[^;]\\)?[[:blank:]\n]+\\(\\(?:DYNAMIC\\|action\\|forward\\|new\\|sub\\)\\)\\>" (1 'seed7-in-middle-statement-keyword-face1))
+   6          4877             3%  ("[[:space:]]\\(\\(?:begin\\|d\\(?:efault\\|o\\(?:wnto\\)?\\)\\|exception\\|fixLen\\|key\\|l\\(?:en\\|ocal\\)\\|o\\(?:f\\|therwise\\)\\|param\\|r\\(?:ange\\|esult\\)\\|step\\|t\\(?:hen\\|o\\)\\|until\\)\\)\\>" (1 'seed7-in-middle-statement-keyword-face2))
+   7           741             1%  ("\\<\\(\\(?:attr\\|const\\|in\\(?:out\\)?\\|ref\\|va[lr]\\)\\)\\>" (1 'seed7-intro-statement-keyword-face))
+   8          5715             1%  ("\\<\\(\\(?:PRIMITIVE_WINDOW\\|array\\|b\\(?:i\\(?:g\\(?:Integer\\|Rational\\)\\|n\\(?:32\\|64\\)\\|tset\\)\\|oolean\\|string\\)\\|c\\(?:ategory\\|har\\|lib_file\\|o\\(?:lor\\|mplex\\)\\|reator\\)\\|d\\(?:atabase\\|estroyer\\|uration\\)\\|e\\(?:num\\|xpr\\)\\|f\\(?:ile\\(?:Sys\\)?\\|loat\\|unc\\)\\|hash\\|inte\\(?:ger\\|rface\\)\\|listener\\|object\\|p\\(?:ollData\\|ro\\(?:c\\(?:ess\\)?\\|gram\\)\\)\\|r\\(?:ational\\|ef\\(?:_list\\|erence\\)\\)\\|s\\(?:et\\|qlStatement\\|tr\\(?:ing\\|uct\\(?:Element\\)?\\)\\|ub\\(?:\\(?:rang\\|typ\\)e\\)\\)\\|t\\(?:ext\\|\\(?:im\\|yp\\)e\\)\\|void\\)\\)\\>" (1 'font-lock-type-face))
+   9             0             1%  ("[^[:alnum:]]\\(\\.[[:digit:]]+\\)" (1 'font-lock-warning-face))
+  10            18             1%  ("[^[:alnum:]]\\([[:digit:]]+\\.\\)[^[:alnum:]]" (1 'font-lock-warning-face))
+  11           488             1%  ("[0-9]+\\.[0-9]+\\(?:\\(?:[eE][+-]?\\)?[0-9]+\\)?" (0 'seed7-float-face))
+  12             0             4%  ("\\(\\(?:\\(?:2#[01]+\\)\\|\\(?:3#[0-2]+\\)\\|\\(?:4#[0-3]+\\)\\|\\(?:5#[0-4]+\\)\\|\\(?:6#[0-5]+\\)\\|\\(?:7#[0-6]+\\)\\|\\(?:8#[0-7]+\\)\\|\\(?:9#[0-8]+\\)\\|\\(?:10#[0-9]+\\)\\|\\(?:11#[0-9aA]+\\)\\|\\(?:12#[0-9aAbB]+\\)\\|\\(?:13#[0-9a-cA-C]+\\)\\|\\(?:14#[0-9a-dA-D]+\\)\\|\\(?:15#[0-9a-eA-E]+\\)\\|\\(?:16#[0-9a-fA-F]+\\)\\|\\(?:17#[0-9a-gA-G]+\\)\\|\\(?:18#[0-9a-hA-H]+\\)\\|\\(?:19#[0-9a-iA-I]+\\)\\|\\(?:20#[0-9a-jA-J]+\\)\\|\\(?:21#[0-9a-kA-K]+\\)\\|\\(?:22#[0-9a-lA-L]+\\)\\|\\(?:23#[0-9a-mA-M]+\\)\\|\\(?:24#[0-9a-nA-N]+\\)\\|\\(?:25#[0-9a-oA-O]+\\)\\|\\(?:26#[0-9a-pA-P]+\\)\\|\\(?:27#[0-9a-qA-Q]+\\)\\|\\(?:28#[0-9a-rA-R]+\\)\\|\\(?:29#[0-9a-sA-S]+\\)\\|\\(?:30#[0-9a-tA-T]+\\)\\|\\(?:31#[0-9a-uA-U]+\\)\\|\\(?:32#[0-9a-vA-V]+\\)\\|\\(?:33#[0-9a-wA-W]+\\)\\|\\(?:34#[0-9a-xA-X]+\\)\\|\\(?:35#[0-9a-yA-Y]+\\)\\|\\(?:36#[0-9a-zA-Z]+\\)\\)_\\)[^#0-9a-zA-Z]" (1 'seed7-big-integer-face))
+  13           664             4%  ("\\(\\(?:2#[01]+\\)\\|\\(?:3#[0-2]+\\)\\|\\(?:4#[0-3]+\\)\\|\\(?:5#[0-4]+\\)\\|\\(?:6#[0-5]+\\)\\|\\(?:7#[0-6]+\\)\\|\\(?:8#[0-7]+\\)\\|\\(?:9#[0-8]+\\)\\|\\(?:10#[0-9]+\\)\\|\\(?:11#[0-9aA]+\\)\\|\\(?:12#[0-9aAbB]+\\)\\|\\(?:13#[0-9a-cA-C]+\\)\\|\\(?:14#[0-9a-dA-D]+\\)\\|\\(?:15#[0-9a-eA-E]+\\)\\|\\(?:16#[0-9a-fA-F]+\\)\\|\\(?:17#[0-9a-gA-G]+\\)\\|\\(?:18#[0-9a-hA-H]+\\)\\|\\(?:19#[0-9a-iA-I]+\\)\\|\\(?:20#[0-9a-jA-J]+\\)\\|\\(?:21#[0-9a-kA-K]+\\)\\|\\(?:22#[0-9a-lA-L]+\\)\\|\\(?:23#[0-9a-mA-M]+\\)\\|\\(?:24#[0-9a-nA-N]+\\)\\|\\(?:25#[0-9a-oA-O]+\\)\\|\\(?:26#[0-9a-pA-P]+\\)\\|\\(?:27#[0-9a-qA-Q]+\\)\\|\\(?:28#[0-9a-rA-R]+\\)\\|\\(?:29#[0-9a-sA-S]+\\)\\|\\(?:30#[0-9a-tA-T]+\\)\\|\\(?:31#[0-9a-uA-U]+\\)\\|\\(?:32#[0-9a-vA-V]+\\)\\|\\(?:33#[0-9a-wA-W]+\\)\\|\\(?:34#[0-9a-xA-X]+\\)\\|\\(?:35#[0-9a-yA-Y]+\\)\\|\\(?:36#[0-9a-zA-Z]+\\)\\)[^#0-9a-zA-Z]" (1 'seed7-integer-face))
+  14             0             1%  ("[0-9]+[eE]-[0-9]+" (0 'font-lock-warning-face))
+  15           632             1%  ("[0-9]+[eE]\\+?[0-9]+" (0 'seed7-integer-face))
+  16             0             0%  ("\\(0x[[:digit:]]+\\)" (1 'font-lock-warning-face))
+  17          1645             1%  ("\\<\\(\\(?:E\\(?:OF\\)?\\|FALSE\\|Infinity\\|N\\(?:IL\\|aN\\)\\|PI\\|TRUE\\|empty\\)\\)\\>" (1 'font-lock-constant-face))
+  18             0             0%  ("\\<\\(\\(?:CONSOLE_KEYBOARD\\|GRAPH_KEYBOARD\\|IN\\|KEYBOARD\\|OUT\\|STD_\\(?:CONSOLE\\|ERR\\|IN\\|NULL\\|OUT\\)\\)\\)\\>" (1 'seed7-predefined-variables-face))
+  19           268             0%  ("\\<\\(\\(?:\\(?:ACTION\\|C\\(?:OPY\\|REATE\\)\\|D\\(?:ATABASE\\|ESTROY\\)\\|FILE\\|GRAPHIC\\|IN\\(?:DEX\\)?\\|MEMORY\\|NUMERIC\\|O\\(?:KAY_NO\\|VERFLOW\\)\\|RANGE\\)_ERROR\\)\\)\\>" (1 'seed7-errinfo-value-face))
+  20         45935             7%  ("\\<\\(\\(?:RADIX\\|and\\|conv\\|di\\(?:gits\\|v\\)\\|exp\\|in\\|lpad0?\\|m\\(?:div\\|od\\|ult\\)\\|not\\|or\\|parse\\|r\\(?:adix\\|em\\|pad\\)\\|sci\\|times\\|varConv\\)\\)\\>" (1 'font-lock-keyword-face))
+  21          8919             1%  ("\\(?:\\(?:<<\\|>[<>]\\|[&*+/:@|-]\\)?:=\\)" (0 'font-lock-keyword-face))
+  22          3581             1%  ("[!?]\\|<<\\|>>\\|><\\|<&" (0 'font-lock-keyword-face))
+  23         65675            11%  ("\\(?:[=><]\\|\\(?:<>\\|<=\\|>=\\)\\)" (0 'font-lock-keyword-face))
+  24          3317             2%  ("[[:alnum:]_ )]\\([/*]\\)[[:alnum:]_ (]" (1 'font-lock-keyword-face))
+  25             0             2%  ("[[:alnum:] _)]\\(/\\)[[:alnum:] _(]" (1 'font-lock-keyword-face))
+  26          3384             2%  ("[[:alnum:] _)]\\(\\*\\*\\)[[:alnum:] _(]" (1 'font-lock-keyword-face))
+  27             0             2%  ("[\n[:alnum:] _)\\\"]\\([&|]\\)[\n[:alnum:] _(\\\"]" (1 'font-lock-keyword-face))
+  28            13             3%  ("[^'\\]\\(\\(?:''\\)\\|\\(?:'[^\\].+?'\\)\\|\\('\\\\[[:digit:]]+'\\)\\)[^']" (1 'font-lock-warning-face))
+  29        154961            18%  ("\\([[:alpha:]][[:alnum:]_]*\\|_[[:alnum:]_]+\\)" (1 'seed7-name-identifier-face))
+  30          2497             2%  ("\\(\\(?:\\(?:\\([2-9]\\|1[0-9]\\|2[0-9]\\|3[0-6]\\)#\\)?[0-9]+_\\)\\)" (1 'seed7-big-integer-face))
+  31        137361            14%  ("\\([[:digit:]]+\\)" (1 'seed7-integer-face))
+  32         28437             6%  ("[^+-]\\([+-]\\)[^+-]" (1 'font-lock-keyword-face))
+  33            12             2%  ("[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]" (1 'font-lock-keyword-face))
+
+
+font-profiler report rendering prg/bas7.sd7
+===========================================
+
+This file is the implementation of Basic interpreter so it has code that is
+closer to normal code.
+
+::
+
+   0             0             1%  ("^\\<\\(\\$ +\\(?:decls\\|info\\|library\\|message\\|names\\|sy\\(?:ntax\\|stem\\)\\|trace\\)\\)\\>" (1 'seed7-pragma-keyword-face))
+   1             0             0%  ("^\\(\\$? *\\(?:include\\)\\) " (1 'seed7-include-face))
+   2            12             1%  ("^ *\\<\\(\\(?:r\\(?:aise\\|eturn\\)\\)\\)\\>" (1 'seed7-in-statement-keyword-face1))
+   3          1014             3%  (". \\<\\(\\(?:is\\|noop\\)\\)\\>" (1 'seed7-in-statement-keyword-face2))
+   4          4034             2%  ("^[[:blank:]]*\\<\\(\\(?:block\\|ca\\(?:se\\|tch\\)\\|e\\(?:ls\\(?:e\\|if\\)\\|n\\(?:d \\(?:block\\|case\\|enum\\|f\\(?:or\\|unc\\)\\|global\\|if\\|struct\\|while\\)\\|um\\)\\|xception\\)\\|f\\(?:or\\|unc\\)\\|global\\|if\\|o\\(?:f\\|therwise\\)\\|proc\\|repeat\\|struct\\|until\\|varfunc\\|wh\\(?:en\\|ile\\)\\)\\)\\>" (1 'seed7-statement-introducing-keyword-face))
+   5            12             1%  (" is\\(?:[[:blank:]\n]+?[^;]\\)?[[:blank:]\n]+\\(\\(?:DYNAMIC\\|action\\|forward\\|new\\|sub\\)\\)\\>" (1 'seed7-in-middle-statement-keyword-face1))
+   6          2114             5%  ("[[:space:]]\\(\\(?:begin\\|d\\(?:efault\\|o\\(?:wnto\\)?\\)\\|exception\\|fixLen\\|key\\|l\\(?:en\\|ocal\\)\\|o\\(?:f\\|therwise\\)\\|param\\|r\\(?:ange\\|esult\\)\\|step\\|t\\(?:hen\\|o\\)\\|until\\)\\)\\>" (1 'seed7-in-middle-statement-keyword-face2))
+   7          1510             2%  ("\\<\\(\\(?:attr\\|const\\|in\\(?:out\\)?\\|ref\\|va[lr]\\)\\)\\>" (1 'seed7-intro-statement-keyword-face))
+   8          2057             4%  ("\\<\\(\\(?:PRIMITIVE_WINDOW\\|array\\|b\\(?:i\\(?:g\\(?:Integer\\|Rational\\)\\|n\\(?:32\\|64\\)\\|tset\\)\\|oolean\\|string\\)\\|c\\(?:ategory\\|har\\|lib_file\\|o\\(?:lor\\|mplex\\)\\|reator\\)\\|d\\(?:atabase\\|estroyer\\|uration\\)\\|e\\(?:num\\|xpr\\)\\|f\\(?:ile\\(?:Sys\\)?\\|loat\\|unc\\)\\|hash\\|inte\\(?:ger\\|rface\\)\\|listener\\|object\\|p\\(?:ollData\\|ro\\(?:c\\(?:ess\\)?\\|gram\\)\\)\\|r\\(?:ational\\|ef\\(?:_list\\|erence\\)\\)\\|s\\(?:et\\|qlStatement\\|tr\\(?:ing\\|uct\\(?:Element\\)?\\)\\|ub\\(?:\\(?:rang\\|typ\\)e\\)\\)\\|t\\(?:ext\\|\\(?:im\\|yp\\)e\\)\\|void\\)\\)\\>" (1 'font-lock-type-face))
+   9             3             2%  ("[^[:alnum:]]\\(\\.[[:digit:]]+\\)" (1 'font-lock-warning-face))
+  10             1             2%  ("[^[:alnum:]]\\([[:digit:]]+\\.\\)[^[:alnum:]]" (1 'font-lock-warning-face))
+  11           141             1%  ("[0-9]+\\.[0-9]+\\(?:\\(?:[eE][+-]?\\)?[0-9]+\\)?" (0 'seed7-float-face))
+  12             0             1%  ("\\(\\(?:\\(?:2#[01]+\\)\\|\\(?:3#[0-2]+\\)\\|\\(?:4#[0-3]+\\)\\|\\(?:5#[0-4]+\\)\\|\\(?:6#[0-5]+\\)\\|\\(?:7#[0-6]+\\)\\|\\(?:8#[0-7]+\\)\\|\\(?:9#[0-8]+\\)\\|\\(?:10#[0-9]+\\)\\|\\(?:11#[0-9aA]+\\)\\|\\(?:12#[0-9aAbB]+\\)\\|\\(?:13#[0-9a-cA-C]+\\)\\|\\(?:14#[0-9a-dA-D]+\\)\\|\\(?:15#[0-9a-eA-E]+\\)\\|\\(?:16#[0-9a-fA-F]+\\)\\|\\(?:17#[0-9a-gA-G]+\\)\\|\\(?:18#[0-9a-hA-H]+\\)\\|\\(?:19#[0-9a-iA-I]+\\)\\|\\(?:20#[0-9a-jA-J]+\\)\\|\\(?:21#[0-9a-kA-K]+\\)\\|\\(?:22#[0-9a-lA-L]+\\)\\|\\(?:23#[0-9a-mA-M]+\\)\\|\\(?:24#[0-9a-nA-N]+\\)\\|\\(?:25#[0-9a-oA-O]+\\)\\|\\(?:26#[0-9a-pA-P]+\\)\\|\\(?:27#[0-9a-qA-Q]+\\)\\|\\(?:28#[0-9a-rA-R]+\\)\\|\\(?:29#[0-9a-sA-S]+\\)\\|\\(?:30#[0-9a-tA-T]+\\)\\|\\(?:31#[0-9a-uA-U]+\\)\\|\\(?:32#[0-9a-vA-V]+\\)\\|\\(?:33#[0-9a-wA-W]+\\)\\|\\(?:34#[0-9a-xA-X]+\\)\\|\\(?:35#[0-9a-yA-Y]+\\)\\|\\(?:36#[0-9a-zA-Z]+\\)\\)_\\)[^#0-9a-zA-Z]" (1 'seed7-big-integer-face))
+  13           143             1%  ("\\(\\(?:2#[01]+\\)\\|\\(?:3#[0-2]+\\)\\|\\(?:4#[0-3]+\\)\\|\\(?:5#[0-4]+\\)\\|\\(?:6#[0-5]+\\)\\|\\(?:7#[0-6]+\\)\\|\\(?:8#[0-7]+\\)\\|\\(?:9#[0-8]+\\)\\|\\(?:10#[0-9]+\\)\\|\\(?:11#[0-9aA]+\\)\\|\\(?:12#[0-9aAbB]+\\)\\|\\(?:13#[0-9a-cA-C]+\\)\\|\\(?:14#[0-9a-dA-D]+\\)\\|\\(?:15#[0-9a-eA-E]+\\)\\|\\(?:16#[0-9a-fA-F]+\\)\\|\\(?:17#[0-9a-gA-G]+\\)\\|\\(?:18#[0-9a-hA-H]+\\)\\|\\(?:19#[0-9a-iA-I]+\\)\\|\\(?:20#[0-9a-jA-J]+\\)\\|\\(?:21#[0-9a-kA-K]+\\)\\|\\(?:22#[0-9a-lA-L]+\\)\\|\\(?:23#[0-9a-mA-M]+\\)\\|\\(?:24#[0-9a-nA-N]+\\)\\|\\(?:25#[0-9a-oA-O]+\\)\\|\\(?:26#[0-9a-pA-P]+\\)\\|\\(?:27#[0-9a-qA-Q]+\\)\\|\\(?:28#[0-9a-rA-R]+\\)\\|\\(?:29#[0-9a-sA-S]+\\)\\|\\(?:30#[0-9a-tA-T]+\\)\\|\\(?:31#[0-9a-uA-U]+\\)\\|\\(?:32#[0-9a-vA-V]+\\)\\|\\(?:33#[0-9a-wA-W]+\\)\\|\\(?:34#[0-9a-xA-X]+\\)\\|\\(?:35#[0-9a-yA-Y]+\\)\\|\\(?:36#[0-9a-zA-Z]+\\)\\)[^#0-9a-zA-Z]" (1 'seed7-integer-face))
+  14             0             1%  ("[0-9]+[eE]-[0-9]+" (0 'font-lock-warning-face))
+  15             2             1%  ("[0-9]+[eE]\\+?[0-9]+" (0 'seed7-integer-face))
+  16             0             1%  ("\\(0x[[:digit:]]+\\)" (1 'font-lock-warning-face))
+  17           215             1%  ("\\<\\(\\(?:E\\(?:OF\\)?\\|FALSE\\|Infinity\\|N\\(?:IL\\|aN\\)\\|PI\\|TRUE\\|empty\\)\\)\\>" (1 'font-lock-constant-face))
+  18           201             1%  ("\\<\\(\\(?:CONSOLE_KEYBOARD\\|GRAPH_KEYBOARD\\|IN\\|KEYBOARD\\|OUT\\|STD_\\(?:CONSOLE\\|ERR\\|IN\\|NULL\\|OUT\\)\\)\\)\\>" (1 'seed7-predefined-variables-face))
+  19            10             1%  ("\\<\\(\\(?:\\(?:ACTION\\|C\\(?:OPY\\|REATE\\)\\|D\\(?:ATABASE\\|ESTROY\\)\\|FILE\\|GRAPHIC\\|IN\\(?:DEX\\)?\\|MEMORY\\|NUMERIC\\|O\\(?:KAY_NO\\|VERFLOW\\)\\|RANGE\\)_ERROR\\)\\)\\>" (1 'seed7-errinfo-value-face))
+  20          1031             3%  ("\\<\\(\\(?:RADIX\\|and\\|conv\\|di\\(?:gits\\|v\\)\\|exp\\|in\\|lpad0?\\|m\\(?:div\\|od\\|ult\\)\\|not\\|or\\|parse\\|r\\(?:adix\\|em\\|pad\\)\\|sci\\|times\\|varConv\\)\\)\\>" (1 'font-lock-keyword-face))
+  21          2876             1%  ("\\(?:\\(?:<<\\|>[<>]\\|[&*+/:@|-]\\)?:=\\)" (0 'font-lock-keyword-face))
+  22          1589             1%  ("[!?]\\|<<\\|>>\\|><\\|<&" (0 'font-lock-keyword-face))
+  23          6728             2%  ("\\(?:[=><]\\|\\(?:<>\\|<=\\|>=\\)\\)" (0 'font-lock-keyword-face))
+  24           148             3%  ("[[:alnum:]_ )]\\([/*]\\)[[:alnum:]_ (]" (1 'font-lock-keyword-face))
+  25            22             3%  ("[[:alnum:] _)]\\(/\\)[[:alnum:] _(]" (1 'font-lock-keyword-face))
+  26             9             2%  ("[[:alnum:] _)]\\(\\*\\*\\)[[:alnum:] _(]" (1 'font-lock-keyword-face))
+  27           127             3%  ("[\n[:alnum:] _)\\\"]\\([&|]\\)[\n[:alnum:] _(\\\"]" (1 'font-lock-keyword-face))
+  28           116             5%  ("[^'\\]\\(\\(?:''\\)\\|\\(?:'[^\\].+?'\\)\\|\\('\\\\[[:digit:]]+'\\)\\)[^']" (1 'font-lock-warning-face))
+  29         36169            38%  ("\\([[:alpha:]][[:alnum:]_]*\\|_[[:alnum:]_]+\\)" (1 'seed7-name-identifier-face))
+  30             7             1%  ("\\(\\(?:\\(?:\\([2-9]\\|1[0-9]\\|2[0-9]\\|3[0-6]\\)#\\)?[0-9]+_\\)\\)" (1 'seed7-big-integer-face))
+  31          3595             2%  ("\\([[:digit:]]+\\)" (1 'seed7-integer-face))
+  32           572             4%  ("[^+-]\\([+-]\\)[^+-]" (1 'font-lock-keyword-face))
+  33           173             3%  ("[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]" (1 'font-lock-keyword-face))
+
+font-profiler report rendering prg/syntaxhl.sd7
+===============================================
+
+This is a much smaller file but was written to test the syntax highlighting of
+editors.  It has some syntactic errors as well.
+
+::
+
+   0             0             1%  ("^\\<\\(\\$ +\\(?:decls\\|info\\|library\\|message\\|names\\|sy\\(?:ntax\\|stem\\)\\|trace\\)\\)\\>" (1 'seed7-pragma-keyword-face))
+   1             0             1%  ("^\\(\\$? *\\(?:include\\)\\) " (1 'seed7-include-face))
+   2             0             1%  ("^ *\\<\\(\\(?:r\\(?:aise\\|eturn\\)\\)\\)\\>" (1 'seed7-in-statement-keyword-face1))
+   3            34             5%  (". \\<\\(\\(?:is\\|noop\\)\\)\\>" (1 'seed7-in-statement-keyword-face2))
+   4            26             2%  ("^[[:blank:]]*\\<\\(\\(?:block\\|ca\\(?:se\\|tch\\)\\|e\\(?:ls\\(?:e\\|if\\)\\|n\\(?:d \\(?:block\\|case\\|enum\\|f\\(?:or\\|unc\\)\\|global\\|if\\|struct\\|while\\)\\|um\\)\\|xception\\)\\|f\\(?:or\\|unc\\)\\|global\\|if\\|o\\(?:f\\|therwise\\)\\|proc\\|repeat\\|struct\\|until\\|varfunc\\|wh\\(?:en\\|ile\\)\\)\\)\\>" (1 'seed7-statement-introducing-keyword-face))
+   5             3             2%  (" is\\(?:[[:blank:]\n]+?[^;]\\)?[[:blank:]\n]+\\(\\(?:DYNAMIC\\|action\\|forward\\|new\\|sub\\)\\)\\>" (1 'seed7-in-middle-statement-keyword-face1))
+   6            24             5%  ("[[:space:]]\\(\\(?:begin\\|d\\(?:efault\\|o\\(?:wnto\\)?\\)\\|exception\\|fixLen\\|key\\|l\\(?:en\\|ocal\\)\\|o\\(?:f\\|therwise\\)\\|param\\|r\\(?:ange\\|esult\\)\\|step\\|t\\(?:hen\\|o\\)\\|until\\)\\)\\>" (1 'seed7-in-middle-statement-keyword-face2))
+   7            50             4%  ("\\<\\(\\(?:attr\\|const\\|in\\(?:out\\)?\\|ref\\|va[lr]\\)\\)\\>" (1 'seed7-intro-statement-keyword-face))
+   8            71             7%  ("\\<\\(\\(?:PRIMITIVE_WINDOW\\|array\\|b\\(?:i\\(?:g\\(?:Integer\\|Rational\\)\\|n\\(?:32\\|64\\)\\|tset\\)\\|oolean\\|string\\)\\|c\\(?:ategory\\|har\\|lib_file\\|o\\(?:lor\\|mplex\\)\\|reator\\)\\|d\\(?:atabase\\|estroyer\\|uration\\)\\|e\\(?:num\\|xpr\\)\\|f\\(?:ile\\(?:Sys\\)?\\|loat\\|unc\\)\\|hash\\|inte\\(?:ger\\|rface\\)\\|listener\\|object\\|p\\(?:ollData\\|ro\\(?:c\\(?:ess\\)?\\|gram\\)\\)\\|r\\(?:ational\\|ef\\(?:_list\\|erence\\)\\)\\|s\\(?:et\\|qlStatement\\|tr\\(?:ing\\|uct\\(?:Element\\)?\\)\\|ub\\(?:\\(?:rang\\|typ\\)e\\)\\)\\|t\\(?:ext\\|\\(?:im\\|yp\\)e\\)\\|void\\)\\)\\>" (1 'font-lock-type-face))
+   9             0             2%  ("[^[:alnum:]]\\(\\.[[:digit:]]+\\)" (1 'font-lock-warning-face))
+  10             0             2%  ("[^[:alnum:]]\\([[:digit:]]+\\.\\)[^[:alnum:]]" (1 'font-lock-warning-face))
+  11             3             1%  ("[0-9]+\\.[0-9]+\\(?:\\(?:[eE][+-]?\\)?[0-9]+\\)?" (0 'seed7-float-face))
+  12             0             3%  ("\\(\\(?:\\(?:2#[01]+\\)\\|\\(?:3#[0-2]+\\)\\|\\(?:4#[0-3]+\\)\\|\\(?:5#[0-4]+\\)\\|\\(?:6#[0-5]+\\)\\|\\(?:7#[0-6]+\\)\\|\\(?:8#[0-7]+\\)\\|\\(?:9#[0-8]+\\)\\|\\(?:10#[0-9]+\\)\\|\\(?:11#[0-9aA]+\\)\\|\\(?:12#[0-9aAbB]+\\)\\|\\(?:13#[0-9a-cA-C]+\\)\\|\\(?:14#[0-9a-dA-D]+\\)\\|\\(?:15#[0-9a-eA-E]+\\)\\|\\(?:16#[0-9a-fA-F]+\\)\\|\\(?:17#[0-9a-gA-G]+\\)\\|\\(?:18#[0-9a-hA-H]+\\)\\|\\(?:19#[0-9a-iA-I]+\\)\\|\\(?:20#[0-9a-jA-J]+\\)\\|\\(?:21#[0-9a-kA-K]+\\)\\|\\(?:22#[0-9a-lA-L]+\\)\\|\\(?:23#[0-9a-mA-M]+\\)\\|\\(?:24#[0-9a-nA-N]+\\)\\|\\(?:25#[0-9a-oA-O]+\\)\\|\\(?:26#[0-9a-pA-P]+\\)\\|\\(?:27#[0-9a-qA-Q]+\\)\\|\\(?:28#[0-9a-rA-R]+\\)\\|\\(?:29#[0-9a-sA-S]+\\)\\|\\(?:30#[0-9a-tA-T]+\\)\\|\\(?:31#[0-9a-uA-U]+\\)\\|\\(?:32#[0-9a-vA-V]+\\)\\|\\(?:33#[0-9a-wA-W]+\\)\\|\\(?:34#[0-9a-xA-X]+\\)\\|\\(?:35#[0-9a-yA-Y]+\\)\\|\\(?:36#[0-9a-zA-Z]+\\)\\)_\\)[^#0-9a-zA-Z]" (1 'seed7-big-integer-face))
+  13             4             3%  ("\\(\\(?:2#[01]+\\)\\|\\(?:3#[0-2]+\\)\\|\\(?:4#[0-3]+\\)\\|\\(?:5#[0-4]+\\)\\|\\(?:6#[0-5]+\\)\\|\\(?:7#[0-6]+\\)\\|\\(?:8#[0-7]+\\)\\|\\(?:9#[0-8]+\\)\\|\\(?:10#[0-9]+\\)\\|\\(?:11#[0-9aA]+\\)\\|\\(?:12#[0-9aAbB]+\\)\\|\\(?:13#[0-9a-cA-C]+\\)\\|\\(?:14#[0-9a-dA-D]+\\)\\|\\(?:15#[0-9a-eA-E]+\\)\\|\\(?:16#[0-9a-fA-F]+\\)\\|\\(?:17#[0-9a-gA-G]+\\)\\|\\(?:18#[0-9a-hA-H]+\\)\\|\\(?:19#[0-9a-iA-I]+\\)\\|\\(?:20#[0-9a-jA-J]+\\)\\|\\(?:21#[0-9a-kA-K]+\\)\\|\\(?:22#[0-9a-lA-L]+\\)\\|\\(?:23#[0-9a-mA-M]+\\)\\|\\(?:24#[0-9a-nA-N]+\\)\\|\\(?:25#[0-9a-oA-O]+\\)\\|\\(?:26#[0-9a-pA-P]+\\)\\|\\(?:27#[0-9a-qA-Q]+\\)\\|\\(?:28#[0-9a-rA-R]+\\)\\|\\(?:29#[0-9a-sA-S]+\\)\\|\\(?:30#[0-9a-tA-T]+\\)\\|\\(?:31#[0-9a-uA-U]+\\)\\|\\(?:32#[0-9a-vA-V]+\\)\\|\\(?:33#[0-9a-wA-W]+\\)\\|\\(?:34#[0-9a-xA-X]+\\)\\|\\(?:35#[0-9a-yA-Y]+\\)\\|\\(?:36#[0-9a-zA-Z]+\\)\\)[^#0-9a-zA-Z]" (1 'seed7-integer-face))
+  14             0             1%  ("[0-9]+[eE]-[0-9]+" (0 'font-lock-warning-face))
+  15             0             1%  ("[0-9]+[eE]\\+?[0-9]+" (0 'seed7-integer-face))
+  16             0             1%  ("\\(0x[[:digit:]]+\\)" (1 'font-lock-warning-face))
+  17             6             1%  ("\\<\\(\\(?:E\\(?:OF\\)?\\|FALSE\\|Infinity\\|N\\(?:IL\\|aN\\)\\|PI\\|TRUE\\|empty\\)\\)\\>" (1 'font-lock-constant-face))
+  18             1             1%  ("\\<\\(\\(?:CONSOLE_KEYBOARD\\|GRAPH_KEYBOARD\\|IN\\|KEYBOARD\\|OUT\\|STD_\\(?:CONSOLE\\|ERR\\|IN\\|NULL\\|OUT\\)\\)\\)\\>" (1 'seed7-predefined-variables-face))
+  19             1             1%  ("\\<\\(\\(?:\\(?:ACTION\\|C\\(?:OPY\\|REATE\\)\\|D\\(?:ATABASE\\|ESTROY\\)\\|FILE\\|GRAPHIC\\|IN\\(?:DEX\\)?\\|MEMORY\\|NUMERIC\\|O\\(?:KAY_NO\\|VERFLOW\\)\\|RANGE\\)_ERROR\\)\\)\\>" (1 'seed7-errinfo-value-face))
+  20            20             5%  ("\\<\\(\\(?:RADIX\\|and\\|conv\\|di\\(?:gits\\|v\\)\\|exp\\|in\\|lpad0?\\|m\\(?:div\\|od\\|ult\\)\\|not\\|or\\|parse\\|r\\(?:adix\\|em\\|pad\\)\\|sci\\|times\\|varConv\\)\\)\\>" (1 'font-lock-keyword-face))
+  21            13             1%  ("\\(?:\\(?:<<\\|>[<>]\\|[&*+/:@|-]\\)?:=\\)" (0 'font-lock-keyword-face))
+  22             5             1%  ("[!?]\\|<<\\|>>\\|><\\|<&" (0 'font-lock-keyword-face))
+  23            31             2%  ("\\(?:[=><]\\|\\(?:<>\\|<=\\|>=\\)\\)" (0 'font-lock-keyword-face))
+  24             0             3%  ("[[:alnum:]_ )]\\([/*]\\)[[:alnum:]_ (]" (1 'font-lock-keyword-face))
+  25             0             3%  ("[[:alnum:] _)]\\(/\\)[[:alnum:] _(]" (1 'font-lock-keyword-face))
+  26             0             3%  ("[[:alnum:] _)]\\(\\*\\*\\)[[:alnum:] _(]" (1 'font-lock-keyword-face))
+  27             2             3%  ("[\n[:alnum:] _)\\\"]\\([&|]\\)[\n[:alnum:] _(\\\"]" (1 'font-lock-keyword-face))
+  28             0             5%  ("[^'\\]\\(\\(?:''\\)\\|\\(?:'[^\\].+?'\\)\\|\\('\\\\[[:digit:]]+'\\)\\)[^']" (1 'font-lock-warning-face))
+  29           414            19%  ("\\([[:alpha:]][[:alnum:]_]*\\|_[[:alnum:]_]+\\)" (1 'seed7-name-identifier-face))
+  30             0             1%  ("\\(\\(?:\\(?:\\([2-9]\\|1[0-9]\\|2[0-9]\\|3[0-6]\\)#\\)?[0-9]+_\\)\\)" (1 'seed7-big-integer-face))
+  31           108             5%  ("\\([[:digit:]]+\\)" (1 'seed7-integer-face))
+  32            10             4%  ("[^+-]\\([+-]\\)[^+-]" (1 'font-lock-keyword-face))
+  33             2             4%  ("[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]" (1 'font-lock-keyword-face))
+
+
+
+.. ---------------------------------------------------------------------------
