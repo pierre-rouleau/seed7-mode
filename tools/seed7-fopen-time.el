@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-19 15:07:19 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-19 15:13:49 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -189,14 +189,13 @@ The DIRECTORY-SPECS is a list of (DIRECTORY EXTENSIONS) elements, where:
           (insert "Time Distribution (Histogram)\n")
           (insert "=============================\n\n")
           (insert "::\n\n") ;; Literal block indicator for rendering text histograms cleanly
-          (let ((make-bar (lambda (c-val) (make-string c-val ?#))))
-            (if (zerop range)
-                (insert (format "  %.4fs - %.4fs : %s (%d)\n"
-                                min-time max-time (funcall make-bar count) count))
-              (insert (format "  %.4fs - %.4fs : %s (%d)\n" min-time (+ min-time bin-width) (funcall make-bar bin1) bin1))
-              (insert (format "  %.4fs - %.4fs : %s (%d)\n" (+ min-time bin-width) (+ min-time (* 2 bin-width)) (funcall make-bar bin2) bin2))
-              (insert (format "  %.4fs - %.4fs : %s (%d)\n" (+ min-time (* 2 bin-width)) (+ min-time (* 3 bin-width)) (funcall make-bar bin3) bin3))
-              (insert (format "  %.4fs - %.4fs : %s (%d)\n" (+ min-time (* 3 bin-width)) max-time (funcall make-bar bin4) bin4))))
+          (if (zerop range)
+              (insert (format "  %.4fs - %.4fs :%d\n"
+                              min-time max-time  count))
+            (insert (format "  %.4fs - %.4fs : %d\n" min-time (+ min-time bin-width) bin1))
+            (insert (format "  %.4fs - %.4fs : %d\n" (+ min-time bin-width) (+ min-time (* 2 bin-width)) bin2))
+            (insert (format "  %.4fs - %.4fs : %d\n" (+ min-time (* 2 bin-width)) (+ min-time (* 3 bin-width)) bin3))
+            (insert (format "  %.4fs - %.4fs : %d\n" (+ min-time (* 3 bin-width)) max-time bin4)))
           (rst-mode)
           (goto-char (point-min)))
         (switch-to-buffer report-buf)))))
