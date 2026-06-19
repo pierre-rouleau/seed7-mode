@@ -1365,9 +1365,11 @@ it will download the new version of the files and byte-compile ``seed7-mode.el``
 Future
 ======
 
-This package is stable enough to be useful but is not perfect yet.
-It is not yet available under MELPA; I did not get enough feedback
-for potential areas to improve.
+This package is stable enough to be useful and is still evolving
+with performance improvements and new features.
+I am planing more cleanup and broader test coverage before proposing it
+to MELPA.
+
 However, you can easily install it as described above.
 
 Any help, questions, suggestions are welcome!
