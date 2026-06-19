@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260618.1618
+;; Package-Version: 20260618.2340
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-18T20:18:35+0000 W25-4"
+(defconst seed7-mode-version-timestamp "2026-06-19T03:40:10+0000 W25-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -784,15 +784,19 @@ Inside a non-capturing group.")
 
 ;; --
 ;; Note: Ensure that something like 0_ is not matched by seed7-name-identifier-nc-re
-(defconst seed7-name-identifier-nc-re
-  "\\(?:[[:alpha:]_][[:alnum:]_]+\\)\\|\\(?:[[:alpha:]][[:alnum:]]*_*\\)"
+
+
+(defconst seed7-name-identifier-fmt "\\(%s[[:alpha:]][[:alnum:]_]*\\|_[[:alnum:]_]+\\)"
+  ;; Note: the regexp has 2 branches but the first character on each differs:
+  ;; this means that the regexp engine does not need to backtrack.
+  ;; Backtracking can be expensive, so it is avoided.
+  "A complete, valid name identifier.  Format string.")
+
+(defconst seed7-name-identifier-nc-re (format seed7-name-identifier-fmt "?:")
   "A complete, valid name identifier.  No capturing group.")
 
-(defconst seed7-name-identifier-re
-  (format "\\(%s\\)"
-          seed7-name-identifier-nc-re)
-  "A complete, valid name identifier.
-Group 1: identifier : 1 word")
+(defconst seed7-name-identifier-re (format seed7-name-identifier-fmt "")
+  "A complete, valid name identifier. Group 1: identifier : 1 word")
 
 ;; --
 (defconst seed7--open-paren-regexp
@@ -2127,17 +2131,17 @@ Matches either the opening `(*' or the closing `*)'.")
 (defun seed7-mode-syntax-propertize (start end)
   "Apply syntax-table text properties between START and END.
 
-Handle two cases:
+Handle four cases:
 - the `#' number-base separator,
-- single-quoted character literals.
-
-The `(*' and `*)' block-comment delimiters are handled entirely by
-the style-a entries in `seed7-mode-syntax-table' (`\"()1n\"', `\". 23\"',
-`\")(4n\"') via Emacs's C-level scanner; no text properties are needed."
+- single-quoted character literals,
+- the `(*' two-character block-comment opener,
+- the `*)' two-character block-comment closer."
   ;; See:  (info "(elisp)Syntax Properties")
   (with-silent-modifications
     (save-excursion
       (save-match-data
+        ;; Loop 1: `#' and single-quoted char literals.
+        ;; Fires only at [[:digit:]] and `'' — rare in a Seed7 file.
         (goto-char start)
         (while (re-search-forward seed7-char-literal-re-no-comments end t)
           (cond
@@ -2148,7 +2152,24 @@ the style-a entries in `seed7-mode-syntax-table' (`\"()1n\"', `\". 23\"',
             (put-text-property (match-beginning 2) (1+ (match-beginning 2))
                                'syntax-table '(7 . ?'))
             (put-text-property (1- (match-end 2)) (match-end 2)
-                               'syntax-table '(7 . ?')))))))))
+                               'syntax-table '(7 . ?')))))
+        ;; Loop 2: `(*' and `*)' block-comment delimiters.
+        ;; Uses the minimal two-alternative pattern — no 35-branch subpattern.
+        ;; These text properties also serve as jit-lock safe-point anchors,
+        ;; preventing backward scans across the whole file on each chunk.
+        (goto-char start)
+        (while (re-search-forward seed7-block-comment-delim-re end t)
+          (if (eq (char-after (match-beginning 0)) ?\()
+              (progn                    ; (* opener
+                (put-text-property (match-beginning 0) (1+ (match-beginning 0))
+                                   'syntax-table (string-to-syntax "< 1bn"))
+                (put-text-property (1+ (match-beginning 0)) (match-end 0)
+                                   'syntax-table (string-to-syntax "< 2bn")))
+            (progn                      ; *) closer
+              (put-text-property (match-beginning 0) (1+ (match-beginning 0))
+                                 'syntax-table (string-to-syntax "> 3bn"))
+              (put-text-property (1+ (match-beginning 0)) (match-end 0)
+                                 'syntax-table (string-to-syntax "> 4bn")))))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
