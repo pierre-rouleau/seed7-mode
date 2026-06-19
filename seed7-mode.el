@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260619.0752
+;; Package-Version: 20260619.0841
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-19T11:52:25+0000 W25-5"
+(defconst seed7-mode-version-timestamp "2026-06-19T12:41:52+0000 W25-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3614,6 +3614,7 @@ Move inside the current if inside one, to the next if outside one.
   (let* ((n (prefix-numeric-value n))
          (original-pos (point))  (found-candidate nil)
          (final-pos nil)         (found-pos nil)
+         (long-body-final-pos nil)
          (item-name nil)         (item-name2 nil)
          (item-type nil)         (item-type2 nil)
          (tail-type nil)         (tail-type2 nil)
@@ -3625,7 +3626,8 @@ Move inside the current if inside one, to the next if outside one.
           (dotimes (_ n)
             (setq found-candidate nil
                   final-pos nil
-                  found-pos nil)
+                  found-pos nil
+                  long-body-final-pos nil)
             ;; Search for all possible function/procedure end.
             ;; - Retain the one that is closest to point.
 
@@ -3683,6 +3685,7 @@ Move inside the current if inside one, to the next if outside one.
                           item-name (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
                           tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group))
                           top-block-name top-block-name2
+                          long-body-final-pos matched-end-pos
                           final-pos matched-end-pos
                           found-candidate t)))))
             ;; -- Search for next short function. ----------------------------
@@ -3698,15 +3701,13 @@ Move inside the current if inside one, to the next if outside one.
                             item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
                             tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                       t)
-                   ;; Reject this candidate only when it is nested inside the
-                   ;; outer long-body callable already captured (final-pos is
-                   ;; set and short-func-decl-pos falls strictly between
-                   ;; original-pos and final-pos).  When no outer end has been
-                   ;; found yet (final-pos is nil), the short function is a
-                   ;; top-level sibling/successor and must be accepted.
-                   (not (and final-pos
-                             short-func-decl-pos
-                             (< original-pos short-func-decl-pos final-pos)))
+                    ;; Reject this candidate only when it is nested inside the
+                    ;; outer long-body callable already captured
+                    ;; When no outer end has been found yet (long-body-final-pos is nil),
+                    ;; the short function is a top-level sibling/successor and must be accepted.
+                    (not (and long-body-final-pos
+                              short-func-decl-pos
+                              (< original-pos short-func-decl-pos long-body-final-pos)))
                     (seed7-re-search-forward seed7-short-func-end-regexp)
                     (eq (point) found-pos)
                     (or (not final-pos)
@@ -3732,9 +3733,9 @@ Move inside the current if inside one, to the next if outside one.
                              tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                        t)
                      ;; Reject if nested inside the outer long-body callable already found
-                     (not (and final-pos
+                     (not (and long-body-final-pos
                                fwd-decl-pos
-                               (< original-pos fwd-decl-pos final-pos)))
+                               (< original-pos fwd-decl-pos long-body-final-pos)))
                      (seed7-re-search-forward seed7-forward-declaration-end-regexp)
                      (eq (point) found-pos)
                      (or (not final-pos)
@@ -3760,9 +3761,9 @@ Move inside the current if inside one, to the next if outside one.
                              tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                        t)
                      ;; Reject if nested inside the outer long-body callable already found
-                     (not (and final-pos
+                     (not (and long-body-final-pos
                                action-decl-pos
-                               (< original-pos action-decl-pos final-pos)))
+                               (< original-pos action-decl-pos long-body-final-pos)))
                      (seed7-re-search-forward seed7-procfunc-forward-or-action-declaration-re)
                      (eq (point) found-pos)
                      (or (not final-pos)
