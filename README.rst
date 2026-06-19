@@ -1378,7 +1378,7 @@ To use it, write and evaluate the following, updating the path to your copy of
 your Seed7 repository.  It will open every Seed7 file in the repository and
 measure the time it takes to open them .  If you already have some opened if
 won't close them (but will close each one it had to open).  However it's best
-to start with no opened Seed7 file.
+to start with no opened Seed7 files.
 
 Then open and load `tools/seed7-fopen-time.el`_ and
 evaluate the following code to run the test
