@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-19 14:19:07 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-19 15:07:19 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -159,7 +159,7 @@ The DIRECTORY-SPECS is a list of (DIRECTORY EXTENSIONS) elements, where:
           (insert "File Load Times\n")
           (insert "===============\n\n")
           (insert (format  "%s= ================= =============== ================= ================\n" title-bar))
-          (insert (format  "File Name%s  Total Time (s)    GC Count        GC Time (s)  Line count\n" spacing))
+          (insert (format  "File Name%s  Total Time (s)    GC Count        GC Time (s)       Line count\n" spacing))
           (insert (format  "%s= ================= =============== ================= ================\n" title-bar))
           (dolist (row results)
             (insert (format (format "%%-%ds  %%-15.6f   %%-13d   %%-15.6f   %%5d\n" max-fname-len)

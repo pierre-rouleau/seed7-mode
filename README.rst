@@ -1359,6 +1359,36 @@ just delete your ``~/.emacs.d/utils/seed7-mode.*`` and
 ``~/.emacs.d/utils/tools/s7xref.sd7`` files and restart Emacs;
 it will download the new version of the files and byte-compile ``seed7-mode.el``.
 
+.. ---------------------------------------------------------------------------
+
+Development Tools
+=================
+
+I wrote some tools to help the development of Seed7 support.  Some of these
+tools are meant to be used in Emacs batch mode and controlled by a GNU make
+driven invocation.  Others are meant to be used interactively inside Emacs.
+
+One of those is the file `tools/seed7-fopen-time.el`_ which holds logic to
+open all Seed7 source files in the Seed7 repository and measure the time it
+takes to open each of them and then create a report similar to
+`reports/file-open-benchmark-01.rst`_.
+
+
+To use it, write and evaluate the following, updating the path to your copy of
+your Seed7 repository.  It will open every Seed7 file in the repository and
+measure the time it takes to open them .  If you already have some opened if
+won't close them (but will close each one it had to open).  However it's best
+to start with no opened Seed7 file.
+
+Then open and load `tools/seed7-fopen-time.el`_ and
+evaluate the following code to run the test
+
+.. code:: elisp
+
+          (generate-sd7-benchmark-report
+           '(("~/my/dvo/seed7-repos/seed7/prg" ("sd7" "s7i"))
+             ("~/my/dvo/seed7-repos/seed7/lib" ("sd7" "s7i"))))
+
 
 .. ---------------------------------------------------------------------------
 
@@ -1378,23 +1408,25 @@ Any help, questions, suggestions are welcome!
 .. links
 
 
-.. _seed7-mode.el:                   seed7-mode.el
-.. _Terminal-mode Emacs:             screenshots/terminal-example-01.png
-.. _Graphical Emacs:                 screenshots/graphic-light-example-01.png
-.. _Terminal Emacs Speedbar:         screenshots/terminal-seed7-speedbar-01.png
-.. _GUI Emacs Speedbar:              screenshots/macOS-gui-speedbar-frame.png
-.. _GUI Emacs menu:                  screenshots/macOS-gui-menu-01.png
-.. _Terminal menu 1:                 screenshots/terminal-menu-01.png
-.. _Terminal menu 2:                 screenshots/terminal-menu-02.png
-.. _Terminal Ivy prompt:             screenshots/terminal-imenu-gh-01.png
-.. _bas.sd7 outline all collapsed:   screenshots/terminal-outline-minor-mode.png
-.. _bas.sd7 outline with 2 expanded: screenshots/terminal-outline-minor-mode-01.png
-.. _Navigation to structure menu:    screenshots/menu-defs-struct.png
-.. _Comments menu:                   screenshots/menu-comments.png
-.. _Template insertion menu:         screenshots/menu-insert.png
-.. _Align commands menu:             screenshots/menu-align.png
-.. _Graphical Emacs dark mode:       screenshots/dark-modus-vivendi-theme.png
-.. _Seed7 Syntax Test:               screenshots/syntaxhl.png
+.. _seed7-mode.el:                              seed7-mode.el
+.. _Terminal-mode Emacs:                        screenshots/terminal-example-01.png
+.. _Graphical Emacs:                            screenshots/graphic-light-example-01.png
+.. _Terminal Emacs Speedbar:                    screenshots/terminal-seed7-speedbar-01.png
+.. _GUI Emacs Speedbar:                         screenshots/macOS-gui-speedbar-frame.png
+.. _GUI Emacs menu:                             screenshots/macOS-gui-menu-01.png
+.. _Terminal menu 1:                            screenshots/terminal-menu-01.png
+.. _Terminal menu 2:                            screenshots/terminal-menu-02.png
+.. _Terminal Ivy prompt:                        screenshots/terminal-imenu-gh-01.png
+.. _bas.sd7 outline all collapsed:              screenshots/terminal-outline-minor-mode.png
+.. _bas.sd7 outline with 2 expanded:            screenshots/terminal-outline-minor-mode-01.png
+.. _Navigation to structure menu:               screenshots/menu-defs-struct.png
+.. _Comments menu:                              screenshots/menu-comments.png
+.. _Template insertion menu:                    screenshots/menu-insert.png
+.. _Align commands menu:                        screenshots/menu-align.png
+.. _Graphical Emacs dark mode:                  screenshots/dark-modus-vivendi-theme.png
+.. _Seed7 Syntax Test:                          screenshots/syntaxhl.png
+.. _tools/seed7-fopen-time.el:                  tools/seed7-fopen-time.el
+.. _reports/file-open-benchmark-01.rst:         reports/file-open-benchmark-01.rst
 .. _Emacs xref framework:                       https://www.gnu.org/software/emacs/manual/html_node/emacs/Xref.html
 .. _Emacs imenu mode:                           https://www.gnu.org/software/emacs/manual/html_node/elisp/Imenu.html
 .. _Emacs Speedbar:                             https://www.gnu.org/software/emacs/manual/html_node/speedbar/
