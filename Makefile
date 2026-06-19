@@ -117,7 +117,8 @@ ALL_TEST_FILES := tests/ert-tests/seed7-test-arrays-01.el \
                   tests/ert-tests/seed7-test-mark-defun-01.el \
                   tests/ert-tests/seed7-test-nav-array-01.el \
                   tests/ert-tests/seed7-test-nav-final-pos-01.el \
-                  tests/ert-tests/seed7-test-nav-nested-01.el
+                  tests/ert-tests/seed7-test-nav-nested-01.el \
+                  tests/ert-tests/seed7-test-syntax-propertize-01.el
 
 ALL_TEST_PASSED := $(ALL_TEST_FILES:.el=.el.test-passed)
 
@@ -265,12 +266,12 @@ endif
 # ----------------------
 
 
-tests/ert-tests/seed7-test-arrays-01.el.test-passed:        seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-arrays-01.elc
-tests/ert-tests/seed7-test-mark-defun-01.el.test-passed:    seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-mark-defun-01.el
-tests/ert-tests/seed7-test-nav-array-01.el.test-passed:     seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-array-01.elc
-tests/ert-tests/seed7-test-nav-final-pos-01.el.test-passed: seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-final-pos-01.elc
-tests/ert-tests/seed7-test-nav-nested-01.el.test-passed:    seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-nested-01.elc
-
+tests/ert-tests/seed7-test-arrays-01.el.test-passed:             seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-arrays-01.elc
+tests/ert-tests/seed7-test-mark-defun-01.el.test-passed:         seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-mark-defun-01.el
+tests/ert-tests/seed7-test-nav-array-01.el.test-passed:          seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-array-01.elc
+tests/ert-tests/seed7-test-nav-final-pos-01.el.test-passed:      seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-final-pos-01.elc
+tests/ert-tests/seed7-test-nav-nested-01.el.test-passed:         seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-nested-01.elc
+tests/ert-tests/seed7-test-syntax-propertize-01.el.test-passed:  seed7-mode.elc tests/ert-tests/pel-ert.elc  tests/ert-tests/seed7-test-syntax-propertize-01.el
 #tests/ert-tests/seed7-test-sets-01.el.test-passed:          seed7-mode.elc tests/ert-tests/seed7-test-sets-01.elc
 
 # ----------------------------------------------------------------------------
