@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-19 14:00:37 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-19 14:19:07 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -37,11 +37,10 @@
 ;;
 
 (defun benchmark-sd7-files-in-dir (directory extension)
-  "Return a list of files with EXTENSION inside the DIRECTORY."
+  "Return a sorted list of files with EXTENSION inside the DIRECTORY."
   (directory-files directory
                    t
-                   (format "\\.%s$" extension)
-                   t))
+                   (format "\\.%s$" extension)))
 
 (defun benchmark-sd7-files-in-specs (directory-specs)
   "Benchmark open/render time of all file-names identified in DIRECTORY-SPECS.
@@ -70,12 +69,15 @@ Returns a (REPORT. MAX-FILENAME-LEN) where:
         (dolist (file-name file-names)
           (let ((bench-info
                  (benchmark-run 1
-                   (let ((buf (find-file-noselect file-name)))
+                   (let* ((existing-buf (get-file-buffer file-name))
+                          (buf (or existing-buf (find-file-noselect file-name))))
                      (with-current-buffer buf
                        (sit-for 0)
                        (setq file-line-count (line-number-at-pos (point-max))))
-                     ;; Clean up buffer to prevent memory issues
-                     (kill-buffer buf)))))
+                     ;; Clean up buffer to prevent memory issues, but only if
+                     ;; it was not previously opened.
+                     (unless existing-buf
+                       (kill-buffer buf))))))
             (setq abbrev-fname (abbreviate-file-name file-name))
             (setq len (length abbrev-fname))
             (when (> len  max-filename-len)
@@ -100,7 +102,7 @@ The DIRECTORY-SPECS is a list of (DIRECTORY EXTENSIONS) elements, where:
          (max-fname-len (cdr results.max-fname-len))
          (count         (length results))
          (title-bar     (make-string max-fname-len ?=))
-         (spacing       (make-string (- max-fname-len (length "File Name")) ?\s)))
+         (spacing       (make-string (max 1 (- max-fname-len (length "File Name"))) ?\s)))
     (if (null results)
         (message "No .sd7 files found in that directory.")
       (let* ((times (mapcar #'caddr results))
@@ -188,11 +190,13 @@ The DIRECTORY-SPECS is a list of (DIRECTORY EXTENSIONS) elements, where:
           (insert "=============================\n\n")
           (insert "::\n\n") ;; Literal block indicator for rendering text histograms cleanly
           (let ((make-bar (lambda (c-val) (make-string c-val ?#))))
-            (insert (format "  %.4fs - %.4fs : %s (%d)\n" min-time (+ min-time bin-width) (funcall make-bar bin1) bin1))
-            (insert (format "  %.4fs - %.4fs : %s (%d)\n" (+ min-time bin-width) (+ min-time (* 2 bin-width)) (funcall make-bar bin2) bin2))
-            (insert (format "  %.4fs - %.4fs : %s (%d)\n" (+ min-time (* 2 bin-width)) (+ min-time (* 3 bin-width)) (funcall make-bar bin3) bin3))
-            (insert (format "  %.4fs - %.4fs : %s (%d)\n" (+ min-time (* 3 bin-width)) max-time (funcall make-bar bin4) bin4)))
-
+            (if (zerop range)
+                (insert (format "  %.4fs - %.4fs : %s (%d)\n"
+                                min-time max-time (funcall make-bar count) count))
+              (insert (format "  %.4fs - %.4fs : %s (%d)\n" min-time (+ min-time bin-width) (funcall make-bar bin1) bin1))
+              (insert (format "  %.4fs - %.4fs : %s (%d)\n" (+ min-time bin-width) (+ min-time (* 2 bin-width)) (funcall make-bar bin2) bin2))
+              (insert (format "  %.4fs - %.4fs : %s (%d)\n" (+ min-time (* 2 bin-width)) (+ min-time (* 3 bin-width)) (funcall make-bar bin3) bin3))
+              (insert (format "  %.4fs - %.4fs : %s (%d)\n" (+ min-time (* 3 bin-width)) max-time (funcall make-bar bin4) bin4))))
           (rst-mode)
           (goto-char (point-min)))
         (switch-to-buffer report-buf)))))
