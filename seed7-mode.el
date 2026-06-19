@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260618.2340
+;; Package-Version: 20260619.0752
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-19T03:40:10+0000 W25-5"
+(defconst seed7-mode-version-timestamp "2026-06-19T11:52:25+0000 W25-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -784,8 +784,6 @@ Inside a non-capturing group.")
 
 ;; --
 ;; Note: Ensure that something like 0_ is not matched by seed7-name-identifier-nc-re
-
-
 (defconst seed7-name-identifier-fmt "\\(%s[[:alpha:]][[:alnum:]_]*\\|_[[:alnum:]_]+\\)"
   ;; Note: the regexp has 2 branches but the first character on each differs:
   ;; this means that the regexp engine does not need to backtrack.
@@ -3708,8 +3706,7 @@ Move inside the current if inside one, to the next if outside one.
                    ;; top-level sibling/successor and must be accepted.
                    (not (and final-pos
                              short-func-decl-pos
-                             (> short-func-decl-pos original-pos)
-                             (< short-func-decl-pos final-pos)))
+                             (< original-pos short-func-decl-pos final-pos)))
                     (seed7-re-search-forward seed7-short-func-end-regexp)
                     (eq (point) found-pos)
                     (or (not final-pos)
@@ -3722,48 +3719,60 @@ Move inside the current if inside one, to the next if outside one.
                        top-block-name top-block-name2))))
             ;; -- Search for next forward declaration. -----------------------
             (save-excursion
-              (when
-                  (and
-                   (setq found-pos
-                         (seed7-re-search-forward seed7-forward-declaration-end-regexp)
-                         top-block-name2 (seed7-top-block-name))
-                   (when (seed7-re-search-backward seed7-procfunc-regexp)
-                     (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
-                           item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
-                           tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
-                     t)
-                   (seed7-re-search-forward seed7-forward-declaration-end-regexp)
-                   (eq (point) found-pos)
-                   (or (not final-pos)
-                       (< found-pos final-pos)))
-                (setq final-pos found-pos
-                      found-candidate t
-                      item-name item-name2
-                      item-type item-type2
-                      tail-type tail-type2
-                      top-block-name top-block-name2)))
+              (let (fwd-decl-pos)
+                (when
+                    (and
+                     (setq found-pos
+                           (seed7-re-search-forward seed7-forward-declaration-end-regexp)
+                           top-block-name2 (seed7-top-block-name))
+                     (when (seed7-re-search-backward seed7-procfunc-regexp)
+                       (setq fwd-decl-pos (point)
+                             item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                             item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                             tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
+                       t)
+                     ;; Reject if nested inside the outer long-body callable already found
+                     (not (and final-pos
+                               fwd-decl-pos
+                               (< original-pos fwd-decl-pos final-pos)))
+                     (seed7-re-search-forward seed7-forward-declaration-end-regexp)
+                     (eq (point) found-pos)
+                     (or (not final-pos)
+                         (< found-pos final-pos)))
+                  (setq final-pos found-pos
+                        found-candidate t
+                        item-name item-name2
+                        item-type item-type2
+                        tail-type tail-type2
+                        top-block-name top-block-name2))))
             ;; -- Search for next function implementation declaration. -------
             (save-excursion
-              (when
-                  (and
-                   (setq found-pos
-                         (seed7-re-search-forward seed7-procfunc-forward-or-action-declaration-re)
-                         top-block-name2 (seed7-top-block-name))
-                   (when (seed7-re-search-backward seed7-procfunc-regexp)
-                     (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
-                           item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
-                           tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
-                     t)
-                   (seed7-re-search-forward seed7-procfunc-forward-or-action-declaration-re)
-                   (eq (point) found-pos)
-                   (or (not final-pos)
-                       (< found-pos final-pos)))
-                (setq final-pos found-pos
-                      found-candidate t
-                      item-name item-name2
-                      item-type item-type2
-                      tail-type tail-type2
-                      top-block-name top-block-name2)))
+              (let (action-decl-pos)
+                (when
+                    (and
+                     (setq found-pos
+                           (seed7-re-search-forward seed7-procfunc-forward-or-action-declaration-re)
+                           top-block-name2 (seed7-top-block-name))
+                     (when (seed7-re-search-backward seed7-procfunc-regexp)
+                       (setq action-decl-pos (point)
+                             item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                             item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                             tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
+                       t)
+                     ;; Reject if nested inside the outer long-body callable already found
+                     (not (and final-pos
+                               action-decl-pos
+                               (< original-pos action-decl-pos final-pos)))
+                     (seed7-re-search-forward seed7-procfunc-forward-or-action-declaration-re)
+                     (eq (point) found-pos)
+                     (or (not final-pos)
+                         (< found-pos final-pos)))
+                  (setq final-pos found-pos
+                        found-candidate t
+                        item-name item-name2
+                        item-type item-type2
+                        tail-type tail-type2
+                        top-block-name top-block-name2))))
             ;; --
             (if found-candidate
                 ;; move to the end of first function to allow next search in loop
