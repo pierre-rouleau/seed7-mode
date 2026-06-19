@@ -1390,6 +1390,11 @@ evaluate the following code to run the test
              ("~/my/dvo/seed7-repos/seed7/lib" ("sd7" "s7i"))))
 
 
+Note that this tool opens each file once.  This does not provide a good enough
+sampling to be able to really measure slight variations in the performance of
+the code but it allows to detect large and problematic variations.
+
+
 .. ---------------------------------------------------------------------------
 
 Future
