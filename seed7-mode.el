@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260618.1057
+;; Package-Version: 20260619.0939
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-18T14:57:26+0000 W25-4"
+(defconst seed7-mode-version-timestamp "2026-06-19T13:39:12+0000 W25-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -784,15 +784,17 @@ Inside a non-capturing group.")
 
 ;; --
 ;; Note: Ensure that something like 0_ is not matched by seed7-name-identifier-nc-re
-(defconst seed7-name-identifier-nc-re
-  "\\(?:[[:alpha:]_][[:alnum:]_]+\\)\\|\\(?:[[:alpha:]][[:alnum:]]*_*\\)"
+(defconst seed7-name-identifier-fmt "\\(%s[[:alpha:]][[:alnum:]_]*\\|_[[:alnum:]_]+\\)"
+  ;; Note: the regexp has 2 branches but the first character on each differs:
+  ;; this means that the regexp engine does not need to backtrack.
+  ;; Backtracking can be expensive, so it is avoided.
+  "A complete, valid name identifier.  Format string.")
+
+(defconst seed7-name-identifier-nc-re (format seed7-name-identifier-fmt "?:")
   "A complete, valid name identifier.  No capturing group.")
 
-(defconst seed7-name-identifier-re
-  (format "\\(%s\\)"
-          seed7-name-identifier-nc-re)
-  "A complete, valid name identifier.
-Group 1: identifier : 1 word")
+(defconst seed7-name-identifier-re (format seed7-name-identifier-fmt "")
+  "A complete, valid name identifier. Group 1: identifier : 1 word")
 
 ;; --
 (defconst seed7--open-paren-regexp
@@ -2088,22 +2090,25 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
 ;;** Seed7 Mode Syntax Propertize Function
 ;;   -------------------------------------
 
-(defconst seed7-char-literal-re
+(defconst seed7-char-literal-re-no-comments
   (format
-   "\\(?:\\(?:[[:digit:]]\\(#\\)[[:alnum:]]\\)\\|\\(\\(?:'\\\\''\\)\\|\\(?:'.'\\)\\|\\(?:'\\\\[abefnrtv\"A-Z\\\\]'\\)\\|\\(?:%s\\)\\)\\)\\|\\((\\*\\)\\|\\(\\*)\\)"
-   ;; (----(----------------------------------)----(--------------------------------------------------------------------------------)--)-----(------)-----(------)
+   "\\(?:\\(?:[[:digit:]]\\(#\\)[[:alnum:]]\\)\\|\\(\\(?:'\\\\''\\)\\|\\(?:'.'\\)\\|\\(?:'\\\\[abefnrtv\"A-Z\\\\]'\\)\\|\\(?:%s\\)\\)\\)"
+   ;; (----(----------------------------------)----(--------------------------------------------------------------------------------)--)
    ;;                      (---)                   (-----------------------------------------------------------------------------------)
-   ;;                                                 (-----------)     (-------)     (-----------------------------)     (------)           (------)     (------)
-   ;;                      G1                      G2                                  backslash-character                   %s              G3           G4
+   ;;                                                 (-----------)     (-------)     (-----------------------------)     (------)
+   ;;                      G1                      G2                                  backslash-character                   %s
    ;; format argument number:                                                                                                 1
    ;;
    ;; G1: #
    ;; G2: single quote character expression
-   ;; G3: opening block comment: (*
-   ;; G4: closing block comment: *)
    ;; backslash characters: \a, \b... :standard named escape letters, including \e for the Escape character.
    ;; backslash characters: \A .. \Z  : standard Seed7 control characters: Ctrl-A .. Ctrl-Z
-   seed7-any-valid-char-integer-semicolon-re))
+   seed7-any-valid-char-integer-semicolon-re)
+  "Regexp for # and char literals only — no block-comment delimiters.")
+
+(defconst seed7-block-comment-delim-re "(\\*\\|\\*)"
+  "Regexp matching the two-character Seed7 block-comment delimiters.
+Matches either the opening `(*' or the closing `*)'.")
 
 ;; Emacs supports two-character comment delimiters via "style b"
 ;; syntax text properties. The characters of each delimiter are
@@ -2121,50 +2126,48 @@ Group 3: - \"func\" for proc or function that ends with \"end func\".
 ;; Each syntax-entry code ends with 'n' because Seed7 (* *) style
 ;; comments can be nested.
 
-
 (defun seed7-mode-syntax-propertize (start end)
   "Apply syntax-table text properties between START and END.
 
 Handle four cases:
 - the `#' number-base separator,
 - single-quoted character literals,
-- the `(*' and
-- the `*)' two-characters block-comment delimiters."
+- the `(*' two-character block-comment opener,
+- the `*)' two-character block-comment closer."
   ;; See:  (info "(elisp)Syntax Properties")
-  ;;
   (with-silent-modifications
     (save-excursion
       (save-match-data
+        ;; Loop 1: `#' and single-quoted char literals.
+        ;; Fires only at [[:digit:]] and `'' — rare in a Seed7 file.
         (goto-char start)
-        (while (re-search-forward seed7-char-literal-re end t)
+        (while (re-search-forward seed7-char-literal-re-no-comments end t)
           (cond
-           ;; deal with '#'
-           ((match-beginning 1)
+           ((match-beginning 1)         ; # number-base separator
             (put-text-property (match-beginning 1) (match-end 1)
                                'syntax-table (string-to-syntax "_")))
-
-           ;; Deal with single quoted character expression
-           ((match-beginning 2)
+           ((match-beginning 2)         ; single-quoted char literal
             (put-text-property (match-beginning 2) (1+ (match-beginning 2))
                                'syntax-table '(7 . ?'))
-            (put-text-property (1- (match-end 2))  (match-end 2)
-                               'syntax-table '(7 . ?')))
-
-           ;; Mark (* as a two-character comment-start (style b).
-           ;; Override the paren-open syntax on '(' for this occurrence.
-           ((match-beginning 3)
-            (put-text-property (match-beginning 3) (1+ (match-beginning 3))
-                               'syntax-table (string-to-syntax "< 1bn"))
-            (put-text-property (1+ (match-beginning 3)) (match-end 3)
-                               'syntax-table (string-to-syntax "< 2bn")))
-
-           ;; Mark *) as a two-character comment-end (style b).
-           ;; Override the paren-close syntax on ')' for this occurrence.
-           ((match-beginning 4)
-            (put-text-property (match-beginning 4) (1+ (match-beginning 4))
-                               'syntax-table (string-to-syntax "> 3bn"))
-            (put-text-property (1+ (match-beginning 4)) (match-end 4)
-                               'syntax-table (string-to-syntax "> 4bn")))))))))
+            (put-text-property (1- (match-end 2)) (match-end 2)
+                               'syntax-table '(7 . ?')))))
+        ;; Loop 2: `(*' and `*)' block-comment delimiters.
+        ;; Uses the minimal two-alternative pattern — no 35-branch subpattern.
+        ;; These text properties also serve as jit-lock safe-point anchors,
+        ;; preventing backward scans across the whole file on each chunk.
+        (goto-char start)
+        (while (re-search-forward seed7-block-comment-delim-re end t)
+          (if (eq (char-after (match-beginning 0)) ?\()
+              (progn                    ; (* opener
+                (put-text-property (match-beginning 0) (1+ (match-beginning 0))
+                                   'syntax-table (string-to-syntax "< 1bn"))
+                (put-text-property (1+ (match-beginning 0)) (match-end 0)
+                                   'syntax-table (string-to-syntax "< 2bn")))
+            (progn                      ; *) closer
+              (put-text-property (match-beginning 0) (1+ (match-beginning 0))
+                                 'syntax-table (string-to-syntax "> 3bn"))
+              (put-text-property (1+ (match-beginning 0)) (match-end 0)
+                                 'syntax-table (string-to-syntax "> 4bn")))))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
@@ -2541,28 +2544,7 @@ Please update your code to use the new name before this deadline."
 
    ;; other low priority characters
    ;; [ TODO 2025-07-09, by Pierre Rouleau: check if any missing and improve control of ..]
-   (cons "[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]"   (list 1 ''font-lock-keyword-face))
-
-   ;; Fontify the `*)' block-comment end delimiter entirely with
-   ;; `font-lock-comment-face'.
-   ;;
-   ;; Syntactic fontification applies `font-lock-comment-delimiter-face'
-   ;; to `*' (syntax property "> 3bn": first char of style-b comment-end)
-   ;; and leaves `)' ("> 4bn": second char) with no face, because
-   ;; `syntax-ppss' at the `)' position already reports "outside comment"
-   ;; — the comment was fully closed by the complete `*)' pair.
-   ;;
-   ;; This rule overrides both characters to `font-lock-comment-face',
-   ;; consistent with the interior of the block.  The
-   ;; `(nth 4 (syntax-ppss ...))' guard ensures the rule fires only when
-   ;; `*)' genuinely closes a `(* ... *)' block comment and not when
-   ;; those two characters appear elsewhere (e.g. inside a string).
-   (list "\\*)"
-         '(0 (when (save-excursion
-                     (goto-char (match-beginning 0))
-                     (nth 4 (syntax-ppss)))
-               font-lock-comment-face)
-             t)))
+   (cons "[[:print:]]\\(\\(?:~\\)\\|\\(?:\\.\\.\\)\\)[[:print:]]"   (list 1 ''font-lock-keyword-face)))
   "Associates regexp to a regexp group and a face to render it.")
 
 ;; ---------------------------------------------------------------------------
@@ -3632,6 +3614,7 @@ Move inside the current if inside one, to the next if outside one.
   (let* ((n (prefix-numeric-value n))
          (original-pos (point))  (found-candidate nil)
          (final-pos nil)         (found-pos nil)
+         (long-body-final-pos nil)
          (item-name nil)         (item-name2 nil)
          (item-type nil)         (item-type2 nil)
          (tail-type nil)         (tail-type2 nil)
@@ -3643,7 +3626,8 @@ Move inside the current if inside one, to the next if outside one.
           (dotimes (_ n)
             (setq found-candidate nil
                   final-pos nil
-                  found-pos nil)
+                  found-pos nil
+                  long-body-final-pos nil)
             ;; Search for all possible function/procedure end.
             ;; - Retain the one that is closest to point.
 
@@ -3701,6 +3685,7 @@ Move inside the current if inside one, to the next if outside one.
                           item-name (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
                           tail-type (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group))
                           top-block-name top-block-name2
+                          long-body-final-pos matched-end-pos
                           final-pos matched-end-pos
                           found-candidate t)))))
             ;; -- Search for next short function. ----------------------------
@@ -3716,16 +3701,13 @@ Move inside the current if inside one, to the next if outside one.
                             item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
                             tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
                       t)
-                   ;; Reject this candidate only when it is nested inside the
-                   ;; outer long-body callable already captured (final-pos is
-                   ;; set and short-func-decl-pos falls strictly between
-                   ;; original-pos and final-pos).  When no outer end has been
-                   ;; found yet (final-pos is nil), the short function is a
-                   ;; top-level sibling/successor and must be accepted.
-                   (not (and final-pos
-                             short-func-decl-pos
-                             (> short-func-decl-pos original-pos)
-                             (< short-func-decl-pos final-pos)))
+                    ;; Reject this candidate only when it is nested inside the
+                    ;; outer long-body callable already captured
+                    ;; When no outer end has been found yet (long-body-final-pos is nil),
+                    ;; the short function is a top-level sibling/successor and must be accepted.
+                    (not (and long-body-final-pos
+                              short-func-decl-pos
+                              (< original-pos short-func-decl-pos long-body-final-pos)))
                     (seed7-re-search-forward seed7-short-func-end-regexp)
                     (eq (point) found-pos)
                     (or (not final-pos)
@@ -3738,48 +3720,60 @@ Move inside the current if inside one, to the next if outside one.
                        top-block-name top-block-name2))))
             ;; -- Search for next forward declaration. -----------------------
             (save-excursion
-              (when
-                  (and
-                   (setq found-pos
-                         (seed7-re-search-forward seed7-forward-declaration-end-regexp)
-                         top-block-name2 (seed7-top-block-name))
-                   (when (seed7-re-search-backward seed7-procfunc-regexp)
-                     (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
-                           item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
-                           tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
-                     t)
-                   (seed7-re-search-forward seed7-forward-declaration-end-regexp)
-                   (eq (point) found-pos)
-                   (or (not final-pos)
-                       (< found-pos final-pos)))
-                (setq final-pos found-pos
-                      found-candidate t
-                      item-name item-name2
-                      item-type item-type2
-                      tail-type tail-type2
-                      top-block-name top-block-name2)))
+              (let (fwd-decl-pos)
+                (when
+                    (and
+                     (setq found-pos
+                           (seed7-re-search-forward seed7-forward-declaration-end-regexp)
+                           top-block-name2 (seed7-top-block-name))
+                     (when (seed7-re-search-backward seed7-procfunc-regexp)
+                       (setq fwd-decl-pos (point)
+                             item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                             item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                             tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
+                       t)
+                     ;; Reject if nested inside the outer long-body callable already found
+                     (not (and long-body-final-pos
+                               fwd-decl-pos
+                               (< original-pos fwd-decl-pos long-body-final-pos)))
+                     (seed7-re-search-forward seed7-forward-declaration-end-regexp)
+                     (eq (point) found-pos)
+                     (or (not final-pos)
+                         (< found-pos final-pos)))
+                  (setq final-pos found-pos
+                        found-candidate t
+                        item-name item-name2
+                        item-type item-type2
+                        tail-type tail-type2
+                        top-block-name top-block-name2))))
             ;; -- Search for next function implementation declaration. -------
             (save-excursion
-              (when
-                  (and
-                   (setq found-pos
-                         (seed7-re-search-forward seed7-procfunc-forward-or-action-declaration-re)
-                         top-block-name2 (seed7-top-block-name))
-                   (when (seed7-re-search-backward seed7-procfunc-regexp)
-                     (setq item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
-                           item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
-                           tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
-                     t)
-                   (seed7-re-search-forward seed7-procfunc-forward-or-action-declaration-re)
-                   (eq (point) found-pos)
-                   (or (not final-pos)
-                       (< found-pos final-pos)))
-                (setq final-pos found-pos
-                      found-candidate t
-                      item-name item-name2
-                      item-type item-type2
-                      tail-type tail-type2
-                      top-block-name top-block-name2)))
+              (let (action-decl-pos)
+                (when
+                    (and
+                     (setq found-pos
+                           (seed7-re-search-forward seed7-procfunc-forward-or-action-declaration-re)
+                           top-block-name2 (seed7-top-block-name))
+                     (when (seed7-re-search-backward seed7-procfunc-regexp)
+                       (setq action-decl-pos (point)
+                             item-type2 (substring-no-properties (match-string seed7-procfunc-regexp-item-type-group))
+                             item-name2 (substring-no-properties (match-string seed7-procfunc-regexp-item-name-group))
+                             tail-type2 (substring-no-properties (match-string seed7-procfunc-regexp-tail-type-group)))
+                       t)
+                     ;; Reject if nested inside the outer long-body callable already found
+                     (not (and long-body-final-pos
+                               action-decl-pos
+                               (< original-pos action-decl-pos long-body-final-pos)))
+                     (seed7-re-search-forward seed7-procfunc-forward-or-action-declaration-re)
+                     (eq (point) found-pos)
+                     (or (not final-pos)
+                         (< found-pos final-pos)))
+                  (setq final-pos found-pos
+                        found-candidate t
+                        item-name item-name2
+                        item-type item-type2
+                        tail-type tail-type2
+                        top-block-name top-block-name2))))
             ;; --
             (if found-candidate
                 ;; move to the end of first function to allow next search in loop
@@ -4750,44 +4744,58 @@ Results are in document order."
 Non-callable entries (Enum, Interface, Struct) are listed under their own
 category sub-menu using their simple names.
 
-Callable entries (proc/func) use fully-qualified names built by
-`seed7--qualified-name-at-pos', so nested callables appear as
-\"parent:child:grand_child\" instead of just \"grand_child\".  This drives
-both imenu and Speedbar.  The flag
-`seed7--menu-list-functions-and-procedures-together' controls whether
-procedures and functions share a single \"Callable\" sub-menu or are split
-into separate \"Procedure\" / \"Function\" sub-menus."
+Callable entries (proc/func) use fully-qualified names so nested callables
+appear as \"parent:child:grand_child\".  The nesting stack is maintained by
+a single O(n) forward pass: only long-body callables (tail-type \"func\")
+push a frame; `end func;' pops one frame.  Short-body callables
+\(tail-type \"return\"), forward declarations, and action declarations are
+added to the index as leaves without pushing to the stack.
+
+The flag `seed7--menu-list-functions-and-procedures-together' controls
+whether procedures and functions share a single \"Callable\" sub-menu or are
+split into separate \"Procedure\" / \"Function\" sub-menus."
   (let ((procs      '())
         (funcs      '())
+        ;; Nesting stack: each element is (name . decl-pos).
+        ;; Only long-body callables (tail-type "func") are pushed here;
+        ;; short-body, forward, and action declarations are NOT pushed.
+        (stack      '())
         (enums      (seed7--imenu-index-for-regexp seed7-enum-regexp-4imenu      1))
         (interfaces (seed7--imenu-index-for-regexp seed7-interface-regexp-4imenu 1))
         (structs    (seed7--imenu-index-for-regexp seed7-struct-regexp-4imenu    1)))
-    ;; Single pass over the buffer: collect all callable declarations.
     (save-excursion
       (goto-char (point-min))
-      (while (seed7-re-search-forward seed7-procfunc-regexp)
-        (let* ((decl-pos (match-beginning 0))
-               (bare-name (match-string-no-properties
-                           seed7-procfunc-regexp-item-name-group))
-               (item-type (match-string-no-properties
-                           seed7-procfunc-regexp-item-type-group))
-               (is-proc   (string= item-type "proc"))
-               ;; Get the fully-qualified name (handles nesting).
-               (qname    (save-excursion
-                           (goto-char decl-pos)
-                           (seed7--qualified-name-at-pos)))
-               (menu-name
-                (cond
-                 ((not qname) bare-name)
-                 ((or (string= qname bare-name)
-                      (string-suffix-p (concat ":" bare-name) qname))
-                  qname)
-                 (t
-                  (concat qname ":" bare-name)))))
-          (if is-proc
-              (push (cons menu-name decl-pos) procs)
-            (push (cons menu-name decl-pos) funcs)))))
-    ;; Restore document order (we pushed, so lists are reversed).
+      ;; Combine both patterns in one search.  When `end func;' matches,
+      ;; the callable name group (G3) is nil — use that to dispatch.
+      (while (seed7-re-search-forward
+              (concat seed7-procfunc-regexp "\\|" seed7-procfunc-end-regexp))
+        (if (not (match-string seed7-procfunc-regexp-item-name-group))
+            ;; `end func;' matched — pop one level.
+            ;; Both proc and func long bodies close with `end func;'.
+            (when stack (pop stack))
+          ;; Callable declaration matched.
+          (let* ((name      (match-string-no-properties
+                             seed7-procfunc-regexp-item-name-group))
+                 (item-type (match-string-no-properties
+                             seed7-procfunc-regexp-item-type-group))
+                 (tail-type (match-string-no-properties
+                             seed7-procfunc-regexp-tail-type-group))
+                 (is-proc      (string= item-type "proc"))
+                 ;; Only "func" tail introduces a long body closed by `end func;'.
+                 ;; "return", "forward;", "action ...", "DYNAMIC;" are all leaves.
+                 (is-long-body (string= tail-type "func"))
+                 (decl-pos  (match-beginning 0))
+                 ;; Build qualified name from the current nesting stack.
+                 (qname     (if stack
+                                (concat (mapconcat #'car (reverse stack) ":") ":" name)
+                              name)))
+            ;; Only long-body callables open a new nesting level.
+            (when is-long-body
+              (push (cons name decl-pos) stack))
+            (if is-proc
+                (push (cons qname decl-pos) procs)
+              (push (cons qname decl-pos) funcs))))))
+    ;; Restore document order (push reverses the lists).
     (setq procs (nreverse procs)
           funcs (nreverse funcs))
     ;; Assemble the final index alist.
@@ -4796,7 +4804,7 @@ into separate \"Procedure\" / \"Function\" sub-menus."
       (when interfaces (push (cons "Interface" interfaces) index))
       (when enums      (push (cons "Enum"      enums)      index))
       (if seed7--menu-list-functions-and-procedures-together
-          ;; Merge procs + funcs into one list, sorted by document position.
+          ;; Merge procs + funcs into one list sorted by document position.
           (let ((callables (sort (append procs funcs)
                                  (lambda (a b) (< (cdr a) (cdr b))))))
             (when callables

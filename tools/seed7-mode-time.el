@@ -2,7 +2,7 @@
 
 ;; Created   : Wednesday, June  3 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-08 16:34:58 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-18 14:21:54 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -57,15 +57,18 @@
 ;; Using The Emacs Profiler
 ;; ========================
 ;;
-;; Start profiling
-;;    (profiler-start 'cpu)
+;; - Start profiling:
 ;;
-;; ... edit the .s7d or .s7i file for 30-60 seconds, press RET many times ...
+;;   - execute: M-:  (profiler-start 'cpu)
+;;   - or:      M-x profile-start cpu RET
 ;;
-;; Stop and display
 ;;
-;;    (profiler-stop)
-;;    (profiler-report)
+;; - ... edit the .s7d or .s7i file for 30-60 seconds, press RET many times ...
+;;
+;; - Stop and display:
+;;
+;;    - M-x profiler-stop
+;;    - M-x profiler-report
 
 ;;; --------------------------------------------------------------------------
 ;;; Dependencies:

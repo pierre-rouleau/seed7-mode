@@ -193,6 +193,11 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 - Prevent possible out-of-bounds buffer positions (*1+*, *1-*) inside
   *seed7-calc-indent* when operating at buffer edges.
 
+- Fix massive rendering slowdown regression introduced with the first version
+  of the code that supported imenu/Speedbar reporting of the nested function
+  lineage display.  The new implementation is much faster and display of
+  nested function lineage no longer impacts performance.
+
 ** Build / CI
 
 - GitHub Actions workflows added for multi-platform byte and native
