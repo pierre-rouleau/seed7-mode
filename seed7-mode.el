@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260619.0841
+;; Package-Version: 20260619.0939
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-19T12:41:52+0000 W25-5"
+(defconst seed7-mode-version-timestamp "2026-06-19T13:39:12+0000 W25-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4744,44 +4744,58 @@ Results are in document order."
 Non-callable entries (Enum, Interface, Struct) are listed under their own
 category sub-menu using their simple names.
 
-Callable entries (proc/func) use fully-qualified names built by
-`seed7--qualified-name-at-pos', so nested callables appear as
-\"parent:child:grand_child\" instead of just \"grand_child\".  This drives
-both imenu and Speedbar.  The flag
-`seed7--menu-list-functions-and-procedures-together' controls whether
-procedures and functions share a single \"Callable\" sub-menu or are split
-into separate \"Procedure\" / \"Function\" sub-menus."
+Callable entries (proc/func) use fully-qualified names so nested callables
+appear as \"parent:child:grand_child\".  The nesting stack is maintained by
+a single O(n) forward pass: only long-body callables (tail-type \"func\")
+push a frame; `end func;' pops one frame.  Short-body callables
+\(tail-type \"return\"), forward declarations, and action declarations are
+added to the index as leaves without pushing to the stack.
+
+The flag `seed7--menu-list-functions-and-procedures-together' controls
+whether procedures and functions share a single \"Callable\" sub-menu or are
+split into separate \"Procedure\" / \"Function\" sub-menus."
   (let ((procs      '())
         (funcs      '())
+        ;; Nesting stack: each element is (name . decl-pos).
+        ;; Only long-body callables (tail-type "func") are pushed here;
+        ;; short-body, forward, and action declarations are NOT pushed.
+        (stack      '())
         (enums      (seed7--imenu-index-for-regexp seed7-enum-regexp-4imenu      1))
         (interfaces (seed7--imenu-index-for-regexp seed7-interface-regexp-4imenu 1))
         (structs    (seed7--imenu-index-for-regexp seed7-struct-regexp-4imenu    1)))
-    ;; Single pass over the buffer: collect all callable declarations.
     (save-excursion
       (goto-char (point-min))
-      (while (seed7-re-search-forward seed7-procfunc-regexp)
-        (let* ((decl-pos (match-beginning 0))
-               (bare-name (match-string-no-properties
-                           seed7-procfunc-regexp-item-name-group))
-               (item-type (match-string-no-properties
-                           seed7-procfunc-regexp-item-type-group))
-               (is-proc   (string= item-type "proc"))
-               ;; Get the fully-qualified name (handles nesting).
-               (qname    (save-excursion
-                           (goto-char decl-pos)
-                           (seed7--qualified-name-at-pos)))
-               (menu-name
-                (cond
-                 ((not qname) bare-name)
-                 ((or (string= qname bare-name)
-                      (string-suffix-p (concat ":" bare-name) qname))
-                  qname)
-                 (t
-                  (concat qname ":" bare-name)))))
-          (if is-proc
-              (push (cons menu-name decl-pos) procs)
-            (push (cons menu-name decl-pos) funcs)))))
-    ;; Restore document order (we pushed, so lists are reversed).
+      ;; Combine both patterns in one search.  When `end func;' matches,
+      ;; the callable name group (G3) is nil — use that to dispatch.
+      (while (seed7-re-search-forward
+              (concat seed7-procfunc-regexp "\\|" seed7-procfunc-end-regexp))
+        (if (not (match-string seed7-procfunc-regexp-item-name-group))
+            ;; `end func;' matched — pop one level.
+            ;; Both proc and func long bodies close with `end func;'.
+            (when stack (pop stack))
+          ;; Callable declaration matched.
+          (let* ((name      (match-string-no-properties
+                             seed7-procfunc-regexp-item-name-group))
+                 (item-type (match-string-no-properties
+                             seed7-procfunc-regexp-item-type-group))
+                 (tail-type (match-string-no-properties
+                             seed7-procfunc-regexp-tail-type-group))
+                 (is-proc      (string= item-type "proc"))
+                 ;; Only "func" tail introduces a long body closed by `end func;'.
+                 ;; "return", "forward;", "action ...", "DYNAMIC;" are all leaves.
+                 (is-long-body (string= tail-type "func"))
+                 (decl-pos  (match-beginning 0))
+                 ;; Build qualified name from the current nesting stack.
+                 (qname     (if stack
+                                (concat (mapconcat #'car (reverse stack) ":") ":" name)
+                              name)))
+            ;; Only long-body callables open a new nesting level.
+            (when is-long-body
+              (push (cons name decl-pos) stack))
+            (if is-proc
+                (push (cons qname decl-pos) procs)
+              (push (cons qname decl-pos) funcs))))))
+    ;; Restore document order (push reverses the lists).
     (setq procs (nreverse procs)
           funcs (nreverse funcs))
     ;; Assemble the final index alist.
@@ -4790,7 +4804,7 @@ into separate \"Procedure\" / \"Function\" sub-menus."
       (when interfaces (push (cons "Interface" interfaces) index))
       (when enums      (push (cons "Enum"      enums)      index))
       (if seed7--menu-list-functions-and-procedures-together
-          ;; Merge procs + funcs into one list, sorted by document position.
+          ;; Merge procs + funcs into one list sorted by document position.
           (let ((callables (sort (append procs funcs)
                                  (lambda (a b) (< (cdr a) (cdr b))))))
             (when callables
