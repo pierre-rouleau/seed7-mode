@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260619.0939
+;; Package-Version: 20260619.1610
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-19T13:39:12+0000 W25-5"
+(defconst seed7-mode-version-timestamp "2026-06-19T20:10:12+0000 W25-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2126,6 +2126,25 @@ Matches either the opening `(*' or the closing `*)'.")
 ;; Each syntax-entry code ends with 'n' because Seed7 (* *) style
 ;; comments can be nested.
 
+(defconst seed7--syntax-symbol-constituent
+  (string-to-syntax "_")
+  "Syntax property value for a symbol constituent.")
+
+(defconst seed7--syntax-block-comment-start-1
+  (string-to-syntax "< 1bn")
+  "Syntax property value for first character of Seed7 block-comment opener.")
+
+(defconst seed7--syntax-block-comment-start-2
+  (string-to-syntax "< 2bn")
+  "Syntax property value for second character of Seed7 block-comment opener.")
+
+(defconst seed7--syntax-block-comment-end-3
+  (string-to-syntax "> 3bn")
+  "Syntax property value for first character of Seed7 block-comment closer.")
+
+(defconst seed7--syntax-block-comment-end-4
+  (string-to-syntax "> 4bn")
+  "Syntax property value for second character of Seed7 block-comment closer.")
 (defun seed7-mode-syntax-propertize (start end)
   "Apply syntax-table text properties between START and END.
 
@@ -2145,7 +2164,7 @@ Handle four cases:
           (cond
            ((match-beginning 1)         ; # number-base separator
             (put-text-property (match-beginning 1) (match-end 1)
-                               'syntax-table (string-to-syntax "_")))
+                               'syntax-table seed7--syntax-symbol-constituent))
            ((match-beginning 2)         ; single-quoted char literal
             (put-text-property (match-beginning 2) (1+ (match-beginning 2))
                                'syntax-table '(7 . ?'))
@@ -2160,14 +2179,14 @@ Handle four cases:
           (if (eq (char-after (match-beginning 0)) ?\()
               (progn                    ; (* opener
                 (put-text-property (match-beginning 0) (1+ (match-beginning 0))
-                                   'syntax-table (string-to-syntax "< 1bn"))
+                                   'syntax-table seed7--syntax-block-comment-start-1)
                 (put-text-property (1+ (match-beginning 0)) (match-end 0)
-                                   'syntax-table (string-to-syntax "< 2bn")))
+                                   'syntax-table seed7--syntax-block-comment-start-2))
             (progn                      ; *) closer
               (put-text-property (match-beginning 0) (1+ (match-beginning 0))
-                                 'syntax-table (string-to-syntax "> 3bn"))
+                                 'syntax-table seed7--syntax-block-comment-end-3)
               (put-text-property (1+ (match-beginning 0)) (match-end 0)
-                                 'syntax-table (string-to-syntax "> 4bn")))))))))
+                                 'syntax-table seed7--syntax-block-comment-end-4))))))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces

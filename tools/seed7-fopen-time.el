@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-19 15:13:49 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-20 12:13:46 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -32,9 +32,17 @@
 ;;
 ;;
 (require 'seed7-mode)
+
+;; `mapcan', `caddr' and `cadddr' were introduced in Emacs 26,
+;; but the `cl-mapcan', `cl-caddr' and `cl-cadddr' were available then
+;; and were provided by cl-lib.
+(require 'cl-lib)                       ; use `cl-mapcan', `cl-caddr', `cl-cadddr'
+
 ;;; --------------------------------------------------------------------------
 ;;; Code:
 ;;
+
+
 
 (defun benchmark-sd7-files-in-dir (directory extension)
   "Return a sorted list of files with EXTENSION inside the DIRECTORY."
@@ -63,9 +71,9 @@ Returns a (REPORT. MAX-FILENAME-LEN) where:
     (dolist (dir-spec directory-specs)
       (let* ((directory (car dir-spec))
              (file-names
-              (mapcan (lambda (extension)
-                        (benchmark-sd7-files-in-dir directory extension))
-                      (cadr dir-spec))))
+              (cl-mapcan (lambda (extension)
+                           (benchmark-sd7-files-in-dir directory extension))
+                         (cadr dir-spec))))
         (dolist (file-name file-names)
           (let ((bench-info
                  (benchmark-run 1
@@ -105,8 +113,8 @@ The DIRECTORY-SPECS is a list of (DIRECTORY EXTENSIONS) elements, where:
          (spacing       (make-string (max 1 (- max-fname-len (length "File Name"))) ?\s)))
     (if (null results)
         (message "No .sd7 files found in that directory.")
-      (let* ((times (mapcar #'caddr results))
-             (gc-counts (mapcar #'cadddr results))
+      (let* ((times (mapcar #'cl-caddr results))
+             (gc-counts (mapcar #'cl-cadddr results))
              (gc-times  (mapcar (apply-partially #'nth 4) results))
              ;; Statistical calculations
              (sum-time (apply #'+ times))

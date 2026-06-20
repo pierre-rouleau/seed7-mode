@@ -40,6 +40,8 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 - Deep integration with iMenu and Speedbar with nested callable lineage.
 - Static analysis, compilation and execution of Seed7 programs.
 - Seed7 top-level menu.
+- Development tools used to measure the CPU, GC and memory run-time performance of
+  the seed7-mode code and its evolution over code evolution.
 
 **Installation**
 
@@ -1381,13 +1383,14 @@ won't close them (but will close each one it had to open).  However it's best
 to start with no opened Seed7 files.
 
 Then open and load `tools/seed7-fopen-time.el`_ and
-evaluate the following code to run the test
+evaluate the following code to run the test (replacing PATH-TO by
+what is appropriate for your environment):
 
 .. code:: elisp
 
           (generate-sd7-benchmark-report
-           '(("~/my/dvo/seed7-repos/seed7/prg" ("sd7" "s7i"))
-             ("~/my/dvo/seed7-repos/seed7/lib" ("sd7" "s7i"))))
+           '(("PATH-TO/seed7-repos/seed7/prg" ("sd7" "s7i"))
+             ("PATH-TO/seed7-repos/seed7/lib" ("sd7" "s7i"))))
 
 
 Note that this tool opens each file once.  This does not provide a good enough
