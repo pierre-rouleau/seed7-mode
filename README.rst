@@ -40,6 +40,8 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 - Deep integration with iMenu and Speedbar with nested callable lineage.
 - Static analysis, compilation and execution of Seed7 programs.
 - Seed7 top-level menu.
+- Development tools used to measure the CPU, GC and memory run-time performance of
+  the seed7-mode code and its evolution over code evolution.
 
 **Installation**
 
