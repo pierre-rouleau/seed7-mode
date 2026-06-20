@@ -139,17 +139,24 @@ ALL_TEST_PASSED := $(ALL_TEST_FILES:.el=.el.test-passed)
 # can (require 'seed7-mode), and the tools/ directory itself (-L tools) so
 # they can (require 'seed7-mode-time).
 
-TOOLS_EL_FILES  := tools/seed7-mode-time.el \
-                   tools/seed7-indent-bench.el
+TOOLS_EL_FILES  := tools/seed7-fopen-controlled.el \
+                   tools/seed7-fopen-time.el \
+                   tools/seed7-indent-bench.el \
+                   tools/seed7-mode-time.el
 TOOLS_ELC_FILES := $(subst .el,.elc,$(TOOLS_EL_FILES))
 
-
 # ----------------------------------------------------------------------------
-# RULE - all: build all files; seed7-mode and all tools.
-# ------------------------------------------------------
+# FIRST RULE - all: build all files; seed7-mode and all tools.
+# ============================================================
 # - On the GitHub CI/CD, Seed7 is not installed.
 #   The GitHub CI/CD is identified by the presence of the GITHUB_WORKSPACE
 #   environment variable is defined.
+
+# CAUTION:  DO NOT write any other rule above this section!
+#           The rule for 'all' must be the first in the file
+#           so that 'make' is equivalent to 'make all'.
+#
+#           This means that all dependencies MUST be written AFTER this section!
 
 .PHONY:	all
 
@@ -260,6 +267,15 @@ tools/seed7-indent-bench.elc: tools/seed7-indent-bench.el \
 	$(EMACS) -Q --batch -L . --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile $<
 
 endif
+
+# ----------------------------------------------------------------------------
+# Tool Code dependencies
+# ----------------------
+
+tools/seed7-fopen-controlled.elc: seed7-mode.elc tools/seed7-fopen-time.elc
+tools/seed7-fopen-time.elc:       seed7-mode.elc
+tools/seed7-indent-bench.elc:     seed7-mode.elc tools/seed7-fopen-time.elc
+tools/seed7-mode-time.elc:        seed7-mode.elc
 
 # ----------------------------------------------------------------------------
 # Test Code dependencies
