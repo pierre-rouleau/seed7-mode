@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-20 11:22:01 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-20 11:47:41 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -178,57 +178,59 @@ Sequence:
     (let* ((result.len (sd7-controlled--timed-pass directory-specs iters))
            (results    (car result.len))
            (max-len    (cdr result.len))
-           (count      (length results))
-           (times      (mapcar #'caddr results))
-           (sum        (apply #'+ times))
-           (avg        (/ sum count))
-           (mn         (apply #'min times))
-           (mx         (apply #'max times))
-           (title-bar  (make-string max-len ?=))
-           (spacing    (make-string (max 1 (- max-len (length "File Name"))) ?\s))
-           (buf        (get-buffer-create "*sd7-controlled-benchmark*")))
-      (with-current-buffer buf
-        (setq buffer-read-only nil)
-        (erase-buffer)
-        (insert "================================================\n")
-        (insert "GC-Controlled Benchmark Report: Seed7 File Open\n")
-        (insert "================================================\n\n")
-        (insert (format ":Running with: seed7-mode %s\n"
-                        seed7-mode-version-timestamp))
-        (insert (format ":Generated on: %s\n"
-                        (format-time-string "%Y-%m-%d %H:%M:%S UTC"
-                                            (current-time) t)))
-        (insert (format ":Iterations  : %d  (mean of N timed opens per file)\n"
-                        iters))
-        (insert ":GC during measure: suppressed (gc-cons-threshold = most-positive-fixnum)\n")
-        (insert ":Warm-up: yes (1 untimed pass + garbage-collect before timing)\n\n")
+           (count      (length results)))
+      (when (zerop count)
+        (user-error "No matching files found in directory-specs argument"))
+      (let* ((times      (mapcar #'caddr results))
+             (sum        (apply #'+ times))
+             (avg        (/ sum count))
+             (mn         (apply #'min times))
+             (mx         (apply #'max times))
+             (title-bar  (make-string max-len ?=))
+             (spacing    (make-string (max 1 (- max-len (length "File Name"))) ?\s))
+             (buf        (get-buffer-create "*sd7-controlled-benchmark*")))
+        (with-current-buffer buf
+          (setq buffer-read-only nil)
+          (erase-buffer)
+          (insert "================================================\n")
+          (insert "GC-Controlled Benchmark Report: Seed7 File Open\n")
+          (insert "================================================\n\n")
+          (insert (format ":Running with: seed7-mode %s\n"
+                          seed7-mode-version-timestamp))
+          (insert (format ":Generated on: %s\n"
+                          (format-time-string "%Y-%m-%d %H:%M:%S UTC"
+                                              (current-time) t)))
+          (insert (format ":Iterations  : %d  (mean of N timed opens per file)\n"
+                          iters))
+          (insert ":GC during measure: suppressed (gc-cons-threshold = most-positive-fixnum)\n")
+          (insert ":Warm-up: yes (1 untimed pass + garbage-collect before timing)\n\n")
 
-        ;; Table
-        (insert "File Load Times (mean, GC-free)\n")
-        (insert "================================\n\n")
-        (insert (format "%s= ================= ================\n" title-bar))
-        (insert (format "File Name%s  Mean Time (s)     Line count\n" spacing))
-        (insert (format "%s= ================= ================\n" title-bar))
-        (dolist (row results)
-          (insert (format (format "%%-%ds  %%-15.6f   %%5d\n" max-len)
-                          (nth 0 row) (nth 2 row) (nth 1 row))))
-        (insert (format "%s= ================= ================\n\n" title-bar))
+          ;; Table
+          (insert "File Load Times (mean, GC-free)\n")
+          (insert "================================\n\n")
+          (insert (format "%s= ================= ================\n" title-bar))
+          (insert (format "File Name%s  Mean Time (s)     Line count\n" spacing))
+          (insert (format "%s= ================= ================\n" title-bar))
+          (dolist (row results)
+            (insert (format (format "%%-%ds  %%-15.6f   %%5d\n" max-len)
+                            (nth 0 row) (nth 2 row) (nth 1 row))))
+          (insert (format "%s= ================= ================\n\n" title-bar))
 
-        ;; Summary
-        (insert "Statistical Summary (GC-free, mean-of-N)\n")
-        (insert "=========================================\n\n")
-        (insert "+-----------+-----------------+\n")
-        (insert "| Metric    | Mean Time (s)   |\n")
-        (insert "+===========+=================+\n")
-        (insert (format "| Average   | %-15.6f |\n" avg))
-        (insert "+-----------+-----------------+\n")
-        (insert (format "| Minimum   | %-15.6f |\n" mn))
-        (insert "+-----------+-----------------+\n")
-        (insert (format "| Maximum   | %-15.6f |\n" mx))
-        (insert "+-----------+-----------------+\n"))
-      (switch-to-buffer buf)
-      (message "sd7-controlled: report ready (%d files, %d iters each)."
-               count iters))))
+          ;; Summary
+          (insert "Statistical Summary (GC-free, mean-of-N)\n")
+          (insert "=========================================\n\n")
+          (insert "+-----------+-----------------+\n")
+          (insert "| Metric    | Mean Time (s)   |\n")
+          (insert "+===========+=================+\n")
+          (insert (format "| Average   | %-15.6f |\n" avg))
+          (insert "+-----------+-----------------+\n")
+          (insert (format "| Minimum   | %-15.6f |\n" mn))
+          (insert "+-----------+-----------------+\n")
+          (insert (format "| Maximum   | %-15.6f |\n" mx))
+          (insert "+-----------+-----------------+\n"))
+        (switch-to-buffer buf)
+        (message "sd7-controlled: report ready (%d files, %d iters each)."
+                 count iters)))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-fopen-controlled)
