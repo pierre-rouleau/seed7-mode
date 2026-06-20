@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-19 15:13:49 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-20 11:56:08 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -32,9 +32,19 @@
 ;;
 ;;
 (require 'seed7-mode)
+
+;; Compatibility
+;;
+;; `mapcan' was introduced in Emacs 26, but the `cl-mapcan' was available then.
+(unless (fboundp 'mapcan)
+  (require 'cl-lib)
+  (defalias 'mapcan 'cl-mapcan))
+
 ;;; --------------------------------------------------------------------------
 ;;; Code:
 ;;
+
+
 
 (defun benchmark-sd7-files-in-dir (directory extension)
   "Return a sorted list of files with EXTENSION inside the DIRECTORY."
