@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260620.1725
+;; Package-Version: 20260620.1800
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-20T21:25:44+0000 W25-6"
+(defconst seed7-mode-version-timestamp "2026-06-20T22:00:51+0000 W25-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -9104,7 +9104,7 @@ The list has no duplicate and is unsorted."
         (identifier nil))
     (with-current-buffer seed7---xref-buffer
       (goto-char (point-min))
-      (while (re-search-forward seed7-name-identifier-nc-re nil :noerror)
+      (while (re-search-forward seed7--xref-line-re nil :noerror)
         (setq identifier (match-string 1))
         (unless (member identifier identifiers)
           (push identifier identifiers))))
