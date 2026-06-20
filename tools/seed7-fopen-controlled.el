@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-20 12:21:09 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-20 12:42:46 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -206,10 +206,10 @@ Sequence:
           (insert (format ":Generated on: %s\n"
                           (format-time-string "%Y-%m-%d %H:%M:%S UTC"
                                               (current-time) t)))
-          (insert (format ":Iterations  : %d  (mean of N timed opens per file)\n"
+          (insert (format ":N Iterations: %d  (mean of N timed opens per file)\n"
                           iters))
-          (insert ":GC during measure: suppressed (gc-cons-threshold = most-positive-fixnum)\n")
-          (insert ":Warm-up: yes (1 untimed pass + garbage-collect before timing)\n\n")
+          (insert ":GC @ testing: suppressed (gc-cons-threshold = most-positive-fixnum)\n")
+          (insert ":Warm-up info: yes (1 untimed pass + garbage-collect before timing)\n\n")
 
           ;; Table
           (insert "File Load Times (mean, GC-free)\n")
