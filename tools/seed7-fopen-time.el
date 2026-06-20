@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-20 11:56:08 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-20 12:02:52 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -35,10 +35,15 @@
 
 ;; Compatibility
 ;;
-;; `mapcan' was introduced in Emacs 26, but the `cl-mapcan' was available then.
-(unless (fboundp 'mapcan)
+;; `mapcan', caddr and cadddr were introduced in Emacs 26,
+;; but the `cl-mapcan', `cl-caddr' and `cl-cadddr' were available then.
+(unless (or (fboundp 'mapcan)
+            (fboundp 'caddr)
+            (fboundp 'cadddr))
   (require 'cl-lib)
-  (defalias 'mapcan 'cl-mapcan))
+  (defalias 'mapcan 'cl-mapcan)
+  (defalias 'caddr  'cl-caddr)
+  (defalias 'cadddr 'cl-cadddr))
 
 ;;; --------------------------------------------------------------------------
 ;;; Code:
