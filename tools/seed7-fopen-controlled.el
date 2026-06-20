@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-20 12:15:10 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-20 12:21:09 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -45,8 +45,8 @@
 ;;   (require 'seed7-fopen-controlled)
 ;;
 ;;   (generate-sd7-controlled-report
-;;    '(("~/my/dvo/seed7-repos/seed7/prg" ("sd7"))
-;;      ("~/my/dvo/seed7-repos/seed7/lib" ("s7i")))
+;;    '(("PATH_TO/seed7/prg" ("sd7"))   ; change PATH_TO
+;;      ("PATH_TO/seed7/lib" ("s7i")))  ; change PATH_TO
 ;;    5)    ; ← 5 iterations per file
 
 ;; The report lands in *sd7-controlled-benchmark*.
