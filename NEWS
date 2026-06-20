@@ -198,7 +198,7 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
   lineage display.  The new implementation is much faster and display of
   nested function lineage no longer impacts performance.
 
-** Build / CI
+** Build / CI / Development Tools/
 
 - GitHub Actions workflows added for multi-platform byte and native
   compilation:
@@ -212,3 +212,10 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 
 - Timing measurement tool *seed7-mode-time.el* added under =tools/= to
   help measure the execution time of individual commands.
+
+- Efficiency measurement tools used to analyze the performance of the seed7-mode
+  to render Seed7 code and create CPU and memory consumption reports that are analyzed
+  across code changes to ensure that the code efficiency improves when the code changes:
+
+  - **seed7-fopen-time.el** and
+  - **seed7-fopen-controlled.el**
