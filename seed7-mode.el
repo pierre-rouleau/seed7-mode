@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260619.1610
+;; Package-Version: 20260620.1725
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-19T20:10:12+0000 W25-5"
+(defconst seed7-mode-version-timestamp "2026-06-20T21:25:44+0000 W25-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -8561,6 +8561,11 @@ Requires 1 format %s argument for the identifier.
 - Group 2: file name,
 - Group 3: line number.")
 
+(defconst seed7--xref-line-re
+  (format seed7--xref-line-re-fmt
+          seed7-name-identifier-nc-re)
+  "Regexp to extract identifier for xref.")
+
 (defun seed7--build-xref ()
   "Build a cross reference buffer for the current Seed7 file.
 The buffer holds 1 line per object referenced.
@@ -9096,13 +9101,10 @@ The list has no duplicate and is unsorted."
                (buffer-live-p seed7---xref-buffer))
     (seed7--build-xref))
   (let ((identifiers nil)
-        (identifier nil)
-        (text-re (format
-                  seed7--xref-line-re-fmt
-                  seed7-name-identifier-nc-re)))
+        (identifier nil))
     (with-current-buffer seed7---xref-buffer
       (goto-char (point-min))
-      (while (re-search-forward text-re nil :noerror)
+      (while (re-search-forward seed7-name-identifier-nc-re nil :noerror)
         (setq identifier (match-string 1))
         (unless (member identifier identifiers)
           (push identifier identifiers))))
