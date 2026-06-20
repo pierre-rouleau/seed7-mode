@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-20 11:47:41 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-20 12:15:10 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -88,6 +88,12 @@
 (require 'seed7-mode)
 (require 'seed7-fopen-time)   ; use: `benchmark-sd7-files-in-dir'
 
+;; `mapcan' and `caddr' were introduced in Emacs 26,
+;; but the `cl-mapcan' and `cl-caddr' were available then
+;; and were provided by cl-lib.
+(require 'cl-lib)                       ; use `cl-mapcan', `cl-caddr'
+
+
 ;;; --------------------------------------------------------------------------
 ;;; Code:
 
@@ -110,9 +116,9 @@ Returns the number of lines in the file."
   (message "sd7-controlled: warm-up pass …")
   (dolist (dir-spec directory-specs)
     (let* ((directory  (car dir-spec))
-           (file-names (mapcan (lambda (ext)
-                                 (benchmark-sd7-files-in-dir directory ext))
-                               (cadr dir-spec))))
+           (file-names (cl-mapcan (lambda (ext)
+                                    (benchmark-sd7-files-in-dir directory ext))
+                                  (cadr dir-spec))))
       (dolist (file-name file-names)
         (sd7-controlled--open-file file-name))))
   (garbage-collect)
@@ -132,7 +138,7 @@ Returns (report . max-fname-len)."
     (unwind-protect
         (dolist (dir-spec directory-specs)
           (let* ((directory  (car dir-spec))
-                 (file-names (mapcan (lambda (ext)
+                 (file-names (cl-mapcan (lambda (ext)
                                        (benchmark-sd7-files-in-dir directory ext))
                                      (cadr dir-spec))))
             (dolist (file-name file-names)
@@ -181,7 +187,7 @@ Sequence:
            (count      (length results)))
       (when (zerop count)
         (user-error "No matching files found in directory-specs argument"))
-      (let* ((times      (mapcar #'caddr results))
+      (let* ((times      (mapcar #'cl-caddr results))
              (sum        (apply #'+ times))
              (avg        (/ sum count))
              (mn         (apply #'min times))
