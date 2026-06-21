@@ -2,7 +2,7 @@
 
 ;; Created   : Sunday, June 22 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-21 09:25:42 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-21 10:49:59 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -350,7 +350,7 @@ MAX-LEN     : length of the longest filename abbreviation."
       (insert description "\n\n")
       (insert "File Load Times — Mode " (char-to-string mode-char)
               " (mean, GC-free)\n")
-      (insert (make-string (+ 32 (length "File Load Times — Mode X ")) ?.)
+      (insert (make-string (length "File Load Times — Mode X (mean, GC-free)") ?~)
               "\n\n")
       ;; Table header
       (insert (format "%s= ================= ================\n" title-bar))
@@ -364,7 +364,7 @@ MAX-LEN     : length of the longest filename abbreviation."
       ;; Statistics
       (insert (format "Statistical Summary — Mode %c (GC-free, mean-of-N)\n"
                       mode-char))
-      (insert (make-string (+ 42 2) ?.) "\n\n")
+      (insert (make-string (length "Statistical Summary — Mode c (GC-free, mean-of-N)") ?~) "\n\n")
       (insert "+-----------+-----------------+\n")
       (insert "| Metric    | Mean Time (s)   |\n")
       (insert "+===========+=================+\n")
@@ -385,7 +385,7 @@ MODE-SUMMARIES is a list of (mode-char avg min max) as returned by
   (with-current-buffer buf
     (insert "\n")
     (insert "Cross-Mode Comparison\n")
-    (insert "---------------------\n\n")
+    (insert "=====================\n\n")
     (insert "+------+-----------------+-----------------+-----------------+\n")
     (insert "| Mode | Average (s)     | Minimum (s)     | Maximum (s)     |\n")
     (insert "+======+=================+=================+=================+\n")
@@ -511,13 +511,13 @@ Returns the absolute path of the written report file."
         (insert "Mode Descriptions\n")
         (insert "=================\n\n")
         (insert "A:\n   Major-mode activation only.  No window → jit-lock never fires.        |\n")
-        (insert "    Measures: syntax-table setup + font-lock keyword compilation.\n")
+        (insert "   Measures: syntax-table setup + font-lock keyword compilation.\n")
         (insert "B:\n   Mode activation + initial visible jit-lock pass.\n")
-        (insert "    Measures: A + cost of rendering the first screenful (≈ window height).\n")
+        (insert "   Measures: A + cost of rendering the first screenful (≈ window height).\n")
         (insert "C:\n   Mode activation + full-buffer fontification (font-lock-ensure).\n")
-        (insert "    Stress test: worst-case / catastrophic-backtracking detector.\n")
+        (insert "   Stress test: worst-case / catastrophic-backtracking detector.\n")
         (insert "D:\n   Mode activation + full incremental jit-lock (scroll top→bottom).\n")
-        (insert "    Measures: cost a user pays when reading an entire file.\n")
+        (insert "   Measures: cost a user pays when reading an entire file.\n")
         (insert "\n"))
 
       ;; -- Insert one section per mode ──────────────────────────────────────────
