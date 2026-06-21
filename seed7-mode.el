@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260620.1800
+;; Package-Version: 20260621.1147
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-20T22:00:51+0000 W25-6"
+(defconst seed7-mode-version-timestamp "2026-06-21T15:47:20+0000 W25-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -9567,6 +9567,25 @@ current Emacs session without restarting Emacs."
 ;;* Seed7 Major Mode
 ;;  ================
 
+(defconst seed7--align-mode-rules-list
+  (list
+   (list
+    'seed7-mode-initialization
+    (cons 'regexp
+          (format ":\\(\\s-+\\)%s+?\\(\\s-+\\)is\\>"
+                  seed7-name-identifier-nc-re))
+    (cons 'modes '(seed7-mode))
+    (list 'group 1 2))
+   (list
+    'seed7-mode-assignment
+    (cons 'regexp
+          (format "\\(\\s-+\\)%s\\(\\s-+\\)"
+                  seed7-predef-assignment-operator-regexp))
+    (list 'group 1 2)
+    (cons 'modes '(seed7-mode))))
+  "Alignment rules for `seed7-mode'.")
+
+
 ;;;###autoload
 (define-derived-mode seed7-mode prog-mode "seed7"
   "Major mode for editing Seed7 files.
@@ -9669,23 +9688,7 @@ compilation requires a working installation of Seed7.
 
   ;; Seed7 Source Code Alignment rules
   (setq-local align-mode-rules-list
-              (list
-               (list
-                'seed7-mode-initialization
-                ;; align on 'is' keyword
-                (cons 'regexp (format ":\\(\\s-+\\)%s+?\\(\\s-+\\)is\\>"
-                                      seed7-name-identifier-nc-re))
-                (cons 'modes '(seed7-mode))
-                (list 'group 1 2))
-               (list
-                'seed7-mode-assignment
-                (cons
-                 'regexp
-                 ;; align on assignment operator and on text after it
-                 (format "\\(\\s-+\\)%s\\(\\s-+\\)"
-                         seed7-predef-assignment-operator-regexp))
-                (list 'group 1 2)
-                (cons 'modes '(seed7-mode)))))
+              (copy-tree seed7--align-mode-rules-list))
   (setq-local align-region-separate 'group)
 
   ;; Enhance the expand-region mode: allow expansion of enclosing block
