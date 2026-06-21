@@ -2,7 +2,7 @@
 
 ;; Created   : Sunday, June 22 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-21 09:09:06 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-21 09:25:42 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -277,7 +277,7 @@ Returns a cons cell (abbrev-results . max-len)."
                   results))
          (max-len
           (apply #'max
-                 (cons (length "File Name")   ; never shorter than the header
+                 (cons (length "File Name") ; never shorter than the header
                        (mapcar (lambda (row) (length (nth 0 row)))
                                abbrev-results)))))
     (cons abbrev-results max-len)))
@@ -447,26 +447,34 @@ Returns the absolute path of the written report file."
 
     ;; -- Run Mode A -------------------------------------------------------
     (setq result-a
-          (sd7-perf--run-one-mode
-           (symbol-function 'sd7-controlled--open-file)
-           dir-specs iterations "A"))
+          (sd7-perf--abbreviate-results
+           (car
+            (sd7-perf--run-one-mode
+             (symbol-function 'sd7-controlled--open-file)
+             dir-specs iterations "A"))))
 
     ;; -- Run Mode B (interactive only) ------------------------------------
     (when have-frame
       (setq result-b
-            (sd7-perf--run-one-mode
-             #'sd7-perf--open-file-b dir-specs iterations "B")))
+            (sd7-perf--abbreviate-results
+             (car
+              (sd7-perf--run-one-mode
+               #'sd7-perf--open-file-b dir-specs iterations "B")))))
 
     ;; -- Run Mode C -------------------------------------------------------
     (setq result-c
-          (sd7-perf--run-one-mode
-           #'sd7-perf--open-file-c dir-specs iterations "C"))
+          (sd7-perf--abbreviate-results
+           (car
+            (sd7-perf--run-one-mode
+             #'sd7-perf--open-file-c dir-specs iterations "C"))))
 
     ;; -- Run Mode D (interactive only) ------------------------------------
     (when have-frame
       (setq result-d
-            (sd7-perf--run-one-mode
-             #'sd7-perf--open-file-d dir-specs iterations "D")))
+            (sd7-perf--abbreviate-results
+             (car
+              (sd7-perf--run-one-mode
+               #'sd7-perf--open-file-d dir-specs iterations "D")))))
 
     ;; -- Determine the widest filename column across all modes ------------
     (setq global-max-len
@@ -623,6 +631,8 @@ CLI / Makefile entry point.  Exits Emacs with 0 on success or 1 on error."
   (let ((args command-line-args-left))
     ;; Consume all args so Emacs doesn't warn about unknown options.
     (setq command-line-args-left nil)
+   (when (equal (car args) "--")
+     (setq args (cdr args)))
     (when (< (length args) 3)
       (sd7-perf--cli-help-and-exit 1))
     (let* ((seed7-dir  (nth 0 args))
