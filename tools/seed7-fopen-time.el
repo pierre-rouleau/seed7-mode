@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-21 08:54:44 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-21 10:05:29 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -89,7 +89,7 @@ Returns a (REPORT. MAX-FILENAME-LEN) where:
             ;; remove the leading path just leave the repo name, the prg or
             ;; lib directory name and the file base name.
             (setq abbrev-fname
-                  (replace-regexp-in-string "^.*/\\([^/]++/\\(prg\\|lib\\)/\\)" "\\1" file-name))
+                  (replace-regexp-in-string "^.*/\\([^/]+/\\(prg\\|lib\\)/\\)" "\\1" file-name))
             (setq len (length abbrev-fname))
             (when (> len  max-filename-len)
               (setq max-filename-len len))
