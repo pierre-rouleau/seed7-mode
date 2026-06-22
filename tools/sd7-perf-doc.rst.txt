@@ -63,25 +63,50 @@ Iterations per file:
    How many timed opens per file.  Default: ``5``.
    Higher values are more accurate but take longer.
 
+Modes to run:
+   A string of mode letters, any subset of ``ABCD``.  Default: ``ABCD``.
+   Use ``ABD`` to skip Mode C (``font-lock-ensure``) if it is too slow.
+   Order is ignored; modes always execute A → B → C → D.
+
 
 
 Run from the shell - optional
 -----------------------------
 
-Alternatively, to run the benchmark non-interactively from the shell (all
-four modes):
+Alternatively, to run the benchmark non-interactively from the shell:
 
 .. code-block:: bash
 
     emacs -Q -nw --load tools/sd7-perf.el \
           --eval "(sd7-perf-main)" \
-          -- SEED7_DIR REPORT_DIR ID [ITERATIONS]
+          -- SEED7_DIR REPORT_DIR ID [ITERATIONS [MODES]]
 
-Example:
+The optional ``MODES`` argument is a string of mode letters (e.g. ``ABD``
+to skip Mode C).  It defaults to ``ABCD`` in ``-nw`` sessions and ``AC``
+in ``--batch`` sessions.
+
+Example — all four modes:
 
 .. code-block:: bash
 
     emacs -Q -nw --load tools/sd7-perf.el \
+          --eval "(sd7-perf-main)" \
+          -- ~/src/seed7 reports 04.0 5
+
+Example — skip Mode C (fastest run):
+
+.. code-block:: bash
+
+    emacs -Q -nw --load tools/sd7-perf.el \
+          --eval "(sd7-perf-main)" \
+          -- ~/src/seed7 reports 04.0 5 ABD
+
+Example — Mode C with a 30-second per-file timeout:
+
+.. code-block:: bash
+
+    emacs -Q -nw --load tools/sd7-perf.el \
+          --eval "(setq sd7-perf--mode-c-timeout 30.0)" \
           --eval "(sd7-perf-main)" \
           -- ~/src/seed7 reports 04.0 5
 
@@ -196,6 +221,32 @@ Mode C — Mode Activation + Full-Buffer Fontification (font-lock-ensure)
 
   This is correct and expected.
 
+**Run time warning — Mode C can be very slow:**
+  On a typical Seed7 source tree (≈ 270 files), Mode C completes one
+  warm-up pass and then N timed passes with ``font-lock-ensure`` on every
+  file.  The total time depends heavily on file sizes and regexp complexity.
+  For the optimized ``seed7-mode`` the full Mode C run typically takes
+  5–15 minutes depending on hardware.
+
+  To avoid unexpectedly long runs, consider:
+
+  - **Skip Mode C entirely** — pass ``MODES=ABD`` (shell) or enter ``ABD``
+    at the "Modes to run:" prompt.  This measures A, B, and D without any
+    ``font-lock-ensure`` passes.
+
+  - **Cap per-file time** — set ``sd7-perf--mode-c-timeout`` to a number of
+    seconds before running.  Any file whose ``font-lock-ensure`` call exceeds
+    the limit is skipped and a warning is printed.  Example (30 s cap)::
+
+        (setq sd7-perf--mode-c-timeout 30.0)
+
+    Or from the shell::
+
+        emacs -Q -nw --load tools/sd7-perf.el \
+              --eval "(setq sd7-perf--mode-c-timeout 30.0)" \
+              --eval "(sd7-perf-main)" \
+              -- ~/src/seed7 reports 04.0 5
+
 
 Mode D — Mode Activation + Full Incremental jit-lock (Scroll Pass)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -252,6 +303,26 @@ delta for a **small** file in Mode C is a sign of regexp backtracking.
 File names in the tables are abbreviated to show only the Seed7 repository
 directory name and the path below it (e.g. ``seed7/prg/chkint.sd7`` rather
 than the full absolute path).
+
+Skipping or Limiting Mode C
+===========================
+
+Mode C (``font-lock-ensure``) is the most time-consuming mode.  Before
+starting a run you have two options to keep it manageable:
+
+1. **Skip Mode C** — pass ``ABD`` as the MODES argument.  The report will
+   contain sections for Modes A, B, and D only.  No ``font-lock-ensure``
+   call is made.
+
+2. **Per-file timeout** — set ``sd7-perf--mode-c-timeout`` to a positive
+   float.  Each file's ``font-lock-ensure`` is wrapped in a
+   ``with-timeout`` guard.  Files that exceed the cap are skipped
+   (fontification abandoned mid-pass) and a warning is printed to
+   ``*Messages*``; they still appear in the timing table with whatever
+   time was consumed up to the timeout.  Example::
+
+       (setq sd7-perf--mode-c-timeout 60.0)  ; 1 minute per file
+
 
 Interrupting the Test
 =====================
@@ -315,6 +386,12 @@ Notes
   window for only a few milliseconds.  The internal jit-lock machinery does
   process every ``sit-for 0`` call correctly; the timings are valid even
   though the terminal screen appears frozen.
+
+**Selecting modes (MODES parameter)**
+  Passing a MODES string such as ``ABD`` lets you skip modes you do not need.
+  The most common use case is skipping Mode C when the full ``font-lock-ensure``
+  stress-test is not required.  Within a session, ``sd7-perf-run`` remembers
+  the last MODES value and offers it as the default for the next invocation.
 
 **Iteration count**
   5 iterations (the default) is a reasonable balance between measurement
