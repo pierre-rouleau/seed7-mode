@@ -2,7 +2,7 @@
 
 ;; Created   : Sunday, June 22 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-22 15:02:09 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-22 15:23:58 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -269,16 +269,27 @@ Returns the line count."
     line-count))
 
 (defun sd7-perf--open-file-b (file-name)
-  "Mode B: open FILE-NAME, display the selected window, trigger 1 jit-lock pass.
-Fontifies only the initially visible region (≈ window height lines).
+  "Mode B: open FILE-NAME at top, display it, trigger 1 jit-lock pass.
+
+Fontifies only the initially visible region at the beginning of the file
+\(≈ window height lines).  This intentionally resets point/window-start to
+`point-min' so an existing buffer's old point does not make Mode B measure an
+arbitrary later region, such as an unterminated block comment near EOF.
+
 Returns the line count."
   (let* ((existing (get-file-buffer file-name))
          (buf      (or existing (find-file-noselect file-name)))
          line-count)
-    ;; Display the buffer in the current window so jit-lock can see it.
+    ;; Mode B is intended to measure the initial screenful when opening a file.
+    ;; If BUF already existed, its point/window state may be near EOF or inside
+    ;; pathological invalid syntax.  Reset explicitly before displaying.
+    (with-current-buffer buf
+      (goto-char (point-min)))
     (with-selected-window (selected-window)
-      (switch-to-buffer buf :norecord))
-    (sit-for 0)   ; trigger jit-lock for the visible region
+      (switch-to-buffer buf :norecord)
+      (set-window-point (selected-window) (point-min))
+      (set-window-start (selected-window) (point-min) :noforce))
+    (sit-for 0)   ; trigger jit-lock for the first visible region
     (with-current-buffer buf
       (setq line-count (line-number-at-pos (point-max))))
     (unless existing
