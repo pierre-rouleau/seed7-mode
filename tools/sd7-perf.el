@@ -2,7 +2,7 @@
 
 ;; Created   : Sunday, June 22 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-22 11:01:37 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-22 14:33:16 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -149,6 +149,69 @@ Offered as default by `sd7-perf-run'.")
 
 (defvar sd7-perf--last-iterations 5
   "Last iteration count used.  Offered as default in `sd7-perf-run'.")
+
+;; ---------------------------------------------------------------------------
+;;; Progress state helpers
+
+(defvar sd7-perf--current-phase "not started"
+  "Human-readable benchmark phase currently executing.")
+
+(defvar sd7-perf--current-phase-start nil
+  "Float timestamp when the current benchmark phase started.")
+
+(defvar sd7-perf--current-file nil
+  "File currently being processed, or nil.")
+
+(defvar sd7-perf--current-iteration nil
+  "Timed-pass iteration currently being processed, or nil.")
+
+(defun sd7-perf--format-duration (seconds)
+  "Format SECONDS as HH:MM:SS.mmm."
+  (if (null seconds)
+      "—"
+    (let* ((whole (floor seconds))
+           (h     (/ whole 3600))
+           (m     (/ (% whole 3600) 60))
+           (s     (% whole 60))
+           (ms    (floor (* (- seconds whole) 1000))))
+      (format "%02d:%02d:%02d.%03d" h m s ms))))
+
+(defun sd7-perf--set-phase (phase &optional file iteration announce)
+  "Record current PHASE, FILE, and ITERATION.
+
+When ANNOUNCE is non-nil, emit a timestamp-prefixed progress message."
+  (setq sd7-perf--current-phase phase
+        sd7-perf--current-phase-start (float-time)
+        sd7-perf--current-file file
+        sd7-perf--current-iteration iteration)
+  (when announce
+    (sd7-controlled--message "%s%s%s"
+                             phase
+                             (if file
+                                 (format " — %s" (abbreviate-file-name file))
+                               "")
+                             (if iteration
+                                 (format " — iteration %d" iteration)
+                               ""))))
+
+(defun sd7-perf--progress-callback (kind label file-name iteration)
+  "Update `sd7-perf' progress state from controlled benchmark callbacks."
+  (let* ((label-text (or label "unknown mode"))
+         (kind-text  (pcase kind
+                       (:warm-up "warm-up")
+                       (:timed-pass "timed pass")
+                       (_ (format "%s" kind))))
+         (phase      (format "%s %s" label-text kind-text)))
+    (setq sd7-perf--current-phase phase
+          sd7-perf--current-file file-name
+          sd7-perf--current-iteration iteration)
+    ;; Emit one message per file, but not for every timed iteration.
+    ;; This gives useful diagnostics without overwhelming `*Messages*' or
+    ;; adding excessive measurement overhead.
+    (when (null iteration)
+      (sd7-controlled--message "%s — %s"
+                               phase
+                               (abbreviate-file-name file-name)))))
 
 ;;; --------------------------------------------------------------------------
 ;;; Help
@@ -297,29 +360,203 @@ Returns a cons cell (abbrev-results . max-len)."
   "Return the absolute path for the report with identifier ID in REPORT-DIR."
   (expand-file-name (format "seed7mode-perf-%s.rst" id) report-dir))
 
+
 (defun sd7-perf--run-one-mode (open-fn directory-specs iterations mode-label)
-  "Run one benchmark mode: warm-up with OPEN-FN, then GC-suppressed timed pass.
+  "Run one benchmark mode.
 
-OPEN-FN        : function (file-name) → line-count, patched onto
-                 `sd7-controlled--open-file' for both warm-up and timed pass.
-DIRECTORY-SPECS: list of (DIR EXTENSIONS) as used by
-                 `sd7-controlled--warmup'.
-ITERATIONS     : timed opens per file.
-MODE-LABEL     : string shown in progress messages (e.g. \"A\").
-
-Returns (results . max-fname-len) identical to `sd7-controlled--timed-pass'."
-  (let ((orig (symbol-function 'sd7-controlled--open-file)))
+Returns (RESULT WARMUP-TIME TIMED-PASS-TIME), where RESULT is the
+`sd7-controlled--timed-pass' return value."
+  (let ((orig  (symbol-function 'sd7-controlled--open-file))
+        (label (format "Mode %s" mode-label)))
     (unwind-protect
         (progn
           (fset 'sd7-controlled--open-file open-fn)
-          (message "")
-          (sd7-controlled--warmup directory-specs (format "Mode %s" mode-label))
-          (sd7-controlled--warmup directory-specs)
-          (message "sd7-perf: Mode %s — timed pass (%d iterations)…"
-                   mode-label iterations)
-          (sd7-controlled--timed-pass directory-specs iterations))
-      ;; Always restore the original open function.
+
+          ;; Warm-up.
+          (sd7-perf--set-phase (format "%s warm-up" label) nil nil t)
+          (let* ((warm-start (float-time))
+                 (_          (sd7-controlled--warmup
+                              directory-specs label
+                              #'sd7-perf--progress-callback))
+                 (warm-time  (- (float-time) warm-start)))
+
+            ;; Timed pass.
+            (sd7-perf--set-phase (format "%s timed pass" label) nil nil t)
+            (let* ((test-start (float-time))
+                   (result     (sd7-controlled--timed-pass
+                                directory-specs iterations label
+                                #'sd7-perf--progress-callback))
+                   (test-time  (- (float-time) test-start)))
+              (sd7-controlled--message
+               "%s complete — warm-up %s, timed pass %s, total %s"
+               label
+               (sd7-perf--format-duration warm-time)
+               (sd7-perf--format-duration test-time)
+               (sd7-perf--format-duration (+ warm-time test-time)))
+              (list result warm-time test-time))))
+      ;; Always restore original open function, including after C-g.
       (fset 'sd7-controlled--open-file orig))))
+
+;; ---------------------------------------------------------------------------
+;; Timing summary helper
+
+(defun sd7-perf--insert-timing-summary (buf mode-times total-elapsed
+                                            interrupted-p interrupted-during)
+  "Insert warm-up/timed-pass timing summary into BUF."
+  (with-current-buffer buf
+    (let* ((fmt #'sd7-perf--format-duration)
+           (mode-total (lambda (wu tp)
+                         (and wu tp (+ wu tp))))
+           (rows `(("Mode A" ,(plist-get mode-times :a-wu)
+                    ,(plist-get mode-times :a-tp))
+                   ("Mode B" ,(plist-get mode-times :b-wu)
+                    ,(plist-get mode-times :b-tp))
+                   ("Mode C" ,(plist-get mode-times :c-wu)
+                    ,(plist-get mode-times :c-tp))
+                   ("Mode D" ,(plist-get mode-times :d-wu)
+                    ,(plist-get mode-times :d-tp)))))
+      (goto-char (point-max))
+      (insert "\nPhase Timing Summary")
+      (insert "\n====================\n\n")
+      (when interrupted-p
+        (insert (format "**Partial report: interrupted during %s.**\n\n"
+                        interrupted-during)))
+      (insert "Wall-clock times include warm-up work and GC performed by the warm-up helper.\n\n")
+      (insert "+----------+--------------+--------------+--------------+\n")
+      (insert "| Phase    | Warm-up      | Timed pass   | Mode total   |\n")
+      (insert "+==========+==============+==============+==============+\n")
+      (dolist (row rows)
+        (let* ((label (nth 0 row))
+               (wu    (nth 1 row))
+               (tp    (nth 2 row))
+               (tot   (funcall mode-total wu tp)))
+          (when (or wu tp)
+            (insert (format "| %-8s | %12s | %12s | %12s |\n"
+                            label
+                            (funcall fmt wu)
+                            (funcall fmt tp)
+                            (funcall fmt tot)))
+            (insert "+----------+--------------+--------------+--------------+\n"))))
+      (insert (format "| %-8s | %12s | %12s | %12s |\n"
+                      "Total" "" "" (funcall fmt total-elapsed)))
+      (insert "+----------+--------------+--------------+--------------+\n\n"))))
+
+
+;; ---------------------------------------------------------------------------
+;; Report finalization helper
+
+(defun sd7-perf--finish-report (seed7-dir report-dir id iterations have-frame
+                                         result-a result-b result-c result-d
+                                         mode-times total-elapsed
+                                         interrupted-p interrupted-during)
+  "Build and write full or partial sd7-perf report."
+  (let* ((out-file (sd7-perf--output-file report-dir id))
+         (buf      (get-buffer-create "*sd7-perf-report*"))
+         (available-max-lens
+          (delq nil (list (and result-a (cdr result-a))
+                          (and result-b (cdr result-b))
+                          (and result-c (cdr result-c))
+                          (and result-d (cdr result-d))
+                          20)))
+         (global-max-len (apply #'max available-max-lens))
+         mode-summaries)
+    (with-current-buffer buf
+      (setq buffer-read-only nil)
+      (erase-buffer)
+
+      (when interrupted-p
+        (insert ".. ===========================================================\n")
+        (insert ".. PARTIAL REPORT — BENCHMARK WAS INTERRUPTED BY THE USER\n")
+        (insert (format ".. Interrupted during: %s\n" interrupted-during))
+        (when sd7-perf--current-file
+          (insert (format ".. Current file: %s\n"
+                          (abbreviate-file-name sd7-perf--current-file))))
+        (when sd7-perf--current-iteration
+          (insert (format ".. Current iteration: %d\n"
+                          sd7-perf--current-iteration)))
+        (when sd7-perf--current-phase-start
+          (insert (format ".. Interrupted phase elapsed so far: %s\n"
+                          (sd7-perf--format-duration
+                           (- (float-time) sd7-perf--current-phase-start)))))
+        (insert ".. Results below include only completed phases.\n")
+        (insert ".. ===========================================================\n\n"))
+
+      (insert "=======================================================\n")
+      (insert (if interrupted-p
+                  "PARTIAL GC-Controlled Benchmark Report: Seed7 Mode — Four Modes\n"
+                "GC-Controlled Benchmark Report: Seed7 Mode — Four Modes\n"))
+      (insert "=======================================================\n\n")
+      (insert (format ":Running with: seed7-mode %s\n"
+                      seed7-mode-version-timestamp))
+      (insert (format ":Seed7 dir   : %s\n"
+                      (file-name-as-directory (expand-file-name seed7-dir))))
+
+      (insert (format ":Started at: %s local time\n"
+                      sd7-controlled--started-at))
+
+      (insert (format ":Generated on: %s\n"
+                      (format-time-string "%Y-%m-%d %H:%M:%S UTC"
+                                          (current-time) t)))
+      (insert (format ":N Iterations: %d  (mean of N timed opens per file)\n"
+                      iterations))
+      (insert ":GC @ testing: suppressed (gc-cons-threshold = most-positive-fixnum)\n")
+      (insert ":Warm-up info: yes (1 untimed pass per mode + garbage-collect before timing)\n")
+      (insert (format ":Modes planned: %s\n"
+                      (if have-frame "A B C D"
+                        "A C  (B and D require an interactive -nw frame)")))
+      (when interrupted-p
+        (insert (format ":INTERRUPTED: yes — during %s\n" interrupted-during)))
+      (insert "\n")
+
+      (insert "Mode Descriptions\n")
+      (insert "=================\n\n")
+      (insert "A:\n   Major-mode activation only. No window → jit-lock never fires.\n")
+      (insert "B:\n   Mode activation + initial visible jit-lock pass.\n")
+      (insert "C:\n   Mode activation + full-buffer fontification (font-lock-ensure).\n")
+      (insert "D:\n   Mode activation + full incremental jit-lock (scroll top→bottom).\n\n"))
+
+    (when result-a
+      (push (sd7-perf--insert-section
+             buf ?A "Major-Mode Activation Only"
+             "No window created. Measures syntax-table setup and font-lock keyword compilation."
+             (car result-a) global-max-len)
+            mode-summaries))
+    (when result-b
+      (push (sd7-perf--insert-section
+             buf ?B "Mode Activation + Initial Visible jit-lock Pass"
+             "Buffer displayed in a window; sit-for 0 triggers visible-region jit-lock."
+             (car result-b) global-max-len)
+            mode-summaries))
+    (when result-c
+      (push (sd7-perf--insert-section
+             buf ?C "Mode Activation + Full-Buffer Fontification (font-lock-ensure)"
+             "Full-buffer fontification stress test."
+             (car result-c) global-max-len)
+            mode-summaries))
+    (when result-d
+      (push (sd7-perf--insert-section
+             buf ?D "Mode Activation + Full Incremental jit-lock (Scroll Pass)"
+             "Scrolls through the full buffer and lets jit-lock work incrementally."
+             (car result-d) global-max-len)
+            mode-summaries))
+
+    (when mode-summaries
+      (sd7-perf--insert-cross-mode-summary buf (nreverse mode-summaries)))
+
+    (sd7-perf--insert-timing-summary
+     buf mode-times total-elapsed interrupted-p interrupted-during)
+
+    (with-current-buffer buf
+      (goto-char (point-max))
+      (unless (bolp) (insert "\n"))
+      (insert "\n.. ---------------------------------------------------------------------------\n"))
+
+    (make-directory report-dir :parents)
+    (with-current-buffer buf
+      (let ((coding-system-for-write 'utf-8-unix))
+        (write-region (point-min) (point-max) out-file nil :silent)))
+    (switch-to-buffer buf)
+    out-file))
 
 ;;; --------------------------------------------------------------------------
 ;;; RST report generation helpers
@@ -397,6 +634,8 @@ MODE-SUMMARIES is a list of (mode-char avg min max) as returned by
 ;;; --------------------------------------------------------------------------
 ;;; Core runner
 
+
+
 (defun sd7-perf-run-core (seed7-dir report-dir id iterations)
   "Run the four-mode Seed7 performance benchmark and write the RST report.
 
@@ -410,7 +649,7 @@ In batch (--batch) mode  : runs modes A and C only (B and D require a frame).
 
 Returns the absolute path of the written report file."
   ;; -- Validate --------------------------------------------
-    (setq seed7-dir  (expand-file-name seed7-dir)
+  (setq seed7-dir  (expand-file-name seed7-dir)
         ;; Resolve report-dir against the repo root so that a relative path
         ;; like "reports" works regardless of which buffer's default-directory
         ;; is active when M-x sd7-perf-run is called.
@@ -425,151 +664,96 @@ Returns the absolute path of the written report file."
   (unless (and (integerp iterations) (> iterations 0))
     (user-error "ITERATIONS must be a positive integer, got: %S" iterations))
 
-  (let* ((dir-specs  (list (list (expand-file-name "prg" seed7-dir) '("sd7"))
-                           (list (expand-file-name "lib" seed7-dir) '("s7i"))))
-         (out-file   (sd7-perf--output-file report-dir id))
-         (have-frame (not noninteractive))
-         ;; Collect (results . max-len) per mode.
-         result-a result-b result-c result-d
-         ;; Max filename length across all modes (for consistent column width).
-         global-max-len)
+(let* ((dir-specs  (list (list (expand-file-name "prg" seed7-dir) '("sd7"))
+                         (list (expand-file-name "lib" seed7-dir) '("s7i"))))
+       (out-file   (sd7-perf--output-file report-dir id))
+       (have-frame (not noninteractive))
+       (total-start nil)
+       result-a result-b result-c result-d
+       time-a-wu time-a-tp
+       time-b-wu time-b-tp
+       time-c-wu time-c-tp
+       time-d-wu time-d-tp
+       interrupted-p
+       interrupted-during)
 
-    (message "")
-    (message "=== Seed7 Mode Performance Benchmark — Four Modes ===")
-    (message "seed7-mode : %s" seed7-mode-version-timestamp)
-    (message "Seed7 dir  : %s" seed7-dir)
-    (message "Report dir : %s" report-dir)
-    (message "Report ID  : %s" id)
-    (message "Iterations : %d per file" iterations)
-    (message "Modes      : A C%s" (if have-frame " B D" " (B and D skipped — batch mode)"))
-    (message "Output     : %s" out-file)
-    (message "")
+  (sd7-controlled--reset-start-time)
+  (setq total-start (float-time))
 
-    ;; -- Run Mode A -------------------------------------------------------
-    (setq result-a
-          (sd7-perf--abbreviate-results
-           (car
-            (sd7-perf--run-one-mode
-             (symbol-function 'sd7-controlled--open-file)
-             dir-specs iterations "A"))))
+  (sd7-controlled--message "Seed7 Mode Performance Benchmark — Four Modes")
+  (sd7-controlled--message "seed7-mode: %s" seed7-mode-version-timestamp)
+  (sd7-controlled--message "Seed7 dir: %s" seed7-dir)
+  (sd7-controlled--message "Report dir: %s" report-dir)
+  (sd7-controlled--message "Report ID: %s" id)
+  (sd7-controlled--message "Iterations: %d per file" iterations)
+  (sd7-controlled--message "Modes: %s"
+                           (if have-frame "A B C D"
+                             "A C (B and D skipped — batch mode)"))
+  (sd7-controlled--message "Output: %s" out-file)
 
-    ;; -- Run Mode B (interactive only) ------------------------------------
-    (when have-frame
-      (setq result-b
-            (sd7-perf--abbreviate-results
-             (car
-              (sd7-perf--run-one-mode
-               #'sd7-perf--open-file-b dir-specs iterations "B")))))
+  (condition-case _quit
+      (progn
+        ;; Mode A
+        (let* ((ret (sd7-perf--run-one-mode
+                     (symbol-function 'sd7-controlled--open-file)
+                     dir-specs iterations "A"))
+               (raw-result (nth 0 ret)))
+          (setq result-a  (sd7-perf--abbreviate-results raw-result)
+                time-a-wu (nth 1 ret)
+                time-a-tp (nth 2 ret)))
 
-    ;; -- Run Mode C -------------------------------------------------------
-    (setq result-c
-          (sd7-perf--abbreviate-results
-           (car
-            (sd7-perf--run-one-mode
-             #'sd7-perf--open-file-c dir-specs iterations "C"))))
+        ;; Mode B
+        (when have-frame
+          (let* ((ret (sd7-perf--run-one-mode
+                       #'sd7-perf--open-file-b dir-specs iterations "B"))
+                 (raw-result (nth 0 ret)))
+            (setq result-b  (sd7-perf--abbreviate-results raw-result)
+                  time-b-wu (nth 1 ret)
+                  time-b-tp (nth 2 ret))))
 
-    ;; -- Run Mode D (interactive only) ------------------------------------
-    (when have-frame
-      (setq result-d
-            (sd7-perf--abbreviate-results
-             (car
-              (sd7-perf--run-one-mode
-               #'sd7-perf--open-file-d dir-specs iterations "D")))))
+        ;; Mode C
+        (let* ((ret (sd7-perf--run-one-mode
+                     #'sd7-perf--open-file-c dir-specs iterations "C"))
+               (raw-result (nth 0 ret)))
+          (setq result-c  (sd7-perf--abbreviate-results raw-result)
+                time-c-wu (nth 1 ret)
+                time-c-tp (nth 2 ret)))
 
-    ;; -- Determine the widest filename column across all modes ------------
-    (setq global-max-len
-          (apply #'max
-                 (delq nil (list (cdr result-a)
-                                 (and result-b (cdr result-b))
-                                 (cdr result-c)
-                                 (and result-d (cdr result-d))))))
+        ;; Mode D
+        (when have-frame
+          (let* ((ret (sd7-perf--run-one-mode
+                       #'sd7-perf--open-file-d dir-specs iterations "D"))
+                 (raw-result (nth 0 ret)))
+            (setq result-d  (sd7-perf--abbreviate-results raw-result)
+                  time-d-wu (nth 1 ret)
+                  time-d-tp (nth 2 ret)))))
+    (quit
+     (setq interrupted-p t
+           interrupted-during sd7-perf--current-phase)
+     (sd7-controlled--message
+      "interrupted during %s%s%s — writing partial report"
+      sd7-perf--current-phase
+      (if sd7-perf--current-file
+          (format " — %s" (abbreviate-file-name sd7-perf--current-file))
+        "")
+      (if sd7-perf--current-iteration
+          (format " — iteration %d" sd7-perf--current-iteration)
+        ""))))
 
-    ;; -- Build combined RST report ----------------------------------------
-    (let ((buf (get-buffer-create "*sd7-perf-report*"))
-          mode-summaries)
-      (with-current-buffer buf
-        (setq buffer-read-only nil)
-        (erase-buffer)
-
-        ;; Document header
-        (insert "=======================================================\n")
-        (insert "GC-Controlled Benchmark Report: Seed7 Mode — Four Modes\n")
-        (insert "=======================================================\n\n")
-        (insert (format ":Running with: seed7-mode %s\n"
-                        seed7-mode-version-timestamp))
-        (insert (format ":Generated on: %s\n"
-                        (format-time-string "%Y-%m-%d %H:%M:%S UTC"
-                                            (current-time) t)))
-        (insert (format ":N Iterations: %d  (mean of N timed opens per file)\n"
-                        iterations))
-        (insert ":GC @ testing: suppressed (gc-cons-threshold = most-positive-fixnum)\n")
-        (insert ":Warm-up info: yes (1 untimed pass per mode + garbage-collect before timing)\n")
-        (insert (format ":Modes run  : %s\n\n"
-                        (if have-frame "A B C D" "A C  (B and D require an interactive -nw frame)")))
-
-        ;; Mode legend
-        (insert "Mode Descriptions\n")
-        (insert "=================\n\n")
-        (insert "A:\n   Major-mode activation only.  No window → jit-lock never fires.        |\n")
-        (insert "   Measures: syntax-table setup + font-lock keyword compilation.\n")
-        (insert "B:\n   Mode activation + initial visible jit-lock pass.\n")
-        (insert "   Measures: A + cost of rendering the first screenful (≈ window height).\n")
-        (insert "C:\n   Mode activation + full-buffer fontification (font-lock-ensure).\n")
-        (insert "   Stress test: worst-case / catastrophic-backtracking detector.\n")
-        (insert "D:\n   Mode activation + full incremental jit-lock (scroll top→bottom).\n")
-        (insert "   Measures: cost a user pays when reading an entire file.\n")
-        (insert "\n"))
-
-      ;; -- Insert one section per mode ──────────────────────────────────────────
-      (push (sd7-perf--insert-section
-             buf ?A "Major-Mode Activation Only"
-             "No window created. Measures syntax-table setup and font-lock keyword \
-compilation. jit-lock never fires. Direct measure of seed7-mode overhead."
-             (car result-a) global-max-len)
-            mode-summaries)
-
-      (when result-b
-        (push (sd7-perf--insert-section
-               buf ?B "Mode Activation + Initial Visible jit-lock Pass"
-               "Buffer displayed in a window. sit-for 0 triggers jit-lock on the \
-visible region (≈ terminal window height). Models plain find-file user experience."
-               (car result-b) global-max-len)
-              mode-summaries))
-
-      (push (sd7-perf--insert-section
-             buf ?C "Mode Activation + Full-Buffer Fontification (font-lock-ensure)"
-             "font-lock-ensure forces the regexp engine over the entire buffer at once. \
-Stress-test measurement; useful for detecting catastrophic-backtracking regressions."
-             (car result-c) global-max-len)
-            mode-summaries)
-
-      (when result-d
-        (push (sd7-perf--insert-section
-               buf ?D "Mode Activation + Full Incremental jit-lock (Scroll Pass)"
-               "Buffer scrolled from top to bottom; sit-for 0 after each screen lets \
-jit-lock fontify incrementally. Models the cost of reading an entire file."
-               (car result-d) global-max-len)
-              mode-summaries))
-
-      ;; -- Cross-mode summary ───────────────────────────────────────────────────
-      (sd7-perf--insert-cross-mode-summary buf (nreverse mode-summaries))
-
-      ;; -- RST document footer ──────────────────────────────────────────────────
-      (with-current-buffer buf
-        (goto-char (point-max))
-        (unless (bolp) (insert "\n"))
-        (insert "\n.. ---------------------------------------------------------------------------\n"))
-
-      ;; -- Write to file ────────────────────────────────────────────────────────
-      (make-directory report-dir :parents)
-      (with-current-buffer buf
-        (let ((coding-system-for-write 'utf-8-unix))
-          (write-region (point-min) (point-max) out-file nil :silent)))
-      (switch-to-buffer buf))
-
-    (message "")
-    (message "Done — report written to: %s" out-file)
-    out-file))
+  (let* ((total-elapsed (- (float-time) total-start))
+         (mode-times (list :a-wu time-a-wu :a-tp time-a-tp
+                           :b-wu time-b-wu :b-tp time-b-tp
+                           :c-wu time-c-wu :c-tp time-c-tp
+                           :d-wu time-d-wu :d-tp time-d-tp))
+         (written (sd7-perf--finish-report
+                   seed7-dir report-dir id iterations have-frame
+                   result-a result-b result-c result-d
+                   mode-times total-elapsed
+                   interrupted-p interrupted-during)))
+    (sd7-controlled--message "%s report written to: %s"
+                             (if interrupted-p "partial" "complete")
+                             written)
+    written)))
 
 ;;; --------------------------------------------------------------------------
 ;;; Interactive command
