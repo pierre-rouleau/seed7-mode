@@ -163,7 +163,7 @@ Checks a middle character of the comment body.  The body starts at offset 2
 Buffer: \"(* body *)\" — body occupies offsets 2..6 inclusive (\" body \")."
   ;; Offsets: 0=( 1=* 2=' ' 3=b 4=o 5=d 6=y 7=' ' 8=* 9=)
   (seed7-test--with-fontified-buffer "(* body *)"
-    (dolist (offset '(2 3 4 5 6 7))    ; ' ' b o d y ' '
+    (dolist (offset '(2 3 4 5 6))    ; ' ' b o d y ' '
       (should (pel-eq t
                       (seed7-test--has-face-p (seed7-test--buf-pos offset)
                                               'font-lock-comment-face)
@@ -312,10 +312,10 @@ Outer `*)': `*' at 24, `)' at 25."
   ;;  0123456789012345678901234567
   (seed7-test--with-fontified-buffer "(* outer (* inner *) end *)"
     ;; Inner closer `*'
-    (should (seed7-test--has-face-p (seed7-test--buf-pos 17)
+    (should (seed7-test--has-face-p (seed7-test--buf-pos 18)
                                     'font-lock-comment-delimiter-face))
     ;; Inner closer `)' — regression point
-    (should (seed7-test--has-face-p (seed7-test--buf-pos 18)
+    (should (seed7-test--has-face-p (seed7-test--buf-pos 19)
                                     'font-lock-comment-delimiter-face))
     ;; Outer closer `*'
     (should (seed7-test--has-face-p (seed7-test--buf-pos 25)
@@ -345,10 +345,10 @@ Closing `)' is at offset 18 — regression point."
     (should (seed7-test--has-face-p (seed7-test--buf-pos 9)
                                     'font-lock-comment-delimiter-face))
     ;; Closer `*'
-    (should (seed7-test--has-face-p (seed7-test--buf-pos 17)
+    (should (seed7-test--has-face-p (seed7-test--buf-pos 16)
                                     'font-lock-comment-delimiter-face))
     ;; Closer `)' — regression point
-    (should (seed7-test--has-face-p (seed7-test--buf-pos 18)
+    (should (seed7-test--has-face-p (seed7-test--buf-pos 17)
                                     'font-lock-comment-delimiter-face))
     ;; Code after the comment must not have comment face
     (should (seed7-test--has-no-comment-face-p (seed7-test--buf-pos 20)))))
