@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-22 12:56:17 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-22 14:52:06 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -100,12 +100,12 @@
 ;; Time stamp helpers
 
 (defvar sd7-controlled--started-at nil
-  "Local HH;MM;SS timestamp captured when the current benchmark run starts.")
+  "Local HH:MM:SS timestamp captured when the current benchmark run starts.")
 
 (defun sd7-controlled--reset-start-time ()
   "Capture the local benchmark start time for subsequent progress messages."
   (setq sd7-controlled--started-at
-        (format-time-string "%H;%M;%S" (current-time))))
+        (format-time-string "%H:%M:%S" (current-time))))
 
 (defun sd7-controlled--ensure-start-time ()
   "Ensure `sd7-controlled--started-at' has a value."

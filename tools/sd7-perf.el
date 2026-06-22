@@ -2,7 +2,7 @@
 
 ;; Created   : Sunday, June 22 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-22 14:33:16 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-22 15:02:09 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -634,8 +634,6 @@ MODE-SUMMARIES is a list of (mode-char avg min max) as returned by
 ;;; --------------------------------------------------------------------------
 ;;; Core runner
 
-
-
 (defun sd7-perf-run-core (seed7-dir report-dir id iterations)
   "Run the four-mode Seed7 performance benchmark and write the RST report.
 
@@ -664,96 +662,96 @@ Returns the absolute path of the written report file."
   (unless (and (integerp iterations) (> iterations 0))
     (user-error "ITERATIONS must be a positive integer, got: %S" iterations))
 
-(let* ((dir-specs  (list (list (expand-file-name "prg" seed7-dir) '("sd7"))
-                         (list (expand-file-name "lib" seed7-dir) '("s7i"))))
-       (out-file   (sd7-perf--output-file report-dir id))
-       (have-frame (not noninteractive))
-       (total-start nil)
-       result-a result-b result-c result-d
-       time-a-wu time-a-tp
-       time-b-wu time-b-tp
-       time-c-wu time-c-tp
-       time-d-wu time-d-tp
-       interrupted-p
-       interrupted-during)
+  (let* ((dir-specs (list (list (expand-file-name "prg" seed7-dir) '("sd7"))
+                          (list (expand-file-name "lib" seed7-dir) '("s7i"))))
+         (out-file (sd7-perf--output-file report-dir id))
+         (have-frame (not noninteractive))
+         (total-start nil)
+         result-a result-b result-c result-d
+         time-a-wu time-a-tp
+         time-b-wu time-b-tp
+         time-c-wu time-c-tp
+         time-d-wu time-d-tp
+         interrupted-p
+         interrupted-during)
 
-  (sd7-controlled--reset-start-time)
-  (setq total-start (float-time))
+    (sd7-controlled--reset-start-time)
+    (setq total-start (float-time))
 
-  (sd7-controlled--message "Seed7 Mode Performance Benchmark — Four Modes")
-  (sd7-controlled--message "seed7-mode: %s" seed7-mode-version-timestamp)
-  (sd7-controlled--message "Seed7 dir: %s" seed7-dir)
-  (sd7-controlled--message "Report dir: %s" report-dir)
-  (sd7-controlled--message "Report ID: %s" id)
-  (sd7-controlled--message "Iterations: %d per file" iterations)
-  (sd7-controlled--message "Modes: %s"
-                           (if have-frame "A B C D"
-                             "A C (B and D skipped — batch mode)"))
-  (sd7-controlled--message "Output: %s" out-file)
+    (sd7-controlled--message "Seed7 Mode Performance Benchmark — Four Modes")
+    (sd7-controlled--message "seed7-mode: %s" seed7-mode-version-timestamp)
+    (sd7-controlled--message "Seed7 dir: %s" seed7-dir)
+    (sd7-controlled--message "Report dir: %s" report-dir)
+    (sd7-controlled--message "Report ID: %s" id)
+    (sd7-controlled--message "Iterations: %d per file" iterations)
+    (sd7-controlled--message "Modes: %s"
+                             (if have-frame "A B C D"
+                               "A C (B and D skipped — batch mode)"))
+    (sd7-controlled--message "Output: %s" out-file)
 
-  (condition-case _quit
-      (progn
-        ;; Mode A
-        (let* ((ret (sd7-perf--run-one-mode
-                     (symbol-function 'sd7-controlled--open-file)
-                     dir-specs iterations "A"))
-               (raw-result (nth 0 ret)))
-          (setq result-a  (sd7-perf--abbreviate-results raw-result)
-                time-a-wu (nth 1 ret)
-                time-a-tp (nth 2 ret)))
-
-        ;; Mode B
-        (when have-frame
+    (condition-case _quit
+        (progn
+          ;; Mode A
           (let* ((ret (sd7-perf--run-one-mode
-                       #'sd7-perf--open-file-b dir-specs iterations "B"))
-                 (raw-result (nth 0 ret)))
-            (setq result-b  (sd7-perf--abbreviate-results raw-result)
-                  time-b-wu (nth 1 ret)
-                  time-b-tp (nth 2 ret))))
+                       (symbol-function 'sd7-controlled--open-file)
+                       dir-specs iterations "A"))
+                 (raw-result (car (nth 0 ret))))
+            (setq result-a (sd7-perf--abbreviate-results raw-result)
+                  time-a-wu (nth 1 ret)
+                  time-a-tp (nth 2 ret)))
 
-        ;; Mode C
-        (let* ((ret (sd7-perf--run-one-mode
-                     #'sd7-perf--open-file-c dir-specs iterations "C"))
-               (raw-result (nth 0 ret)))
-          (setq result-c  (sd7-perf--abbreviate-results raw-result)
-                time-c-wu (nth 1 ret)
-                time-c-tp (nth 2 ret)))
+          ;; Mode B
+          (when have-frame
+            (let* ((ret (sd7-perf--run-one-mode
+                         #'sd7-perf--open-file-b dir-specs iterations "B"))
+                   (raw-result (car (nth 0 ret))))
+              (setq result-b (sd7-perf--abbreviate-results raw-result)
+                    time-b-wu (nth 1 ret)
+                    time-b-tp (nth 2 ret))))
 
-        ;; Mode D
-        (when have-frame
+          ;; Mode C
           (let* ((ret (sd7-perf--run-one-mode
-                       #'sd7-perf--open-file-d dir-specs iterations "D"))
-                 (raw-result (nth 0 ret)))
-            (setq result-d  (sd7-perf--abbreviate-results raw-result)
-                  time-d-wu (nth 1 ret)
-                  time-d-tp (nth 2 ret)))))
-    (quit
-     (setq interrupted-p t
-           interrupted-during sd7-perf--current-phase)
-     (sd7-controlled--message
-      "interrupted during %s%s%s — writing partial report"
-      sd7-perf--current-phase
-      (if sd7-perf--current-file
-          (format " — %s" (abbreviate-file-name sd7-perf--current-file))
-        "")
-      (if sd7-perf--current-iteration
-          (format " — iteration %d" sd7-perf--current-iteration)
-        ""))))
+                       #'sd7-perf--open-file-c dir-specs iterations "C"))
+                 (raw-result (car (nth 0 ret))))
+            (setq result-c (sd7-perf--abbreviate-results raw-result)
+                  time-c-wu (nth 1 ret)
+                  time-c-tp (nth 2 ret)))
 
-  (let* ((total-elapsed (- (float-time) total-start))
-         (mode-times (list :a-wu time-a-wu :a-tp time-a-tp
-                           :b-wu time-b-wu :b-tp time-b-tp
-                           :c-wu time-c-wu :c-tp time-c-tp
-                           :d-wu time-d-wu :d-tp time-d-tp))
-         (written (sd7-perf--finish-report
-                   seed7-dir report-dir id iterations have-frame
-                   result-a result-b result-c result-d
-                   mode-times total-elapsed
-                   interrupted-p interrupted-during)))
-    (sd7-controlled--message "%s report written to: %s"
-                             (if interrupted-p "partial" "complete")
-                             written)
-    written)))
+          ;; Mode D
+          (when have-frame
+            (let* ((ret (sd7-perf--run-one-mode
+                         #'sd7-perf--open-file-d dir-specs iterations "D"))
+                   (raw-result (car (nth 0 ret))))
+              (setq result-d (sd7-perf--abbreviate-results raw-result)
+                    time-d-wu (nth 1 ret)
+                    time-d-tp (nth 2 ret)))))
+      (quit
+       (setq interrupted-p t
+             interrupted-during sd7-perf--current-phase)
+       (sd7-controlled--message
+        "interrupted during %s%s%s — writing partial report"
+        sd7-perf--current-phase
+        (if sd7-perf--current-file
+            (format " — %s" (abbreviate-file-name sd7-perf--current-file))
+          "")
+        (if sd7-perf--current-iteration
+            (format " — iteration %d" sd7-perf--current-iteration)
+          ""))))
+
+    (let* ((total-elapsed (- (float-time) total-start))
+           (mode-times (list :a-wu time-a-wu :a-tp time-a-tp
+                             :b-wu time-b-wu :b-tp time-b-tp
+                             :c-wu time-c-wu :c-tp time-c-tp
+                             :d-wu time-d-wu :d-tp time-d-tp))
+           (written (sd7-perf--finish-report
+                     seed7-dir report-dir id iterations have-frame
+                     result-a result-b result-c result-d
+                     mode-times total-elapsed
+                     interrupted-p interrupted-during)))
+      (sd7-controlled--message "%s report written to: %s"
+                               (if interrupted-p "partial" "complete")
+                               written)
+      written)))
 
 ;;; --------------------------------------------------------------------------
 ;;; Interactive command
