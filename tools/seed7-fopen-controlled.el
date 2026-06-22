@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-20 12:42:46 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-22 11:00:52 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -110,10 +110,16 @@ Returns the number of lines in the file."
       (kill-buffer buf))
     line-count))
 
+(defun sd7-controlled--warmup (directory-specs &optional label)
+  "Open every file in DIRECTORY-SPECS once (untimed), then GC.
 
-(defun sd7-controlled--warmup (directory-specs)
-  "Open every file in DIRECTORY-SPECS once (untimed), then GC."
-  (message "sd7-controlled: warm-up pass …")
+When LABEL is non-nil, include it in progress messages.  This is useful for
+callers such as `sd7-perf.el', where several distinct warm-up passes are run
+in sequence."
+  (message "sd7-controlled: warm-up pass%s …"
+           (if label
+               (format " (%s)" label)
+             ""))
   (dolist (dir-spec directory-specs)
     (let* ((directory  (car dir-spec))
            (file-names (cl-mapcan (lambda (ext)
@@ -122,7 +128,10 @@ Returns the number of lines in the file."
       (dolist (file-name file-names)
         (sd7-controlled--open-file file-name))))
   (garbage-collect)
-  (message "sd7-controlled: warm-up done, heap GC'd to baseline."))
+  (message "sd7-controlled: warm-up%s done, heap GC'd to baseline."
+           (if label
+               (format " (%s)" label)
+             "")))
 
 
 (defun sd7-controlled--timed-pass (directory-specs iterations)

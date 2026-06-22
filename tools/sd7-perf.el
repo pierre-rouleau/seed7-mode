@@ -2,7 +2,7 @@
 
 ;; Created   : Sunday, June 22 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-21 10:49:59 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-22 11:01:37 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -313,7 +313,7 @@ Returns (results . max-fname-len) identical to `sd7-controlled--timed-pass'."
         (progn
           (fset 'sd7-controlled--open-file open-fn)
           (message "")
-          (message "sd7-perf: Mode %s — warm-up pass…" mode-label)
+          (sd7-controlled--warmup directory-specs (format "Mode %s" mode-label))
           (sd7-controlled--warmup directory-specs)
           (message "sd7-perf: Mode %s — timed pass (%d iterations)…"
                    mode-label iterations)
