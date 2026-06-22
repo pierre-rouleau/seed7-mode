@@ -115,6 +115,8 @@ ELC_FILES := $(subst .el,.elc,$(EL_FILES))
 # ALL_TEST_FILES := $(wildcard tests/ert-tests/seed7-test-*.el)
 ALL_TEST_FILES := tests/ert-tests/seed7-test-arrays-01.el \
                   tests/ert-tests/seed7-test-font-lock-01.el \
+                  tests/ert-tests/seed7-test-font-lock-02.el \
+                  tests/ert-tests/seed7-test-font-lock-02b.el \
                   tests/ert-tests/seed7-test-mark-defun-01.el \
                   tests/ert-tests/seed7-test-nav-array-01.el \
                   tests/ert-tests/seed7-test-nav-final-pos-01.el \
@@ -282,9 +284,12 @@ tools/seed7-mode-time.elc:        seed7-mode.elc
 # Test Code dependencies
 # ----------------------
 
+# See ALL_TEST_FILES
 
 tests/ert-tests/seed7-test-arrays-01.el.test-passed:             seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-arrays-01.elc
 tests/ert-tests/seed7-test-font-lock-01.el.test-passed:          seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-font-lock-01.elc
+tests/ert-tests/seed7-test-font-lock-02.el.test-passed:          seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-font-lock-02.elc
+tests/ert-tests/seed7-test-font-lock-02b.el.test-passed:         seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-font-lock-02b.elc
 tests/ert-tests/seed7-test-mark-defun-01.el.test-passed:         seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-mark-defun-01.el
 tests/ert-tests/seed7-test-nav-array-01.el.test-passed:          seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-array-01.elc
 tests/ert-tests/seed7-test-nav-final-pos-01.el.test-passed:      seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-final-pos-01.elc
