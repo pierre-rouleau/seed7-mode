@@ -7,7 +7,7 @@ Documentation and Step-by-Step Instructions
 
 This should be opened from the repository root with::
 
-    emacs -Q -nw --load tools/sd7-perf.el tools/sd7-perf-doc.rst
+    emacs -Q -nw --load tools/sd7-perf.el tools/sd7-perf-doc.rst.txt
 
 It requires:
 
@@ -252,6 +252,44 @@ delta for a **small** file in Mode C is a sign of regexp backtracking.
 File names in the tables are abbreviated to show only the Seed7 repository
 directory name and the path below it (e.g. ``seed7/prg/chkint.sd7`` rather
 than the full absolute path).
+
+Interrupting the Test
+=====================
+
+``C-g`` will interrupt the test, but with some important nuances depending
+on which phase is running:
+
+- Always interruptible — Modes B and D
+
+  Modes B and D call sit-for 0 on every loop iteration.
+  ``sit-for`` is an explicit input-check point in Emacs:
+  it processes the event queue and delivers a pending ``C-g``
+  immediately at that moment. So in these modes ``C-g`` is highly responsive.
+
+- Eventually interruptible — Modes A, C, and warm-up phases
+
+  Mode A (find-file-noselect only) and Mode C (font-lock-ensure)
+  run tight ``dolist`` loops with no ``sit-for``. However,
+  Emacs's byte-compiled interpreter inserts a QUIT check at
+  every ``funcall`` boundary, so ``C-g`` will fire at the next
+  Lisp function-call boundary — typically within milliseconds
+  during Mode A.
+  The exception is a long ``font-lock-ensure`` call on a large file
+  (e.g. chkint.sd7 at 38 k lines): font-lock-ensure runs mostly in
+  C-level code, where QUIT checks occur less frequently.
+  You may need to hold ``C-g`` for a second or two before it takes
+  effect during that pass.
+
+What happens when ``C-g`` fires:
+
+- ``unwind-protect`` in sd7-perf--run-one-mode restores
+  sd7-controlled--open-file to its original definition,
+  so the fset patch is always cleaned up correctly.
+- The partial results of the interrupted mode are discarded.
+- You return to the *scratch* buffer (or wherever the read-eval-print loop is)
+  with a quit signal.
+- No report is written.
+
 
 Notes
 =====
