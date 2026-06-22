@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260621.1147
+;; Package-Version: 20260621.1716
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-21T15:47:20+0000 W25-7"
+(defconst seed7-mode-version-timestamp "2026-06-21T21:16:24+0000 W25-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2145,6 +2145,7 @@ Matches either the opening `(*' or the closing `*)'.")
 (defconst seed7--syntax-block-comment-end-4
   (string-to-syntax "> 4bn")
   "Syntax property value for second character of Seed7 block-comment closer.")
+
 (defun seed7-mode-syntax-propertize (start end)
   "Apply syntax-table text properties between START and END.
 
@@ -2187,6 +2188,32 @@ Handle four cases:
                                  'syntax-table seed7--syntax-block-comment-end-3)
               (put-text-property (1+ (match-beginning 0)) (match-end 0)
                                  'syntax-table seed7--syntax-block-comment-end-4))))))))
+
+(defun seed7--font-lock-block-comment-delimiter (limit)
+  "Search for a Seed7 block-comment delimiter before LIMIT.
+
+Match only syntactically active `(*' and `*)' delimiters, and expose the
+whole two-character delimiter as match 0 for font-lock."
+  (catch 'found
+    (while (re-search-forward seed7-block-comment-delim-re limit t)
+      (let ((beg (match-beginning 0))
+            (end (match-end 0)))
+        (when
+            (cond
+             ;; Opening delimiter `(*':
+             ;; after consuming both chars, parser should be inside comment.
+             ((eq (char-after beg) ?\()
+              (nth 4 (syntax-ppss end)))
+
+             ;; Closing delimiter `*)':
+             ;; at the `*', parser should still be inside comment.
+             ((eq (char-after beg) ?*)
+              (nth 4 (syntax-ppss beg))))
+
+          ;; Preserve match data for font-lock.
+          (set-match-data (list beg end))
+          (throw 'found t))))
+    nil))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
@@ -2498,6 +2525,8 @@ Please update your code to use the new name before this deadline."
 ;;
 (defconst seed7-font-lock-keywords
   (list
+   ;; block-comment delimiters
+   '(seed7--font-lock-block-comment-delimiter        (0 'font-lock-comment-delimiter-face t))
    ;; pragmas
    (cons seed7-pragma-keywords-regexp                (list 1 ''seed7-pragma-keyword-face))
    ;; include
