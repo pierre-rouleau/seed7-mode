@@ -228,16 +228,19 @@ Returns the absolute path of the written report file."
   ;; ── In batch mode, patch sd7-controlled--open-file ───────────────────────
   (when noninteractive
     (fset 'sd7-controlled--open-file #'sd7-bench--open-file-batch))
-  ;; ── Build directory specs and output path ────────────────────────────────
-  (let* ((dir-specs (list (list (expand-file-name "prg" seed7-dir) '("sd7"))
+  ;; ── Record start time and build directory specs ──────────────────────────
+  (let* ((run-start (current-time))
+         ;; Bind so sd7-controlled--ts works in called functions.
+         (sd7-controlled--run-start-time run-start)
+         (dir-specs (list (list (expand-file-name "prg" seed7-dir) '("sd7"))
                           (list (expand-file-name "lib" seed7-dir) '("s7i"))))
          (out-file  (sd7-bench--output-file major minor)))
-    (message "")
-    (message "=== GC-Controlled Seed7 File-Open Benchmark ===")
-    (message "seed7-mode : %s" seed7-mode-version-timestamp)
-    (message "Seed7 dir  : %s" seed7-dir)
-    (message "Iterations : %d per file" iterations)
-    (message "Output     : %s" out-file)
+    (message "%s=== GC-Controlled Seed7 File-Open Benchmark ==="
+             (sd7-controlled--ts))
+    (message "%sseed7-mode : %s" (sd7-controlled--ts) seed7-mode-version-timestamp)
+    (message "%sSeed7 dir  : %s" (sd7-controlled--ts) seed7-dir)
+    (message "%sIterations : %d per file" (sd7-controlled--ts) iterations)
+    (message "%sOutput     : %s" (sd7-controlled--ts) out-file)
     (message "")
     ;; ── Run the benchmark (results land in *sd7-controlled-benchmark*) ──────
     (generate-sd7-controlled-report dir-specs iterations)
@@ -258,7 +261,9 @@ Returns the absolute path of the written report file."
         (let ((coding-system-for-write 'utf-8-unix))
           (write-region (point-min) (point-max) out-file nil :silent))))
     (message "")
-    (message "Report written to: %s" out-file)
+    (message "%sReport written to: %s (total %.1fs)"
+             (sd7-controlled--ts) out-file
+             (sd7-controlled--elapsed run-start))
     out-file))
 
 ;;; --------------------------------------------------------------------------

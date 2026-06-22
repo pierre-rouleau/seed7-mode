@@ -97,6 +97,31 @@
 ;;; --------------------------------------------------------------------------
 ;;; Code:
 
+;;; --------------------------------------------------------------------------
+;;; Start-time tracking (set by callers, used by message helpers)
+
+(defvar sd7-controlled--run-start-time nil
+  "Emacs time value captured at the start of a benchmark run.
+Set this variable before calling any sd7-controlled function to enable
+the \"sd7-controlled (started at HH:MM:SS):\" prefix in all messages.
+When nil, messages use a plain \"sd7-controlled:\" prefix.")
+
+(defun sd7-controlled--ts ()
+  "Return the message prefix string for all sd7-controlled messages.
+If `sd7-controlled--run-start-time' is non-nil, returns:
+  \"sd7-controlled (started at HH:MM:SS): \"
+Otherwise returns \"sd7-controlled: \"."
+  (if sd7-controlled--run-start-time
+      (format "sd7-controlled (started at %s): "
+              (format-time-string "%H:%M:%S" sd7-controlled--run-start-time))
+    "sd7-controlled: "))
+
+(defun sd7-controlled--elapsed (start-time)
+  "Return seconds elapsed since START-TIME as a float."
+  (float-time (time-subtract (current-time) start-time)))
+
+;;; --------------------------------------------------------------------------
+
 (defun sd7-controlled--open-file (file-name)
   "Open FILE-NAME in a buffer, activate the mode, then kill the buffer.
 Returns the number of lines in the file."
@@ -116,22 +141,22 @@ Returns the number of lines in the file."
 When LABEL is non-nil, include it in progress messages.  This is useful for
 callers such as `sd7-perf.el', where several distinct warm-up passes are run
 in sequence."
-  (message "sd7-controlled: warm-up pass%s …"
-           (if label
-               (format " (%s)" label)
-             ""))
-  (dolist (dir-spec directory-specs)
-    (let* ((directory  (car dir-spec))
-           (file-names (cl-mapcan (lambda (ext)
-                                    (benchmark-sd7-files-in-dir directory ext))
-                                  (cadr dir-spec))))
-      (dolist (file-name file-names)
-        (sd7-controlled--open-file file-name))))
-  (garbage-collect)
-  (message "sd7-controlled: warm-up%s done, heap GC'd to baseline."
-           (if label
-               (format " (%s)" label)
-             "")))
+  (let ((phase-start (current-time)))
+    (message "%swarm-up pass%s started …"
+             (sd7-controlled--ts)
+             (if label (format " (%s)" label) ""))
+    (dolist (dir-spec directory-specs)
+      (let* ((directory  (car dir-spec))
+             (file-names (cl-mapcan (lambda (ext)
+                                      (benchmark-sd7-files-in-dir directory ext))
+                                    (cadr dir-spec))))
+        (dolist (file-name file-names)
+          (sd7-controlled--open-file file-name))))
+    (garbage-collect)
+    (message "%swarm-up%s done in %.1fs, heap GC'd to baseline."
+             (sd7-controlled--ts)
+             (if label (format " (%s)" label) "")
+             (sd7-controlled--elapsed phase-start))))
 
 
 (defun sd7-controlled--timed-pass (directory-specs iterations)
@@ -139,8 +164,11 @@ in sequence."
 Returns (report . max-fname-len)."
   (let ((old-threshold  gc-cons-threshold)
         (old-percentage gc-cons-percentage)
+        (phase-start    (current-time))
         report
         (max-fname-len 0))
+    (message "%stimed pass started (%d iterations/file) …"
+             (sd7-controlled--ts) iterations)
     ;; ── Suppress GC for the entire timed pass ──────────────────────────────
     (setq gc-cons-threshold  most-positive-fixnum
           gc-cons-percentage 1.0)
@@ -169,6 +197,9 @@ Returns (report . max-fname-len)."
       ;; ── Always restore GC settings ─────────────────────────────────────────
       (setq gc-cons-threshold  old-threshold
             gc-cons-percentage old-percentage))
+    (message "%stimed pass done in %.1fs."
+             (sd7-controlled--ts)
+             (sd7-controlled--elapsed phase-start))
     (cons (nreverse report) max-fname-len)))
 
 
@@ -185,11 +216,12 @@ Sequence:
   (interactive
    (list (read--expression "Directory specs: ")
          (read-number "Iterations per file: " 3)))
-  (let* ((iters (or iterations 3)))
+  (let* ((iters      (or iterations 3))
+         (run-start  (or sd7-controlled--run-start-time (current-time)))
+         (sd7-controlled--run-start-time run-start))
     ;; 1. Warm up
     (sd7-controlled--warmup directory-specs)
-    ;; 2. Timed pass
-    (message "sd7-controlled: timed pass (%d iterations per file) …" iters)
+    ;; 2. Timed pass (message now emitted inside sd7-controlled--timed-pass)
     (let* ((result.len (sd7-controlled--timed-pass directory-specs iters))
            (results    (car result.len))
            (max-len    (cdr result.len))
@@ -244,8 +276,9 @@ Sequence:
           (insert (format "| Maximum   | %-15.6f |\n" mx))
           (insert "+-----------+-----------------+\n"))
         (switch-to-buffer buf)
-        (message "sd7-controlled: report ready (%d files, %d iters each)."
-                 count iters)))))
+        (message "%sreport ready (%d files, %d iters each, total %.1fs)."
+                 (sd7-controlled--ts) count iters
+                 (sd7-controlled--elapsed run-start))))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-fopen-controlled)

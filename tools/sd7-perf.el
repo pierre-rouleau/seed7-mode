@@ -133,6 +133,13 @@
 Derived from the location of this file at load or byte-compile time.")
 
 ;;; --------------------------------------------------------------------------
+;;; Run start time (set at the beginning of each benchmark run)
+
+(defvar sd7-perf--run-start-time nil
+  "Emacs time value set at the start of `sd7-perf-run-core'.
+Used to show \"started at HH:MM:SS\" in all messages during the run.")
+
+;;; --------------------------------------------------------------------------
 ;;; Remembered defaults (persist across invocations within a session)
 
 (defvar sd7-perf--last-seed7-dir  (expand-file-name "~/src/seed7")
@@ -312,11 +319,12 @@ Returns (results . max-fname-len) identical to `sd7-controlled--timed-pass'."
     (unwind-protect
         (progn
           (fset 'sd7-controlled--open-file open-fn)
-          (message "")
-          (sd7-controlled--warmup directory-specs (format "Mode %s" mode-label))
-          (sd7-controlled--warmup directory-specs)
-          (message "sd7-perf: Mode %s — timed pass (%d iterations)…"
-                   mode-label iterations)
+          (message "%sMode %s — beginning (2 warm-up passes + %d-iteration timed pass)"
+                   (sd7-controlled--ts) mode-label iterations)
+          (sd7-controlled--warmup directory-specs
+                                  (format "Mode %s pass 1" mode-label))
+          (sd7-controlled--warmup directory-specs
+                                  (format "Mode %s pass 2" mode-label))
           (sd7-controlled--timed-pass directory-specs iterations))
       ;; Always restore the original open function.
       (fset 'sd7-controlled--open-file orig))))
@@ -397,6 +405,14 @@ MODE-SUMMARIES is a list of (mode-char avg min max) as returned by
 ;;; --------------------------------------------------------------------------
 ;;; Core runner
 
+(defun sd7-perf--write-report (buf out-file)
+  "Write buffer BUF to OUT-FILE (UTF-8 Unix) and display the buffer."
+  (make-directory (file-name-directory out-file) :parents)
+  (with-current-buffer buf
+    (let ((coding-system-for-write 'utf-8-unix))
+      (write-region (point-min) (point-max) out-file nil :silent)))
+  (switch-to-buffer buf))
+
 (defun sd7-perf-run-core (seed7-dir report-dir id iterations)
   "Run the four-mode Seed7 performance benchmark and write the RST report.
 
@@ -408,9 +424,11 @@ ITERATIONS : number of timed opens per file (positive integer).
 In interactive (-nw) mode: runs modes A, B, C, D.
 In batch (--batch) mode  : runs modes A and C only (B and D require a frame).
 
+If interrupted with C-g, a partial report is generated from completed modes.
+
 Returns the absolute path of the written report file."
   ;; -- Validate --------------------------------------------
-    (setq seed7-dir  (expand-file-name seed7-dir)
+  (setq seed7-dir  (expand-file-name seed7-dir)
         ;; Resolve report-dir against the repo root so that a relative path
         ;; like "reports" works regardless of which buffer's default-directory
         ;; is active when M-x sd7-perf-run is called.
@@ -425,63 +443,82 @@ Returns the absolute path of the written report file."
   (unless (and (integerp iterations) (> iterations 0))
     (user-error "ITERATIONS must be a positive integer, got: %S" iterations))
 
-  (let* ((dir-specs  (list (list (expand-file-name "prg" seed7-dir) '("sd7"))
+  ;; -- Record start time (shared with seed7-fopen-controlled helpers) -------
+  (let* ((run-start  (current-time))
+         ;; Bind dynamic variable so sd7-controlled--ts works in called fns.
+         (sd7-controlled--run-start-time run-start)
+         (sd7-perf--run-start-time       run-start)
+         (dir-specs  (list (list (expand-file-name "prg" seed7-dir) '("sd7"))
                            (list (expand-file-name "lib" seed7-dir) '("s7i"))))
          (out-file   (sd7-perf--output-file report-dir id))
          (have-frame (not noninteractive))
          ;; Collect (results . max-len) per mode.
          result-a result-b result-c result-d
          ;; Max filename length across all modes (for consistent column width).
-         global-max-len)
+         global-max-len
+         ;; Set to non-nil if the user presses C-g mid-run.
+         interrupted)
 
+    (message "%s=== Seed7 Mode Performance Benchmark — Four Modes ==="
+             (sd7-controlled--ts))
+    (message "%sseed7-mode : %s" (sd7-controlled--ts) seed7-mode-version-timestamp)
+    (message "%sSeed7 dir  : %s" (sd7-controlled--ts) seed7-dir)
+    (message "%sReport dir : %s" (sd7-controlled--ts) report-dir)
+    (message "%sReport ID  : %s" (sd7-controlled--ts) id)
+    (message "%sIterations : %d per file" (sd7-controlled--ts) iterations)
+    (message "%sModes      : A C%s" (sd7-controlled--ts)
+             (if have-frame " B D" " (B and D skipped — batch mode)"))
+    (message "%sOutput     : %s" (sd7-controlled--ts) out-file)
     (message "")
-    (message "=== Seed7 Mode Performance Benchmark — Four Modes ===")
-    (message "seed7-mode : %s" seed7-mode-version-timestamp)
-    (message "Seed7 dir  : %s" seed7-dir)
-    (message "Report dir : %s" report-dir)
-    (message "Report ID  : %s" id)
-    (message "Iterations : %d per file" iterations)
-    (message "Modes      : A C%s" (if have-frame " B D" " (B and D skipped — batch mode)"))
-    (message "Output     : %s" out-file)
-    (message "")
 
-    ;; -- Run Mode A -------------------------------------------------------
-    (setq result-a
-          (sd7-perf--abbreviate-results
-           (car
-            (sd7-perf--run-one-mode
-             (symbol-function 'sd7-controlled--open-file)
-             dir-specs iterations "A"))))
+    ;; -- Run all modes, catching C-g for a partial report ------------------
+    (condition-case nil
+        (progn
+          ;; -- Run Mode A ---------------------------------------------------
+          (setq result-a
+                (sd7-perf--abbreviate-results
+                 (car
+                  (sd7-perf--run-one-mode
+                   (symbol-function 'sd7-controlled--open-file)
+                   dir-specs iterations "A"))))
 
-    ;; -- Run Mode B (interactive only) ------------------------------------
-    (when have-frame
-      (setq result-b
-            (sd7-perf--abbreviate-results
-             (car
-              (sd7-perf--run-one-mode
-               #'sd7-perf--open-file-b dir-specs iterations "B")))))
+          ;; -- Run Mode B (interactive only) --------------------------------
+          (when have-frame
+            (setq result-b
+                  (sd7-perf--abbreviate-results
+                   (car
+                    (sd7-perf--run-one-mode
+                     #'sd7-perf--open-file-b dir-specs iterations "B")))))
 
-    ;; -- Run Mode C -------------------------------------------------------
-    (setq result-c
-          (sd7-perf--abbreviate-results
-           (car
-            (sd7-perf--run-one-mode
-             #'sd7-perf--open-file-c dir-specs iterations "C"))))
+          ;; -- Run Mode C ---------------------------------------------------
+          (setq result-c
+                (sd7-perf--abbreviate-results
+                 (car
+                  (sd7-perf--run-one-mode
+                   #'sd7-perf--open-file-c dir-specs iterations "C"))))
 
-    ;; -- Run Mode D (interactive only) ------------------------------------
-    (when have-frame
-      (setq result-d
-            (sd7-perf--abbreviate-results
-             (car
-              (sd7-perf--run-one-mode
-               #'sd7-perf--open-file-d dir-specs iterations "D")))))
+          ;; -- Run Mode D (interactive only) --------------------------------
+          (when have-frame
+            (setq result-d
+                  (sd7-perf--abbreviate-results
+                   (car
+                    (sd7-perf--run-one-mode
+                     #'sd7-perf--open-file-d dir-specs iterations "D"))))))
+      (quit
+       (setq interrupted t)
+       (message "%sinterrupted by user — generating partial report from completed modes."
+                (sd7-controlled--ts))))
+
+    ;; -- Abort if no data at all ------------------------------------------
+    (unless (or result-a result-b result-c result-d)
+      (user-error "No mode completed — benchmark was interrupted before any results were collected"))
 
     ;; -- Determine the widest filename column across all modes ------------
     (setq global-max-len
           (apply #'max
-                 (delq nil (list (cdr result-a)
+                 (delq nil (list (and result-a (cdr result-a))
                                  (and result-b (cdr result-b))
-                                 (cdr result-c)
+                                 (and result-c (cdr result-c))
                                  (and result-d (cdr result-d))))))
 
     ;; -- Build combined RST report ----------------------------------------
@@ -492,20 +529,37 @@ Returns the absolute path of the written report file."
         (erase-buffer)
 
         ;; Document header
-        (insert "=======================================================\n")
-        (insert "GC-Controlled Benchmark Report: Seed7 Mode — Four Modes\n")
-        (insert "=======================================================\n\n")
+        (if interrupted
+            (progn
+              (insert "================================================================\n")
+              (insert "GC-Controlled Benchmark Report: Seed7 Mode — PARTIAL (interrupted)\n")
+              (insert "================================================================\n\n"))
+          (insert "=======================================================\n")
+          (insert "GC-Controlled Benchmark Report: Seed7 Mode — Four Modes\n")
+          (insert "=======================================================\n\n"))
         (insert (format ":Running with: seed7-mode %s\n"
                         seed7-mode-version-timestamp))
+        (insert (format ":Started at  : %s\n"
+                        (format-time-string "%Y-%m-%d %H:%M:%S %Z" run-start)))
         (insert (format ":Generated on: %s\n"
                         (format-time-string "%Y-%m-%d %H:%M:%S UTC"
                                             (current-time) t)))
+        (when interrupted
+          (insert ":Status      : PARTIAL — interrupted before all modes completed\n"))
         (insert (format ":N Iterations: %d  (mean of N timed opens per file)\n"
                         iterations))
         (insert ":GC @ testing: suppressed (gc-cons-threshold = most-positive-fixnum)\n")
-        (insert ":Warm-up info: yes (1 untimed pass per mode + garbage-collect before timing)\n")
-        (insert (format ":Modes run  : %s\n\n"
-                        (if have-frame "A B C D" "A C  (B and D require an interactive -nw frame)")))
+        (insert ":Warm-up info: yes (2 untimed passes per mode + garbage-collect before timing)\n")
+        (let ((modes-done
+               (mapconcat #'identity
+                          (delq nil (list (and result-a "A")
+                                          (and result-b "B")
+                                          (and result-c "C")
+                                          (and result-d "D")))
+                          " ")))
+          (insert (format ":Modes run  : %s%s\n\n"
+                          modes-done
+                          (if interrupted " (PARTIAL — see :Status above)" ""))))
 
         ;; Mode legend
         (insert "Mode Descriptions\n")
@@ -520,13 +574,14 @@ Returns the absolute path of the written report file."
         (insert "   Measures: cost a user pays when reading an entire file.\n")
         (insert "\n"))
 
-      ;; -- Insert one section per mode ──────────────────────────────────────────
-      (push (sd7-perf--insert-section
-             buf ?A "Major-Mode Activation Only"
-             "No window created. Measures syntax-table setup and font-lock keyword \
+      ;; -- Insert one section per completed mode ----------------------------
+      (when result-a
+        (push (sd7-perf--insert-section
+               buf ?A "Major-Mode Activation Only"
+               "No window created. Measures syntax-table setup and font-lock keyword \
 compilation. jit-lock never fires. Direct measure of seed7-mode overhead."
-             (car result-a) global-max-len)
-            mode-summaries)
+               (car result-a) global-max-len)
+              mode-summaries))
 
       (when result-b
         (push (sd7-perf--insert-section
@@ -536,12 +591,13 @@ visible region (≈ terminal window height). Models plain find-file user experie
                (car result-b) global-max-len)
               mode-summaries))
 
-      (push (sd7-perf--insert-section
-             buf ?C "Mode Activation + Full-Buffer Fontification (font-lock-ensure)"
-             "font-lock-ensure forces the regexp engine over the entire buffer at once. \
+      (when result-c
+        (push (sd7-perf--insert-section
+               buf ?C "Mode Activation + Full-Buffer Fontification (font-lock-ensure)"
+               "font-lock-ensure forces the regexp engine over the entire buffer at once. \
 Stress-test measurement; useful for detecting catastrophic-backtracking regressions."
-             (car result-c) global-max-len)
-            mode-summaries)
+               (car result-c) global-max-len)
+              mode-summaries))
 
       (when result-d
         (push (sd7-perf--insert-section
@@ -551,8 +607,9 @@ jit-lock fontify incrementally. Models the cost of reading an entire file."
                (car result-d) global-max-len)
               mode-summaries))
 
-      ;; -- Cross-mode summary ───────────────────────────────────────────────────
-      (sd7-perf--insert-cross-mode-summary buf (nreverse mode-summaries))
+      ;; -- Cross-mode summary (only when ≥2 modes have data) ----------------
+      (when (>= (length mode-summaries) 2)
+        (sd7-perf--insert-cross-mode-summary buf (nreverse mode-summaries)))
 
       ;; -- RST document footer ──────────────────────────────────────────────────
       (with-current-buffer buf
@@ -561,14 +618,16 @@ jit-lock fontify incrementally. Models the cost of reading an entire file."
         (insert "\n.. ---------------------------------------------------------------------------\n"))
 
       ;; -- Write to file ────────────────────────────────────────────────────────
-      (make-directory report-dir :parents)
-      (with-current-buffer buf
-        (let ((coding-system-for-write 'utf-8-unix))
-          (write-region (point-min) (point-max) out-file nil :silent)))
-      (switch-to-buffer buf))
+      (sd7-perf--write-report buf out-file))
 
     (message "")
-    (message "Done — report written to: %s" out-file)
+    (if interrupted
+        (message "%sPARTIAL report written to: %s (%.1fs elapsed)"
+                 (sd7-controlled--ts) out-file
+                 (sd7-controlled--elapsed run-start))
+      (message "%sDone — report written to: %s (total %.1fs)"
+               (sd7-controlled--ts) out-file
+               (sd7-controlled--elapsed run-start)))
     out-file))
 
 ;;; --------------------------------------------------------------------------
