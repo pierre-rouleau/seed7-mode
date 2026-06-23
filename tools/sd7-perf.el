@@ -2,7 +2,7 @@
 
 ;; Created   : Sunday, June 22 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-22 22:36:00 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-22 22:44:35 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -520,6 +520,17 @@ Returns (RESULT WARMUP-TIME TIMED-PASS-TIME), where RESULT is the
                                           (current-time) t)))
       (insert (format ":N Iterations: %d  (mean of N timed opens per file)\n"
                       iterations))
+      (insert (format ":Window system: %S\n" window-system))
+      (insert (format ":Display graphic: %S\n" (display-graphic-p)))
+      (insert (format ":Frame size: %dx%d chars\n"
+                      (frame-width) (frame-height)))
+      (insert (format ":Window body: %dx%d chars\n"
+                      (window-body-width) (window-body-height)))
+      (when (display-graphic-p)
+        (insert (format ":Frame pixel size: %dx%d px\n"
+                        (frame-pixel-width) (frame-pixel-height)))
+        (insert (format ":Default font: %S\n"
+                        (face-attribute 'default :family nil))))
       (insert ":GC @ testing: suppressed (gc-cons-threshold = most-positive-fixnum)\n")
       (insert ":Warm-up info: yes (1 untimed pass per mode + garbage-collect before timing)\n")
       (insert (format ":Modes planned: %s\n"
