@@ -393,7 +393,7 @@ Statistical Summary — Mode A (GC-free, mean-of-N)
 Mode B — Mode Activation + Initial Visible jit-lock Pass
 --------------------------------------------------------
 
-Buffer displayed in a window; sit-for 0 triggers visible-region jit-lock.
+Buffer displayed in a window; jit-lock-fontify-now triggers visible-region jit-lock.
 
 File Load Times — Mode B (mean, GC-free)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

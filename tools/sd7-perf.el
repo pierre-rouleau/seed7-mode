@@ -2,7 +2,7 @@
 
 ;; Created   : Sunday, June 22 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-22 17:35:16 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-22 22:16:27 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -545,7 +545,7 @@ Returns (RESULT WARMUP-TIME TIMED-PASS-TIME), where RESULT is the
     (when result-b
       (push (sd7-perf--insert-section
              buf ?B "Mode Activation + Initial Visible jit-lock Pass"
-             "Buffer displayed in a window; sit-for 0 triggers visible-region jit-lock."
+             "Buffer displayed in a window; jit-lock-fontify-now triggers visible-region jit-lock."
              (car result-b) global-max-len)
             mode-summaries))
     (when result-c
