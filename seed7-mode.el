@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260619.1610
+;; Package-Version: 20260622.1719
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-19T20:10:12+0000 W25-5"
+(defconst seed7-mode-version-timestamp "2026-06-22T21:19:10+0000 W26-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2145,6 +2145,7 @@ Matches either the opening `(*' or the closing `*)'.")
 (defconst seed7--syntax-block-comment-end-4
   (string-to-syntax "> 4bn")
   "Syntax property value for second character of Seed7 block-comment closer.")
+
 (defun seed7-mode-syntax-propertize (start end)
   "Apply syntax-table text properties between START and END.
 
@@ -2187,6 +2188,36 @@ Handle four cases:
                                  'syntax-table seed7--syntax-block-comment-end-3)
               (put-text-property (1+ (match-beginning 0)) (match-end 0)
                                  'syntax-table seed7--syntax-block-comment-end-4))))))))
+
+(defun seed7--font-lock-block-comment-delimiter (limit)
+  "Search for a Seed7 block-comment delimiter before LIMIT.
+
+Match only syntactically active `(*' and `*)' delimiters, and expose the
+whole two-character delimiter as match 0 for font-lock."
+  ;; Uses O(1) `get-text-property' checks instead of `syntax-ppss' to avoid
+  ;; catastrophic O(N²) backward scanning when a buffer contains an unterminated
+  ;; block comment (e.g., `prg/err.sd7').
+  (catch 'found
+    (while (re-search-forward seed7-block-comment-delim-re limit t)
+      (let ((beg (match-beginning 0))
+            (end (match-end 0)))
+        (when
+            (cond
+             ;; Opening delimiter `(*':
+             ;; `seed7-mode-syntax-propertize' sets `seed7--syntax-block-comment-start-1'
+             ;; on the `(' of every syntactically active opener — O(1) check.
+             ((eq (char-after beg) ?\()
+              (equal (get-text-property beg 'syntax-table)
+                     seed7--syntax-block-comment-start-1))
+             ;; Closing delimiter `*)':
+             ;; at the `*', parser should still be inside comment.
+             ((eq (char-after beg) ?*)
+              (equal (get-text-property beg 'syntax-table)
+                     seed7--syntax-block-comment-end-3)))
+          ;; Preserve match data for font-lock.
+          (set-match-data (list beg end))
+          (throw 'found t))))
+    nil))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Faces
@@ -2498,6 +2529,8 @@ Please update your code to use the new name before this deadline."
 ;;
 (defconst seed7-font-lock-keywords
   (list
+   ;; block-comment delimiters
+   '(seed7--font-lock-block-comment-delimiter        (0 'font-lock-comment-delimiter-face t))
    ;; pragmas
    (cons seed7-pragma-keywords-regexp                (list 1 ''seed7-pragma-keyword-face))
    ;; include
@@ -8561,6 +8594,11 @@ Requires 1 format %s argument for the identifier.
 - Group 2: file name,
 - Group 3: line number.")
 
+(defconst seed7--xref-line-re
+  (format seed7--xref-line-re-fmt
+          seed7-name-identifier-nc-re)
+  "Regexp to extract identifier for xref.")
+
 (defun seed7--build-xref ()
   "Build a cross reference buffer for the current Seed7 file.
 The buffer holds 1 line per object referenced.
@@ -9096,13 +9134,10 @@ The list has no duplicate and is unsorted."
                (buffer-live-p seed7---xref-buffer))
     (seed7--build-xref))
   (let ((identifiers nil)
-        (identifier nil)
-        (text-re (format
-                  seed7--xref-line-re-fmt
-                  seed7-name-identifier-nc-re)))
+        (identifier nil))
     (with-current-buffer seed7---xref-buffer
       (goto-char (point-min))
-      (while (re-search-forward text-re nil :noerror)
+      (while (re-search-forward seed7--xref-line-re nil :noerror)
         (setq identifier (match-string 1))
         (unless (member identifier identifiers)
           (push identifier identifiers))))
@@ -9565,6 +9600,25 @@ current Emacs session without restarting Emacs."
 ;;* Seed7 Major Mode
 ;;  ================
 
+(defconst seed7--align-mode-rules-list
+  (list
+   (list
+    'seed7-mode-initialization
+    (cons 'regexp
+          (format ":\\(\\s-+\\)%s+?\\(\\s-+\\)is\\>"
+                  seed7-name-identifier-nc-re))
+    (cons 'modes '(seed7-mode))
+    (list 'group 1 2))
+   (list
+    'seed7-mode-assignment
+    (cons 'regexp
+          (format "\\(\\s-+\\)%s\\(\\s-+\\)"
+                  seed7-predef-assignment-operator-regexp))
+    (list 'group 1 2)
+    (cons 'modes '(seed7-mode))))
+  "Alignment rules for `seed7-mode'.")
+
+
 ;;;###autoload
 (define-derived-mode seed7-mode prog-mode "seed7"
   "Major mode for editing Seed7 files.
@@ -9667,23 +9721,7 @@ compilation requires a working installation of Seed7.
 
   ;; Seed7 Source Code Alignment rules
   (setq-local align-mode-rules-list
-              (list
-               (list
-                'seed7-mode-initialization
-                ;; align on 'is' keyword
-                (cons 'regexp (format ":\\(\\s-+\\)%s+?\\(\\s-+\\)is\\>"
-                                      seed7-name-identifier-nc-re))
-                (cons 'modes '(seed7-mode))
-                (list 'group 1 2))
-               (list
-                'seed7-mode-assignment
-                (cons
-                 'regexp
-                 ;; align on assignment operator and on text after it
-                 (format "\\(\\s-+\\)%s\\(\\s-+\\)"
-                         seed7-predef-assignment-operator-regexp))
-                (list 'group 1 2)
-                (cons 'modes '(seed7-mode)))))
+              (copy-tree seed7--align-mode-rules-list))
   (setq-local align-region-separate 'group)
 
   ;; Enhance the expand-region mode: allow expansion of enclosing block

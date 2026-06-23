@@ -1,0 +1,330 @@
+==============================================
+sd7-perf.el — Seed7 Mode Performance Benchmark
+==============================================
+
+Documentation and Step-by-Step Instructions
+===========================================
+
+This should be opened from the repository root with::
+
+    emacs -Q -nw --load tools/sd7-perf.el tools/sd7-perf-doc.rst.txt
+
+It requires:
+
+- a clean Emacs session (``-Q``: no user init),
+- a terminal frame (``-nw``),
+- loading the test code (``--load tools/sd7-perf.el``).
+
+Overview
+========
+
+``sd7-perf.el`` measures the performance of ``seed7-mode`` by running four
+complementary measurement modes in a single Emacs session and writing one
+RST report containing a table and statistical summary for each mode.
+
+Running all four modes in the same session ensures the results are directly
+comparable: same Emacs state, same warm-up, same files.
+
+The report is written to::
+
+    REPORT_DIR/seed7mode-perf-ID.rst
+
+where ``REPORT_DIR`` defaults to the ``reports/`` directory inside the
+``seed7-mode`` repository, and ``ID`` is a string you supply (e.g. ``04.0``
+or ``xref-opt``).
+
+How To Run the Benchmark
+========================
+
+Run the benchmark interactively (recommended)
+---------------------------------------------
+
+Once inside Emacs, start the test by invoking:
+
+::
+
+    M-x sd7-perf-run
+
+
+The command will prompt for:
+
+Seed7 source directory:
+   Full path to the Seed7 source tree, e.g. ``~/src/seed7``
+
+Report output directory:
+   Where to write the RST report.
+   Default: ``reports/`` inside the repository root.
+
+Report ID:
+   A short label used in the output filename,
+   e.g. ``04.0`` or ``xref-opt``.
+
+Iterations per file:
+   How many timed opens per file.  Default: ``5``.
+   Higher values are more accurate but take longer.
+
+
+
+Run from the shell - optional
+-----------------------------
+
+Alternatively, to run the benchmark non-interactively from the shell (all
+four modes):
+
+.. code-block:: bash
+
+    emacs -Q -nw --load tools/sd7-perf.el \
+          --eval "(sd7-perf-main)" \
+          -- SEED7_DIR REPORT_DIR ID [ITERATIONS]
+
+Example:
+
+.. code-block:: bash
+
+    emacs -Q -nw --load tools/sd7-perf.el \
+          --eval "(sd7-perf-main)" \
+          -- ~/src/seed7 reports 04.0 5
+
+
+
+Wait for the Four Measurement Passes To Complete
+------------------------------------------------
+
+The benchmark runs automatically through four phases.  Progress messages
+appear in the echo area / ``*Messages*`` buffer.  See the next section for
+exactly what to expect on screen during each phase.
+
+
+Inspect the Report
+------------------
+
+When all four passes finish, the ``*sd7-perf-report*`` buffer is displayed
+and the RST file is written to::
+
+    REPORT_DIR/seed7mode-perf-ID.rst
+
+You can read the buffer directly in Emacs, or open the RST file in a text
+editor or reStructuredText viewer.
+
+
+Measurement Phases
+==================
+
+What Each Mode Does and What You Will See
+-----------------------------------------
+
+Before any timed pass begins, a warm-up pass opens every file once (untimed)
+to populate Emacs's intern tables and the regexp JIT engine cache.  GC is
+then run to bring the heap to a known baseline before each mode's timed pass.
+
+Throughout all four modes you will see progress messages in the echo area::
+
+    sd7-perf: Mode A — timed pass (5 iterations)…
+    sd7-perf: Mode B — timed pass (5 iterations)…
+    sd7-perf: Mode C — timed pass (5 iterations)…
+    sd7-perf: Mode D — timed pass (5 iterations)…
+
+The modeline may also show the progress message from the underlying
+controlled-benchmark harness.
+
+
+Mode A — Major-mode Activation Only
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**What it does:**
+  For each Seed7 file, calls ``find-file-noselect``.  This activates the
+  major mode: syntax-table setup, font-lock keyword pattern compilation,
+  imenu and xref hook installation.  The buffer is **never** placed in a
+  window, so jit-lock (the incremental font-lock engine) never fires.
+
+  This is the **primary metric** for comparing ``seed7-mode`` versions.
+  It directly measures the xref regexp pre-compilation optimization.
+
+**What you see on screen:**
+  **Nothing.**  No Seed7 file appears in the window.  You only see echo-area
+  progress messages.
+
+  This is correct and expected.
+
+
+Mode B — Mode Activation + Initial Visible-Screen jit-lock Pass
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**What it does:**
+  For each Seed7 file, calls ``find-file-noselect`` (same as Mode A), then
+  places the buffer in the terminal window with ``switch-to-buffer``, and
+  calls ``sit-for 0`` **once**.  That single ``sit-for`` triggers jit-lock to
+  fontify the visible region (approximately the terminal window height,
+  typically 24–50 lines).
+
+  Measures what a user pays when they open a Seed7 file with ``find-file``
+  and see the first screenful.
+
+**What you see on screen:**
+  Technically each file is placed in the window, but Mode B processes roughly
+  100 files × 5 iterations = 500 buffer switches at machine speed.  The
+  terminal cannot repaint fast enough to show individual files.  In practice
+  you see **nothing**, or a brief blur.  The last file processed may linger
+  briefly in the window after Mode B finishes.
+
+  This is correct and expected.
+
+
+Mode C — Mode Activation + Full-Buffer Fontification (font-lock-ensure)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**What it does:**
+  For each Seed7 file, calls ``find-file-noselect`` (same as Mode A), then
+  calls ``font-lock-ensure``.  This forces the regexp engine over the
+  **entire buffer** in one synchronous pass, without ever placing the buffer
+  in a window.
+
+  This is a **stress-test / worst-case** measurement.  It is most useful for
+  detecting catastrophic regexp backtracking: a tiny file that takes as long
+  as a 38 000-line file is a red flag.  This is how ``http_request.s7i`` and
+  ``hmac.s7i`` were identified as backtracking victims before this PR.
+
+  Mode C works in ``--batch`` mode (no display frame required).
+
+**What you see on screen:**
+  **Nothing.**  No Seed7 file appears in the window.  ``font-lock-ensure``
+  runs entirely on invisible background buffers.
+
+  For large files (``chkint.sd7`` at 38 000 lines, ``chkbig.sd7`` at
+  29 000 lines) Mode C takes several seconds per file.  During that time the
+  terminal appears frozen.
+
+  This is correct and expected.
+
+
+Mode D — Mode Activation + Full Incremental jit-lock (Scroll Pass)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**What it does:**
+  For each Seed7 file, calls ``find-file-noselect`` (same as Mode A), places
+  the buffer in the terminal window, resets to the top (``point-min``), then
+  enters a loop: ``scroll-up`` one screenful, ``sit-for 0``, repeat until the
+  end of the buffer is visible.  Each ``sit-for`` triggers jit-lock for the
+  newly visible region.
+
+  Measures the cost a user pays when they open a Seed7 file and read it from
+  beginning to end, scrolling through every line.  This exercises the
+  incremental jit-lock code path for the full file, unlike Mode C which uses
+  one bulk synchronous pass.
+
+**What you see on screen:**
+  Technically each file is placed in the window and scrolled, but this
+  happens at machine speed (the scroll loop can execute hundreds of steps per
+  second).  The terminal cannot repaint fast enough to show the scrolling.
+  The last file processed will linger in the window when Mode D finishes.
+
+  You will **not** see files visibly scrolling.  This is correct and expected.
+  The internal Emacs redisplay machinery and jit-lock engine process each
+  ``sit-for 0`` call even though the terminal screen does not visually update.
+
+
+Understanding the Report
+========================
+
+The RST report contains the following sections:
+
+1. **Run metadata** — ``seed7-mode`` version, date, iterations, modes run,
+   frame mode, etc.
+
+2. **Mode A** — per-file mean load time + line count; avg / min / max summary.
+
+3. **Mode B** — per-file mean time + line count + Δ vs Mode A;
+   avg / min / max summary.
+
+4. **Mode C** — per-file mean time + line count + Δ vs Mode A;
+   avg / min / max summary.
+
+5. **Mode D** — per-file mean time + line count + Δ vs Mode A;
+   avg / min / max summary.
+
+6. **Cross-mode comparison table** — avg / min / max side-by-side for
+   Modes A, B, C and D.
+
+The **Δ vs Mode A** column in Modes B, C and D shows the extra cost
+attributable to the respective fontification strategy.  A large positive
+delta for a **small** file in Mode C is a sign of regexp backtracking.
+
+File names in the tables are abbreviated to show only the Seed7 repository
+directory name and the path below it (e.g. ``seed7/prg/chkint.sd7`` rather
+than the full absolute path).
+
+Interrupting the Test
+=====================
+
+``C-g`` will interrupt the test, but with some important nuances depending
+on which phase is running:
+
+- Always interruptible — Modes B and D
+
+  Modes B and D call sit-for 0 on every loop iteration.
+  ``sit-for`` is an explicit input-check point in Emacs:
+  it processes the event queue and delivers a pending ``C-g``
+  immediately at that moment. So in these modes ``C-g`` is highly responsive.
+
+- Eventually interruptible — Modes A, C, and warm-up phases
+
+  Mode A (find-file-noselect only) and Mode C (font-lock-ensure)
+  run tight ``dolist`` loops with no ``sit-for``. However,
+  Emacs's byte-compiled interpreter inserts a QUIT check at
+  every ``funcall`` boundary, so ``C-g`` will fire at the next
+  Lisp function-call boundary — typically within milliseconds
+  during Mode A.
+  The exception is a long ``font-lock-ensure`` call on a large file
+  (e.g. chkint.sd7 at 38 k lines): font-lock-ensure runs mostly in
+  C-level code, where QUIT checks occur less frequently.
+  You may need to hold ``C-g`` for a second or two before it takes
+  effect during that pass.
+
+What happens when ``C-g`` fires:
+
+- ``unwind-protect`` in sd7-perf--run-one-mode restores
+  sd7-controlled--open-file to its original definition,
+  so the fset patch is always cleaned up correctly.
+- The partial results of the interrupted mode are discarded.
+- You return to the *scratch* buffer (or wherever the read-eval-print loop is)
+  with a quit signal.
+- No report is written.
+
+
+Notes
+=====
+
+**Why -Q?**
+  ``-Q`` skips all user and site init files.  Without it, installed packages
+  (e.g. ``undo-tree``, ``which-func``, ``company``) can add hooks to every
+  major-mode activation, inflating Mode A times and making runs
+  non-reproducible.
+
+**Why** ``-nw`` **and** not ``--batch`` **for a full 4-mode run?**
+  In ``--batch`` mode, ``sit-for`` is a no-op (no display event loop).
+  Modes B and D rely on ``sit-for`` to trigger jit-lock via the window
+  system.  Without a live terminal frame those modes silently fall back to
+  Mode A behaviour and the jit-lock cost is not measured at all.
+
+  ``-nw`` creates a real terminal frame so the display event loop is active
+  and ``sit-for`` works correctly.
+
+**Why do I not see files scrolling during Mode D?**
+  The scroll loop runs at machine speed — hundreds of scroll steps per second.
+  A 60 Hz terminal repaints every 16 ms; each individual file occupies the
+  window for only a few milliseconds.  The internal jit-lock machinery does
+  process every ``sit-for 0`` call correctly; the timings are valid even
+  though the terminal screen appears frozen.
+
+**Iteration count**
+  5 iterations (the default) is a reasonable balance between measurement
+  accuracy and total run time.  Increase to 10 or 20 for publication-quality
+  results or when comparing two very close implementations.
+
+**GC suppression**
+  ``gc-cons-threshold`` is set to ``most-positive-fixnum`` during all timed
+  passes.  A ``garbage-collect`` is run before each mode's timed pass to
+  bring the heap to a clean, consistent baseline.
+
+
+.. ---------------------------------------------------------------------------

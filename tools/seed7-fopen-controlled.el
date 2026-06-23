@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-20 12:42:46 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-22 22:39:59 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -97,6 +97,36 @@
 ;;; --------------------------------------------------------------------------
 ;;; Code:
 
+;; Time stamp helpers
+
+(defvar sd7-controlled--started-at nil
+  "Local HH:MM:SS timestamp captured when the current benchmark run starts.")
+
+(defun sd7-controlled--reset-start-time ()
+  "Capture the local benchmark start time for subsequent progress messages."
+  (setq sd7-controlled--started-at
+        (format-time-string "%H:%M:%S" (current-time))))
+
+(defun sd7-controlled--ensure-start-time ()
+  "Ensure `sd7-controlled--started-at' has a value."
+  (unless sd7-controlled--started-at
+    (sd7-controlled--reset-start-time)))
+
+(defun sd7-controlled--message (fmt &rest args)
+  "Emit a progress message with the mandatory benchmark start-time prefix."
+  (sd7-controlled--ensure-start-time)
+  (message "sd7-controlled (started at %s): %s"
+           sd7-controlled--started-at
+           (apply #'format fmt args)))
+
+(defun sd7-controlled--label-suffix (label)
+  "Return printable suffix for optional phase LABEL."
+  (if label
+      (format " (%s)" label)
+    ""))
+
+;; ---------------------------------------------------------------------------
+
 (defun sd7-controlled--open-file (file-name)
   "Open FILE-NAME in a buffer, activate the mode, then kill the buffer.
 Returns the number of lines in the file."
@@ -110,58 +140,82 @@ Returns the number of lines in the file."
       (kill-buffer buf))
     line-count))
 
+(defun sd7-controlled--warmup (directory-specs &optional label progress-fn)
+  "Open every file in DIRECTORY-SPECS once, untimed, then GC.
 
-(defun sd7-controlled--warmup (directory-specs)
-  "Open every file in DIRECTORY-SPECS once (untimed), then GC."
-  (message "sd7-controlled: warm-up pass …")
+When LABEL is non-nil, include it in progress messages.
+
+When PROGRESS-FN is non-nil, call it as:
+
+  (PROGRESS-FN :warm-up LABEL FILE-NAME nil)"
+  (sd7-controlled--message "warm-up pass%s …"
+                           (sd7-controlled--label-suffix label))
   (dolist (dir-spec directory-specs)
     (let* ((directory  (car dir-spec))
-           (file-names (cl-mapcan (lambda (ext)
-                                    (benchmark-sd7-files-in-dir directory ext))
-                                  (cadr dir-spec))))
+           (file-names (cl-mapcan
+                        (lambda (ext)
+                          (benchmark-sd7-files-in-dir directory ext))
+                        (cadr dir-spec))))
       (dolist (file-name file-names)
+        (when progress-fn
+          (funcall progress-fn :warm-up label file-name nil))
         (sd7-controlled--open-file file-name))))
   (garbage-collect)
-  (message "sd7-controlled: warm-up done, heap GC'd to baseline."))
+  (sd7-controlled--message "warm-up%s done, heap GC'd to baseline."
+                           (sd7-controlled--label-suffix label)))
 
 
-(defun sd7-controlled--timed-pass (directory-specs iterations)
+(defun sd7-controlled--timed-pass (directory-specs iterations
+                                                   &optional label progress-fn)
   "Open every file ITERATIONS times with GC suppressed.
-Returns (report . max-fname-len)."
+
+Returns (REPORT . MAX-FNAME-LEN).
+
+When LABEL is non-nil, include it in progress tracking.
+
+When PROGRESS-FN is non-nil, call it as:
+
+  (PROGRESS-FN :timed-pass LABEL FILE-NAME nil)
+
+before each file, and:
+
+  (PROGRESS-FN :timed-pass LABEL FILE-NAME ITERATION)
+
+before each timed iteration."
   (let ((old-threshold  gc-cons-threshold)
         (old-percentage gc-cons-percentage)
         report
         (max-fname-len 0))
-    ;; ── Suppress GC for the entire timed pass ──────────────────────────────
     (setq gc-cons-threshold  most-positive-fixnum
           gc-cons-percentage 1.0)
     (unwind-protect
         (dolist (dir-spec directory-specs)
           (let* ((directory  (car dir-spec))
-                 (file-names (cl-mapcan (lambda (ext)
-                                       (benchmark-sd7-files-in-dir directory ext))
-                                     (cadr dir-spec))))
+                 (file-names (cl-mapcan
+                              (lambda (ext)
+                                (benchmark-sd7-files-in-dir directory ext))
+                              (cadr dir-spec))))
             (dolist (file-name file-names)
-              (let* ((abbrev  (abbreviate-file-name file-name))
-                     (len     (length abbrev))
-                     (times   nil)
+              (let* ((abbrev     (abbreviate-file-name file-name))
+                     (len        (length abbrev))
+                     (times      nil)
                      line-count)
                 (when (> len max-fname-len)
                   (setq max-fname-len len))
-                ;; ── N timed repetitions ─────────────────────────────────────
-                (dotimes (_ iterations)
+                (when progress-fn
+                  (funcall progress-fn :timed-pass label file-name nil))
+                (dotimes (i iterations)
+                  (when progress-fn
+                    (funcall progress-fn :timed-pass label file-name (1+ i)))
                   (let ((info (benchmark-run 1
                                 (setq line-count
                                       (sd7-controlled--open-file file-name)))))
-                    ;; info = (elapsed-time gc-runs gc-time)
                     (push (car info) times)))
                 (let ((mean (/ (apply #'+ times) (float iterations))))
                   (push (list abbrev line-count mean) report))))))
-      ;; ── Always restore GC settings ─────────────────────────────────────────
       (setq gc-cons-threshold  old-threshold
             gc-cons-percentage old-percentage))
     (cons (nreverse report) max-fname-len)))
-
 
 (defun generate-sd7-controlled-report (directory-specs &optional iterations)
   "Run a GC-controlled benchmark and display the report.
@@ -176,11 +230,13 @@ Sequence:
   (interactive
    (list (read--expression "Directory specs: ")
          (read-number "Iterations per file: " 3)))
+  (sd7-controlled--reset-start-time)
   (let* ((iters (or iterations 3)))
     ;; 1. Warm up
-    (sd7-controlled--warmup directory-specs)
+    (sd7-controlled--warmup directory-specs "generate-sd7-controlled-report")
     ;; 2. Timed pass
-    (message "sd7-controlled: timed pass (%d iterations per file) …" iters)
+    (sd7-controlled--message
+     "timed pass (%d iterations per file) …"  iters)
     (let* ((result.len (sd7-controlled--timed-pass directory-specs iters))
            (results    (car result.len))
            (max-len    (cdr result.len))
@@ -235,8 +291,9 @@ Sequence:
           (insert (format "| Maximum   | %-15.6f |\n" mx))
           (insert "+-----------+-----------------+\n"))
         (switch-to-buffer buf)
-        (message "sd7-controlled: report ready (%d files, %d iters each)."
-                 count iters)))))
+        (sd7-controlled--message
+         "report ready (%d files, %d iters each)."
+         count iters)))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-fopen-controlled)
