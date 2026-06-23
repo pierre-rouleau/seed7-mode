@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260621.1716
+;; Package-Version: 20260622.1719
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-21T21:16:24+0000 W25-7"
+(defconst seed7-mode-version-timestamp "2026-06-22T21:19:10+0000 W26-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2194,6 +2194,9 @@ Handle four cases:
 
 Match only syntactically active `(*' and `*)' delimiters, and expose the
 whole two-character delimiter as match 0 for font-lock."
+  ;; Uses O(1) `get-text-property' checks instead of `syntax-ppss' to avoid
+  ;; catastrophic O(N²) backward scanning when a buffer contains an unterminated
+  ;; block comment (e.g., `prg/err.sd7').
   (catch 'found
     (while (re-search-forward seed7-block-comment-delim-re limit t)
       (let ((beg (match-beginning 0))
@@ -2201,15 +2204,16 @@ whole two-character delimiter as match 0 for font-lock."
         (when
             (cond
              ;; Opening delimiter `(*':
-             ;; after consuming both chars, parser should be inside comment.
+             ;; `seed7-mode-syntax-propertize' sets `seed7--syntax-block-comment-start-1'
+             ;; on the `(' of every syntactically active opener — O(1) check.
              ((eq (char-after beg) ?\()
-              (nth 4 (syntax-ppss end)))
-
+              (equal (get-text-property beg 'syntax-table)
+                     seed7--syntax-block-comment-start-1))
              ;; Closing delimiter `*)':
              ;; at the `*', parser should still be inside comment.
              ((eq (char-after beg) ?*)
-              (nth 4 (syntax-ppss beg))))
-
+              (equal (get-text-property beg 'syntax-table)
+                     seed7--syntax-block-comment-end-3)))
           ;; Preserve match data for font-lock.
           (set-match-data (list beg end))
           (throw 'found t))))
