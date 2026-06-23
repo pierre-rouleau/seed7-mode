@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260623.1055
+;; Package-Version: 20260623.1206
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-23T14:55:49+0000 W26-2"
+(defconst seed7-mode-version-timestamp "2026-06-23T16:06:22+0000 W26-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1506,8 +1506,8 @@ Match group 1")
    "\\)")
   "Regexp for the top of a Seed7 block.  One capture group.")
 
-;;** Seed7 Array/Set Regexp
-;;   ----------------------
+;;** Seed7 Array Regexp
+;;   ------------------
 
 (defconst seed7--array-definition-start-regexp
   ;; "\\(?:const\\|var\\) +?array[[:blank:]]+?.+?:.+?("
@@ -1518,10 +1518,24 @@ See `seed7--set-definition-start-regexp' for the whitespace convention.")
 ;; Note: another possibility for seed7--array-definition-start-regexp would
 ;; be: ?:const\\|var\\)[[:blank:]]+array[[:blank:]]+[^:\n]+:[^(;\n]*("
 
-
 (defconst seed7--line-array-definition-start-regexp
   (concat "^[[:blank:]]*?" seed7--array-definition-start-regexp)
   "Regexp matching line starting with a  Seed7 array definition block header.")
+
+(defconst seed7--array-definition-name-regexp
+  (concat "\\(?:const\\|var\\)[[:blank:]]+"
+          "array[[:blank:]]+[^:\n]+:"
+          "[[:blank:]]*\\([[:alpha:]][[:alnum:]_]*\\)")
+  "Regexp matching a Seed7 array declaration; group 1 is the entity name.
+The name is the first identifier that follows the `:' in the declaration.
+Unlike `seed7--array-definition-start-regexp', this regexp captures the name.
+
+Example matches:
+  const array integer: myArray is (1, 2, 3);   → group 1: myArray
+  var   array string:  names;                  → group 1: names")
+
+;;** Seed7 Set Regexp
+;;   ----------------
 
 (defconst seed7--set-definition-start-regexp
   "\\(?:const\\|var\\) +?set[[:blank:]]+?.+?:.+?{"
@@ -1534,6 +1548,18 @@ Design note: a literal space (` +?') is required between `const'/`var' and
 per Seed7 style (dual-keyword restriction).  A hard tab or space
 \(`[[:blank:]]') is accepted after `set', because `set' is the last keyword
 in the phrase before the user-supplied identifier.")
+
+(defconst seed7--set-definition-name-regexp
+  (concat "\\(?:const\\|var\\)[[:blank:]]+"
+          "set[[:blank:]]+[^{:\n]+:"
+          "[[:blank:]]*\\([[:alpha:]][[:alnum:]_]*\\)")
+  "Regexp matching a Seed7 set declaration; group 1 is the entity name.
+The name is the first identifier that follows the `:' in the declaration.
+Unlike `seed7--set-definition-start-regexp', this regexp captures the name.
+
+Example matches:
+  const set of integer: mySet is {1, 2, 3};    → group 1: mySet
+  var   set of string:  names;                 → group 1: names")
 
 (defconst seed7--line-set-definition-start-regexp
   (concat "^[[:blank:]]*?" seed7--set-definition-start-regexp)
@@ -9464,6 +9490,233 @@ current Emacs session without restarting Emacs."
 (seed7-rebuild-abbrev-table 'quietly)
 
 ;; ---------------------------------------------------------------------------
+;;* Seed7 Entity Browser Mode
+;;  =========================
+;;
+;; A special mode that lists all Seed7 elements defined in a Seed7 buffer and
+;; allows moving to anyone by typing RET on its line.
+
+(defun seed7-buffer-entities ()
+  "Return all named entities declared in the current Seed7 buffer.
+
+Each element of the returned list is a list (TYPE NAME LINE-NUMBER) where:
+- TYPE        is a symbol: `function', `procedure', `structure',
+              `enumeration', `array', or `set'.
+- NAME        is the entity name as a string.
+- LINE-NUMBER is the line number (integer ≥ 1) of the declaration.
+
+The list is sorted by LINE-NUMBER in ascending order.
+Only code outside comments and strings is examined
+\(via `seed7-re-search-forward').
+
+This function does not move point (all searches use `save-excursion')."
+  (let ((entities '()))
+    ;; -- Functions and procedures ------------------------------
+    (save-excursion
+      (goto-char (point-min))
+      (while (seed7-re-search-forward seed7-procfunc-regexp)
+        (let ((raw-type (match-string-no-properties
+                         seed7-procfunc-regexp-item-type-group))
+              (name     (match-string-no-properties
+                         seed7-procfunc-regexp-item-name-group)))
+          (when name
+            (push (list (if (string= raw-type "proc") 'procedure 'function)
+                        name
+                        (line-number-at-pos
+                         (match-beginning seed7-procfunc-regexp-item-name-group)))
+                  entities)))))
+    ;; -- Enumerations ------------------------------------------
+    (save-excursion
+      (goto-char (point-min))
+      (while (seed7-re-search-forward seed7-enum-regexp-4imenu)
+        (push (list 'enumeration
+                    (match-string-no-properties 1)
+                    (line-number-at-pos (match-beginning 1)))
+              entities)))
+    ;; -- Structures --------------------------------------------
+    (save-excursion
+      (goto-char (point-min))
+      (while (seed7-re-search-forward seed7-struct-regexp-4imenu)
+        (push (list 'structure
+                    (match-string-no-properties 1)
+                    (line-number-at-pos (match-beginning 1)))
+              entities)))
+    ;; -- Arrays ------------------------------------------------
+    (save-excursion
+      (goto-char (point-min))
+      (while (seed7-re-search-forward seed7--array-definition-name-regexp)
+        (push (list 'array
+                    (match-string-no-properties 1)
+                    (line-number-at-pos (match-beginning 1)))
+              entities)))
+    ;; -- Sets --------------------------------------------------
+    (save-excursion
+      (goto-char (point-min))
+      (while (seed7-re-search-forward seed7--set-definition-name-regexp)
+        (push (list 'set
+                    (match-string-no-properties 1)
+                    (line-number-at-pos (match-beginning 1)))
+              entities)))
+    ;; -- Sort by line number and return-------------------------
+    (sort entities (lambda (a b) (< (nth 2 a) (nth 2 b))))))
+
+
+;;** Seed7 entity browser (tabulated-list-mode)
+;;   ------------------------------------------
+
+(defvar-local sd7-ent--source-buffer nil
+  "The Seed7 source buffer that this entity browser was built from.")
+
+(defvar-local sd7-ent--source-file nil
+  "File path of the Seed7 source buffer; used when the buffer is killed.")
+
+(defvar seed7-entities-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map tabulated-list-mode-map)
+    (define-key map (kbd "RET") #'sd7-ent--visit-entity)
+    (define-key map (kbd "o")   #'sd7-ent--visit-entity-other-window)
+    (define-key map (kbd "g")   #'sd7-ent--refresh)
+    map)
+  "Keymap for `seed7-entities-mode'.
+
+\\{seed7-entities-mode-map}")
+
+(define-derived-mode seed7-entities-mode tabulated-list-mode "Seed7-Entities"
+  "Major mode for browsing named entities declared in a Seed7 buffer.
+
+Each row shows the line number, entity type, and name.
+\\<seed7-entities-mode-map>
+\\[sd7-ent--visit-entity] Go to the declaration in the source buffer.
+\\[sd7-ent--visit-entity-other-window]   Go to the declaration in the other window.
+\\[sd7-ent--refresh]   Re-scan the source buffer and redisplay.
+\\[tabulated-list-sort]   Sort by the column at point.
+
+The entry ID of each row is (SOURCE-BUFFER . LINE-NUMBER), so the browser
+always navigates to the exact line regardless of how the table is sorted."
+  (setq tabulated-list-format
+        (vector
+         (list "Line" 6
+               (lambda (a b)
+                 ;; Sort numerically on the LINE column (column 0).
+                 (< (string-to-number (aref (cadr a) 0))
+                    (string-to-number (aref (cadr b) 0)))))
+         (list "Type" 13 t)
+         (list "Name" 50 t)))
+  (setq tabulated-list-padding 1)
+  (setq tabulated-list-sort-key nil)
+  (tabulated-list-init-header))
+
+;;** Seed7 entity browser helpers
+;;   ----------------------------
+
+(defun sd7-ent--entry-id ()
+  "Return the entry-id of the row at point, or signal an error."
+  (let ((id (tabulated-list-get-id)))
+    (unless id
+      (user-error "No entity at point"))
+    id))
+
+(defun sd7-ent--resolve-source (entry-id)
+  "Return a live buffer for ENTRY-ID = (SOURCE-BUFFER . LINE).
+If the originally recorded buffer is no longer live, try to re-visit
+`sd7-ent--source-file'.  Signals `user-error' if neither is possible."
+  (let* ((src-buf  (car entry-id))
+         (file     sd7-ent--source-file))
+    (cond
+     ;; Original buffer still live.
+     ((buffer-live-p src-buf) src-buf)
+     ;; Buffer killed but we have a file path — re-visit it.
+     ((and file (file-readable-p file))
+      (find-file-noselect file))
+     (t
+      (user-error "Source buffer is no longer available")))))
+
+(defun sd7-ent--goto-line-in-buffer (buf line-no)
+  "Switch to BUF and move point to LINE-NO."
+  (switch-to-buffer buf)
+  (goto-char (point-min))
+  (forward-line (1- line-no))
+  (recenter))
+
+(defun sd7-ent--goto-line-in-buffer-other-window (buf line-no)
+  "Display BUF in the other window and move point to LINE-NO."
+  (switch-to-buffer-other-window buf)
+  (goto-char (point-min))
+  (forward-line (1- line-no))
+  (recenter))
+
+;;** Seed7 entity browser interactive commands
+
+(defun sd7-ent--visit-entity ()
+  "Go to the declaration of the entity on the current line.
+Switches to the source Seed7 buffer and moves point to the declaration line."
+  (interactive)
+  (let* ((id      (sd7-ent--entry-id))
+         (line-no (cdr id))
+         (src-buf (sd7-ent--resolve-source id)))
+    (sd7-ent--goto-line-in-buffer src-buf line-no)))
+
+(defun sd7-ent--visit-entity-other-window ()
+  "Go to the declaration of the entity, displayed in the other window."
+  (interactive)
+  (let* ((id      (sd7-ent--entry-id))
+         (line-no (cdr id))
+         (src-buf (sd7-ent--resolve-source id)))
+    (sd7-ent--goto-line-in-buffer-other-window src-buf line-no)))
+
+(defun sd7-ent--refresh ()
+  "Re-scan the source buffer and redisplay the entity list."
+  (interactive)
+  (let ((src-buf (sd7-ent--resolve-source (cons sd7-ent--source-buffer 1))))
+    (with-current-buffer src-buf
+      (seed7-list-entities))))
+
+;;** Seed7 entity browser helper - public entry point
+;;   ------------------------------------------------
+
+;;;###autoload
+(defun seed7-list-entities ()
+  "Display all named entities in the current Seed7 buffer in a browser window.
+
+Builds or refreshes a `seed7-entities-mode' buffer with one row per entity
+\(functions, procedures, structures, enumerations, arrays, sets).
+
+Keys in the browser:
+  RET   — go to the declaration (replaces current window).
+  o     — go to the declaration in the other window.
+  g     — refresh the browser from the source buffer.
+  S     — sort by the column at point (`tabulated-list-sort').
+
+The browser name is  *Seed7 Entities: BUFFER-NAME*."
+  (interactive)
+  (unless (derived-mode-p 'seed7-mode)
+    (user-error "Current buffer is not in seed7-mode"))
+  (let* ((source-buf  (current-buffer))
+         (source-file (buffer-file-name))
+         (entities    (seed7-buffer-entities))
+         (bname       (format "*Seed7 Entities: %s*" (buffer-name source-buf)))
+         (browser-buf (get-buffer-create bname)))
+    (with-current-buffer browser-buf
+      (seed7-entities-mode)
+      (setq sd7-ent--source-buffer source-buf
+            sd7-ent--source-file   source-file)
+      (setq tabulated-list-entries
+            (mapcar (lambda (e)
+                      (let ((type (nth 0 e))
+                            (name (nth 1 e))
+                            (line (nth 2 e)))
+                        ;; Entry ID is (source-buffer . line-no) so RET can
+                        ;; always navigate even when the table is sorted by
+                        ;; a column other than Line.
+                        (list (cons source-buf line)
+                              (vector (number-to-string line)
+                                      (symbol-name type)
+                                      name))))
+                    entities))
+      (tabulated-list-print :remember-pos))
+    (pop-to-buffer browser-buf)))
+
+;; ---------------------------------------------------------------------------
 ;;* Seed7 Key Map
 ;;  =============
 ;;
@@ -9476,6 +9729,7 @@ current Emacs session without restarting Emacs."
     (define-key map (kbd "C-c =") 'seed7-toggle-menu-sorting)
     (define-key map (kbd "C-c C-a") 'seed7-to-block-backward)
     (define-key map (kbd "C-c C-e") 'seed7-to-block-forward)
+    (define-key map (kbd "C-c C-l") 'seed7-list-entities)
     (define-key map (kbd "C-c C-n") 'seed7-beg-of-next-defun)
     (define-key map (kbd "C-c C-t") 'seed7-to-top-of-block)
     (define-key map "\M-\C-a"       'seed7-beg-of-defun)
@@ -9507,7 +9761,6 @@ current Emacs session without restarting Emacs."
     ["Toggle abbrev-mode"   abbrev-mode]
     ["List abbreviations"   list-abbrevs]
     ["Reload abbreviations table" seed7-rebuild-abbrev-table]
-
     "---"
     ("Align"
      ["Align current section" align-current]
@@ -9567,6 +9820,7 @@ current Emacs session without restarting Emacs."
       ["While"              seed7-insert-while]
       ["Error handler block" seed7-insert-block]
       ["Global block"       seed7-insert-global]))
+    ["List Seed7 Entities" seed7-list-entities]
     ("Mark"
      ["Mark Function/Procedure" seed7-mark-defun ])
     "---"

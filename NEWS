@@ -22,6 +22,17 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
   customizing the user-options that control it.  The command checks for
   duplicates and errors, and warns the user of any issue found.
 
+- *seed7-list-entities*: Bound to ~C-c C-l~.
+  The command lists all defined Seed7 entities (functions, procedures,
+  enumerations, structures, arrays, sets) defined in the Seed7 file visited by
+  the current buffer showing the line, type and name of the Seed7 entity.
+  The list is shown in a special =*Seed7 Entities: FNAME=
+  buffer that provides quick 1-key commands:
+  - ~RET~:  Go to the declaration in the source buffer.
+  - ~o~: Go to the declaration in the other window.
+  - ~g~: Re-scan the source buffer and re-display.
+  - ~S~: Sort by the column at point.
+
 ** Renamed Commands
 
 - *seed7-compile* was renamed to *seed7-check-or-compile*, which
