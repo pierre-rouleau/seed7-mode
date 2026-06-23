@@ -1125,7 +1125,7 @@ Statistical Summary — Mode C (GC-free, mean-of-N)
 Mode D — Mode Activation + Full Incremental jit-lock (Scroll Pass)
 ------------------------------------------------------------------
 
-Scrolls through the full buffer and lets jit-lock work incrementally.
+Scrolls through the full buffer and calls jit-lock-fontify-now for each visible region.
 
 File Load Times — Mode D (mean, GC-free)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

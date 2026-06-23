@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, June 19 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-22 14:52:06 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-22 22:39:59 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -236,7 +236,7 @@ Sequence:
     (sd7-controlled--warmup directory-specs "generate-sd7-controlled-report")
     ;; 2. Timed pass
     (sd7-controlled--message
-     "sd7-controlled: timed pass (%d iterations per file) …" iters)
+     "timed pass (%d iterations per file) …"  iters)
     (let* ((result.len (sd7-controlled--timed-pass directory-specs iters))
            (results    (car result.len))
            (max-len    (cdr result.len))
@@ -292,7 +292,7 @@ Sequence:
           (insert "+-----------+-----------------+\n"))
         (switch-to-buffer buf)
         (sd7-controlled--message
-         "sd7-controlled: report ready (%d files, %d iters each)."
+         "report ready (%d files, %d iters each)."
          count iters)))))
 
 ;; ---------------------------------------------------------------------------

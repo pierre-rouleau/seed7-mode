@@ -393,7 +393,10 @@ Statistical Summary — Mode A (GC-free, mean-of-N)
 Mode B — Mode Activation + Initial Visible jit-lock Pass
 --------------------------------------------------------
 
-Buffer displayed in a window; jit-lock-fontify-now triggers visible-region jit-lock.
+The buffer is displayed in a window, then `jit-lock-fontify-now` is called
+over `(window-start)` to `(window-end ... t)` to fontify the visible region.
+This avoids `sit-for 0`, which can process queued terminal input events.
+
 
 File Load Times — Mode B (mean, GC-free)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1125,7 +1128,10 @@ Statistical Summary — Mode C (GC-free, mean-of-N)
 Mode D — Mode Activation + Full Incremental jit-lock (Scroll Pass)
 ------------------------------------------------------------------
 
-Scrolls through the full buffer and lets jit-lock work incrementally.
+The buffer is displayed and scrolled from top to bottom. After each screenful,
+`jit-lock-fontify-now` is called over the currently visible window region.
+This models incremental visible-region fontification without using `sit-for 0`.
+
 
 File Load Times — Mode D (mean, GC-free)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

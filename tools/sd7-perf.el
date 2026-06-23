@@ -2,7 +2,7 @@
 
 ;; Created   : Sunday, June 22 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-22 22:16:27 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-22 22:36:00 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -545,7 +545,10 @@ Returns (RESULT WARMUP-TIME TIMED-PASS-TIME), where RESULT is the
     (when result-b
       (push (sd7-perf--insert-section
              buf ?B "Mode Activation + Initial Visible jit-lock Pass"
-             "Buffer displayed in a window; jit-lock-fontify-now triggers visible-region jit-lock."
+             (concat
+             "The buffer is displayed in a window, then `jit-lock-fontify-now` is called\n"
+             "over `(window-start)` to `(window-end ... t)` to fontify the visible region.\n"
+             "This avoids `sit-for 0`, which can process queued terminal input events.")
              (car result-b) global-max-len)
             mode-summaries))
     (when result-c
@@ -557,7 +560,10 @@ Returns (RESULT WARMUP-TIME TIMED-PASS-TIME), where RESULT is the
     (when result-d
       (push (sd7-perf--insert-section
              buf ?D "Mode Activation + Full Incremental jit-lock (Scroll Pass)"
-             "Scrolls through the full buffer and lets jit-lock work incrementally."
+             (concat
+              "The buffer is displayed and scrolled from top to bottom. After each screenful,\n"
+              "`jit-lock-fontify-now` is called over the currently visible window region.\n"
+              "This models incremental visible-region fontification without using `sit-for 0`.")
              (car result-d) global-max-len)
             mode-summaries))
 
