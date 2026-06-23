@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260623.1206
+;; Package-Version: 20260623.1241
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -519,6 +519,8 @@
 (require 'seq)        ; use: `seq-filter'
 (require 'which-func) ; use: `which-func-functions'
 (require 'add-log)    ; use: `add-log-current-defun-function'
+(require 'tabulated-list) ; use: `tabulated-list-mode',
+;;                        ; `tabulated-list-mode-map'
 
 ;;; --------------------------------------------------------------------------
 ;;; Code:
@@ -534,7 +536,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-23T16:06:22+0000 W26-2"
+(defconst seed7-mode-version-timestamp "2026-06-23T16:41:17+0000 W26-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
