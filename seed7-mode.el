@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260622.1719
+;; Package-Version: 20260623.1055
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -534,7 +534,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-22T21:19:10+0000 W26-1"
+(defconst seed7-mode-version-timestamp "2026-06-23T14:55:49+0000 W26-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1510,9 +1510,14 @@ Match group 1")
 ;;   ----------------------
 
 (defconst seed7--array-definition-start-regexp
-  "\\(?:const\\|var\\) +?array[[:blank:]]+?.+?:.+?("
+  ;; "\\(?:const\\|var\\) +?array[[:blank:]]+?.+?:.+?("
+  "\\(?:const\\|var\\) +array[[:blank:]]+.+:.+("
   "Regexp matching the start of a Seed7 array definition block header.
 See `seed7--set-definition-start-regexp' for the whitespace convention.")
+
+;; Note: another possibility for seed7--array-definition-start-regexp would
+;; be: ?:const\\|var\\)[[:blank:]]+array[[:blank:]]+[^:\n]+:[^(;\n]*("
+
 
 (defconst seed7--line-array-definition-start-regexp
   (concat "^[[:blank:]]*?" seed7--array-definition-start-regexp)
