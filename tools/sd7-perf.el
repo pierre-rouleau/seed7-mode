@@ -2,7 +2,7 @@
 
 ;; Created   : Sunday, June 22 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-22 15:23:58 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-22 17:35:16 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -289,7 +289,12 @@ Returns the line count."
       (switch-to-buffer buf :norecord)
       (set-window-point (selected-window) (point-min))
       (set-window-start (selected-window) (point-min) :noforce))
-    (sit-for 0)   ; trigger jit-lock for the first visible region
+    ;; Fontify the first visible region directly.
+    ;; Do NOT use (sit-for 0): in -nw mode it also dispatches buffered keyboard
+    ;; events, which can invoke interactive commands (e.g. switch-to-buffer).
+    (with-current-buffer buf
+      (jit-lock-fontify-now (window-start (selected-window))
+                            (window-end  (selected-window) t)))
     (with-current-buffer buf
       (setq line-count (line-number-at-pos (point-max))))
     (unless existing
@@ -309,12 +314,17 @@ Returns the line count."
       (switch-to-buffer buf :norecord)
       (set-window-point (selected-window) (point-min))
       (set-window-start (selected-window) (point-min))
-      (sit-for 0)   ; jit-lock: first screenful
+      ;; Fontify directly; do NOT use (sit-for 0) — see sd7-perf--open-file-b.
+      (jit-lock-fontify-now (window-start (selected-window))
+                            (window-end  (selected-window) t))
       ;; Scroll one screenful at a time until the buffer end is visible.
       (while (< (window-end (selected-window) :update)
                 (with-current-buffer buf (point-max)))
         (scroll-up)
-        (sit-for 0)))   ; jit-lock: each newly visible region
+        ;; Fontify the newly scrolled-in region.
+        (jit-lock-fontify-now (window-start (selected-window))
+                              (window-end  (selected-window) t))))
+
     (with-current-buffer buf
       (setq line-count (line-number-at-pos (point-max))))
     (unless existing
