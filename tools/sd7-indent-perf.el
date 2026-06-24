@@ -2,7 +2,7 @@
 
 ;; Created   : Tuesday, June 24 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-24 10:36:35 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-24 10:39:57 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -427,6 +427,10 @@ Returns the absolute path of the written report file."
                                            default-directory))))
   (unless (file-directory-p input-dir)
     (user-error "Not a directory: %s" input-dir))
+  (when (file-equal-p input-dir output-dir)
+    (user-error "OUTPUT-DIR must be different from INPUT-DIR"))
+  (when (file-in-directory-p output-dir input-dir)
+    (user-error "OUTPUT-DIR must not be inside INPUT-DIR: %s" output-dir))
   (unless (and (stringp id) (not (string-empty-p id)))
     (user-error "ID must be a non-empty string, got: %S" id))
 
