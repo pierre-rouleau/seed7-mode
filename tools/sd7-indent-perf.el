@@ -2,7 +2,7 @@
 
 ;; Created   : Tuesday, June 24 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-24 17:21:12 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-24 17:35:04 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -182,7 +182,15 @@ so they do not overwrite the tool's own progress messages in the echo area."
     ;; Also append to the dedicated progress buffer (creates it if absent).
     (with-current-buffer (get-buffer-create sd7-indent-perf--progress-buffer)
       (goto-char (point-max))
-      (insert text "\n"))))
+      (insert text "\n")
+      ;; Scroll any window showing this buffer to the bottom so the user
+      ;; can see the latest message without manually scrolling.
+      (let ((win (get-buffer-window sd7-indent-perf--progress-buffer t)))
+        (when win
+          (set-window-point win (point-max)))))
+    ;; Force Emacs to repaint the screen so the message appears immediately
+    ;; even while a long computation (e.g. indent-region) is running.
+    (redisplay)))
 
 (defun sd7-indent-perf--format-duration (seconds)
   "Format SECONDS as MM:SS.mmm."
@@ -408,9 +416,11 @@ Returns the path of the written report file."
         (when warn-results
           (insert "Indentation Warnings\n")
           (insert "====================\n\n")
-          (insert "Lines where seed7-mode reported \"not yet supported\" during indentation.\n")
-          (insert "These indicate Seed7 syntax constructs not yet handled by the indentation\n")
-          (insert "engine.  The indented output for those lines may be incorrect.\n\n")
+          (insert "Lines where seed7-mode reported \"not yet supported\" or \"timed out\"\n")
+          (insert "during indentation.  \"not yet supported\" indicates a Seed7 syntax\n")
+          (insert "construct not yet handled by the indentation engine.  \"timed out\"\n")
+          (insert "indicates a catastrophic search in `seed7-re-search-backward' or\n")
+          (insert "`seed7--to-top' — see the fix proposals in the PR comments.\n\n")
           (dolist (r warn-results)
             (insert (format "``%s``\n" (plist-get r :file)))
             (dolist (w (plist-get r :warnings))
