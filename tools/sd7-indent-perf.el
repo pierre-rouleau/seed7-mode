@@ -2,7 +2,7 @@
 
 ;; Created   : Tuesday, June 24 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-24 14:37:57 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-24 16:11:06 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -152,11 +152,13 @@ Strings matching \"not yet supported\" or \"timed out\" are appended to
                  (apply #'format fmt args)
                (error (format "%s" fmt)))))
     (when (string-match-p
-           (rx (or "not yet supported"  ; in string handling in `seed7-calc-indent'
-                   "timed out"))        ; timed out in seed7-re-search-backward
+           (rx (or "not yet supported" ; in string handling in `seed7-calc-indent'
+                   "timed out"))       ; timed out in `seed7--to-top' or
+                                       ; `seed7-re-search-backward'
            txt)
       (push txt sd7-indent-perf--current-warnings))
-    (apply orig-fn fmt args)))
+    (unless (string-match-p "Indenting region" txt)
+      (apply orig-fn fmt args))))
 
 ;;; --------------------------------------------------------------------------
 ;;; Helpers
