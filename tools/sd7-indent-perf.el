@@ -2,7 +2,7 @@
 
 ;; Created   : Tuesday, June 24 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-24 10:39:57 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-24 10:43:13 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -296,13 +296,14 @@ Returns the path of the written report file."
                        (format "seed7mode-indent-perf-%s.rst" id)
                        report-dir))
          (timestamp   (format-time-string "%Y-%m-%dT%H:%M:%S%z"))
-         (times       (mapcar (lambda (r) (plist-get r :indent-time)) results))
-         (errors      (cl-remove-if-not (lambda (r) (plist-get r :error))
-                                        results))
+         (errors      (cl-remove-if-not (lambda (r) (plist-get r :error)) results))
+         (ok-results  (cl-remove-if (lambda (r) (plist-get r :error)) results))
+         (times       (mapcar (lambda (r) (plist-get r :indent-time)) ok-results))
          (n           (length results))
-         (avg         (if (> n 0) (/ (apply #'+ times) (float n)) 0.0))
-         (mn          (if (> n 0) (apply #'min times) 0.0))
-         (mx          (if (> n 0) (apply #'max times) 0.0))
+         (n-ok        (length ok-results))
+         (avg         (if (> n-ok 0) (/ (apply #'+ times) (float n-ok)) 0.0))
+         (mn          (if (> n-ok 0) (apply #'min times) 0.0))
+         (mx          (if (> n-ok 0) (apply #'max times) 0.0))
          (total-time  (apply #'+ times))
          (fw          sd7-indent-perf--col-file)
          (lw          sd7-indent-perf--col-lines)
@@ -323,6 +324,7 @@ Returns the path of the written report file."
                       (file-name-as-directory (expand-file-name output-dir))))
       (insert (format ":Generated on    : %s\n" timestamp))
       (insert (format ":Files processed : %d\n" n))
+      (insert (format ":Files succeeded : %d\n" n-ok))
       (when errors
         (insert (format ":Files with errors: %d\n" (length errors))))
       (insert (format ":Total indent time: %.3f s\n" total-time))
