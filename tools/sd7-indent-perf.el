@@ -2,7 +2,7 @@
 
 ;; Created   : Tuesday, June 24 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-23 15:55:18 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-23 23:14:19 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -133,6 +133,29 @@
   "Last report ID used.  Offered as default in `sd7-indent-perf-run'.")
 
 ;;; --------------------------------------------------------------------------
+;;; Warning capture
+
+(defvar sd7-indent-perf--current-warnings nil
+  "Warnings collected from seed7-mode during the current file's `indent-region'.
+Each element is a string of the form produced by seed7-calc-indent when it
+encounters a construct it cannot indent, e.g.:
+  \"At line 183: string line syntax not yet supported!
+    Recurse count=0 Please report.\"
+Reset to nil at the start of each file; populated by
+`sd7-indent-perf--capture-advice'.")
+
+(defun sd7-indent-perf--capture-advice (orig-fn fmt &rest args)
+  "Advice around `message' to capture seed7-mode indentation warnings.
+Strings matching \"not yet supported\" are appended to
+`sd7-indent-perf--current-warnings' in addition to being displayed normally."
+  (let ((txt (condition-case nil
+                 (apply #'format fmt args)
+               (error (format "%s" fmt)))))
+    (when (string-match-p "not yet supported" txt)
+      (push txt sd7-indent-perf--current-warnings))
+    (apply orig-fn fmt args)))
+
+;;; --------------------------------------------------------------------------
 ;;; Helpers
 
 (defun sd7-indent-perf--message (fmt &rest args)
@@ -155,15 +178,18 @@ appears in *Messages* and the echo area)."
       (format "%02d:%02d.%03d" m s ms))))
 
 (defun sd7-indent-perf--seed7-files (input-dir)
-  "Return a sorted list of all .sd7 and .s7i files under INPUT-DIR."
-  (let ((files '()))
-    (dolist (ext '("sd7" "s7i"))
-      (setq files
-            (append files
-                    (directory-files-recursively
-                     input-dir
-                     (concat "\\." (regexp-quote ext) "\\'")))))
-    (sort files #'string<)))
+  "Return a sorted list of all .sd7 and .s7i files under INPUT-DIR.
+Files are returned in spec-list order: prg/*.sd7 alphabetically first,
+then lib/*.s7i alphabetically — matching the ordering used by sd7-perf.el
+and sd7-nav-index.el."
+  (let ((prg-files (directory-files-recursively
+                    (expand-file-name "prg" input-dir)
+                    "\\.sd7\\'"))
+        (lib-files (directory-files-recursively
+                    (expand-file-name "lib" input-dir)
+                    "\\.s7i\\'")))
+    (append (sort prg-files #'string<)
+            (sort lib-files #'string<))))
 
 (defun sd7-indent-perf--output-path (input-file input-dir output-dir)
   "Return the output file path for INPUT-FILE mirroring INPUT-DIR under OUTPUT-DIR."
@@ -177,45 +203,72 @@ appears in *Messages* and the echo area)."
   "Re-indent INPUT-FILE with seed7-mode and write result to the output tree.
 
 The original INPUT-FILE is never modified.  The re-indented content is
-written to OUTPUT-DIR/<relative-path-from-INPUT-DIR>.
+written to OUTPUT-DIR/<relative-path-from-INPUT-DIR> **immediately** after
+indentation completes, before any subsequent file is processed.
 
 Returns a plist:
   :file        abbreviated file name (relative to INPUT-DIR)
   :lines       line count of the file
+  :file-start  wall-clock time (float) when indentation started
   :indent-time elapsed time in seconds for `indent-region'
+  :warnings    list of captured indentation-warning strings (may be nil)
   :error       error message string if processing failed, or nil"
-  (let* ((rel       (file-relative-name input-file input-dir))
-         (out-file  (sd7-indent-perf--output-path input-file input-dir output-dir))
+  (let* ((rel        (file-relative-name input-file input-dir))
+         (out-file   (sd7-indent-perf--output-path input-file input-dir output-dir))
          (out-parent (file-name-directory out-file))
          line-count
          indent-time
+         file-start
+         warnings
          err-msg)
+    ;; Announce the start of this file with a wall-clock timestamp.
+    (sd7-indent-perf--message "  indenting %s …" rel)
     (condition-case err
         (progn
-          ;; Read the file into a temp buffer and activate seed7-mode.
           (with-temp-buffer
             (insert-file-contents input-file)
-            ;; Activate seed7-mode without hooks that might open other buffers.
+            ;; Activate seed7-mode.  `delay-mode-hooks' suppresses hooks that
+            ;; might open windows or visit other files, but the warning
+            ;; "Making delay-mode-hooks buffer-local while locally let-bound!"
+            ;; is harmless — it fires because seed7-mode itself sets the var.
             (let ((delay-mode-hooks t))
               (seed7-mode))
-            ;; Ensure font-lock keywords are compiled (mode may lazily compile).
-            ;; indent-region does not need fontification, but activating the
-            ;; full mode prevents any lazy-initialization surprises.
             (setq line-count (line-number-at-pos (point-max)))
-            ;; Time the re-indentation of the complete buffer.
-            (let* ((t0      (current-time))
-                   (_       (indent-region (point-min) (point-max)))
-                   (elapsed (float-time (time-subtract (current-time) t0))))
-              (setq indent-time elapsed))
-            ;; Write the re-indented content to the output tree.
+            ;; Install warning capture, then time indent-region.
+            (setq sd7-indent-perf--current-warnings nil)
+            (advice-add 'message :around #'sd7-indent-perf--capture-advice)
+            (unwind-protect
+                (let ((t0 (current-time)))
+                  (setq file-start (float-time t0))
+                  (indent-region (point-min) (point-max))
+                  (setq indent-time
+                        (float-time (time-subtract (current-time) t0))))
+              ;; Always remove the advice, even if indent-region signals.
+              (advice-remove 'message #'sd7-indent-perf--capture-advice)
+              (setq warnings (nreverse sd7-indent-perf--current-warnings)))
+            ;; Write the re-indented content immediately — before the next
+            ;; file is processed — so snapshots are available even if the
+            ;; run is interrupted.
             (make-directory out-parent t)
             (let ((coding-system-for-write 'utf-8-unix))
               (write-region (point-min) (point-max) out-file nil :silent))))
       (error
        (setq err-msg (format "%s" (cadr err)))))
+    ;; Progress message: elapsed time + warning count + written path.
+    (if err-msg
+        (sd7-indent-perf--message "  ERROR %s: %s" rel err-msg)
+      (sd7-indent-perf--message
+       "  done  %s  %.3fs  %d line(s)%s  → %s"
+       rel
+       (or indent-time 0.0)
+       (or line-count 0)
+       (if warnings (format "  [%d warning(s)]" (length warnings)) "")
+       out-file))
     (list :file        rel
           :lines       (or line-count 0)
+          :file-start  (or file-start 0.0)
           :indent-time (or indent-time 0.0)
+          :warnings    warnings
           :error       err-msg)))
 
 ;;; --------------------------------------------------------------------------
@@ -331,6 +384,23 @@ Returns the path of the written report file."
                           (plist-get r :file)
                           (plist-get r :error))))
         (insert "\n"))
+
+      ;; ---- Indentation warnings (files with "not yet supported" messages) ----
+      (let ((warn-results (cl-remove-if-not
+                           (lambda (r) (plist-get r :warnings))
+                           results)))
+        (when warn-results
+          (insert "Indentation Warnings\n")
+          (insert "====================\n\n")
+          (insert "Lines where seed7-mode reported \"not yet supported\" during indentation.\n")
+          (insert "These indicate Seed7 syntax constructs not yet handled by the indentation\n")
+          (insert "engine.  The indented output for those lines may be incorrect.\n\n")
+          (dolist (r warn-results)
+            (insert (format "``%s``\n" (plist-get r :file)))
+            (dolist (w (plist-get r :warnings))
+              (insert (format "  - %s\n" w)))
+            (insert "\n"))))
+
       ;; Terminator
       (insert "\n.. ---------------------------------------------------------------------------\n"))
     report-file))
@@ -376,11 +446,15 @@ Returns the absolute path of the written report file."
          (n           0))
     (dolist (f files)
       (cl-incf n)
+      ;; Announce file number + wall-clock start time before entering the
+      ;; (potentially long) per-file indentation.
       (sd7-indent-perf--message
-       "[%d/%d] %s" n total-files
-       (file-relative-name f input-dir))
+       "[%d/%d]  started %s"
+       n total-files
+       (format-time-string "%H:%M:%S"))
       (push (sd7-indent-perf--process-file f input-dir output-dir)
             results))
+
     (let* ((total-elapsed (- (float-time) total-start))
            (results-fwd   (nreverse results))
            (report        (sd7-indent-perf--write-report
