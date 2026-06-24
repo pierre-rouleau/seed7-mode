@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260624.1048
+;; Package-Version: 20260624.1302
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -536,7 +536,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-24T14:48:55+0000 W26-3"
+(defconst seed7-mode-version-timestamp "2026-06-24T17:02:38+0000 W26-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -778,11 +778,12 @@ and the default path is not appropriate."
   "[^\\0]"
   "Match any character including new-line.")
 
-(defconst seed7--any-wp-text-re
-  (format "\\(?:%s+?.+?\\)+?"
-          seed7--whitespace-re)
-  "Any sequence of whitespace followed by non-whitespace.
-Inside a non-capturing group.")
+(defconst seed7--any-non-semicolon-re
+  "[^;]+"
+  "Any sequence of non-semicolon characters.
+Used in `return'-statement patterns to match the body up to the terminating `;'.
+Uses a negated character class instead of nested lazy quantifiers to prevent
+catastrophic backtracking (ReDoS) on large files.")
 
 ;; --
 ;; Note: Ensure that something like 0_ is not matched by seed7-name-identifier-nc-re
@@ -1913,10 +1914,12 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
   "Regexp to detect end of procedure or long function.  No group.")
 
 (defconst seed7-short-func-end-regexp
-  (format "^[[:blank:]]+?return\\(?:%s+?.+?\\)+?;"
-          ;;                        %
-          seed7--whitespace-re)
-  "Regexp to detect end of short function.  No group.")
+  "^[[:blank:]]+return[^;]*;"
+  "Regexp to detect end of short function.  No group.
+Uses `[^;]*' (negated character class) instead of nested lazy quantifiers
+to prevent catastrophic backtracking on large files.
+Matches a return statement starting on a line beginning with whitespace,
+spanning any number of continuation lines, ending at the first `;'.")
 
 (defconst seed7-forward-declaration-end-regexp
   "[[:blank:]]*?is[[:blank:]]+?forward;"
@@ -2932,16 +2935,17 @@ Move point."
         (keep-searching t)
         ;; prevent case fold searching: Seed7 is case sensitive.
         (case-fold-search nil))
-    (while (and keep-searching
-                (not (bobp)))
-      (if (re-search-backward regexp bound :noerror)
-          (unless (or (seed7-inside-comment-p)
-                      (seed7-inside-string-p))
-            ;; Found in code!
-            (setq found-pos (point))
-            (setq keep-searching nil))
-        ;; Not found. stop.
-        (setq keep-searching nil)))
+    (with-timeout (10 nil) ; ← give up after 10 s; returns nil
+      (while (and keep-searching
+                  (not (bobp)))
+        (if (re-search-backward regexp bound :noerror)
+            (unless (or (seed7-inside-comment-p)
+                        (seed7-inside-string-p))
+              ;; Found in code!
+              (setq found-pos (point))
+              (setq keep-searching nil))
+          ;; Not found. stop.
+          (setq keep-searching nil))))
     found-pos))
 
 (defun seed7-re-search-backward-closest (regexps &optional get-end-pos)
@@ -3381,13 +3385,16 @@ Arguments:
   "Group 1: complete text.")
 
 ;; [ TODO 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
+;; AFTER — with fixed seed7--any-wp-text-re the format is already correct;
+;;          also drop the extra +? that caused the +?+? double-quantifier:
 (defconst seed7---inner-callables-2
-  ;;              (---------------)
-  ;;     (----------------------------)     (--------------)
-  ;;  (--------------------------------------------------------)
   (format
-   "\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s+?;\\)\\)"
-   seed7--any-wp-text-re)
+   "\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s;\\)\\)"
+   ;;                                                ^^ no +? here; [^;]+ already quantifies
+   ;;             (---------------)
+   ;;    (----------------------------)     (-------------)
+   ;;  (-----------------------------------------------------)
+   seed7--any-non-semicolon-re)
   "Group 1: entire text.")
 
 
@@ -3395,8 +3402,8 @@ Arguments:
   "const proc: .+? is forward;")
 
 (defconst seed7--callable-return-re
-  (format "return%s+?;"
-          seed7--any-wp-text-re))
+  (format "return%s+;"
+          seed7--any-non-semicolon-re))
 
 (defconst seed7--inner-callables-triplets-re
   (format
