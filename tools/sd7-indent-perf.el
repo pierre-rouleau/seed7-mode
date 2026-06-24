@@ -2,7 +2,7 @@
 
 ;; Created   : Tuesday, June 24 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-24 16:11:06 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-24 16:13:53 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -55,6 +55,7 @@
 ;;
 ;; 1. Interactive (preferred):
 ;;
+;;      M-: (setq debug-on-quit t)
 ;;      M-x sd7-indent-perf-run
 ;;
 ;;    Prompts for INPUT-DIR, OUTPUT-DIR, REPORT-DIR, and ID.
