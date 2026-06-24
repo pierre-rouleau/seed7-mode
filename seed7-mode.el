@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260624.1430
+;; Package-Version: 20260624.1553
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -536,7 +536,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-24T18:30:15+0000 W26-3"
+(defconst seed7-mode-version-timestamp "2026-06-24T19:53:10+0000 W26-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3269,15 +3269,33 @@ Negative N: point is on a line that contains a line comment.
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (defun seed7--to-top (&optional pos)
-  "Move point to beginning of outer block surrounding code at POS or point."
+  "Move point to beginning of outer block surrounding code at POS or point.
+Searches backward for the nearest enclosing block-start keyword whose
+column is strictly less than the column at POS.  This is O(nesting depth),
+not O(number-of-keyword-occurrences), and correctly handles both top-level
+declarations at column 0 (in .sd7 files) and indented declarations inside
+Seed7 template bodies (in .s7i files)."
   (when pos (goto-char pos))
-  (let ((keep-searching t))
-    (while (and keep-searching
-                (not (bobp))
-                (seed7-re-search-backward seed7-block-top-start-regexp))
-      (seed7-to-indent)
-      (when (= (current-column) 0)
-        (setq keep-searching nil)))))
+  (let ((start-col (current-column))
+        (found nil))
+    (with-timeout
+        (15
+         (message
+          (concat "seed7-mode: seed7--to-top timed out at line %d "
+                  "(could not find enclosing block start). Please report.")
+          (line-number-at-pos (point))))
+      (while (and (not found)
+                  (not (bobp))
+                  (seed7-re-search-backward seed7-block-top-start-regexp))
+        (seed7-to-indent)
+        ;; Stop as soon as we find a block-start keyword whose column is
+        ;; strictly less than the starting column.  This correctly handles:
+        ;; • .sd7 files: indented lines (col ≥ 2) → column-0 keyword found
+        ;;   in 1–2 iterations.
+        ;; • .s7i template bodies: indented `const func' (col 4) → enclosing
+        ;;   `begin' or `const proc:' at col 0 found in 1–3 iterations.
+        (when (< (current-column) start-col)
+          (setq found t))))))
 
 (defun seed7-to-top-of-block ()
   "Move point to the top of the current block."
