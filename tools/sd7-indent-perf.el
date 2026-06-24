@@ -2,7 +2,7 @@
 
 ;; Created   : Tuesday, June 24 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-23 23:14:19 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-24 10:36:35 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -523,8 +523,8 @@ Exits Emacs with 0 on success or 1 on error."
           (sd7-indent-perf-run-core
            (nth 0 args) (nth 1 args) (nth 2 args) (nth 3 args))
           (kill-emacs 0))
-      (user-error
-       (message "ERROR: %s" (cadr err))
+      (error
+       (message "ERROR: %s" (error-message-string err))
        (kill-emacs 1)))))
 
 ;;; --------------------------------------------------------------------------
