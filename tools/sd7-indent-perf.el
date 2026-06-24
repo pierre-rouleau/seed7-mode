@@ -2,7 +2,7 @@
 
 ;; Created   : Tuesday, June 24 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-24 10:43:13 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-24 10:45:38 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -250,7 +250,7 @@ Returns a plist:
             ;; file is processed — so snapshots are available even if the
             ;; run is interrupted.
             (make-directory out-parent t)
-            (let ((coding-system-for-write 'utf-8-unix))
+            (let ((coding-system-for-write 'undecided))
               (write-region (point-min) (point-max) out-file nil :silent))))
       (error
        (setq err-msg (format "%s" (cadr err)))))
