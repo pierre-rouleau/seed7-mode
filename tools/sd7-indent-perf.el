@@ -2,7 +2,7 @@
 
 ;; Created   : Tuesday, June 24 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-24 16:13:53 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-24 17:21:12 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -148,30 +148,41 @@ Reset to nil at the start of each file; populated by
 (defun sd7-indent-perf--capture-advice (orig-fn fmt &rest args)
   "Advice around `message' to capture seed7-mode indentation warnings.
 Strings matching \"not yet supported\" or \"timed out\" are appended to
-`sd7-indent-perf--current-warnings' in addition to being displayed normally."
+`sd7-indent-perf--current-warnings' in addition to being displayed normally.
+Strings matching \"Indenting region\" or \"delay-mode-hooks\" are suppressed
+so they do not overwrite the tool's own progress messages in the echo area."
   (let ((txt (condition-case nil
                  (apply #'format fmt args)
                (error (format "%s" fmt)))))
     (when (string-match-p
-           (rx (or "not yet supported" ; in string handling in `seed7-calc-indent'
-                   "timed out"))       ; timed out in `seed7--to-top' or
-                                       ; `seed7-re-search-backward'
+           (rx (or "not yet supported"  ; in string handling in `seed7-calc-indent'
+                   "timed out"))        ; timed out in `seed7--to-top' or
+                                        ; `seed7-re-search-backward'
            txt)
       (push txt sd7-indent-perf--current-warnings))
-    (unless (string-match-p "Indenting region" txt)
+    (unless (string-match-p
+             (rx (or "Indenting region"
+                     "delay-mode-hooks"))   ; ← suppress Emacs internal noise
+             txt)
       (apply orig-fn fmt args))))
 
 ;;; --------------------------------------------------------------------------
 ;;; Helpers
 
+(defconst sd7-indent-perf--progress-buffer "*sd7-indent-perf*"
+  "Buffer name for live progress output during an `sd7-indent-perf-run' session.")
+
 (defun sd7-indent-perf--message (fmt &rest args)
-  "Emit a timestamped progress message.
-In batch mode uses `message'; in interactive mode also uses `message' (which
-appears in *Messages* and the echo area)."
-  (let ((text (apply #'format fmt args)))
-    (message "[%s] %s"
-             (format-time-string "%H:%M:%S")
-             text)))
+  "Emit a timestamped progress message to `*Messages*' and `*sd7-indent-perf*'."
+  (let ((text (format "[%s] %s"
+                      (format-time-string "%H:%M:%S")
+                      (apply #'format fmt args))))
+    ;; Write to *Messages* / echo area.
+    (message "%s" text)
+    ;; Also append to the dedicated progress buffer (creates it if absent).
+    (with-current-buffer (get-buffer-create sd7-indent-perf--progress-buffer)
+      (goto-char (point-max))
+      (insert text "\n"))))
 
 (defun sd7-indent-perf--format-duration (seconds)
   "Format SECONDS as MM:SS.mmm."
@@ -231,35 +242,32 @@ Returns a plist:
     (sd7-indent-perf--message "  indenting %s …" rel)
     (condition-case err
         (progn
-          (with-temp-buffer
-            (insert-file-contents input-file)
-            ;; Activate seed7-mode.  `delay-mode-hooks' suppresses hooks that
-            ;; might open windows or visit other files, but the warning
-            ;; "Making delay-mode-hooks buffer-local while locally let-bound!"
-            ;; is harmless — it fires because seed7-mode itself sets the var.
-            (let ((delay-mode-hooks t))
-              (seed7-mode))
-            (setq line-count (line-number-at-pos (point-max)))
-            ;; Install warning capture, then time indent-region.
-            (setq sd7-indent-perf--current-warnings nil)
-            (advice-add 'message :around #'sd7-indent-perf--capture-advice)
-            (unwind-protect
+          ;; Install warning capture BEFORE with-temp-buffer so that
+          ;; messages emitted during seed7-mode activation (e.g.
+          ;; "Making delay-mode-hooks buffer-local while locally let-bound!")
+          ;; are also filtered by `sd7-indent-perf--capture-advice'.
+          (setq sd7-indent-perf--current-warnings nil)
+          (advice-add 'message :around #'sd7-indent-perf--capture-advice)
+          (unwind-protect
+              (with-temp-buffer
+                (insert-file-contents input-file)
+                (let ((delay-mode-hooks t))
+                  (seed7-mode))
+                (setq line-count (line-number-at-pos (point-max)))
                 (let ((t0 (current-time)))
                   (setq file-start (float-time t0))
                   (indent-region (point-min) (point-max))
                   (setq indent-time
                         (float-time (time-subtract (current-time) t0))))
-              ;; Always remove the advice, even if indent-region signals.
-              (advice-remove 'message #'sd7-indent-perf--capture-advice)
-              (setq warnings (nreverse sd7-indent-perf--current-warnings)))
-            ;; Write the re-indented content immediately — before the next
-            ;; file is processed — so snapshots are available even if the
-            ;; run is interrupted.
-            (make-directory out-parent t)
-            (let ((coding-system-for-write 'undecided))
-              (write-region (point-min) (point-max) out-file nil :silent))))
+                (make-directory out-parent t)
+                (let ((coding-system-for-write 'undecided))
+                  (write-region (point-min) (point-max) out-file nil :silent)))
+            ;; Always remove the advice.
+            (advice-remove 'message #'sd7-indent-perf--capture-advice)
+            (setq warnings (nreverse sd7-indent-perf--current-warnings))))
       (error
        (setq err-msg (format "%s" (cadr err)))))
+
     ;; Progress message: elapsed time + warning count + written path.
     (if err-msg
         (sd7-indent-perf--message "  ERROR %s: %s" rel err-msg)
@@ -504,12 +512,17 @@ The RST report is written to REPORT-DIR/seed7mode-indent-perf-ID.rst."
                          sd7-indent-perf--last-id)
                  nil nil sd7-indent-perf--last-id)))
   (setq sd7-indent-perf--last-input-dir  (directory-file-name
-                                           (expand-file-name input-dir))
+                                          (expand-file-name input-dir))
         sd7-indent-perf--last-output-dir (directory-file-name
-                                           (expand-file-name output-dir))
+                                          (expand-file-name output-dir))
         sd7-indent-perf--last-report-dir (directory-file-name
-                                           (expand-file-name report-dir))
+                                          (expand-file-name report-dir))
         sd7-indent-perf--last-id         id)
+  ;; Show the live progress buffer in another window before starting.
+  (with-current-buffer (get-buffer-create sd7-indent-perf--progress-buffer)
+    (erase-buffer))
+  (display-buffer sd7-indent-perf--progress-buffer
+                  '((display-buffer-pop-up-window) (inhibit-same-window . t)))
   (sd7-indent-perf-run-core input-dir output-dir report-dir id))
 
 ;;; --------------------------------------------------------------------------
