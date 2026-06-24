@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260624.0912
+;; Package-Version: 20260624.1034
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -536,7 +536,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-24T13:12:22+0000 W26-3"
+(defconst seed7-mode-version-timestamp "2026-06-24T14:34:31+0000 W26-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6975,8 +6975,8 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                               (= (char-before (point)) ?&))
                      ;; Look for an assignment operator anywhere on this line.
                      (goto-char lbeg)
-                     (when (re-search-forward
-                            seed7-predef-assignment-operator-regexp lend t)
+                     (when (seed7-re-search-forward
+                            seed7-predef-assignment-operator-regexp lend
                        ;; Column of the first non-whitespace char after the
                        ;; operator — that is where the RHS expression begins.
                        (skip-chars-forward " \t")
