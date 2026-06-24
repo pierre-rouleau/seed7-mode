@@ -2,7 +2,7 @@
 
 ;; Created   : Tuesday, June 24 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-24 10:45:38 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-24 14:37:57 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -146,12 +146,15 @@ Reset to nil at the start of each file; populated by
 
 (defun sd7-indent-perf--capture-advice (orig-fn fmt &rest args)
   "Advice around `message' to capture seed7-mode indentation warnings.
-Strings matching \"not yet supported\" are appended to
+Strings matching \"not yet supported\" or \"timed out\" are appended to
 `sd7-indent-perf--current-warnings' in addition to being displayed normally."
   (let ((txt (condition-case nil
                  (apply #'format fmt args)
                (error (format "%s" fmt)))))
-    (when (string-match-p "not yet supported" txt)
+    (when (string-match-p
+           (rx (or "not yet supported"  ; in string handling in `seed7-calc-indent'
+                   "timed out"))        ; timed out in seed7-re-search-backward
+           txt)
       (push txt sd7-indent-perf--current-warnings))
     (apply orig-fn fmt args)))
 

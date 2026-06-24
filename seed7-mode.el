@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260624.1302
+;; Package-Version: 20260624.1430
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -536,7 +536,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-24T17:02:38+0000 W26-3"
+(defconst seed7-mode-version-timestamp "2026-06-24T18:30:15+0000 W26-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2935,7 +2935,15 @@ Move point."
         (keep-searching t)
         ;; prevent case fold searching: Seed7 is case sensitive.
         (case-fold-search nil))
-    (with-timeout (10 nil) ; ← give up after 10 s; returns nil
+    (with-timeout
+        (10                             ; ← give up after 10 s; warn user.
+         (message
+          (concat "seed7-mode: regexp search timed out at line %d. "
+                  "This indicates a catastrophic-backtracking bug. "
+                  "Please enable the debugger (M-x toggle-debug-on-quit), "
+                  "reproduce with C-g, and report the backtrace together "
+                  "with the current file and line number.")
+          (line-number-at-pos (point))))
       (while (and keep-searching
                   (not (bobp)))
         (if (re-search-backward regexp bound :noerror)
