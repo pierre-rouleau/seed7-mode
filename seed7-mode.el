@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260623.1241
+;; Package-Version: 20260623.2312
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -536,7 +536,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-23T16:41:17+0000 W26-2"
+(defconst seed7-mode-version-timestamp "2026-06-24T03:12:51+0000 W26-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6919,14 +6919,48 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
             (forward-line -1)
             (search-forward "\"")
             (setq indent-column (1- (current-column))))
+           ;;
+           ;; If the previous non-empty line ends with the Seed7 string-
+           ;; concatenation operator `<&' AND that line itself contains a `"',
+           ;; align the current string's opening `"' to the column of that `"'.
+           ;;
+           ;; Handles multi-line string-concatenation expressions such as:
+           ;;
+           ;;   return "(" <& bitfield.mask radix 2 lpad0 32 <&
+           ;;         ", " <& bitfield.rShift lpad 2 <&     ← aligned to "("
+           ;;         ", " <& bitfield.scale <& ")";
+           ;;
+           ;; When the previous line ends with `<&' but has no `"' (e.g. a
+           ;; non-string expression like `header.fileSize rpad 10 <&'), this
+           ;; case produces nil and the `t' fallback below handles it correctly.
+           ((seed7--set
+             (save-excursion
+               (when (seed7-move-to-line :previous-non-empty)
+                 (let* ((lbeg (line-beginning-position))
+                        (lend (line-end-position)))
+                   (goto-char lend)
+                   (skip-chars-backward " \t" lbeg)
+                   (when (and (>= (- (point) lbeg) 2)
+                              (string= "<&"
+                                       (buffer-substring-no-properties
+                                        (- (point) 2) (point))))
+                     (goto-char lbeg)
+                     (when (search-forward "\"" lend t)
+                       (1- (current-column)))))))
+             indent-column))
+           ;;
+           ;; Fallthrough: use the indentation of the nearest preceding
+           ;; non-string line.  Only warn when that heuristic also fails
+           ;; (i.e. when `seed7-indentation-of-previous-non-string-line'
+           ;; returns nil), meaning the indentation is truly unresolvable.
            (t
             (let ((col (seed7-indentation-of-previous-non-string-line)))
-              (when col
-                (setq indent-column col)))
-            (message
-             "At line %d: string line syntax not yet supported! Recurse count=%d Please report."
-             (seed7-current-line-number)
-             recurse-count)))))
+              (if col
+                  (setq indent-column col)
+                (message
+                 "At line %d: string line syntax not yet supported! Recurse count=%d Please report."
+                 (seed7-current-line-number)
+                 recurse-count)))))))
 
        ;; Special rule: if a line starts with a Seed7 assignment operator,
        ;; consider that line manually indented and keep it where it is.
