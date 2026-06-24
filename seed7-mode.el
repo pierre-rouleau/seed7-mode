@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260623.2312
+;; Package-Version: 20260624.0912
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -536,7 +536,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-24T03:12:51+0000 W26-3"
+(defconst seed7-mode-version-timestamp "2026-06-24T13:12:22+0000 W26-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6892,7 +6892,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
           (setq indent-column (+ (nth 0 spec-list)
                                  seed7-indent-width))))
 
-       ;; in string
+       ;; -- in string -------------------------
        ((seed7-line-isa-string 0)
         (save-excursion
           (cond
@@ -6949,12 +6949,47 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                        (1- (current-column)))))))
              indent-column))
            ;;
+           ;; If the previous non-empty line ends with `&' or `<&' AND that
+           ;; line also contains an assignment operator (`:=', `&:=', etc.),
+           ;; align the current string to the column of the RHS of that
+           ;; assignment — i.e. the first non-space character after the
+           ;; operator on that line.
+           ;;
+           ;; Handles: (bmp.s7i line 888)
+           ;;   stri &:= bytes(rawDataSize + 54, UNSIGNED, LE, 4) &
+           ;;            "\0;" mult 4  &   ← aligns to "bytes(" = column 13
+           ;;
+           ;; This clause fires only when the `<&'+`"' clause above did NOT
+           ;; fire (the previous line either ends with plain `&' rather than
+           ;; `<&', or ends with `<&' but contains no `"').
+           ((seed7--set
+             (save-excursion
+               (when (seed7-move-to-line :previous-non-empty)
+                 (let* ((lbeg (line-beginning-position))
+                        (lend (line-end-position)))
+                   ;; The previous line must end with `&' (covers both plain
+                   ;; `&' and `<&', since both have `&' as the last char).
+                   (goto-char lend)
+                   (skip-chars-backward " \t" lbeg)
+                   (when (and (> (point) lbeg)
+                              (= (char-before (point)) ?&))
+                     ;; Look for an assignment operator anywhere on this line.
+                     (goto-char lbeg)
+                     (when (re-search-forward
+                            seed7-predef-assignment-operator-regexp lend t)
+                       ;; Column of the first non-whitespace char after the
+                       ;; operator — that is where the RHS expression begins.
+                       (skip-chars-forward " \t")
+                       (current-column))))))
+             indent-column))
+           ;;
            ;; Fallthrough: use the indentation of the nearest preceding
            ;; non-string line.  Only warn when that heuristic also fails
            ;; (i.e. when `seed7-indentation-of-previous-non-string-line'
            ;; returns nil), meaning the indentation is truly unresolvable.
            (t
             (let ((col (seed7-indentation-of-previous-non-string-line)))
+              ;; [ TODO 2026-06-24, by Pierre Rouleau: replace if by when for testing?]
               (if col
                   (setq indent-column col)
                 (message
@@ -6962,7 +6997,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                  (seed7-current-line-number)
                  recurse-count)))))))
 
-       ;; Special rule: if a line starts with a Seed7 assignment operator,
+       ;; -- Special rule: if a line starts with a Seed7 assignment operator,
        ;; consider that line manually indented and keep it where it is.
        ;; This allows a long multi-line statement to be lined up on the
        ;; assignment operator placed on the line after its rvalue for the
