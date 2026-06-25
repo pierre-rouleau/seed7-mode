@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260625.1041
+;; Package-Version: 20260625.1138
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -378,6 +378,7 @@
 ;;       . `seed7-line-inside-syntax-parens-pair'
 ;;         . `seed7--paren-pair-string'
 ;;     . `seed7-line-inside-parens-pair-column'
+;;     . `seed7-line-starts-with-open-paren-after-logic-operator'
 ;;     . `seed7-line-inside-nested-parens-pairs'
 ;;     . `seed7-line-inside-nested-parens-pairs-column'
 ;;     . `seed7-indentation-of-previous-non-string-line'
@@ -538,7 +539,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-25T14:41:17+0000 W26-4"
+(defconst seed7-mode-version-timestamp "2026-06-25T15:38:52+0000 W26-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6587,6 +6588,30 @@ of the character after the opening parens."
                                            scope-end-pos
                                            dont-skip-comment-start)))
 
+(defconst seed7--line-ends-with-logic-operator-regexp
+  "\\_<\\(?:and\\|or\\)\\_>[[:blank:]]*$"
+  "Regexp matching a line that ends with the logical operators `and' or `or'.")
+
+(defun seed7-line-starts-with-open-paren-after-logic-operator
+    (n &optional dont-skip-comment-start)
+  "Return indent column for a `(' continuation line after `and' or `or'.
+
+When line N starts with `(' and the previous non-empty line ends with
+the logical operator `and' or `or', return the indentation column of
+that previous non-empty line.  Return nil when the pattern does not apply."
+  (save-excursion
+    (when (and (seed7-line-starts-with n "(" dont-skip-comment-start)
+               (seed7-move-to-line :previous-non-empty dont-skip-comment-start))
+      (let ((prev-indent (progn
+                           (skip-chars-forward " \t")
+                           (current-column)))
+            (lbeg (line-beginning-position))
+            (lend (line-end-position)))
+        (goto-char lbeg)
+        (when (re-search-forward
+               seed7--line-ends-with-logic-operator-regexp lend t)
+          prev-indent)))))
+
 (defun seed7-line-inside-nested-parens-pairs (n nested-depth
                                                 &optional
                                                 scope-begin-pos
@@ -7211,15 +7236,24 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                                  (seed7-line-indent-step :previous-non-empty))
                              2)))
        ;;
-       ;;
        ((string= first-word-on-line "until")
         (setq indent-step (1- (or indent-step
                                   (seed7-line-indent-step :previous-non-empty)))))
        ;;
-       ;;
        ((and (string= first-word-on-line "var")
              (seed7-line-starts-with :previous-non-empty "include "))
         (setq indent-step 0))
+
+       ;;
+       ;; Indentation of lines like line 696 of bas7.sd7:
+       ;; 693 const func boolean: isStringExpr (in string: symbol) is
+       ;; 694   return symbol in string_var_name or
+       ;; 695          symbol <> "" and
+       ;; 696         (symbol[length(symbol)] = '$' or symbol[1] = '\"' or symbol[1] in defstr_var and
+       ;; 697          not symbol[length(symbol)] in numeric_var_suffix);
+       ((seed7--set
+         (seed7-line-starts-with-open-paren-after-logic-operator 0)
+         indent-column))
 
        ((seed7-line-starts-with 0 "(")
         ;; for block comment comments or code within parentheses,
