@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-01.el --- ERT tests for Seed7 indentation regressions  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-25 13:43:30 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-25 15:36:04 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -51,11 +51,11 @@
 ;;
 ;; The expected indentation shape is:
 ;;
-;;   const func boolean: ... is                     ; column 0
+;;   const func boolean: ... is                    ; column 0
 ;;     return ...                                  ; column 2
 ;;            symbol <> "" and                     ; column 9
-;;           (symbol[length(symbol)] = '$' ...     ; column 8
-;;            not symbol[length(symbol)] ...       ; column 9
+;;            (symbol[length(symbol)] = '$' ...    ; column 9
+;;             not symbol[length(symbol)] ...      ; column 10
 
 ;; ---------------------------------------------------------------------------
 ;;; Code:

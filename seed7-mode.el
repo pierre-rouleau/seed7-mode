@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260625.1525
+;; Package-Version: 20260625.1549
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-25T19:25:32+0000 W26-4"
+(defconst seed7-mode-version-timestamp "2026-06-25T19:49:14+0000 W26-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7204,6 +7204,13 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
           (setq indent-step 1))
          (t (setq indent-step 0))))
 
+       ;; First continuation after:
+       ;;   return ... and/or
+       ;; Align under the expression following `return '.
+       ((seed7--set
+         (seed7-line-after-func-return-logic-operator-column 0)
+         indent-column))
+
        ((seed7--set (seed7-line-inside-a-block-cached
                      0 nil
                      (or early-begin-pos
@@ -7218,13 +7225,6 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
         (let ((begin-pos (max (point-min) (1- (nth 2 spec-list))))
               (end-pos   (min (point-max) (1+ (nth 3 spec-list)))))
           (cond
-           ;; First continuation after:
-           ;;   return ... and/or
-           ;; Align under the expression following `return '.
-           ((seed7--set
-             (seed7-line-after-func-return-logic-operator-column 0)
-             indent-column))
-
            ((seed7--set                 ; inside parens pair?
              (seed7-line-inside-parens-pair-column 0 begin-pos end-pos)
              indent-column))
