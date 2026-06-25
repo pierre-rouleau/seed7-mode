@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-01.el --- ERT tests for Seed7 indentation regressions  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-25 12:26:07 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-25 15:36:04 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -32,8 +32,18 @@
 ;;
 ;;   No rule yet to indent line N
 ;;
-;; The main regression shape comes from `prg/bas7.sd7` around Line 696.
-
+;; The main regression shape comes from `prg/bas7.sd7` around Line 696,
+;; in the following Seed7 bas67.sd7 code, shown with their line numbers:
+;;
+;; 692
+;; 693 const func boolean: isStringExpr (in string: symbol) is
+;; 694   return symbol in string_var_name or
+;; 695          symbol <> "" and
+;; 696         (symbol[length(symbol)] = '$' or symbol[1] = '\"' or symbol[1] in defstr_var and
+;; 697          not symbol[length(symbol)] in numeric_var_suffix);
+;; 698
+;;
+;;
 ;; Regression tests for indentation of a multi-line boolean expression
 ;; like the one in prg/bas7.sd7 where:
 ;; - one continuation line ends with `and'
@@ -41,11 +51,11 @@
 ;;
 ;; The expected indentation shape is:
 ;;
-;;   const func boolean: ... is                     ; column 0
+;;   const func boolean: ... is                    ; column 0
 ;;     return ...                                  ; column 2
 ;;            symbol <> "" and                     ; column 9
-;;           (symbol[length(symbol)] = '$' ...     ; column 8
-;;            not symbol[length(symbol)] ...       ; column 9
+;;            (symbol[length(symbol)] = '$' ...    ; column 9
+;;             not symbol[length(symbol)] ...      ; column 10
 
 ;; ---------------------------------------------------------------------------
 ;;; Code:
@@ -58,8 +68,8 @@
    "const func boolean: isStringExpr (in string: symbol) is\n"
    "  return symbol in string_var_name or\n"
    "         symbol <> \"\" and\n"
-   "        (symbol[length(symbol)] = '$' or symbol[1] = '\\\"' or symbol[1] in defstr_var and\n"
-   "         not symbol[length(symbol)] in numeric_var_suffix);\n")
+   "         (symbol[length(symbol)] = '$' or symbol[1] = '\\\"' or symbol[1] in defstr_var and\n"
+   "          not symbol[length(symbol)] in numeric_var_suffix);\n")
   "Correctly indented bas7-style fixture.")
 
 (defconst seed7-test-indent--bas7-misaligned-code
@@ -101,8 +111,8 @@
     (should (= (seed7-test-indent--line-indentation 1) 0))
     (should (= (seed7-test-indent--line-indentation 2) 2))
     (should (= (seed7-test-indent--line-indentation 3) 9))
-    (should (= (seed7-test-indent--line-indentation 4) 8))
-    (should (= (seed7-test-indent--line-indentation 5) 9))
+    (should (= (seed7-test-indent--line-indentation 4) 9))
+    (should (= (seed7-test-indent--line-indentation 5) 10))
 
     (should (eq (seed7-test-indent--line-first-char 4) ?\())
     (should (string= (buffer-string)
@@ -120,8 +130,8 @@
     (should (= (seed7-test-indent--line-indentation 1) 0))
     (should (= (seed7-test-indent--line-indentation 2) 2))
     (should (= (seed7-test-indent--line-indentation 3) 9))
-    (should (= (seed7-test-indent--line-indentation 4) 8))
-    (should (= (seed7-test-indent--line-indentation 5) 9))
+    (should (= (seed7-test-indent--line-indentation 4) 9))
+    (should (= (seed7-test-indent--line-indentation 5) 10))
 
     (should (eq (seed7-test-indent--line-first-char 4) ?\())
     (should (string= (buffer-string)

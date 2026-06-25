@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260625.1138
+;; Package-Version: 20260625.1549
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -378,6 +378,7 @@
 ;;       . `seed7-line-inside-syntax-parens-pair'
 ;;         . `seed7--paren-pair-string'
 ;;     . `seed7-line-inside-parens-pair-column'
+;;     . `seed7-line-after-func-return-logic-operator-column'
 ;;     . `seed7-line-starts-with-open-paren-after-logic-operator'
 ;;     . `seed7-line-inside-nested-parens-pairs'
 ;;     . `seed7-line-inside-nested-parens-pairs-column'
@@ -539,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-25T15:38:52+0000 W26-4"
+(defconst seed7-mode-version-timestamp "2026-06-25T19:49:14+0000 W26-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6099,7 +6100,7 @@ N is: - :previous-non-empty for the previous non-empty line,
       - A negative number for previous lines: -1 previous, -2 line before...
 SCOPE-BEGIN-POS and SCOPE-END-POS are the search begin and end boundaries.
 If it finds that the line is inside the func return statement, it
-returns the indentation column of the return keyword.
+returns the continuation anchor column after `return '.
 If it detects that it is outside, it returns nil."
   (unless (or (not scope-end-pos)
               (< (or scope-begin-pos 0) scope-end-pos))
@@ -6121,7 +6122,8 @@ If it detects that it is outside, it returns nil."
                 (setq keep-searching nil)
                 (seed7-to-indent)
                 (setq start-pos (point))
-                (setq found-column (+  (current-column) 5))
+                (re-search-forward "return[[:blank:]]+" (line-end-position) t)
+                (setq found-column (current-column))
                 (setq end-pos (seed7-forward-char-pos ";" scope-end-pos
                                                       'point-after))
                 (unless (and end-pos
@@ -6591,6 +6593,27 @@ of the character after the opening parens."
 (defconst seed7--line-ends-with-logic-operator-regexp
   "\\_<\\(?:and\\|or\\)\\_>[[:blank:]]*$"
   "Regexp matching a line that ends with the logical operators `and' or `or'.")
+
+(defun seed7-line-after-func-return-logic-operator-column
+    (n &optional dont-skip-comment-start)
+  "Return hanging-indent column for the first continuation of `return ... and/or'.
+
+When the previous non-empty line starts with `return' and ends with
+the logical operators `and' or `or', return the column of the first
+character after `return '.  Return nil otherwise."
+  (save-excursion
+    (when (and (seed7-move-to-line n dont-skip-comment-start)
+               (seed7-move-to-line :previous-non-empty dont-skip-comment-start))
+      (let ((lbeg (line-beginning-position))
+            (lend (line-end-position)))
+        (goto-char lbeg)
+        (when (and (re-search-forward
+                    "^[[:blank:]]+return[[:blank:]]+" lend t)
+                   (save-excursion
+                     (goto-char lbeg)
+                     (re-search-forward
+                      seed7--line-ends-with-logic-operator-regexp lend t)))
+          (current-column))))))
 
 (defun seed7-line-starts-with-open-paren-after-logic-operator
     (n &optional dont-skip-comment-start)
@@ -7181,6 +7204,13 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
           (setq indent-step 1))
          (t (setq indent-step 0))))
 
+       ;; First continuation after:
+       ;;   return ... and/or
+       ;; Align under the expression following `return '.
+       ((seed7--set
+         (seed7-line-after-func-return-logic-operator-column 0)
+         indent-column))
+
        ((seed7--set (seed7-line-inside-a-block-cached
                      0 nil
                      (or early-begin-pos
@@ -7210,8 +7240,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
              indent-column))
            ((seed7--set                 ; inside func return?
              (seed7-line-inside-func-return-statement 0 begin-pos end-pos)
-             indent-column)
-            (setq indent-column (+ indent-column seed7-indent-width)))
+             indent-column))
            ;; Not inside any special zones.
            ;; Use indentation identified by `seed7-line-inside-a-block'.
            (t (setq indent-column (nth 0 spec-list))))))
