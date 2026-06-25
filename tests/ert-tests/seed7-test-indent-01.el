@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-01.el --- ERT tests for Seed7 indentation regressions  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-25 12:10:06 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-25 12:26:07 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -34,80 +34,100 @@
 ;;
 ;; The main regression shape comes from `prg/bas7.sd7` around Line 696.
 
+;; Regression tests for indentation of a multi-line boolean expression
+;; like the one in prg/bas7.sd7 where:
+;; - one continuation line ends with `and'
+;; - the next continuation line starts with `('
+;;
+;; The expected indentation shape is:
+;;
+;;   const func boolean: ... is                     ; column 0
+;;     return ...                                  ; column 2
+;;            symbol <> "" and                     ; column 9
+;;           (symbol[length(symbol)] = '$' ...     ; column 8
+;;            not symbol[length(symbol)] ...       ; column 9
+
+;; ---------------------------------------------------------------------------
 ;;; Code:
 
 (require 'ert)
 (require 'seed7-mode)
 
-(defconst seed7-test-indent--open-paren-after-and-code
+(defconst seed7-test-indent--bas7-correct-code
   (concat
    "const func boolean: isStringExpr (in string: symbol) is\n"
    "  return symbol in string_var_name or\n"
    "         symbol <> \"\" and\n"
-   "(symbol[length(symbol)] = '$' or symbol[1] = '\\\"' or symbol[1] in defstr_var and\n"
+   "        (symbol[length(symbol)] = '$' or symbol[1] = '\\\"' or symbol[1] in defstr_var and\n"
    "         not symbol[length(symbol)] in numeric_var_suffix);\n")
-  "Fixture modeled after `prg/bas7.sd7`.
-Where a continuation line starts with `(' after `and'.")
+  "Correctly indented bas7-style fixture.")
 
-(defconst seed7-test-indent--open-paren-after-or-code
+(defconst seed7-test-indent--bas7-misaligned-code
   (concat
-   "const func boolean: needsWrap (in string: symbol) is\n"
-   "  return symbol = \"abc\" or\n"
-   "         symbol = \"def\" or\n"
-   "(symbol[1] = 'A' or symbol[1] = 'B');\n")
-  "Fixture for the analogous continuation case after `or'.")
+   "const func boolean: isStringExpr (in string: symbol) is\n"
+   "  return symbol in string_var_name or\n"
+   "symbol <> \"\" and\n"
+   "(symbol[length(symbol)] = '$' or symbol[1] = '\\\"' or symbol[1] in defstr_var and\n"
+   "not symbol[length(symbol)] in numeric_var_suffix);\n")
+  "Misindented version of `seed7-test-indent--bas7-correct-code'.")
 
 (defun seed7-test-indent--goto-line (line)
-  "Move point to the beginning of LINE."
+  "Move point to the beginning of LINE (1-based)."
   (goto-char (point-min))
   (forward-line (1- line)))
 
 (defun seed7-test-indent--line-indentation (line)
-  "Return indentation of LINE."
+  "Return indentation of LINE (1-based)."
   (save-excursion
     (seed7-test-indent--goto-line line)
     (current-indentation)))
 
 (defun seed7-test-indent--line-first-char (line)
-  "Return first non-whitespace character of LINE."
+  "Return first non-whitespace character of LINE (1-based)."
   (save-excursion
     (seed7-test-indent--goto-line line)
     (back-to-indentation)
     (char-after)))
 
-(ert-deftest seed7-indent/open-paren-after-and-indent-region ()
-  "Indenting a bas7-style continuation line starting with `(' after `and' must not error."
+(ert-deftest seed7-indent/bas7-shape-indent-region-keeps-correct-layout ()
+  "Indenting an already-correct bas7-style expression keeps the same layout."
   (with-temp-buffer
     (setq-local indent-tabs-mode nil)
-    (insert seed7-test-indent--open-paren-after-and-code)
-    (seed7-mode)
-
-    ;; This previously failed during full-file indentation.
-    (indent-region (point-min) (point-max))
-
-    ;; Line 4 starts with `(' and should now be indented as a continuation line.
-    (should (eq (seed7-test-indent--line-first-char 4) ?\())
-    (should (> (seed7-test-indent--line-indentation 4) 0))
-
-    ;; It should align with the previous continuation line.
-    (should (= (seed7-test-indent--line-indentation 4)
-               (seed7-test-indent--line-indentation 3)))))
-
-(ert-deftest seed7-indent/open-paren-after-or-indent-region ()
-  "Indenting a continuation line starting with `(' after `or' must not error."
-  (with-temp-buffer
-    (setq-local indent-tabs-mode nil)
-    (insert seed7-test-indent--open-paren-after-or-code)
+    (insert seed7-test-indent--bas7-correct-code)
     (seed7-mode)
 
     (indent-region (point-min) (point-max))
 
-    ;; Line 4 starts with `(' and should be indented as a continuation line.
-    (should (eq (seed7-test-indent--line-first-char 4) ?\())
-    (should (> (seed7-test-indent--line-indentation 4) 0))
-    (should (= (seed7-test-indent--line-indentation 4)
-               (seed7-test-indent--line-indentation 3)))))
+    (should (= (seed7-test-indent--line-indentation 1) 0))
+    (should (= (seed7-test-indent--line-indentation 2) 2))
+    (should (= (seed7-test-indent--line-indentation 3) 9))
+    (should (= (seed7-test-indent--line-indentation 4) 8))
+    (should (= (seed7-test-indent--line-indentation 5) 9))
 
+    (should (eq (seed7-test-indent--line-first-char 4) ?\())
+    (should (string= (buffer-string)
+                     seed7-test-indent--bas7-correct-code))))
+
+(ert-deftest seed7-indent/bas7-shape-indent-region-fixes-misaligned-layout ()
+  "Indenting a misaligned bas7-style expression restores the expected layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent--bas7-misaligned-code)
+    (seed7-mode)
+
+    (indent-region (point-min) (point-max))
+
+    (should (= (seed7-test-indent--line-indentation 1) 0))
+    (should (= (seed7-test-indent--line-indentation 2) 2))
+    (should (= (seed7-test-indent--line-indentation 3) 9))
+    (should (= (seed7-test-indent--line-indentation 4) 8))
+    (should (= (seed7-test-indent--line-indentation 5) 9))
+
+    (should (eq (seed7-test-indent--line-first-char 4) ?\())
+    (should (string= (buffer-string)
+                     seed7-test-indent--bas7-correct-code))))
+
+;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-01)
 
 ;;; seed7-test-indent-01.el ends here
