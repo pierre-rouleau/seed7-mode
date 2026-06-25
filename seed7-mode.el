@@ -989,6 +989,39 @@ Please update your code to use the new name before this deadline.")
                                               "_\\)[^#0-9a-zA-Z]")
   "Seed7 big integer regular expression.")
 
+;; Simplified base-x patterns for font-lock performance.
+;;
+;; The full `seed7--base-x-integer-re-format' uses 37 explicit alternations
+;; (one per base 2-36) to validate that each digit is in range for its base.
+;; While correct, 37 alternatives are tried at every digit position during
+;; font-lock, which is expensive on large files.
+;;
+;; The simplified patterns below replace the 37-branch alternation with a
+;; compact 3-branch prefix matcher followed by an unrestricted [0-9a-zA-Z]+
+;; digit class.  For font-lock *coloring* this is sufficient: a literal like
+;; "2#9" (invalid binary) will be colored as a base-x integer rather than
+;; left uncolored, but correctness of the warning face is unaffected because
+;; invalid literals are caught by separate warning-face patterns, not by these.
+;; `seed7-any-valid-char-integer-semicolon-re' (used in syntax-propertize)
+;; continues to use the strict 37-branch format where correctness matters.
+
+(defconst seed7--fl-base-x-prefix-re
+  "\\(?:[2-9]\\|[12][0-9]\\|3[0-6]\\)#"
+  "Font-lock helper: base 2-36 prefix (base number followed by #).
+Uses 3 alternations rather than the 37-branch per-base validator.")
+
+(defconst seed7--fl-base-x-integer-re
+  (concat "\\(" seed7--fl-base-x-prefix-re "[0-9a-zA-Z]+\\)[^#0-9a-zA-Z]")
+  "Simplified base-x integer regexp for font-lock coloring.
+Group 1 captures the full base-x literal.
+Replaces `seed7-base-x-integer-re' in `seed7-font-lock-keywords'.")
+
+(defconst seed7--fl-base-x-big-integer-re
+  (concat "\\(\\(?:" seed7--fl-base-x-prefix-re "[0-9a-zA-Z]+\\)_\\)[^#0-9a-zA-Z]")
+  "Simplified base-x big integer (with trailing underscore) for font-lock.
+Group 1 captures the full literal including the underscore suffix.
+Replaces `seed7-base-x-big-integer-re' in `seed7-font-lock-keywords'.")
+
 ;;** Seed7 Pragmas
 ;;   -------------
 ;;
@@ -2623,8 +2656,10 @@ Please update your code to use the new name before this deadline."
    (cons seed7-float-number-re                       (list 0 ''seed7-float-face))
    ;; numbers: order is significant : base-x numbers use '#' and can have a 'e'
    ;; therefore , those must be checked before numbers with exponent (that can also use a 'e')
-   (cons seed7-base-x-big-integer-re                 (list 1 ''seed7-big-integer-face))
-   (cons seed7-base-x-integer-re                     (list 1 ''seed7-integer-face))
+   ;; Use simplified 3-alternation patterns (not the strict 37-branch per-base validator)
+   ;; for font-lock coloring performance on large files; see `seed7--fl-base-x-integer-re'.
+   (cons seed7--fl-base-x-big-integer-re             (list 1 ''seed7-big-integer-face))
+   (cons seed7--fl-base-x-integer-re                 (list 1 ''seed7-integer-face))
    (cons seed7-number-with-negative-exponent-re      (list 0 ''font-lock-warning-face))
    (cons seed7-number-with-exponent-re               (list 0 ''seed7-integer-face))
    (cons seed7-integer-invalid-0x-re                 (list 1 ''font-lock-warning-face))
@@ -10151,6 +10186,13 @@ compilation requires a working installation of Seed7.
 
   ;; Seed7 Font Locking Control
   (setq-local font-lock-defaults '((seed7-font-lock-keywords)))
+  ;; Disable jit-lock's deferred context scan.  When non-nil,
+  ;; jit-lock rescans backward to the start of the enclosing defun before
+  ;; fontifying each lazy chunk — invoking `seed7-nav-beginning-of-defun',
+  ;; which is expensive on large files.  Seed7's block-comment boundaries
+  ;; are established by `syntax-propertize-function', so context-free
+  ;; per-chunk fontification is safe.
+  (setq-local jit-lock-contextually nil)
 
   ;; Seed7 Mode Syntax Propertize Function
   (setq-local syntax-propertize-function #'seed7-mode-syntax-propertize)

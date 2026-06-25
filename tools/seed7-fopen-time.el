@@ -45,10 +45,13 @@
 
 
 (defun benchmark-sd7-files-in-dir (directory extension)
-  "Return a sorted list of files with EXTENSION inside the DIRECTORY."
-  (directory-files directory
-                   t
-                   (format "\\.%s$" extension)))
+  "Return a sorted list of files with EXTENSION inside the DIRECTORY.
+Emacs lock files — basenames beginning with \".#\" — are excluded.
+Such files are created when a buffer is being visited in another Emacs
+session and should not be benchmarked as Seed7 source files."
+  (cl-remove-if
+   (lambda (f) (string-prefix-p ".#" (file-name-nondirectory f)))
+   (directory-files directory t (format "\\.%s$" extension))))
 
 (defun benchmark-sd7-files-in-specs (directory-specs)
   "Benchmark open/render time of all file-names identified in DIRECTORY-SPECS.
