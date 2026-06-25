@@ -2,7 +2,7 @@
 
 ;; Created   : Tuesday, June 24 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-24 17:35:04 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-24 23:00:13 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7 package.
 ;; This file is not part of GNU Emacs.
@@ -259,7 +259,7 @@ Returns a plist:
           (unwind-protect
               (with-temp-buffer
                 (insert-file-contents input-file)
-                (let ((delay-mode-hooks t))
+                (delay-mode-hooks
                   (seed7-mode))
                 (setq line-count (line-number-at-pos (point-max)))
                 (let ((t0 (current-time)))
