@@ -2,9 +2,9 @@
 
 ;; Created   : Sunday, July 20 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-17 11:09:00 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-25 12:05:24 EDT, updated by Pierre Rouleau>
 
-;; This file is part of the SEED7 package.
+;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
 
 ;; Copyright (C) 2025, 2026  Pierre Rouleau

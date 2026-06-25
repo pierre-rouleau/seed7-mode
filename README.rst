@@ -35,6 +35,7 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 - Cross-reference integration with xref support that uses a Seed7 code
   analyzer back-end - you must have Seed7 installed to use it.
 - Explicit outline-minor-mode support.
+- Command to list all elements of Seed7 file: seed7-list-entities.
 - Intelligent template and keyword expansion.
 - Context-aware marking with block-aware extension to `er/expand-region`_ command.
 - Deep integration with iMenu and Speedbar with nested callable lineage.
@@ -793,6 +794,14 @@ The supported alignment rules do not allow alignment of *every* code formats.
 Use the ``align-regexp`` command to perform other form of text alignment.
 
 
+List all Seed7 Elements
+-----------------------
+
+The **seed7-list-entities** command lists all Seed7 elements declared in the
+current Seed7 buffer and inside a dedicated special buffer from where you can
+sort by type, name and line number and jump to the chosen declaration.
+
+This command is bound to the ``C-c C-l`` key and is available from the menu.
 
 Code Navigation Commands
 ------------------------
@@ -865,6 +874,18 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                                  the beginning of the current
                                                  function, procedure, struct_,
                                                  enum_, array_, set_.
+
+. seed7-list-entities         ``C-c C-l``        List all defined Seed7 entities (functions, procedures,
+                                                 enumerations, structures, arrays, sets) defined in the Seed7 file visited by
+                                                 the current buffer showing the line, type and name of the Seed7 entity.
+                                                 The list is shown in a special ``*Seed7 Entities: FNAME``
+                                                 buffer that provides quick 1-key commands:
+
+                                                 - ``RET``:  Go to the declaration in the source buffer.
+                                                 - ``o``: Go to the declaration in the other window.
+                                                 - ``g``: Re-scan the source buffer and re-display.
+                                                 - ``S``: Sort by the column at point.
+
 = ============================ ================= =============================================================
 
 Note that issuing the ``seed7-end-of-defun`` or ``seed7-to-block-forward``

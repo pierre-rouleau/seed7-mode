@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260622.1719
+;; Package-Version: 20260625.1138
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -330,6 +330,8 @@
 ;;       . `seed7-inside-line-indent-p'
 ;;       . `seed7-inside-line-trailing-whitespace-before-line-end-comment-p'
 ;;         . `seed7-inside-line-indent-before-comment-p'
+;;     - Seed7 Indentation search boundary helper
+;;       . `seed7--indent-search-boundary'
 ;;     - Seed7 Indentation Code Character Search Utilities
 ;;       . `seed7-backward-char-pos'
 ;;       . `seed7-forward-char-pos'
@@ -376,6 +378,7 @@
 ;;       . `seed7-line-inside-syntax-parens-pair'
 ;;         . `seed7--paren-pair-string'
 ;;     . `seed7-line-inside-parens-pair-column'
+;;     . `seed7-line-starts-with-open-paren-after-logic-operator'
 ;;     . `seed7-line-inside-nested-parens-pairs'
 ;;     . `seed7-line-inside-nested-parens-pairs-column'
 ;;     . `seed7-indentation-of-previous-non-string-line'
@@ -519,6 +522,8 @@
 (require 'seq)        ; use: `seq-filter'
 (require 'which-func) ; use: `which-func-functions'
 (require 'add-log)    ; use: `add-log-current-defun-function'
+(require 'tabulated-list) ; use: `tabulated-list-mode',
+;;                        ; `tabulated-list-mode-map'
 
 ;;; --------------------------------------------------------------------------
 ;;; Code:
@@ -534,7 +539,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-22T21:19:10+0000 W26-1"
+(defconst seed7-mode-version-timestamp "2026-06-25T15:38:52+0000 W26-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -776,11 +781,12 @@ and the default path is not appropriate."
   "[^\\0]"
   "Match any character including new-line.")
 
-(defconst seed7--any-wp-text-re
-  (format "\\(?:%s+?.+?\\)+?"
-          seed7--whitespace-re)
-  "Any sequence of whitespace followed by non-whitespace.
-Inside a non-capturing group.")
+(defconst seed7--any-non-semicolon-re
+  "[^;]+"
+  "Any sequence of non-semicolon characters.
+Used in `return'-statement patterns to match the body up to the terminating `;'.
+Uses a negated character class instead of nested lazy quantifiers to prevent
+catastrophic backtracking (ReDoS) on large files.")
 
 ;; --
 ;; Note: Ensure that something like 0_ is not matched by seed7-name-identifier-nc-re
@@ -1506,20 +1512,66 @@ Match group 1")
    "\\)")
   "Regexp for the top of a Seed7 block.  One capture group.")
 
-;;** Seed7 Array/Set Regexp
-;;   ----------------------
+(defconst seed7--callable-declaration-start-regexp
+  (concat
+   "\\("
+   (regexp-opt '("const array" "const func" "const proc:"
+                 "const set"   "const type:" "var array" "var set"))
+   "[[:blank:]]\\)")
+  "Regexp matching the start of a Seed7 callable or type declaration.
+This is a strict subset of `seed7-block-top-start-regexp' that excludes
+all control-flow keywords (`if', `while', `for', `elsif', `case', `catch')
+and structural markers (`begin', `local', `result', `else', `exception',
+`global', `repeat', `block').
+
+Used by `seed7--to-top' to find the enclosing top-level or template-level
+declaration without visiting every control-flow keyword on the way.
+
+Performance improvement (measured keyword match counts):
+  chkarr.sd7 : 2,943 total keywords → ~150 declarations  (~20× fewer iters)
+  castle.sd7  :   706 total keywords →  ~50 declarations  (~14× fewer iters)
+
+The column check in `seed7--to-top' (< start-col) is still correct for
+indented `const func'/`const proc' in .s7i template bodies such as
+`ENABLE_SORT' in aarray.s7i, since those are either `is action \"...\"'
+one-liners or short `return...;' functions — neither creates a
+`begin...end func' block you can be indenting code *inside*.")
+
+;;** Seed7 Array Regexp
+;;   ------------------
 
 (defconst seed7--array-definition-start-regexp
-  "\\(?:const\\|var\\) +?array[[:blank:]]+?.+?:.+?("
+  ;; "\\(?:const\\|var\\) +?array[[:blank:]]+?.+?:.+?("
+  ;; "\\(?:const\\|var\\) +array[[:blank:]]+.+:.+("
+  "\\(?:const\\|var\\) +array[[:blank:]]+[^:\n]+:[^(;\n]*("
   "Regexp matching the start of a Seed7 array definition block header.
 See `seed7--set-definition-start-regexp' for the whitespace convention.")
+
+;; Note: another possibility for seed7--array-definition-start-regexp would
+;; be: ?:const\\|var\\)[[:blank:]]+array[[:blank:]]+[^:\n]+:[^(;\n]*("
 
 (defconst seed7--line-array-definition-start-regexp
   (concat "^[[:blank:]]*?" seed7--array-definition-start-regexp)
   "Regexp matching line starting with a  Seed7 array definition block header.")
 
+(defconst seed7--array-definition-name-regexp
+  (concat "\\(?:const\\|var\\)[[:blank:]]+"
+          "array[[:blank:]]+[^:\n]+:"
+          "[[:blank:]]*\\([[:alpha:]][[:alnum:]_]*\\)")
+  "Regexp matching a Seed7 array declaration; group 1 is the entity name.
+The name is the first identifier that follows the `:' in the declaration.
+Unlike `seed7--array-definition-start-regexp', this regexp captures the name.
+
+Example matches:
+  const array integer: myArray is (1, 2, 3);   → group 1: myArray
+  var   array string:  names;                  → group 1: names")
+
+;;** Seed7 Set Regexp
+;;   ----------------
+
 (defconst seed7--set-definition-start-regexp
-  "\\(?:const\\|var\\) +?set[[:blank:]]+?.+?:.+?{"
+  ;; "\\(?:const\\|var\\) +?set[[:blank:]]+?.+?:.+?{"
+  "\\(?:const\\|var\\) +set[[:blank:]]+[^:\n]+:[^{;\n]*{"
   "Regexp matching the start of a Seed7 set definition block header.
 Matches `const set' or `var set' followed by a type annotation and the
 opening `{'.
@@ -1529,6 +1581,18 @@ Design note: a literal space (` +?') is required between `const'/`var' and
 per Seed7 style (dual-keyword restriction).  A hard tab or space
 \(`[[:blank:]]') is accepted after `set', because `set' is the last keyword
 in the phrase before the user-supplied identifier.")
+
+(defconst seed7--set-definition-name-regexp
+  (concat "\\(?:const\\|var\\)[[:blank:]]+"
+          "set[[:blank:]]+[^{:\n]+:"
+          "[[:blank:]]*\\([[:alpha:]][[:alnum:]_]*\\)")
+  "Regexp matching a Seed7 set declaration; group 1 is the entity name.
+The name is the first identifier that follows the `:' in the declaration.
+Unlike `seed7--set-definition-start-regexp', this regexp captures the name.
+
+Example matches:
+  const set of integer: mySet is {1, 2, 3};    → group 1: mySet
+  var   set of string:  names;                 → group 1: names")
 
 (defconst seed7--line-set-definition-start-regexp
   (concat "^[[:blank:]]*?" seed7--set-definition-start-regexp)
@@ -1880,10 +1944,12 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
   "Regexp to detect end of procedure or long function.  No group.")
 
 (defconst seed7-short-func-end-regexp
-  (format "^[[:blank:]]+?return\\(?:%s+?.+?\\)+?;"
-          ;;                        %
-          seed7--whitespace-re)
-  "Regexp to detect end of short function.  No group.")
+  "^[[:blank:]]+return[^;]*;"
+  "Regexp to detect end of short function.  No group.
+Uses `[^;]*' (negated character class) instead of nested lazy quantifiers
+to prevent catastrophic backtracking on large files.
+Matches a return statement starting on a line beginning with whitespace,
+spanning any number of continuation lines, ending at the first `;'.")
 
 (defconst seed7-forward-declaration-end-regexp
   "[[:blank:]]*?is[[:blank:]]+?forward;"
@@ -2899,16 +2965,25 @@ Move point."
         (keep-searching t)
         ;; prevent case fold searching: Seed7 is case sensitive.
         (case-fold-search nil))
-    (while (and keep-searching
-                (not (bobp)))
-      (if (re-search-backward regexp bound :noerror)
-          (unless (or (seed7-inside-comment-p)
-                      (seed7-inside-string-p))
-            ;; Found in code!
-            (setq found-pos (point))
-            (setq keep-searching nil))
-        ;; Not found. stop.
-        (setq keep-searching nil)))
+    (with-timeout
+        (10                             ; ← give up after 10 s; warn user.
+         (message
+          (concat "seed7-mode: regexp search timed out at line %d. "
+                  "This indicates a catastrophic-backtracking bug. "
+                  "Please enable the debugger (M-x toggle-debug-on-quit), "
+                  "reproduce with C-g, and report the backtrace together "
+                  "with the current file and line number.")
+          (line-number-at-pos (point))))
+      (while (and keep-searching
+                  (not (bobp)))
+        (if (re-search-backward regexp bound :noerror)
+            (unless (or (seed7-inside-comment-p)
+                        (seed7-inside-string-p))
+              ;; Found in code!
+              (setq found-pos (point))
+              (setq keep-searching nil))
+          ;; Not found. stop.
+          (setq keep-searching nil))))
     found-pos))
 
 (defun seed7-re-search-backward-closest (regexps &optional get-end-pos)
@@ -3223,16 +3298,38 @@ Negative N: point is on a line that contains a line comment.
 ;;*** Navigation to Outer Block
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(defun seed7--to-top (&optional pos)
-  "Move point to beginning of outer block surrounding code at POS or point."
+(defun seed7--to-top (&optional pos beg-bound)
+  "Move point to beginning of outer block surrounding code at POS or point.
+
+When BEG-BOUND is non-nil, do not search before that position.
+
+Searches backward for the nearest enclosing block-start keyword whose
+column is strictly less than the column at POS.  This is O(nesting depth),
+not O(number-of-keyword-occurrences), and correctly handles both top-level
+declarations at column 0 (in .sd7 files) and indented declarations inside
+Seed7 template bodies (in .s7i files)."
   (when pos (goto-char pos))
-  (let ((keep-searching t))
-    (while (and keep-searching
-                (not (bobp))
-                (seed7-re-search-backward seed7-block-top-start-regexp))
-      (seed7-to-indent)
-      (when (= (current-column) 0)
-        (setq keep-searching nil)))))
+  (let ((start-col (current-column))
+        (found nil))
+    (with-timeout
+        (15
+         (message
+          (concat "seed7-mode: seed7--to-top timed out at line %d "
+                  "(could not find enclosing block start). Please report.")
+          (line-number-at-pos (point))))
+      (while (and (not found)
+                  (not (bobp))
+                  (seed7-re-search-backward
+                   seed7--callable-declaration-start-regexp beg-bound))
+        (seed7-to-indent)
+        ;; Stop as soon as we find a block-start keyword whose column is
+        ;; strictly less than the starting column.  This correctly handles:
+        ;; • .sd7 files: indented lines (col ≥ 2) → column-0 keyword found
+        ;;   in 1–2 iterations.
+        ;; • .s7i template bodies: indented `const func' (col 4) → enclosing
+        ;;   `begin' or `const proc:' at col 0 found in 1–3 iterations.
+        (when (< (current-column) start-col)
+          (setq found t))))))
 
 (defun seed7-to-top-of-block ()
   "Move point to the top of the current block."
@@ -3348,13 +3445,16 @@ Arguments:
   "Group 1: complete text.")
 
 ;; [ TODO 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
+;; AFTER — with fixed seed7--any-wp-text-re the format is already correct;
+;;          also drop the extra +? that caused the +?+? double-quantifier:
 (defconst seed7---inner-callables-2
-  ;;              (---------------)
-  ;;     (----------------------------)     (--------------)
-  ;;  (--------------------------------------------------------)
   (format
-   "\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s+?;\\)\\)"
-   seed7--any-wp-text-re)
+   "\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s;\\)\\)"
+   ;;                                                ^^ no +? here; [^;]+ already quantifies
+   ;;             (---------------)
+   ;;    (----------------------------)     (-------------)
+   ;;  (-----------------------------------------------------)
+   seed7--any-non-semicolon-re)
   "Group 1: entire text.")
 
 
@@ -3362,8 +3462,8 @@ Arguments:
   "const proc: .+? is forward;")
 
 (defconst seed7--callable-return-re
-  (format "return%s+?;"
-          seed7--any-wp-text-re))
+  (format "return%s;"
+          seed7--any-non-semicolon-re))
 
 (defconst seed7--inner-callables-triplets-re
   (format
@@ -4924,8 +5024,6 @@ Toggles listing them together or separately.
 ;;* Seed7 Code Marking
 ;;  ==================
 
-;; [ TODO 2025-06-21, by Pierre Rouleau: Perhaps this can use
-;; `seed7-to-top-of-block' to handle more blocks?]
 (defun seed7-mark-defun ()
   "Mark the current Seed7 function or procedure.
 Put the mark at the end and point at the beginning.
@@ -5121,6 +5219,31 @@ Return nil otherwise."
       (skip-chars-forward " \t")
       (and (looking-at-p "#")
            (seed7-inside-comment-p)))))
+
+;;*** Seed7 Indentation search boundary helper
+
+(defun seed7--indent-search-boundary (&optional pos)
+  "Return the lower bound to use for indentation look-back.
+
+The boundary is the beginning of the nearest previous code line whose
+indentation is strictly less than the indentation at POS or point.
+
+Blank lines and lines inside strings/comments are ignored.
+Return nil when no such line exists."
+  (save-excursion
+    (when pos
+      (goto-char pos))
+    (seed7-to-indent)
+    (let ((target-col (current-column))
+          bound)
+      (while (and (not bound)
+                  (= (forward-line -1) 0))
+        (seed7-to-indent)
+        (let ((ppss (syntax-ppss)))
+          (unless (or (eolp) (nth 3 ppss) (nth 4 ppss))
+            (when (< (current-column) target-col)
+              (setq bound (line-beginning-position))))))
+      bound)))
 
 
 ;;*** Seed7 Indentation Code Character Search Utilities
@@ -5619,13 +5742,14 @@ Move point."
       (save-excursion (goto-char start-pos)
                       (line-end-position))))
 
-(defun seed7-line-inside-a-block (n &optional dont-skip-comment-start)
+(defun seed7-line-inside-a-block (n &optional dont-skip-comment-start beg-bound)
   "Check if line N is inside a Seed7 block.
 N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
+When BEG-BOUND is non-nil, do not search before that position.
 If nothing found it returns nil.
 If it finds something it returns a list that holds the following information:
 - 0: indent column : indentation column the line N should use,
@@ -5655,90 +5779,104 @@ If it finds something it returns a list that holds the following information:
         (end-of-line)
         (while (and keep-searching
                     (not (bobp)))
-          (when (seed7-re-search-backward seed7-block-line-start-regexp)
-            ;; get match text, normalize matching hard tabs to spaces.
-            (setq match-text (replace-regexp-in-string
-                              "[[:blank:]]+$" " "
-                              (substring-no-properties (match-string 1))))
-            (setq block-start-pos (point)) ; start point: line start.
-            (skip-chars-forward " \t")
-            (setq block-start-indent-column (current-column))
-            ;; Identify the end position and start position of the currently
-            ;; enclosing block
-            (save-excursion
-              (setq enclosing-block-end-pos (seed7--block-end-pos-for match-text))
-              ;; Identify the beginning of the enclosing top-level block
-              (setq enclosing-block-start-pos
-                    (seed7-to-block-backward nil :dont-push-mark)))
-            (when (<= block-start-pos current-pos enclosing-block-end-pos)
-              ;; It's a real and valid block: 3 cases are possible:
-              (cond
-               ;; Case 1: point is on the start line of a top level block.
-               ((and (seed7--on-lineof block-start-pos current-pos)
-                     (member match-text '("const proc: "
-                                          "const func "
-                                          "const type: ")))
-                ;; In that case the enclosing block start should be the same as
-                ;; the block start.  If it's not the case there's a logic error.
-                (when (eq enclosing-block-start-pos block-start-pos)
-                  ;; When at the line of top-level enclosing block, use the
-                  ;; `seed7-calc-indent' to get the indentation of the line just
-                  ;; above the current line, as if the previous line was a noop
-                  ;; statement.  Simulate the noop statement by temporary
-                  ;; inserting it in the above line.  This way it will be
-                  ;; possible to handle the case where the statement is inside
-                  ;; the first line of another block statement like an if
-                  ;; statement.
-                  ;; Note that calling `seed7-calc-indent' means recursing into
-                  ;; it since it's `seed7-calc-indent' that calls
-                  ;; `seed7-line-inside-a-block'.  But doing it this way we use
-                  ;; all the logic necessary to compute the indentation for this
-                  ;; case.
-                  ;; Allow modification of a read-only buffer and ensure that
-                  ;; the undo history is not modified by the insertion and
-                  ;; removal operations.
-                  (let ((inhibit-read-only t))
-                    (with-silent-modifications
-                      (setq keep-searching nil
-                            result (list
-                                    (save-excursion
-                                      (forward-line 0)
-                                      (let ((noop-start (point))
-                                            (noop-end nil))
-                                        (insert " noop;\n")
-                                        (setq noop-end (point))
-                                        (forward-line -1)
-                                        (unwind-protect
-                                            ;; compute indentation with noop
-                                            (seed7-calc-indent)
-                                          ;; always delete inserted noop
-                                          (delete-region noop-start noop-end))))
-                                    match-text
-                                    enclosing-block-start-pos
-                                    enclosing-block-end-pos
-                                    block-start-indent-column))))))
-               ;;
-               ;; Case 2: point is on an internal block start line.
-               ((seed7--on-lineof block-start-pos current-pos)
-                ;; Look for the previous block and use info from it.
-                (goto-char block-start-pos)
-                (when (seed7-re-search-backward
-                       seed7-block-line-start-regexp)
-                  (setq match-text (replace-regexp-in-string
-                                    "[[:blank:]]+$" " "
-                                    (substring-no-properties (match-string 1))))
-                  (setq block-start-pos (point))
-                  (skip-chars-forward " \t")
-                  (setq block-start-indent-column (current-column))
-                  ;; Identify the end position and start position of the
-                  ;; currently enclosing block
-                  (save-excursion
-                    (setq enclosing-block-end-pos
-                          (seed7--block-end-pos-for match-text))
-                    ;; Identify the beginning of the enclosing top-level block
-                    (setq enclosing-block-start-pos
-                          (seed7-to-block-backward nil :dont-push-mark)))
-                  (when (<= block-start-pos current-pos enclosing-block-end-pos)
+          (if (seed7-re-search-backward seed7-block-line-start-regexp beg-bound)
+              (progn
+                ;; get match text, normalize matching hard tabs to spaces.
+                (setq match-text (replace-regexp-in-string
+                                  "[[:blank:]]+$" " "
+                                  (substring-no-properties (match-string 1))))
+                (setq block-start-pos (point)) ; start point: line start.
+                (skip-chars-forward " \t")
+                (setq block-start-indent-column (current-column))
+                ;; Identify the end position and start position of the currently
+                ;; enclosing block
+                (save-excursion
+                  (setq enclosing-block-end-pos (seed7--block-end-pos-for match-text))
+                  ;; Identify the beginning of the enclosing top-level block
+                  (setq enclosing-block-start-pos
+                        (seed7-to-block-backward nil :dont-push-mark)))
+                (when (<= block-start-pos current-pos enclosing-block-end-pos)
+                  ;; It's a real and valid block: 3 cases are possible:
+                  (cond
+                   ;; Case 1: point is on the start line of a top level block.
+                   ((and (seed7--on-lineof block-start-pos current-pos)
+                         (member match-text '("const proc: "
+                                              "const func "
+                                              "const type: ")))
+                    ;; In that case the enclosing block start should be the same as
+                    ;; the block start.  If it's not the case there's a logic error.
+                    (when (eq enclosing-block-start-pos block-start-pos)
+                      ;; When at the line of top-level enclosing block, use the
+                      ;; `seed7-calc-indent' to get the indentation of the line just
+                      ;; above the current line, as if the previous line was a noop
+                      ;; statement.  Simulate the noop statement by temporary
+                      ;; inserting it in the above line.  This way it will be
+                      ;; possible to handle the case where the statement is inside
+                      ;; the first line of another block statement like an if
+                      ;; statement.
+                      ;; Note that calling `seed7-calc-indent' means recursing into
+                      ;; it since it's `seed7-calc-indent' that calls
+                      ;; `seed7-line-inside-a-block'.  But doing it this way we use
+                      ;; all the logic necessary to compute the indentation for this
+                      ;; case.
+                      ;; Allow modification of a read-only buffer and ensure that
+                      ;; the undo history is not modified by the insertion and
+                      ;; removal operations.
+                      (let ((inhibit-read-only t))
+                        (with-silent-modifications
+                          (setq keep-searching nil
+                                result (list
+                                        (save-excursion
+                                          (forward-line 0)
+                                          (let ((noop-start (point))
+                                                (noop-end nil))
+                                            (insert " noop;\n")
+                                            (setq noop-end (point))
+                                            (forward-line -1)
+                                            (unwind-protect
+                                                ;; compute indentation with noop
+                                                (seed7-calc-indent)
+                                              ;; always delete inserted noop
+                                              (delete-region noop-start noop-end))))
+                                        match-text
+                                        enclosing-block-start-pos
+                                        enclosing-block-end-pos
+                                        block-start-indent-column))))))
+                   ;;
+                   ;; Case 2: point is on an internal block start line.
+                   ((seed7--on-lineof block-start-pos current-pos)
+                    ;; Look for the previous block and use info from it.
+                    (goto-char block-start-pos)
+                    (when (seed7-re-search-backward
+                           seed7-block-line-start-regexp beg-bound)
+                      (setq match-text (replace-regexp-in-string
+                                        "[[:blank:]]+$" " "
+                                        (substring-no-properties (match-string 1))))
+                      (setq block-start-pos (point))
+                      (skip-chars-forward " \t")
+                      (setq block-start-indent-column (current-column))
+                      ;; Identify the end position and start position of the
+                      ;; currently enclosing block
+                      (save-excursion
+                        (setq enclosing-block-end-pos
+                              (seed7--block-end-pos-for match-text))
+                        ;; Identify the beginning of the enclosing top-level block
+                        (setq enclosing-block-start-pos
+                              (seed7-to-block-backward nil :dont-push-mark)))
+                      (when (<= block-start-pos current-pos enclosing-block-end-pos)
+                        (setq keep-searching nil
+                              result (list (+ block-start-indent-column
+                                              (seed7--indent-offset-for
+                                               match-text
+                                               line-n-first-text))
+                                           match-text
+                                           block-start-pos
+                                           enclosing-block-end-pos
+                                           block-start-indent-column)))))
+                   ;;
+                   ;; Case 3: point is on a line that is not on the block start,
+                   ;;         but between the block start and the block end.
+                   (t
                     (setq keep-searching nil
                           result (list (+ block-start-indent-column
                                           (seed7--indent-offset-for
@@ -5748,28 +5886,17 @@ If it finds something it returns a list that holds the following information:
                                        block-start-pos
                                        enclosing-block-end-pos
                                        block-start-indent-column)))))
-               ;;
-               ;; Case 3: point is on a line that is not on the block start,
-               ;;         but between the block start and the block end.
-               (t
-                (setq keep-searching nil
-                      result (list (+ block-start-indent-column
-                                      (seed7--indent-offset-for
-                                       match-text
-                                       line-n-first-text))
-                                   match-text
-                                   block-start-pos
-                                   enclosing-block-end-pos
-                                   block-start-indent-column)))))
-            (when keep-searching
-              ;; Found something that looks like a block, but either not
-              ;; a real block or not the block that holds the line.
-              ;; Need to search back further for a bigger block.  If
-              ;; block-start-pos is not a column 0, then keep searching
-              ;; above for the beginning of a larger block.
-              (if (eq (current-column) 0)
-                  (setq keep-searching nil)
-                (goto-char (1- block-start-pos))))))
+                (when keep-searching
+                  ;; Found something that looks like a block, but either not
+                  ;; a real block or not the block that holds the line.
+                  ;; Need to search back further for a bigger block.  If
+                  ;; block-start-pos is not a column 0, then keep searching
+                  ;; above for the beginning of a larger block.
+                  (if (eq (current-column) 0)
+                      (setq keep-searching nil)
+                    (goto-char (1- block-start-pos)))))
+            ;; No more candidate block start within the allowed range
+            (setq keep-searching nil)))
         result))))
 
 ;; --
@@ -5843,7 +5970,7 @@ column) is not exposed."
               end-pos
               (nth 4 seed7--indent-last-block-spec))))))
 
-(defun seed7-line-inside-a-block-cached (n &optional dont-skip-comment-start)
+(defun seed7-line-inside-a-block-cached (n &optional dont-skip-comment-start beg-bound)
   "Cached variant of `seed7-line-inside-a-block' for indentation.
 
 N is: - :previous-non-empty for the previous non-empty line,
@@ -5856,6 +5983,10 @@ When N is 0 and DONT-SKIP-COMMENT-START is nil, the function first
 checks `seed7--cached-block-spec-current-line'; if the cache is still
 valid it returns the cached spec immediately without re-scanning (O(1)
 fast path).
+
+When BEG-BOUND is non-nil, bypass the current cache and delegate
+directly to `seed7-line-inside-a-block'.  This keeps the existing cache
+semantics unchanged for the unbounded case.
 
 On a cache miss the function delegates to `seed7-line-inside-a-block'.
 When N is 0 and a block is found, two caches are updated as side effects:
@@ -5877,10 +6008,22 @@ If a block is found, return a list of 5 elements:
 - 2: block start position (the beginning of the start keyword line),
 - 3: enclosing block end position,
 - 4: indent column of the block start line."
-  (or (and (eq n 0)
-           (not dont-skip-comment-start)
-           (seed7--cached-block-spec-current-line))
-      (let ((spec (seed7-line-inside-a-block n dont-skip-comment-start)))
+  (let ((cached-spec
+         (and (eq n 0)
+              (not dont-skip-comment-start)
+              (seed7--cached-block-spec-current-line))))
+    (cond
+     ;; Fast path: cached spec is still valid for current line, and if a
+     ;; lower bound is supplied, the cached block still starts at or after it.
+     ((and cached-spec
+           (or (not beg-bound)
+               (<= beg-bound (nth 2 cached-spec))))
+      cached-spec)
+     ;;
+     ;; Cache miss or cached block is outside requested lower bound.
+     (t
+      (let ((spec (seed7-line-inside-a-block
+                   n dont-skip-comment-start beg-bound)))
         (when (and (eq n 0) spec)
           (setq seed7--indent-last-block-spec
                 (seed7--cache-block-spec spec))
@@ -5889,7 +6032,7 @@ If a block is found, return a list of 5 elements:
           (setq seed7--indent-block-bounds
                 (cons (nth 2 seed7--indent-last-block-spec)
                       (nth 3 seed7--indent-last-block-spec))))
-        spec)))
+        spec)))))
 
 ;; ---------------------------------------------------------------------------
 
@@ -6445,6 +6588,30 @@ of the character after the opening parens."
                                            scope-end-pos
                                            dont-skip-comment-start)))
 
+(defconst seed7--line-ends-with-logic-operator-regexp
+  "\\_<\\(?:and\\|or\\)\\_>[[:blank:]]*$"
+  "Regexp matching a line that ends with the logical operators `and' or `or'.")
+
+(defun seed7-line-starts-with-open-paren-after-logic-operator
+    (n &optional dont-skip-comment-start)
+  "Return indent column for a `(' continuation line after `and' or `or'.
+
+When line N starts with `(' and the previous non-empty line ends with
+the logical operator `and' or `or', return the indentation column of
+that previous non-empty line.  Return nil when the pattern does not apply."
+  (save-excursion
+    (when (and (seed7-line-starts-with n "(" dont-skip-comment-start)
+               (seed7-move-to-line :previous-non-empty dont-skip-comment-start))
+      (let ((prev-indent (progn
+                           (skip-chars-forward " \t")
+                           (current-column)))
+            (lbeg (line-beginning-position))
+            (lend (line-end-position)))
+        (goto-char lbeg)
+        (when (re-search-forward
+               seed7--line-ends-with-logic-operator-regexp lend t)
+          prev-indent)))))
+
 (defun seed7-line-inside-nested-parens-pairs (n nested-depth
                                                 &optional
                                                 scope-begin-pos
@@ -6693,7 +6860,7 @@ cycles: word → symbol → line → [block …] → defun."
 ;;** Seed7 Indentation Comment Checking Function
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(defun seed7-comment-column (recurse-count)
+(defun seed7-comment-column ()
   "Return the column number for comment start or continuation.
 The RECURSE-COUNT argument should be 0 on first call, incremented by 1 on each
 recursive call."
@@ -6724,17 +6891,13 @@ recursive call."
               ;; `seed7-calc-indent' to get the indentation.  Only 1 level of
               ;; recursion should be necessary (and allowed).
               (condition-case nil
-                  (seed7-calc-indent
-                   :treat-comment-line-as-code
-                   (1+ recurse-count))
+                  (seed7-calc-indent :treat-comment-line-as-code)
                 ;; If no rule was found for the code, force the indentation to
                 ;; 0 as if there was no statements above.
                 (error 0))))
         ;; If there are no statements above indent a column 0.
         (condition-case nil
-            (seed7-calc-indent
-             :treat-comment-line-as-code
-             (1+ recurse-count))
+            (seed7-calc-indent :treat-comment-line-as-code)
           ;; If no rule was found for the code, force the indentation to
           ;; 0 as if there was no statements above.
           (error 0))))
@@ -6798,13 +6961,25 @@ Skip comment unless DONT-SKIP-COMMENT is non-nil."
 ;;** Seed7 Indentation Calculator Function
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(defun seed7-calc-indent (&optional treat-comment-line-as-code recurse-count)
+(defvar seed7--calc-indent-depth 0
+  "Dynamic recursion depth for `seed7-calc-indent'.
+
+This is call-stack state, used only to prevent runaway recursive
+indentation paths.  It is intentionally not buffer-local.")
+
+(defconst seed7--calc-indent-depth-max 8
+  "Maximum allowed recursive depth for `seed7-calc-indent'.")
+
+(defun seed7-calc-indent (&optional treat-comment-line-as-code)
   "Calculate and return indentation (in columns) of current line of code.
 When TREAT-COMMENT-LINE-AS-CODE is non-nil a comment line is processed as if
   it was a code line, allowing the indentation logic to handle comments.
 The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
   call.  Only one recursion is allowed."
-  (let* ((recurse-count (or recurse-count 0))
+  (let* ((seed7--calc-indent-depth (1+ seed7--calc-indent-depth))
+         ;; Expensive fallback lower bound for the generic block path.
+         ;; Compute lazily only if the cheap cached block bounds are unavailable.
+         (indent-bound nil)
          ;; Eagerly probe the previous call's block boundaries.
          ;; Cost: O(1) — two marker-position comparisons, uses (point)
          ;;              directly; no `seed7-to-indent' overhead.
@@ -6824,22 +6999,22 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
          (early-end-pos   (when cached-bounds
                             (min (point-max) (1+ (cdr cached-bounds)))))
          ;;
-         (indent-step nil) ; will be initialized later only if needed
+         (indent-step nil)          ; will be initialized later only if needed
          (first-word-on-line (seed7--current-line-nth-word 1))
          (indent-column nil)
          (indent-column2 nil)
          (spec-list nil))
+    (when (> seed7--calc-indent-depth seed7--calc-indent-depth-max)
+      (error "seed7-calc-indent: recursion depth exceeded at line %d"
+             (line-number-at-pos)))
     ;; don't indent blank lines
     (unless (and (not first-word-on-line)
                  (seed7-blank-line-p))
       (cond
-       ((> recurse-count 1)
-        (error "Recursion done more than once: implementation logic error!"))
-
        ;; in comment
        ((and (seed7-current-line-start-inside-comment-p)
              (not treat-comment-line-as-code))
-        (setq indent-column (seed7-comment-column recurse-count)))
+        (setq indent-column (seed7-comment-column)))
 
        ;; In an array or set definition, indent 1 level unless the line is
        ;; inside 2 nested parens.  In that case align with the inside of
@@ -6859,7 +7034,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
           (setq indent-column (+ (nth 0 spec-list)
                                  seed7-indent-width))))
 
-       ;; in string
+       ;; -- in string -------------------------
        ((seed7-line-isa-string 0)
         (save-excursion
           (cond
@@ -6886,16 +7061,85 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
             (forward-line -1)
             (search-forward "\"")
             (setq indent-column (1- (current-column))))
+           ;;
+           ;; If the previous non-empty line ends with the Seed7 string-
+           ;; concatenation operator `<&' AND that line itself contains a `"',
+           ;; align the current string's opening `"' to the column of that `"'.
+           ;;
+           ;; Handles multi-line string-concatenation expressions such as:
+           ;;
+           ;;   return "(" <& bitfield.mask radix 2 lpad0 32 <&
+           ;;         ", " <& bitfield.rShift lpad 2 <&     ← aligned to "("
+           ;;         ", " <& bitfield.scale <& ")";
+           ;;
+           ;; When the previous line ends with `<&' but has no `"' (e.g. a
+           ;; non-string expression like `header.fileSize rpad 10 <&'), this
+           ;; case produces nil and the `t' fallback below handles it correctly.
+           ((seed7--set
+             (save-excursion
+               (when (seed7-move-to-line :previous-non-empty)
+                 (let* ((lbeg (line-beginning-position))
+                        (lend (line-end-position)))
+                   (goto-char lend)
+                   (skip-chars-backward " \t" lbeg)
+                   (when (and (>= (- (point) lbeg) 2)
+                              (string= "<&"
+                                       (buffer-substring-no-properties
+                                        (- (point) 2) (point))))
+                     (goto-char lbeg)
+                     (when (search-forward "\"" lend t)
+                       (1- (current-column)))))))
+             indent-column))
+           ;;
+           ;; If the previous non-empty line ends with `&' or `<&' AND that
+           ;; line also contains an assignment operator (`:=', `&:=', etc.),
+           ;; align the current string to the column of the RHS of that
+           ;; assignment — i.e. the first non-space character after the
+           ;; operator on that line.
+           ;;
+           ;; Handles: (bmp.s7i line 888)
+           ;;   stri &:= bytes(rawDataSize + 54, UNSIGNED, LE, 4) &
+           ;;            "\0;" mult 4  &   ← aligns to "bytes(" = column 13
+           ;;
+           ;; This clause fires only when the `<&'+`"' clause above did NOT
+           ;; fire (the previous line either ends with plain `&' rather than
+           ;; `<&', or ends with `<&' but contains no `"').
+           ((seed7--set
+             (save-excursion
+               (when (seed7-move-to-line :previous-non-empty)
+                 (let* ((lbeg (line-beginning-position))
+                        (lend (line-end-position)))
+                   ;; The previous line must end with `&' (covers both plain
+                   ;; `&' and `<&', since both have `&' as the last char).
+                   (goto-char lend)
+                   (skip-chars-backward " \t" lbeg)
+                   (when (and (> (point) lbeg)
+                              (= (char-before (point)) ?&))
+                     ;; Look for an assignment operator anywhere on this line.
+                     (goto-char lbeg)
+                     (when (seed7-re-search-forward
+                            seed7-predef-assignment-operator-regexp lend)
+                       ;; Column of the first non-whitespace char after the
+                       ;; operator — that is where the RHS expression begins.
+                       (skip-chars-forward " \t")
+                       (current-column))))))
+             indent-column))
+           ;;
+           ;; Fallthrough: use the indentation of the nearest preceding
+           ;; non-string line.  Only warn when that heuristic also fails
+           ;; (i.e. when `seed7-indentation-of-previous-non-string-line'
+           ;; returns nil), meaning the indentation is truly unresolvable.
            (t
             (let ((col (seed7-indentation-of-previous-non-string-line)))
-              (when col
-                (setq indent-column col)))
-            (message
-             "At line %d: string line syntax not yet supported! Recurse count=%d Please report."
-             (seed7-current-line-number)
-             recurse-count)))))
+              ;; [ TODO 2026-06-24, by Pierre Rouleau: replace if by when for testing?]
+              (if col
+                  (setq indent-column col)
+                (message
+                 "At line %d: string line syntax not yet supported! Recurse count=%d Please report."
+                 (seed7-current-line-number)
+                 seed7--calc-indent-depth)))))))
 
-       ;; Special rule: if a line starts with a Seed7 assignment operator,
+       ;; -- Special rule: if a line starts with a Seed7 assignment operator,
        ;; consider that line manually indented and keep it where it is.
        ;; This allows a long multi-line statement to be lined up on the
        ;; assignment operator placed on the line after its rvalue for the
@@ -6937,7 +7181,13 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
           (setq indent-step 1))
          (t (setq indent-step 0))))
 
-       ((seed7--set (seed7-line-inside-a-block-cached 0) spec-list)
+       ((seed7--set (seed7-line-inside-a-block-cached
+                     0 nil
+                     (or early-begin-pos
+                         indent-bound
+                         (setq indent-bound
+                               (seed7--indent-search-boundary))))
+                    spec-list)
         ;; Inside a block.  Check if inside any special zones first.
         ;; For all of those extra checks limit the zone to the scope of the
         ;; current block to improve efficiency. Extend the boundary by 1
@@ -6986,15 +7236,24 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                                  (seed7-line-indent-step :previous-non-empty))
                              2)))
        ;;
-       ;;
        ((string= first-word-on-line "until")
         (setq indent-step (1- (or indent-step
                                   (seed7-line-indent-step :previous-non-empty)))))
        ;;
-       ;;
        ((and (string= first-word-on-line "var")
              (seed7-line-starts-with :previous-non-empty "include "))
         (setq indent-step 0))
+
+       ;;
+       ;; Indentation of lines like line 696 of bas7.sd7:
+       ;; 693 const func boolean: isStringExpr (in string: symbol) is
+       ;; 694   return symbol in string_var_name or
+       ;; 695          symbol <> "" and
+       ;; 696         (symbol[length(symbol)] = '$' or symbol[1] = '\"' or symbol[1] in defstr_var and
+       ;; 697          not symbol[length(symbol)] in numeric_var_suffix);
+       ((seed7--set
+         (seed7-line-starts-with-open-paren-after-logic-operator 0)
+         indent-column))
 
        ((seed7-line-starts-with 0 "(")
         ;; for block comment comments or code within parentheses,
@@ -9459,6 +9718,233 @@ current Emacs session without restarting Emacs."
 (seed7-rebuild-abbrev-table 'quietly)
 
 ;; ---------------------------------------------------------------------------
+;;* Seed7 Entity Browser Mode
+;;  =========================
+;;
+;; A special mode that lists all Seed7 elements defined in a Seed7 buffer and
+;; allows moving to anyone by typing RET on its line.
+
+(defun seed7-buffer-entities ()
+  "Return all named entities declared in the current Seed7 buffer.
+
+Each element of the returned list is a list (TYPE NAME LINE-NUMBER) where:
+- TYPE        is a symbol: `function', `procedure', `structure',
+              `enumeration', `array', or `set'.
+- NAME        is the entity name as a string.
+- LINE-NUMBER is the line number (integer ≥ 1) of the declaration.
+
+The list is sorted by LINE-NUMBER in ascending order.
+Only code outside comments and strings is examined
+\(via `seed7-re-search-forward').
+
+This function does not move point (all searches use `save-excursion')."
+  (let ((entities '()))
+    ;; -- Functions and procedures ------------------------------
+    (save-excursion
+      (goto-char (point-min))
+      (while (seed7-re-search-forward seed7-procfunc-regexp)
+        (let ((raw-type (match-string-no-properties
+                         seed7-procfunc-regexp-item-type-group))
+              (name     (match-string-no-properties
+                         seed7-procfunc-regexp-item-name-group)))
+          (when name
+            (push (list (if (string= raw-type "proc") 'procedure 'function)
+                        name
+                        (line-number-at-pos
+                         (match-beginning seed7-procfunc-regexp-item-name-group)))
+                  entities)))))
+    ;; -- Enumerations ------------------------------------------
+    (save-excursion
+      (goto-char (point-min))
+      (while (seed7-re-search-forward seed7-enum-regexp-4imenu)
+        (push (list 'enumeration
+                    (match-string-no-properties 1)
+                    (line-number-at-pos (match-beginning 1)))
+              entities)))
+    ;; -- Structures --------------------------------------------
+    (save-excursion
+      (goto-char (point-min))
+      (while (seed7-re-search-forward seed7-struct-regexp-4imenu)
+        (push (list 'structure
+                    (match-string-no-properties 1)
+                    (line-number-at-pos (match-beginning 1)))
+              entities)))
+    ;; -- Arrays ------------------------------------------------
+    (save-excursion
+      (goto-char (point-min))
+      (while (seed7-re-search-forward seed7--array-definition-name-regexp)
+        (push (list 'array
+                    (match-string-no-properties 1)
+                    (line-number-at-pos (match-beginning 1)))
+              entities)))
+    ;; -- Sets --------------------------------------------------
+    (save-excursion
+      (goto-char (point-min))
+      (while (seed7-re-search-forward seed7--set-definition-name-regexp)
+        (push (list 'set
+                    (match-string-no-properties 1)
+                    (line-number-at-pos (match-beginning 1)))
+              entities)))
+    ;; -- Sort by line number and return-------------------------
+    (sort entities (lambda (a b) (< (nth 2 a) (nth 2 b))))))
+
+
+;;** Seed7 entity browser (tabulated-list-mode)
+;;   ------------------------------------------
+
+(defvar-local sd7-ent--source-buffer nil
+  "The Seed7 source buffer that this entity browser was built from.")
+
+(defvar-local sd7-ent--source-file nil
+  "File path of the Seed7 source buffer; used when the buffer is killed.")
+
+(defvar seed7-entities-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map tabulated-list-mode-map)
+    (define-key map (kbd "RET") #'sd7-ent--visit-entity)
+    (define-key map (kbd "o")   #'sd7-ent--visit-entity-other-window)
+    (define-key map (kbd "g")   #'sd7-ent--refresh)
+    map)
+  "Keymap for `seed7-entities-mode'.
+
+\\{seed7-entities-mode-map}")
+
+(define-derived-mode seed7-entities-mode tabulated-list-mode "Seed7-Entities"
+  "Major mode for browsing named entities declared in a Seed7 buffer.
+
+Each row shows the line number, entity type, and name.
+\\<seed7-entities-mode-map>
+\\[sd7-ent--visit-entity] Go to the declaration in the source buffer.
+\\[sd7-ent--visit-entity-other-window]   Go to the declaration in the other window.
+\\[sd7-ent--refresh]   Re-scan the source buffer and redisplay.
+\\[tabulated-list-sort]   Sort by the column at point.
+
+The entry ID of each row is (SOURCE-BUFFER . LINE-NUMBER), so the browser
+always navigates to the exact line regardless of how the table is sorted."
+  (setq tabulated-list-format
+        (vector
+         (list "Line" 6
+               (lambda (a b)
+                 ;; Sort numerically on the LINE column (column 0).
+                 (< (string-to-number (aref (cadr a) 0))
+                    (string-to-number (aref (cadr b) 0)))))
+         (list "Type" 13 t)
+         (list "Name" 50 t)))
+  (setq tabulated-list-padding 1)
+  (setq tabulated-list-sort-key nil)
+  (tabulated-list-init-header))
+
+;;** Seed7 entity browser helpers
+;;   ----------------------------
+
+(defun sd7-ent--entry-id ()
+  "Return the entry-id of the row at point, or signal an error."
+  (let ((id (tabulated-list-get-id)))
+    (unless id
+      (user-error "No entity at point"))
+    id))
+
+(defun sd7-ent--resolve-source (entry-id)
+  "Return a live buffer for ENTRY-ID = (SOURCE-BUFFER . LINE).
+If the originally recorded buffer is no longer live, try to re-visit
+`sd7-ent--source-file'.  Signals `user-error' if neither is possible."
+  (let* ((src-buf  (car entry-id))
+         (file     sd7-ent--source-file))
+    (cond
+     ;; Original buffer still live.
+     ((buffer-live-p src-buf) src-buf)
+     ;; Buffer killed but we have a file path — re-visit it.
+     ((and file (file-readable-p file))
+      (find-file-noselect file))
+     (t
+      (user-error "Source buffer is no longer available")))))
+
+(defun sd7-ent--goto-line-in-buffer (buf line-no)
+  "Switch to BUF and move point to LINE-NO."
+  (switch-to-buffer buf)
+  (goto-char (point-min))
+  (forward-line (1- line-no))
+  (recenter))
+
+(defun sd7-ent--goto-line-in-buffer-other-window (buf line-no)
+  "Display BUF in the other window and move point to LINE-NO."
+  (switch-to-buffer-other-window buf)
+  (goto-char (point-min))
+  (forward-line (1- line-no))
+  (recenter))
+
+;;** Seed7 entity browser interactive commands
+
+(defun sd7-ent--visit-entity ()
+  "Go to the declaration of the entity on the current line.
+Switches to the source Seed7 buffer and moves point to the declaration line."
+  (interactive)
+  (let* ((id      (sd7-ent--entry-id))
+         (line-no (cdr id))
+         (src-buf (sd7-ent--resolve-source id)))
+    (sd7-ent--goto-line-in-buffer src-buf line-no)))
+
+(defun sd7-ent--visit-entity-other-window ()
+  "Go to the declaration of the entity, displayed in the other window."
+  (interactive)
+  (let* ((id      (sd7-ent--entry-id))
+         (line-no (cdr id))
+         (src-buf (sd7-ent--resolve-source id)))
+    (sd7-ent--goto-line-in-buffer-other-window src-buf line-no)))
+
+(defun sd7-ent--refresh ()
+  "Re-scan the source buffer and redisplay the entity list."
+  (interactive)
+  (let ((src-buf (sd7-ent--resolve-source (cons sd7-ent--source-buffer 1))))
+    (with-current-buffer src-buf
+      (seed7-list-entities))))
+
+;;** Seed7 entity browser helper - public entry point
+;;   ------------------------------------------------
+
+;;;###autoload
+(defun seed7-list-entities ()
+  "Display all named entities in the current Seed7 buffer in a browser window.
+
+Builds or refreshes a `seed7-entities-mode' buffer with one row per entity
+\(functions, procedures, structures, enumerations, arrays, sets).
+
+Keys in the browser:
+  RET   — go to the declaration (replaces current window).
+  o     — go to the declaration in the other window.
+  g     — refresh the browser from the source buffer.
+  S     — sort by the column at point (`tabulated-list-sort').
+
+The browser name is  *Seed7 Entities: BUFFER-NAME*."
+  (interactive)
+  (unless (derived-mode-p 'seed7-mode)
+    (user-error "Current buffer is not in seed7-mode"))
+  (let* ((source-buf  (current-buffer))
+         (source-file (buffer-file-name))
+         (entities    (seed7-buffer-entities))
+         (bname       (format "*Seed7 Entities: %s*" (buffer-name source-buf)))
+         (browser-buf (get-buffer-create bname)))
+    (with-current-buffer browser-buf
+      (seed7-entities-mode)
+      (setq sd7-ent--source-buffer source-buf
+            sd7-ent--source-file   source-file)
+      (setq tabulated-list-entries
+            (mapcar (lambda (e)
+                      (let ((type (nth 0 e))
+                            (name (nth 1 e))
+                            (line (nth 2 e)))
+                        ;; Entry ID is (source-buffer . line-no) so RET can
+                        ;; always navigate even when the table is sorted by
+                        ;; a column other than Line.
+                        (list (cons source-buf line)
+                              (vector (number-to-string line)
+                                      (symbol-name type)
+                                      name))))
+                    entities))
+      (tabulated-list-print :remember-pos))
+    (pop-to-buffer browser-buf)))
+
+;; ---------------------------------------------------------------------------
 ;;* Seed7 Key Map
 ;;  =============
 ;;
@@ -9471,6 +9957,7 @@ current Emacs session without restarting Emacs."
     (define-key map (kbd "C-c =") 'seed7-toggle-menu-sorting)
     (define-key map (kbd "C-c C-a") 'seed7-to-block-backward)
     (define-key map (kbd "C-c C-e") 'seed7-to-block-forward)
+    (define-key map (kbd "C-c C-l") 'seed7-list-entities)
     (define-key map (kbd "C-c C-n") 'seed7-beg-of-next-defun)
     (define-key map (kbd "C-c C-t") 'seed7-to-top-of-block)
     (define-key map "\M-\C-a"       'seed7-beg-of-defun)
@@ -9502,7 +9989,6 @@ current Emacs session without restarting Emacs."
     ["Toggle abbrev-mode"   abbrev-mode]
     ["List abbreviations"   list-abbrevs]
     ["Reload abbreviations table" seed7-rebuild-abbrev-table]
-
     "---"
     ("Align"
      ["Align current section" align-current]
@@ -9562,6 +10048,7 @@ current Emacs session without restarting Emacs."
       ["While"              seed7-insert-while]
       ["Error handler block" seed7-insert-block]
       ["Global block"       seed7-insert-global]))
+    ["List Seed7 Entities" seed7-list-entities]
     ("Mark"
      ["Mark Function/Procedure" seed7-mark-defun ])
     "---"
