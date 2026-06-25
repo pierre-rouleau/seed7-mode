@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-01.el --- ERT tests for Seed7 indentation regressions  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-25 13:30:31 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-25 13:43:30 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -68,8 +68,8 @@
    "const func boolean: isStringExpr (in string: symbol) is\n"
    "  return symbol in string_var_name or\n"
    "         symbol <> \"\" and\n"
-   "        (symbol[length(symbol)] = '$' or symbol[1] = '\\\"' or symbol[1] in defstr_var and\n"
-   "         not symbol[length(symbol)] in numeric_var_suffix);\n")
+   "         (symbol[length(symbol)] = '$' or symbol[1] = '\\\"' or symbol[1] in defstr_var and\n"
+   "          not symbol[length(symbol)] in numeric_var_suffix);\n")
   "Correctly indented bas7-style fixture.")
 
 (defconst seed7-test-indent--bas7-misaligned-code
@@ -111,8 +111,8 @@
     (should (= (seed7-test-indent--line-indentation 1) 0))
     (should (= (seed7-test-indent--line-indentation 2) 2))
     (should (= (seed7-test-indent--line-indentation 3) 9))
-    (should (= (seed7-test-indent--line-indentation 4) 8))
-    (should (= (seed7-test-indent--line-indentation 5) 9))
+    (should (= (seed7-test-indent--line-indentation 4) 9))
+    (should (= (seed7-test-indent--line-indentation 5) 10))
 
     (should (eq (seed7-test-indent--line-first-char 4) ?\())
     (should (string= (buffer-string)
@@ -130,8 +130,8 @@
     (should (= (seed7-test-indent--line-indentation 1) 0))
     (should (= (seed7-test-indent--line-indentation 2) 2))
     (should (= (seed7-test-indent--line-indentation 3) 9))
-    (should (= (seed7-test-indent--line-indentation 4) 8))
-    (should (= (seed7-test-indent--line-indentation 5) 9))
+    (should (= (seed7-test-indent--line-indentation 4) 9))
+    (should (= (seed7-test-indent--line-indentation 5) 10))
 
     (should (eq (seed7-test-indent--line-first-char 4) ?\())
     (should (string= (buffer-string)
