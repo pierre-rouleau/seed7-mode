@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260624.2305
+;; Package-Version: 20260625.0827
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -330,6 +330,8 @@
 ;;       . `seed7-inside-line-indent-p'
 ;;       . `seed7-inside-line-trailing-whitespace-before-line-end-comment-p'
 ;;         . `seed7-inside-line-indent-before-comment-p'
+;;     - Seed7 Indentation search boundary helper
+;;       . `seed7--indent-search-boundary'
 ;;     - Seed7 Indentation Code Character Search Utilities
 ;;       . `seed7-backward-char-pos'
 ;;       . `seed7-forward-char-pos'
@@ -536,7 +538,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-25T03:05:30+0000 W26-4"
+(defconst seed7-mode-version-timestamp "2026-06-25T12:27:54+0000 W26-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3295,8 +3297,11 @@ Negative N: point is on a line that contains a line comment.
 ;;*** Navigation to Outer Block
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(defun seed7--to-top (&optional pos)
+(defun seed7--to-top (&optional pos beg-bound)
   "Move point to beginning of outer block surrounding code at POS or point.
+
+When BEG-BOUND is non-nil, do not search before that position.
+
 Searches backward for the nearest enclosing block-start keyword whose
 column is strictly less than the column at POS.  This is O(nesting depth),
 not O(number-of-keyword-occurrences), and correctly handles both top-level
@@ -3314,7 +3319,7 @@ Seed7 template bodies (in .s7i files)."
       (while (and (not found)
                   (not (bobp))
                   (seed7-re-search-backward
-                   seed7--callable-declaration-start-regexp))
+                   seed7--callable-declaration-start-regexp beg-bound))
         (seed7-to-indent)
         ;; Stop as soon as we find a block-start keyword whose column is
         ;; strictly less than the starting column.  This correctly handles:
@@ -5018,8 +5023,6 @@ Toggles listing them together or separately.
 ;;* Seed7 Code Marking
 ;;  ==================
 
-;; [ TODO 2025-06-21, by Pierre Rouleau: Perhaps this can use
-;; `seed7-to-top-of-block' to handle more blocks?]
 (defun seed7-mark-defun ()
   "Mark the current Seed7 function or procedure.
 Put the mark at the end and point at the beginning.
@@ -5215,6 +5218,31 @@ Return nil otherwise."
       (skip-chars-forward " \t")
       (and (looking-at-p "#")
            (seed7-inside-comment-p)))))
+
+;;*** Seed7 Indentation search boundary helper
+
+(defun seed7--indent-search-boundary (&optional pos)
+  "Return the lower bound to use for indentation look-back.
+
+The boundary is the beginning of the nearest previous code line whose
+indentation is strictly less than the indentation at POS or point.
+
+Blank lines and lines inside strings/comments are ignored.
+Return nil when no such line exists."
+  (save-excursion
+    (when pos
+      (goto-char pos))
+    (seed7-to-indent)
+    (let ((target-col (current-column))
+          bound)
+      (while (and (not bound)
+                  (= (forward-line -1) 0))
+        (seed7-to-indent)
+        (let ((ppss (syntax-ppss)))
+          (unless (or (eolp) (nth 3 ppss) (nth 4 ppss))
+            (when (< (current-column) target-col)
+              (setq bound (line-beginning-position))))))
+      bound)))
 
 
 ;;*** Seed7 Indentation Code Character Search Utilities
@@ -5713,13 +5741,14 @@ Move point."
       (save-excursion (goto-char start-pos)
                       (line-end-position))))
 
-(defun seed7-line-inside-a-block (n &optional dont-skip-comment-start)
+(defun seed7-line-inside-a-block (n &optional dont-skip-comment-start beg-bound)
   "Check if line N is inside a Seed7 block.
 N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
       - 0 for the current line,
       - A negative number for previous lines: -1 previous, -2 line before...
+When BEG-BOUND is non-nil, do not search before that position.
 If nothing found it returns nil.
 If it finds something it returns a list that holds the following information:
 - 0: indent column : indentation column the line N should use,
@@ -5749,7 +5778,7 @@ If it finds something it returns a list that holds the following information:
         (end-of-line)
         (while (and keep-searching
                     (not (bobp)))
-          (when (seed7-re-search-backward seed7-block-line-start-regexp)
+          (when (seed7-re-search-backward seed7-block-line-start-regexp beg-bound)
             ;; get match text, normalize matching hard tabs to spaces.
             (setq match-text (replace-regexp-in-string
                               "[[:blank:]]+$" " "
@@ -5937,7 +5966,7 @@ column) is not exposed."
               end-pos
               (nth 4 seed7--indent-last-block-spec))))))
 
-(defun seed7-line-inside-a-block-cached (n &optional dont-skip-comment-start)
+(defun seed7-line-inside-a-block-cached (n &optional dont-skip-comment-start beg-bound)
   "Cached variant of `seed7-line-inside-a-block' for indentation.
 
 N is: - :previous-non-empty for the previous non-empty line,
@@ -5950,6 +5979,10 @@ When N is 0 and DONT-SKIP-COMMENT-START is nil, the function first
 checks `seed7--cached-block-spec-current-line'; if the cache is still
 valid it returns the cached spec immediately without re-scanning (O(1)
 fast path).
+
+When BEG-BOUND is non-nil, bypass the current cache and delegate
+directly to `seed7-line-inside-a-block'.  This keeps the existing cache
+semantics unchanged for the unbounded case.
 
 On a cache miss the function delegates to `seed7-line-inside-a-block'.
 When N is 0 and a block is found, two caches are updated as side effects:
@@ -5971,19 +6004,23 @@ If a block is found, return a list of 5 elements:
 - 2: block start position (the beginning of the start keyword line),
 - 3: enclosing block end position,
 - 4: indent column of the block start line."
-  (or (and (eq n 0)
-           (not dont-skip-comment-start)
-           (seed7--cached-block-spec-current-line))
-      (let ((spec (seed7-line-inside-a-block n dont-skip-comment-start)))
-        (when (and (eq n 0) spec)
-          (setq seed7--indent-last-block-spec
-                (seed7--cache-block-spec spec))
-          ;; Also update the lightweight bounds cache used for early-bound
-          ;; lookups at the top of `seed7-calc-indent'.
-          (setq seed7--indent-block-bounds
-                (cons (nth 2 seed7--indent-last-block-spec)
-                      (nth 3 seed7--indent-last-block-spec))))
-        spec)))
+  (if beg-bound
+      ;; Bounded search: bypass cache completely.
+      (seed7-line-inside-a-block n dont-skip-comment-start beg-bound)
+    ;; Unbounded search: use the cache if necessary.
+    (or (and (eq n 0)
+             (not dont-skip-comment-start)
+             (seed7--cached-block-spec-current-line))
+        (let ((spec (seed7-line-inside-a-block n dont-skip-comment-start)))
+          (when (and (eq n 0) spec)
+            (setq seed7--indent-last-block-spec
+                  (seed7--cache-block-spec spec))
+            ;; Also update the lightweight bounds cache used for early-bound
+            ;; lookups at the top of `seed7-calc-indent'.
+            (setq seed7--indent-block-bounds
+                  (cons (nth 2 seed7--indent-last-block-spec)
+                        (nth 3 seed7--indent-last-block-spec))))
+          spec))))
 
 ;; ---------------------------------------------------------------------------
 
@@ -6899,6 +6936,8 @@ When TREAT-COMMENT-LINE-AS-CODE is non-nil a comment line is processed as if
 The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
   call.  Only one recursion is allowed."
   (let* ((recurse-count (or recurse-count 0))
+         ;; [:todo 2026-06-25, by Pierre Rouleau: Activate boundary??? it slows indentation!]
+         (indent-bound nil)             ; (seed7--indent-search-boundary)
          ;; Eagerly probe the previous call's block boundaries.
          ;; Cost: O(1) — two marker-position comparisons, uses (point)
          ;;              directly; no `seed7-to-indent' overhead.
@@ -6918,7 +6957,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
          (early-end-pos   (when cached-bounds
                             (min (point-max) (1+ (cdr cached-bounds)))))
          ;;
-         (indent-step nil) ; will be initialized later only if needed
+         (indent-step nil)          ; will be initialized later only if needed
          (first-word-on-line (seed7--current-line-nth-word 1))
          (indent-column nil)
          (indent-column2 nil)
@@ -7100,7 +7139,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
           (setq indent-step 1))
          (t (setq indent-step 0))))
 
-       ((seed7--set (seed7-line-inside-a-block-cached 0) spec-list)
+       ((seed7--set (seed7-line-inside-a-block-cached 0 indent-bound) spec-list)
         ;; Inside a block.  Check if inside any special zones first.
         ;; For all of those extra checks limit the zone to the scope of the
         ;; current block to improve efficiency. Extend the boundary by 1
