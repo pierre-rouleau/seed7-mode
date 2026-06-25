@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260625.0827
+;; Package-Version: 20260625.0929
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -538,7 +538,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-25T12:27:54+0000 W26-4"
+(defconst seed7-mode-version-timestamp "2026-06-25T13:29:52+0000 W26-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6004,23 +6004,31 @@ If a block is found, return a list of 5 elements:
 - 2: block start position (the beginning of the start keyword line),
 - 3: enclosing block end position,
 - 4: indent column of the block start line."
-  (if beg-bound
-      ;; Bounded search: bypass cache completely.
-      (seed7-line-inside-a-block n dont-skip-comment-start beg-bound)
-    ;; Unbounded search: use the cache if necessary.
-    (or (and (eq n 0)
-             (not dont-skip-comment-start)
-             (seed7--cached-block-spec-current-line))
-        (let ((spec (seed7-line-inside-a-block n dont-skip-comment-start)))
-          (when (and (eq n 0) spec)
-            (setq seed7--indent-last-block-spec
-                  (seed7--cache-block-spec spec))
-            ;; Also update the lightweight bounds cache used for early-bound
-            ;; lookups at the top of `seed7-calc-indent'.
-            (setq seed7--indent-block-bounds
-                  (cons (nth 2 seed7--indent-last-block-spec)
-                        (nth 3 seed7--indent-last-block-spec))))
-          spec))))
+  (let ((cached-spec
+         (and (eq n 0)
+              (not dont-skip-comment-start)
+              (seed7--cached-block-spec-current-line))))
+    (cond
+     ;; Fast path: cached spec is still valid for current line, and if a
+     ;; lower bound is supplied, the cached block still starts at or after it.
+     ((and cached-spec
+           (or (not beg-bound)
+               (<= beg-bound (nth 2 cached-spec))))
+      cached-spec)
+     ;;
+     ;; Cache miss or cached block is outside requested lower bound.
+     (t
+      (let ((spec (seed7-line-inside-a-block
+                   n dont-skip-comment-start beg-bound)))
+        (when (and (eq n 0) spec)
+          (setq seed7--indent-last-block-spec
+                (seed7--cache-block-spec spec))
+          ;; Also update the lightweight bounds cache used for early-bound
+          ;; lookups at the top of `seed7-calc-indent'.
+          (setq seed7--indent-block-bounds
+                (cons (nth 2 seed7--indent-last-block-spec)
+                      (nth 3 seed7--indent-last-block-spec))))
+        spec)))))
 
 ;; ---------------------------------------------------------------------------
 
@@ -6936,8 +6944,9 @@ When TREAT-COMMENT-LINE-AS-CODE is non-nil a comment line is processed as if
 The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
   call.  Only one recursion is allowed."
   (let* ((recurse-count (or recurse-count 0))
-         ;; [:todo 2026-06-25, by Pierre Rouleau: Activate boundary??? it slows indentation!]
-         (indent-bound nil)             ; (seed7--indent-search-boundary)
+         ;; Expensive fallback lower bound for the generic block path.
+         ;; Compute lazily only if the cheap cached block bounds are unavailable.
+         (indent-bound nil)
          ;; Eagerly probe the previous call's block boundaries.
          ;; Cost: O(1) — two marker-position comparisons, uses (point)
          ;;              directly; no `seed7-to-indent' overhead.
@@ -7139,7 +7148,13 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
           (setq indent-step 1))
          (t (setq indent-step 0))))
 
-       ((seed7--set (seed7-line-inside-a-block-cached 0 indent-bound) spec-list)
+       ((seed7--set (seed7-line-inside-a-block-cached
+                     0 nil
+                      (or early-begin-pos
+                          indent-bound
+                          (setq indent-bound
+                                (seed7--indent-search-boundary))))
+                    spec-list)
         ;; Inside a block.  Check if inside any special zones first.
         ;; For all of those extra checks limit the zone to the scope of the
         ;; current block to improve efficiency. Extend the boundary by 1
