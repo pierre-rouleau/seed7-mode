@@ -2,7 +2,7 @@
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
 
-;; This file is part of the SEED7 package.
+;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
 
 ;; Copyright (C) 2026  Pierre Rouleau

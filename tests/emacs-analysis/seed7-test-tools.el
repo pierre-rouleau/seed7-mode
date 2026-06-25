@@ -2,12 +2,12 @@
 
 ;; Created   : Monday, July 14 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2025-07-15 09:30:05 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-25 12:04:09 EDT, updated by Pierre Rouleau>
 
-;; This file is part of the SEED7 package.
+;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
 
-;; Copyright (C) 2025  Pierre Rouleau
+;; Copyright (C) 2025, 2026  Pierre Rouleau
 ;;
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
