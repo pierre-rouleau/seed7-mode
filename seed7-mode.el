@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260625.1725
+;; Package-Version: 20260625.1851
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-25T21:25:49+0000 W26-4"
+(defconst seed7-mode-version-timestamp "2026-06-25T22:51:44+0000 W26-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5249,6 +5249,15 @@ This is the original backward line-by-line implementation with no cache."
               (setq bound (line-beginning-position))))))
       bound)))
 
+(defun seed7--indent-search-boundary-valid-p (boundary line-beg)
+  "Return non-nil when BOUNDARY is safe for backward searches from LINE-BEG.
+
+BOUNDARY must be nil or a buffer position strictly before LINE-BEG.
+This prevents passing an invalid lower bound to backward-search helpers."
+  (or (null boundary)
+      (and (integer-or-marker-p boundary)
+           (<= (point-min) boundary)
+           (< boundary line-beg))))
 
 (defun seed7--indent-search-boundary (&optional pos)
   "Return the lower bound to use for indentation look-back.
@@ -5267,6 +5276,7 @@ Return nil when no such line exists."
            (cached seed7--indent-search-boundary-cache)
            (cached-line-beg (plist-get cached :line-beg))
            (cached-target-col (plist-get cached :target-col))
+           (cached-boundary (plist-get cached :boundary))
            (previous-line-beg
             (save-excursion
               (when (= (forward-line -1) 0)
@@ -5278,8 +5288,10 @@ Return nil when no such line exists."
              ((and cached-line-beg
                    cached-target-col
                    (= cached-line-beg line-beg)
-                   (= cached-target-col target-col))
-              (plist-get cached :boundary))
+                   (= cached-target-col target-col)
+                   (seed7--indent-search-boundary-valid-p
+                    cached-boundary line-beg))
+              cached-boundary)
              ;; Sequential region-indentation case: if the previous physical line
              ;; had the same indentation target, the nearest less-indented code
              ;; line is unchanged, so reuse the cached boundary.
@@ -5287,8 +5299,12 @@ Return nil when no such line exists."
                    cached-target-col
                    previous-line-beg
                    (= cached-line-beg previous-line-beg)
-                   (= cached-target-col target-col))
-              (plist-get cached :boundary))
+                   (= cached-target-col target-col)
+                   (seed7--indent-search-boundary-valid-p
+                    cached-boundary previous-line-beg)
+                   (seed7--indent-search-boundary-valid-p
+                    cached-boundary line-beg))
+              cached-boundary)
              (t
               (seed7--indent-search-boundary-uncached target-col line-beg))))
       (setq seed7--indent-search-boundary-cache
@@ -7262,19 +7278,27 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
          (seed7-line-after-func-return-logic-operator-column 0)
          indent-column))
 
-       ((seed7--set (seed7-line-inside-a-block-cached
-                     0 nil
-                     (or early-begin-pos
-                         indent-bound
-                         (setq indent-bound
-                               (seed7--indent-search-boundary))))
-                    spec-list)
+       ((let ((beg-bound
+               (or early-begin-pos
+                   indent-bound
+                   (setq indent-bound
+                         (seed7--indent-search-boundary)))))
+          ;; Be defensive: backward-search helpers require the lower bound
+          ;; to be on or before the search start.  For the block lookup here,
+          ;; a safe bound must be strictly before the current line start.
+          (when (and beg-bound
+                     (not (seed7--indent-search-boundary-valid-p
+                           beg-bound (line-beginning-position))))
+            (setq beg-bound nil))
+          (seed7--set (seed7-line-inside-a-block-cached
+                       0 nil beg-bound)
+                      spec-list))
         ;; Inside a block.  Check if inside any special zones first.
         ;; For all of those extra checks limit the zone to the scope of the
         ;; current block to improve efficiency. Extend the boundary by 1
         ;; character to allow searches to succeed if they match at the edges.
         (let ((begin-pos (max (point-min) (1- (nth 2 spec-list))))
-              (end-pos   (min (point-max) (1+ (nth 3 spec-list)))))
+              (end-pos (min (point-max) (1+ (nth 3 spec-list)))))
           (cond
            ((seed7--set                 ; inside parens pair?
              (seed7-line-inside-parens-pair-column 0 begin-pos end-pos)
