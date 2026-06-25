@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260624.1710
+;; Package-Version: 20260624.2305
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -536,7 +536,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-24T21:10:39+0000 W26-3"
+(defconst seed7-mode-version-timestamp "2026-06-25T03:05:30+0000 W26-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1539,7 +1539,8 @@ one-liners or short `return...;' functions — neither creates a
 
 (defconst seed7--array-definition-start-regexp
   ;; "\\(?:const\\|var\\) +?array[[:blank:]]+?.+?:.+?("
-  "\\(?:const\\|var\\) +array[[:blank:]]+.+:.+("
+  ;; "\\(?:const\\|var\\) +array[[:blank:]]+.+:.+("
+  "\\(?:const\\|var\\) +array[[:blank:]]+[^:\n]+:[^(;\n]*("
   "Regexp matching the start of a Seed7 array definition block header.
 See `seed7--set-definition-start-regexp' for the whitespace convention.")
 
@@ -1566,7 +1567,8 @@ Example matches:
 ;;   ----------------
 
 (defconst seed7--set-definition-start-regexp
-  "\\(?:const\\|var\\) +?set[[:blank:]]+?.+?:.+?{"
+  ;; "\\(?:const\\|var\\) +?set[[:blank:]]+?.+?:.+?{"
+  "\\(?:const\\|var\\) +set[[:blank:]]+[^:\n]+:[^{;\n]*{"
   "Regexp matching the start of a Seed7 set definition block header.
 Matches `const set' or `var set' followed by a type annotation and the
 opening `{'.
