@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-01.el --- ERT tests for Seed7 indentation regressions  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-25 12:26:07 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-25 13:30:31 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -32,8 +32,18 @@
 ;;
 ;;   No rule yet to indent line N
 ;;
-;; The main regression shape comes from `prg/bas7.sd7` around Line 696.
-
+;; The main regression shape comes from `prg/bas7.sd7` around Line 696,
+;; in the following Seed7 bas67.sd7 code, shown with their line numbers:
+;;
+;; 692
+;; 693 const func boolean: isStringExpr (in string: symbol) is
+;; 694   return symbol in string_var_name or
+;; 695          symbol <> "" and
+;; 696         (symbol[length(symbol)] = '$' or symbol[1] = '\"' or symbol[1] in defstr_var and
+;; 697          not symbol[length(symbol)] in numeric_var_suffix);
+;; 698
+;;
+;;
 ;; Regression tests for indentation of a multi-line boolean expression
 ;; like the one in prg/bas7.sd7 where:
 ;; - one continuation line ends with `and'
