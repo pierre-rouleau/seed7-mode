@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260625.1549
+;; Package-Version: 20260625.1725
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-25T19:49:14+0000 W26-4"
+(defconst seed7-mode-version-timestamp "2026-06-25T21:25:49+0000 W26-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5223,6 +5223,33 @@ Return nil otherwise."
 
 ;;*** Seed7 Indentation search boundary helper
 
+(defvar-local seed7--indent-search-boundary-cache nil
+  "Sequential indentation cache for `seed7--indent-search-boundary'.
+
+Used only during one `seed7-indent-line' invocation or one region-indentation
+pass.  Value is a plist with keys:
+- :line-beg    beginning position of the line the cache was computed for,
+- :target-col  indentation column used for the lookup,
+- :boundary    cached boundary position, or nil.")
+
+(defun seed7--indent-search-boundary-uncached (target-col &optional pos)
+  "Return indentation look-back boundary for TARGET-COL at POS or point.
+
+This is the original backward line-by-line implementation with no cache."
+  (save-excursion
+    (when pos
+      (goto-char pos))
+    (let (bound)
+      (while (and (not bound)
+                  (= (forward-line -1) 0))
+        (seed7-to-indent)
+        (let ((ppss (syntax-ppss)))
+          (unless (or (eolp) (nth 3 ppss) (nth 4 ppss))
+            (when (< (current-column) target-col)
+              (setq bound (line-beginning-position))))))
+      bound)))
+
+
 (defun seed7--indent-search-boundary (&optional pos)
   "Return the lower bound to use for indentation look-back.
 
@@ -5235,16 +5262,40 @@ Return nil when no such line exists."
     (when pos
       (goto-char pos))
     (seed7-to-indent)
-    (let ((target-col (current-column))
-          bound)
-      (while (and (not bound)
-                  (= (forward-line -1) 0))
-        (seed7-to-indent)
-        (let ((ppss (syntax-ppss)))
-          (unless (or (eolp) (nth 3 ppss) (nth 4 ppss))
-            (when (< (current-column) target-col)
-              (setq bound (line-beginning-position))))))
-      bound)))
+    (let* ((line-beg (line-beginning-position))
+           (target-col (current-column))
+           (cached seed7--indent-search-boundary-cache)
+           (cached-line-beg (plist-get cached :line-beg))
+           (cached-target-col (plist-get cached :target-col))
+           (previous-line-beg
+            (save-excursion
+              (when (= (forward-line -1) 0)
+                (line-beginning-position))))
+           boundary)
+      (setq boundary
+            (cond
+             ;; Re-entrant call for the same line.
+             ((and cached-line-beg
+                   cached-target-col
+                   (= cached-line-beg line-beg)
+                   (= cached-target-col target-col))
+              (plist-get cached :boundary))
+             ;; Sequential region-indentation case: if the previous physical line
+             ;; had the same indentation target, the nearest less-indented code
+             ;; line is unchanged, so reuse the cached boundary.
+             ((and cached-line-beg
+                   cached-target-col
+                   previous-line-beg
+                   (= cached-line-beg previous-line-beg)
+                   (= cached-target-col target-col))
+              (plist-get cached :boundary))
+             (t
+              (seed7--indent-search-boundary-uncached target-col line-beg))))
+      (setq seed7--indent-search-boundary-cache
+            (list :line-beg line-beg
+                  :target-col target-col
+                  :boundary boundary))
+      boundary)))
 
 
 ;;*** Seed7 Indentation Code Character Search Utilities
@@ -7319,7 +7370,10 @@ then deactivates it (to prevent the area to limit searches)."
         ;; clear both caches; code below repopulates them per line via the
         ;; call to `seed7--indent-one-line' --> `seed7-calc-indent'.
         (seed7--indent-last-block-spec nil)
-        (seed7--indent-block-bounds    nil))
+        (seed7--indent-block-bounds    nil)
+        ;; Cache consecutive `seed7--indent-search-boundary' lookups during one
+        ;; indentation command / region pass.
+        (seed7--indent-search-boundary-cache nil))
     (save-excursion
       (if (use-region-p)
           ;; region active: indent complete region
