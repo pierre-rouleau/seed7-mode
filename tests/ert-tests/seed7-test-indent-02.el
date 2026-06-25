@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-25 16:07:43 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-25 16:15:53 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -249,7 +249,7 @@
 (defconst seed7-test-indent-02--is-return-misaligned
   (concat
    "const func boolean: alwaysTrue is\n"
-   "return TRUE;\n")
+   "  return TRUE;\n")
   "Misaligned `is return' function.")
 
 (ert-deftest seed7-indent/is-return-keeps-correct-layout ()
