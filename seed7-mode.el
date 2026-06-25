@@ -6597,8 +6597,11 @@ of the character after the opening parens."
   "Return indent column for a `(' continuation line after `and' or `or'.
 
 When line N starts with `(' and the previous non-empty line ends with
-the logical operator `and' or `or', return the indentation column of
-that previous non-empty line.  Return nil when the pattern does not apply."
+the logical operator `and' or `or', return the indentation column one
+to the left of the first token on that previous non-empty line.  This
+places the opening `(' one column before the aligned operand column, so
+that code inside the parentheses aligns naturally with the surrounding
+operands.  Return nil when the pattern does not apply."
   (save-excursion
     (when (and (seed7-line-starts-with n "(" dont-skip-comment-start)
                (seed7-move-to-line :previous-non-empty dont-skip-comment-start))
@@ -6610,7 +6613,7 @@ that previous non-empty line.  Return nil when the pattern does not apply."
         (goto-char lbeg)
         (when (re-search-forward
                seed7--line-ends-with-logic-operator-regexp lend t)
-          prev-indent)))))
+          (max 0 (1- prev-indent)))))))
 
 (defun seed7-line-inside-nested-parens-pairs (n nested-depth
                                                 &optional
