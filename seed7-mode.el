@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260625.0929
+;; Package-Version: 20260625.1041
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -538,7 +538,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-25T13:29:52+0000 W26-4"
+(defconst seed7-mode-version-timestamp "2026-06-25T14:41:17+0000 W26-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5778,90 +5778,104 @@ If it finds something it returns a list that holds the following information:
         (end-of-line)
         (while (and keep-searching
                     (not (bobp)))
-          (when (seed7-re-search-backward seed7-block-line-start-regexp beg-bound)
-            ;; get match text, normalize matching hard tabs to spaces.
-            (setq match-text (replace-regexp-in-string
-                              "[[:blank:]]+$" " "
-                              (substring-no-properties (match-string 1))))
-            (setq block-start-pos (point)) ; start point: line start.
-            (skip-chars-forward " \t")
-            (setq block-start-indent-column (current-column))
-            ;; Identify the end position and start position of the currently
-            ;; enclosing block
-            (save-excursion
-              (setq enclosing-block-end-pos (seed7--block-end-pos-for match-text))
-              ;; Identify the beginning of the enclosing top-level block
-              (setq enclosing-block-start-pos
-                    (seed7-to-block-backward nil :dont-push-mark)))
-            (when (<= block-start-pos current-pos enclosing-block-end-pos)
-              ;; It's a real and valid block: 3 cases are possible:
-              (cond
-               ;; Case 1: point is on the start line of a top level block.
-               ((and (seed7--on-lineof block-start-pos current-pos)
-                     (member match-text '("const proc: "
-                                          "const func "
-                                          "const type: ")))
-                ;; In that case the enclosing block start should be the same as
-                ;; the block start.  If it's not the case there's a logic error.
-                (when (eq enclosing-block-start-pos block-start-pos)
-                  ;; When at the line of top-level enclosing block, use the
-                  ;; `seed7-calc-indent' to get the indentation of the line just
-                  ;; above the current line, as if the previous line was a noop
-                  ;; statement.  Simulate the noop statement by temporary
-                  ;; inserting it in the above line.  This way it will be
-                  ;; possible to handle the case where the statement is inside
-                  ;; the first line of another block statement like an if
-                  ;; statement.
-                  ;; Note that calling `seed7-calc-indent' means recursing into
-                  ;; it since it's `seed7-calc-indent' that calls
-                  ;; `seed7-line-inside-a-block'.  But doing it this way we use
-                  ;; all the logic necessary to compute the indentation for this
-                  ;; case.
-                  ;; Allow modification of a read-only buffer and ensure that
-                  ;; the undo history is not modified by the insertion and
-                  ;; removal operations.
-                  (let ((inhibit-read-only t))
-                    (with-silent-modifications
-                      (setq keep-searching nil
-                            result (list
-                                    (save-excursion
-                                      (forward-line 0)
-                                      (let ((noop-start (point))
-                                            (noop-end nil))
-                                        (insert " noop;\n")
-                                        (setq noop-end (point))
-                                        (forward-line -1)
-                                        (unwind-protect
-                                            ;; compute indentation with noop
-                                            (seed7-calc-indent)
-                                          ;; always delete inserted noop
-                                          (delete-region noop-start noop-end))))
-                                    match-text
-                                    enclosing-block-start-pos
-                                    enclosing-block-end-pos
-                                    block-start-indent-column))))))
-               ;;
-               ;; Case 2: point is on an internal block start line.
-               ((seed7--on-lineof block-start-pos current-pos)
-                ;; Look for the previous block and use info from it.
-                (goto-char block-start-pos)
-                (when (seed7-re-search-backward
-                       seed7-block-line-start-regexp)
-                  (setq match-text (replace-regexp-in-string
-                                    "[[:blank:]]+$" " "
-                                    (substring-no-properties (match-string 1))))
-                  (setq block-start-pos (point))
-                  (skip-chars-forward " \t")
-                  (setq block-start-indent-column (current-column))
-                  ;; Identify the end position and start position of the
-                  ;; currently enclosing block
-                  (save-excursion
-                    (setq enclosing-block-end-pos
-                          (seed7--block-end-pos-for match-text))
-                    ;; Identify the beginning of the enclosing top-level block
-                    (setq enclosing-block-start-pos
-                          (seed7-to-block-backward nil :dont-push-mark)))
-                  (when (<= block-start-pos current-pos enclosing-block-end-pos)
+          (if (seed7-re-search-backward seed7-block-line-start-regexp beg-bound)
+              (progn
+                ;; get match text, normalize matching hard tabs to spaces.
+                (setq match-text (replace-regexp-in-string
+                                  "[[:blank:]]+$" " "
+                                  (substring-no-properties (match-string 1))))
+                (setq block-start-pos (point)) ; start point: line start.
+                (skip-chars-forward " \t")
+                (setq block-start-indent-column (current-column))
+                ;; Identify the end position and start position of the currently
+                ;; enclosing block
+                (save-excursion
+                  (setq enclosing-block-end-pos (seed7--block-end-pos-for match-text))
+                  ;; Identify the beginning of the enclosing top-level block
+                  (setq enclosing-block-start-pos
+                        (seed7-to-block-backward nil :dont-push-mark)))
+                (when (<= block-start-pos current-pos enclosing-block-end-pos)
+                  ;; It's a real and valid block: 3 cases are possible:
+                  (cond
+                   ;; Case 1: point is on the start line of a top level block.
+                   ((and (seed7--on-lineof block-start-pos current-pos)
+                         (member match-text '("const proc: "
+                                              "const func "
+                                              "const type: ")))
+                    ;; In that case the enclosing block start should be the same as
+                    ;; the block start.  If it's not the case there's a logic error.
+                    (when (eq enclosing-block-start-pos block-start-pos)
+                      ;; When at the line of top-level enclosing block, use the
+                      ;; `seed7-calc-indent' to get the indentation of the line just
+                      ;; above the current line, as if the previous line was a noop
+                      ;; statement.  Simulate the noop statement by temporary
+                      ;; inserting it in the above line.  This way it will be
+                      ;; possible to handle the case where the statement is inside
+                      ;; the first line of another block statement like an if
+                      ;; statement.
+                      ;; Note that calling `seed7-calc-indent' means recursing into
+                      ;; it since it's `seed7-calc-indent' that calls
+                      ;; `seed7-line-inside-a-block'.  But doing it this way we use
+                      ;; all the logic necessary to compute the indentation for this
+                      ;; case.
+                      ;; Allow modification of a read-only buffer and ensure that
+                      ;; the undo history is not modified by the insertion and
+                      ;; removal operations.
+                      (let ((inhibit-read-only t))
+                        (with-silent-modifications
+                          (setq keep-searching nil
+                                result (list
+                                        (save-excursion
+                                          (forward-line 0)
+                                          (let ((noop-start (point))
+                                                (noop-end nil))
+                                            (insert " noop;\n")
+                                            (setq noop-end (point))
+                                            (forward-line -1)
+                                            (unwind-protect
+                                                ;; compute indentation with noop
+                                                (seed7-calc-indent)
+                                              ;; always delete inserted noop
+                                              (delete-region noop-start noop-end))))
+                                        match-text
+                                        enclosing-block-start-pos
+                                        enclosing-block-end-pos
+                                        block-start-indent-column))))))
+                   ;;
+                   ;; Case 2: point is on an internal block start line.
+                   ((seed7--on-lineof block-start-pos current-pos)
+                    ;; Look for the previous block and use info from it.
+                    (goto-char block-start-pos)
+                    (when (seed7-re-search-backward
+                           seed7-block-line-start-regexp beg-bound)
+                      (setq match-text (replace-regexp-in-string
+                                        "[[:blank:]]+$" " "
+                                        (substring-no-properties (match-string 1))))
+                      (setq block-start-pos (point))
+                      (skip-chars-forward " \t")
+                      (setq block-start-indent-column (current-column))
+                      ;; Identify the end position and start position of the
+                      ;; currently enclosing block
+                      (save-excursion
+                        (setq enclosing-block-end-pos
+                              (seed7--block-end-pos-for match-text))
+                        ;; Identify the beginning of the enclosing top-level block
+                        (setq enclosing-block-start-pos
+                              (seed7-to-block-backward nil :dont-push-mark)))
+                      (when (<= block-start-pos current-pos enclosing-block-end-pos)
+                        (setq keep-searching nil
+                              result (list (+ block-start-indent-column
+                                              (seed7--indent-offset-for
+                                               match-text
+                                               line-n-first-text))
+                                           match-text
+                                           block-start-pos
+                                           enclosing-block-end-pos
+                                           block-start-indent-column)))))
+                   ;;
+                   ;; Case 3: point is on a line that is not on the block start,
+                   ;;         but between the block start and the block end.
+                   (t
                     (setq keep-searching nil
                           result (list (+ block-start-indent-column
                                           (seed7--indent-offset-for
@@ -5871,28 +5885,17 @@ If it finds something it returns a list that holds the following information:
                                        block-start-pos
                                        enclosing-block-end-pos
                                        block-start-indent-column)))))
-               ;;
-               ;; Case 3: point is on a line that is not on the block start,
-               ;;         but between the block start and the block end.
-               (t
-                (setq keep-searching nil
-                      result (list (+ block-start-indent-column
-                                      (seed7--indent-offset-for
-                                       match-text
-                                       line-n-first-text))
-                                   match-text
-                                   block-start-pos
-                                   enclosing-block-end-pos
-                                   block-start-indent-column)))))
-            (when keep-searching
-              ;; Found something that looks like a block, but either not
-              ;; a real block or not the block that holds the line.
-              ;; Need to search back further for a bigger block.  If
-              ;; block-start-pos is not a column 0, then keep searching
-              ;; above for the beginning of a larger block.
-              (if (eq (current-column) 0)
-                  (setq keep-searching nil)
-                (goto-char (1- block-start-pos))))))
+                (when keep-searching
+                  ;; Found something that looks like a block, but either not
+                  ;; a real block or not the block that holds the line.
+                  ;; Need to search back further for a bigger block.  If
+                  ;; block-start-pos is not a column 0, then keep searching
+                  ;; above for the beginning of a larger block.
+                  (if (eq (current-column) 0)
+                      (setq keep-searching nil)
+                    (goto-char (1- block-start-pos)))))
+            ;; No more candidate block start within the allowed range
+            (setq keep-searching nil)))
         result))))
 
 ;; --
@@ -6832,7 +6835,7 @@ cycles: word → symbol → line → [block …] → defun."
 ;;** Seed7 Indentation Comment Checking Function
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(defun seed7-comment-column (recurse-count)
+(defun seed7-comment-column ()
   "Return the column number for comment start or continuation.
 The RECURSE-COUNT argument should be 0 on first call, incremented by 1 on each
 recursive call."
@@ -6863,17 +6866,13 @@ recursive call."
               ;; `seed7-calc-indent' to get the indentation.  Only 1 level of
               ;; recursion should be necessary (and allowed).
               (condition-case nil
-                  (seed7-calc-indent
-                   :treat-comment-line-as-code
-                   (1+ recurse-count))
+                  (seed7-calc-indent :treat-comment-line-as-code)
                 ;; If no rule was found for the code, force the indentation to
                 ;; 0 as if there was no statements above.
                 (error 0))))
         ;; If there are no statements above indent a column 0.
         (condition-case nil
-            (seed7-calc-indent
-             :treat-comment-line-as-code
-             (1+ recurse-count))
+            (seed7-calc-indent :treat-comment-line-as-code)
           ;; If no rule was found for the code, force the indentation to
           ;; 0 as if there was no statements above.
           (error 0))))
@@ -6937,13 +6936,22 @@ Skip comment unless DONT-SKIP-COMMENT is non-nil."
 ;;** Seed7 Indentation Calculator Function
 ;;   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(defun seed7-calc-indent (&optional treat-comment-line-as-code recurse-count)
+(defvar seed7--calc-indent-depth 0
+  "Dynamic recursion depth for `seed7-calc-indent'.
+
+This is call-stack state, used only to prevent runaway recursive
+indentation paths.  It is intentionally not buffer-local.")
+
+(defconst seed7--calc-indent-depth-max 8
+  "Maximum allowed recursive depth for `seed7-calc-indent'.")
+
+(defun seed7-calc-indent (&optional treat-comment-line-as-code)
   "Calculate and return indentation (in columns) of current line of code.
 When TREAT-COMMENT-LINE-AS-CODE is non-nil a comment line is processed as if
   it was a code line, allowing the indentation logic to handle comments.
 The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
   call.  Only one recursion is allowed."
-  (let* ((recurse-count (or recurse-count 0))
+  (let* ((seed7--calc-indent-depth (1+ seed7--calc-indent-depth))
          ;; Expensive fallback lower bound for the generic block path.
          ;; Compute lazily only if the cheap cached block bounds are unavailable.
          (indent-bound nil)
@@ -6971,17 +6979,17 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
          (indent-column nil)
          (indent-column2 nil)
          (spec-list nil))
+    (when (> seed7--calc-indent-depth seed7--calc-indent-depth-max)
+      (error "seed7-calc-indent: recursion depth exceeded at line %d"
+             (line-number-at-pos)))
     ;; don't indent blank lines
     (unless (and (not first-word-on-line)
                  (seed7-blank-line-p))
       (cond
-       ((> recurse-count 1)
-        (error "Recursion done more than once: implementation logic error!"))
-
        ;; in comment
        ((and (seed7-current-line-start-inside-comment-p)
              (not treat-comment-line-as-code))
-        (setq indent-column (seed7-comment-column recurse-count)))
+        (setq indent-column (seed7-comment-column)))
 
        ;; In an array or set definition, indent 1 level unless the line is
        ;; inside 2 nested parens.  In that case align with the inside of
@@ -7104,7 +7112,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                 (message
                  "At line %d: string line syntax not yet supported! Recurse count=%d Please report."
                  (seed7-current-line-number)
-                 recurse-count)))))))
+                 seed7--calc-indent-depth)))))))
 
        ;; -- Special rule: if a line starts with a Seed7 assignment operator,
        ;; consider that line manually indented and keep it where it is.
@@ -7150,10 +7158,10 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
 
        ((seed7--set (seed7-line-inside-a-block-cached
                      0 nil
-                      (or early-begin-pos
-                          indent-bound
-                          (setq indent-bound
-                                (seed7--indent-search-boundary))))
+                     (or early-begin-pos
+                         indent-bound
+                         (setq indent-bound
+                               (seed7--indent-search-boundary))))
                     spec-list)
         ;; Inside a block.  Check if inside any special zones first.
         ;; For all of those extra checks limit the zone to the scope of the
