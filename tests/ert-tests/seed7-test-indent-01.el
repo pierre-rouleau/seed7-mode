@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-01.el --- ERT tests for Seed7 indentation regressions  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-25 15:36:04 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-25 22:55:18 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -136,6 +136,66 @@
     (should (eq (seed7-test-indent--line-first-char 4) ?\())
     (should (string= (buffer-string)
                      seed7-test-indent--bas7-correct-code))))
+
+
+;; ---------------------------------------------------------------------------
+;; Testing the bigfile.sd7 pattern
+
+(defconst seed7-test-indent-02--case-when-searchdir-correct
+  (concat
+   "for fileName range dirElements do\n"
+   "  if dirPath = \"/\" then\n"
+   "    filePath := \"/\" & fileName;\n"
+   "  else\n"
+   "    filePath := dirPath & \"/\" & fileName;\n"
+   "  end if;\n"
+   "  case fileTypeSL(filePath) of\n"
+   "    when {FILE_REGULAR}:\n"
+   "      fileSize := bigFileSize(filePath);\n"
+   "      dirSize +:= fileSize;\n"
+   "      fileSizeMap @:= [filePath] fileSize;\n"
+   "    when {FILE_DIR}:\n"
+   "      dirSize +:= searchDir(filePath, fileSizeMap, dirSizeMap);\n"
+   "    when {FILE_SYMLINK}:\n"
+   "      noop; # Ignore symbolic link.\n"
+   "  end case;\n"
+   "end for;\n"))
+
+(defconst seed7-test-indent-02--case-when-searchdir-misaligned
+  (concat
+   "for fileName range dirElements do\n"
+   "  if dirPath = \"/\" then\n"
+   "    filePath := \"/\" & fileName;\n"
+   "  else\n"
+   "    filePath := dirPath & \"/\" & fileName;\n"
+   "  end if;\n"
+   "  case fileTypeSL(filePath) of\n"
+   "    when {FILE_REGULAR}:\n"
+   "    fileSize := bigFileSize(filePath);\n"
+   "    dirSize +:= fileSize;\n"
+   "    fileSizeMap @:= [filePath] fileSize;\n"
+   "    when {FILE_DIR}:\n"
+   "    dirSize +:= searchDir(filePath, fileSizeMap, dirSizeMap);\n"
+   "    when {FILE_SYMLINK}:\n"
+   "    noop; # Ignore symbolic link.\n"
+   "  end case;\n"
+   "end for;\n"))
+
+(ert-deftest seed7-indent/case-when-indent-region-matches-fresh-line-indentation ()
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--case-when-searchdir-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (let ((region-result (buffer-string)))
+      (erase-buffer)
+      (insert seed7-test-indent-02--case-when-searchdir-correct)
+      (seed7-mode)
+      (goto-char (point-min))
+      (while (not (eobp))
+        (seed7-indent-line)
+        (forward-line 1))
+      (should (string= region-result (buffer-string))))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-01)
