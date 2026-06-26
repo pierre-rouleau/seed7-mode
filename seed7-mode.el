@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260625.1851
+;; Package-Version: 20260625.2209
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -540,7 +540,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-25T22:51:44+0000 W26-4"
+(defconst seed7-mode-version-timestamp "2026-06-26T02:09:26+0000 W26-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2977,14 +2977,19 @@ Move point."
           (line-number-at-pos (point))))
       (while (and keep-searching
                   (not (bobp)))
-        (if (re-search-backward regexp bound :noerror)
-            (unless (or (seed7-inside-comment-p)
-                        (seed7-inside-string-p))
-              ;; Found in code!
-              (setq found-pos (point))
-              (setq keep-searching nil))
-          ;; Not found. stop.
-          (setq keep-searching nil))))
+        ;; Defensive clamp: Emacs signals
+        ;; \"Invalid search bound (wrong side of point)\"
+        ;; when a backward search receives a BOUND after point.
+        ;; Recompute this each loop iteration because point moves.
+        (let ((effective-bound (and bound (min bound (point)))))
+          (if (re-search-backward regexp effective-bound :noerror)
+              (unless (or (seed7-inside-comment-p)
+                          (seed7-inside-string-p))
+                ;; Found in code!
+                (setq found-pos (point))
+                (setq keep-searching nil))
+            ;; Not found. stop.
+            (setq keep-searching nil)))))
     found-pos))
 
 (defun seed7-re-search-backward-closest (regexps &optional get-end-pos)
