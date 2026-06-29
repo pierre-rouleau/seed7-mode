@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260629.1554
+;; Package-Version: 20260629.1602
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -542,7 +542,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-29T19:54:51+0000 W27-1"
+(defconst seed7-mode-version-timestamp "2026-06-29T20:02:33+0000 W27-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6103,7 +6103,7 @@ If a block is found, return a list of 5 elements:
            ;; Fast path: if current-line cache is valid: use it
            (seed7--cached-block-spec-current-line))
       ;;
-      ;; Cache miss or cached block is outside requested lower bound.
+      ;; Cache miss
       (let ((spec (seed7-line-inside-a-block
                    n dont-skip-comment-start beg-bound)))
         (when (and (eq n 0) spec)
