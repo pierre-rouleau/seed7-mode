@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260629.1527
+;; Package-Version: 20260629.1554
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -542,7 +542,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-29T19:27:22+0000 W27-1"
+(defconst seed7-mode-version-timestamp "2026-06-29T19:54:51+0000 W27-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6097,21 +6097,13 @@ If a block is found, return a list of 5 elements:
 - 2: block start position (the beginning of the start keyword line),
 - 3: enclosing block end position,
 - 4: indent column of the block start line."
-  (let ((cached-spec
-         (and (eq n 0)
-              (not dont-skip-comment-start)
-              (not beg-bound)
-              (seed7--cached-block-spec-current-line))))
-    (cond
-     ;; Fast path: cached spec is still valid for current line, and if a
-     ;; lower bound is supplied, the cached block still starts at or after it.
-     ((and cached-spec
-           (or (not beg-bound)
-               (<= beg-bound (nth 2 cached-spec))))
-      cached-spec)
-     ;;
-     ;; Cache miss or cached block is outside requested lower bound.
-     (t
+  (or (and (eq n 0)
+           (not dont-skip-comment-start)
+           (not beg-bound)
+           ;; Fast path: if current-line cache is valid: use it
+           (seed7--cached-block-spec-current-line))
+      ;;
+      ;; Cache miss or cached block is outside requested lower bound.
       (let ((spec (seed7-line-inside-a-block
                    n dont-skip-comment-start beg-bound)))
         (when (and (eq n 0) spec)
@@ -6122,7 +6114,7 @@ If a block is found, return a list of 5 elements:
           (setq seed7--indent-block-bounds
                 (cons (nth 2 seed7--indent-last-block-spec)
                       (nth 3 seed7--indent-last-block-spec))))
-        spec)))))
+        spec)))
 
 ;; ---------------------------------------------------------------------------
 
