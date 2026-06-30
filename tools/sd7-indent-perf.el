@@ -2,7 +2,7 @@
 
 ;; Created   : Tuesday, June 24 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-25 12:06:59 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-06-30 00:00:00 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -50,6 +50,22 @@
 ;; this PR.  This benchmark is therefore the correct tool for measuring the
 ;; impact of changes to indentation-path regexps.
 ;;
+;; Emacs Profiler Integration
+;; --------------------------
+;;
+;; When profiling is requested, the built-in Emacs sampling profiler
+;; (`profiler' package) is activated around the `indent-region' calls so
+;; that CPU hot-spots in seed7-mode indentation logic are identified.
+;;
+;; Profiling can cover the whole run (all files) or be limited to only the
+;; first N files (useful when the full corpus is too large and you only want
+;; to sample a representative subset).
+;;
+;; The profiler report is written as plain text to:
+;;   REPORT_DIR/seed7mode-indent-perf-ID-profile.txt
+;;
+;; and a summary is appended to the RST report as well.
+;;
 ;; Usage
 ;; -----
 ;;
@@ -59,26 +75,44 @@
 ;;      M-x sd7-indent-perf-run
 ;;
 ;;    Prompts for INPUT-DIR, OUTPUT-DIR, REPORT-DIR, and ID.
+;;    Answer the profiling question to enable CPU profiling.
 ;;
-;; 2. Batch:
+;; 2. Interactive — profiling only (shorter run over first N files):
+;;
+;;      M-x sd7-indent-perf-run-with-profile
+;;
+;; 3. Batch (no profiling):
 ;;
 ;;      emacs -Q --batch --load tools/sd7-indent-perf.el \
 ;;            -- INPUT_DIR OUTPUT_DIR REPORT_DIR ID
 ;;
-;; 3. Makefile:
+;; 4. Batch with profiling (all files):
+;;
+;;      emacs -Q --batch --load tools/sd7-indent-perf.el \
+;;            -- INPUT_DIR OUTPUT_DIR REPORT_DIR ID --profile
+;;
+;; 5. Batch with profiling (first N files only):
+;;
+;;      emacs -Q --batch --load tools/sd7-indent-perf.el \
+;;            -- INPUT_DIR OUTPUT_DIR REPORT_DIR ID --profile N
+;;
+;; 6. Makefile:
 ;;
 ;;      $(EMACS) -Q --batch --load tools/sd7-indent-perf.el \
-;;               -- $(INPUT_DIR) $(OUTPUT_DIR) $(REPORT_DIR) $(ID)
+;;               -- $(INPUT_DIR) $(OUTPUT_DIR) $(REPORT_DIR) $(ID) --profile
 ;;
 ;; Arguments:
 ;;   INPUT_DIR  : root of the input directory tree (read-only)
 ;;   OUTPUT_DIR : root of the output directory tree (created/overwritten)
 ;;   REPORT_DIR : directory where the RST report is written (created if absent)
 ;;   ID         : free-form report identifier (e.g. "01", "before-simplify")
+;;   --profile  : optional flag; activates the Emacs CPU profiler
+;;   N          : optional integer after --profile; limit profiling to first N files
 ;;
 ;; Output:
 ;;   OUTPUT_DIR/  — mirrored tree with re-indented .sd7 / .s7i files
 ;;   REPORT_DIR/seed7mode-indent-perf-ID.rst
+;;   REPORT_DIR/seed7mode-indent-perf-ID-profile.txt  (only when --profile)
 
 ;;; --------------------------------------------------------------------------
 ;;; Load-path bootstrap
@@ -98,6 +132,7 @@
 
 (require 'seed7-mode)
 (require 'cl-lib)
+(require 'profiler)
 
 ;;; --------------------------------------------------------------------------
 ;;; Repository root
@@ -132,6 +167,107 @@
 
 (defvar sd7-indent-perf--last-id "01"
   "Last report ID used.  Offered as default in `sd7-indent-perf-run'.")
+
+;;; --------------------------------------------------------------------------
+;;; Profiler support
+
+(defvar sd7-indent-perf--profile nil
+  "When non-nil, activate the Emacs CPU profiler around `indent-region' calls.
+Set to t to profile all files, or to a positive integer to profile only the
+first N files in the corpus.  After the run the profiler report is written to
+REPORT-DIR/seed7mode-indent-perf-ID-profile.txt and a summary is included in
+the RST report.")
+
+(defun sd7-indent-perf--profile-active-p (file-index)
+  "Return non-nil if profiling should be active for FILE-INDEX (1-based)."
+  (and sd7-indent-perf--profile
+       (or (eq sd7-indent-perf--profile t)
+           (and (integerp sd7-indent-perf--profile)
+                (<= file-index sd7-indent-perf--profile)))))
+
+(defun sd7-indent-perf--profile-limit-string ()
+  "Return a human-readable string describing the profiling scope."
+  (cond
+   ((null sd7-indent-perf--profile) "disabled")
+   ((eq sd7-indent-perf--profile t) "all files")
+   ((integerp sd7-indent-perf--profile)
+    (format "first %d file(s)" sd7-indent-perf--profile))
+   (t "unknown")))
+
+(defun sd7-indent-perf--profile-report-text ()
+  "Return the Emacs CPU profiler results as a plain-text string.
+Uses `profiler-cpu-log' and `profiler-calltree-build' to build a call tree,
+then `profiler-calltree-walk' to collect leaf-node (self-time) sample counts
+per function.  Leaf nodes represent functions where CPU time was actually
+spent (as opposed to intermediate callers), making them the best candidates
+for optimisation.  The result is a flat table sorted by descending sample
+count.  Works in both interactive and batch mode."
+  (let ((log (profiler-cpu-log)))
+    (if (null log)
+        "(no profiler CPU data — was profiler-start called?)\n"
+      ;; Build a descending call tree (roots = top-level callers, leaves =
+      ;; innermost callees where time is actually spent).
+      (let ((tree    (profiler-calltree-build log 'descending))
+            (entries '()))
+        (profiler-calltree-walk
+         tree
+         (lambda (node)
+           (when (profiler-calltree-leaf-p node)
+             (push (cons (profiler-calltree-count node)
+                         (profiler-calltree-name  node))
+                   entries))))
+        (setq entries (sort entries (lambda (a b) (> (car a) (car b)))))
+        (let ((total (apply #'+ (mapcar #'car entries))))
+          (with-temp-buffer
+            (insert (format "%-8s  %6s  %s\n" "Samples" "%" "Function"))
+            (insert (make-string 72 ?-))
+            (insert "\n")
+            (dolist (e entries)
+              (insert (format "%-8d  %5.1f%%  %s\n"
+                              (car e)
+                              (if (> total 0)
+                                  (* 100.0 (/ (float (car e)) total))
+                                0.0)
+                              (cdr e))))
+            (buffer-string)))))))
+
+(defun sd7-indent-perf--write-profile-report (report-dir id)
+  "Write the Emacs profiler CPU report to REPORT-DIR/seed7mode-indent-perf-ID-profile.txt.
+Returns the path of the written file, or nil if profiler data is unavailable."
+  (let ((profile-file (expand-file-name
+                       (format "seed7mode-indent-perf-%s-profile.txt" id)
+                       report-dir)))
+    (condition-case err
+        (progn
+          (make-directory report-dir t)
+          (with-temp-file profile-file
+            (insert "Seed7 Mode — Indentation Hot-Spot Profile\n")
+            (insert (make-string 60 ?=))
+            (insert "\n\n")
+            (insert (format "seed7-mode version : %s\n" seed7-mode-version-timestamp))
+            (insert (format "Generated on       : %s\n"
+                            (format-time-string "%Y-%m-%dT%H:%M:%S%z")))
+            (insert (format "Profiling scope    : %s\n\n"
+                            (sd7-indent-perf--profile-limit-string)))
+            (insert "CPU Hot-Spots (sampled during indent-region)\n")
+            (insert "---------------------------------------------\n\n")
+            (insert (sd7-indent-perf--profile-report-text))
+            (insert "\n")
+            (insert "Notes\n")
+            (insert "-----\n\n")
+            (insert "Each row is a leaf call-tree node from the Emacs sampling profiler.\n")
+            (insert "\"Samples\" is the raw sample count; \"%\" is the fraction of total\n")
+            (insert "CPU samples attributed to that function.  Functions near the top\n")
+            (insert "are the hottest spots in the indentation path and are the best\n")
+            (insert "candidates for optimisation.\n\n")
+            (insert "To get an interactive call-tree, run with profiling from a live\n")
+            (insert "Emacs session via `M-x sd7-indent-perf-run-with-profile' and then\n")
+            (insert "inspect the result with `M-x profiler-report'.\n"))
+          profile-file)
+      (error
+       (sd7-indent-perf--message "WARNING: could not write profile report: %s"
+                                 (error-message-string err))
+       nil))))
 
 ;;; --------------------------------------------------------------------------
 ;;; Warning capture
@@ -224,30 +360,42 @@ and sd7-nav-index.el."
 ;;; --------------------------------------------------------------------------
 ;;; Per-file processing
 
-(defun sd7-indent-perf--process-file (input-file input-dir output-dir)
+(defun sd7-indent-perf--process-file (input-file input-dir output-dir
+                                                  &optional file-index)
   "Re-indent INPUT-FILE with seed7-mode and write result to the output tree.
 
 The original INPUT-FILE is never modified.  The re-indented content is
 written to OUTPUT-DIR/<relative-path-from-INPUT-DIR> **immediately** after
 indentation completes, before any subsequent file is processed.
 
+FILE-INDEX (1-based integer) is used to decide whether the Emacs CPU profiler
+should be active for this file.  When `sd7-indent-perf--profile' is non-nil
+and FILE-INDEX falls within the configured profiling scope, `profiler-start'
+is called before `indent-region' and `profiler-stop' is called after.  The
+profiler accumulates data across all profiled files; call
+`sd7-indent-perf--write-profile-report' once after the full run to retrieve
+the combined results.
+
 Returns a plist:
   :file        abbreviated file name (relative to INPUT-DIR)
   :lines       line count of the file
   :file-start  wall-clock time (float) when indentation started
   :indent-time elapsed time in seconds for `indent-region'
+  :profiled    t if the Emacs profiler was active for this file, else nil
   :warnings    list of captured indentation-warning strings (may be nil)
   :error       error message string if processing failed, or nil"
   (let* ((rel        (file-relative-name input-file input-dir))
          (out-file   (sd7-indent-perf--output-path input-file input-dir output-dir))
          (out-parent (file-name-directory out-file))
+         (profile-this (sd7-indent-perf--profile-active-p (or file-index 0)))
          line-count
          indent-time
          file-start
          warnings
          err-msg)
     ;; Announce the start of this file with a wall-clock timestamp.
-    (sd7-indent-perf--message "  indenting %s …" rel)
+    (sd7-indent-perf--message "  indenting %s …%s" rel
+                              (if profile-this " [profiling]" ""))
     (condition-case err
         (progn
           ;; Install warning capture BEFORE with-temp-buffer so that
@@ -264,14 +412,22 @@ Returns a plist:
                 (setq line-count (line-number-at-pos (point-max)))
                 (let ((t0 (current-time)))
                   (setq file-start (float-time t0))
+                  ;; Start the CPU profiler for this file if requested.
+                  (when profile-this
+                    (profiler-start 'cpu))
                   (indent-region (point-min) (point-max))
+                  ;; Stop the profiler immediately after indent-region returns.
+                  (when profile-this
+                    (profiler-stop))
                   (setq indent-time
                         (float-time (time-subtract (current-time) t0))))
                 (make-directory out-parent t)
                 (let ((coding-system-for-write 'undecided))
                   (write-region (point-min) (point-max) out-file nil :silent)))
-            ;; Always remove the advice.
+            ;; Always remove the advice; stop profiler if still running.
             (advice-remove 'message #'sd7-indent-perf--capture-advice)
+            (when (and profile-this (profiler-running-p))
+              (profiler-stop))
             (setq warnings (nreverse sd7-indent-perf--current-warnings))))
       (error
        (setq err-msg (format "%s" (cadr err)))))
@@ -290,6 +446,7 @@ Returns a plist:
           :lines       (or line-count 0)
           :file-start  (or file-start 0.0)
           :indent-time (or indent-time 0.0)
+          :profiled    profile-this
           :warnings    warnings
           :error       err-msg)))
 
@@ -309,10 +466,13 @@ Returns a plist:
 
 (defun sd7-indent-perf--write-report (results input-dir output-dir
                                                report-dir id
-                                               total-elapsed)
+                                               total-elapsed
+                                               &optional profile-file)
   "Write the RST indentation benchmark report.
 
 RESULTS is a list of plists as returned by `sd7-indent-perf--process-file'.
+PROFILE-FILE, if non-nil, is the path to the written CPU profile text file;
+its path is referenced in the RST report.
 Returns the path of the written report file."
   (let* ((report-file (expand-file-name
                        (format "seed7mode-indent-perf-%s.rst" id)
@@ -323,6 +483,7 @@ Returns the path of the written report file."
          (times       (mapcar (lambda (r) (plist-get r :indent-time)) ok-results))
          (n           (length results))
          (n-ok        (length ok-results))
+         (n-profiled  (cl-count-if (lambda (r) (plist-get r :profiled)) results))
          (avg         (if (> n-ok 0) (/ (apply #'+ times) (float n-ok)) 0.0))
          (mn          (if (> n-ok 0) (apply #'min times) 0.0))
          (mx          (if (> n-ok 0) (apply #'max times) 0.0))
@@ -350,8 +511,17 @@ Returns the path of the written report file."
       (when errors
         (insert (format ":Files with errors: %d\n" (length errors))))
       (insert (format ":Total indent time: %.3f s\n" total-time))
-      (insert (format ":Wall-clock time   : %s\n\n"
+      (insert (format ":Wall-clock time   : %s\n"
                       (sd7-indent-perf--format-duration total-elapsed)))
+      (if sd7-indent-perf--profile
+          (progn
+            (insert (format ":Profiling scope   : %s (%d file(s) profiled)\n"
+                            (sd7-indent-perf--profile-limit-string)
+                            n-profiled))
+            (when profile-file
+              (insert (format ":CPU profile report: %s\n" profile-file))))
+        (insert ":Profiling         : disabled\n"))
+      (insert "\n")
       ;; Correctness note
       (insert "Correctness Check\n")
       (insert "=================\n\n")
@@ -468,6 +638,10 @@ Returns the absolute path of the written report file."
   (sd7-indent-perf--message "Report dir: %s" report-dir)
   (sd7-indent-perf--message "Report ID : %s" id)
 
+  (when sd7-indent-perf--profile
+    (sd7-indent-perf--message "Profiling: %s"
+                              (sd7-indent-perf--profile-limit-string)))
+
   (let* ((files       (sd7-indent-perf--seed7-files input-dir))
          (total-files (length files))
          (_ (sd7-indent-perf--message "Files found: %d" total-files))
@@ -482,53 +656,117 @@ Returns the absolute path of the written report file."
        "[%d/%d]  started %s"
        n total-files
        (format-time-string "%H:%M:%S"))
-      (push (sd7-indent-perf--process-file f input-dir output-dir)
+      (push (sd7-indent-perf--process-file f input-dir output-dir n)
             results))
 
     (let* ((total-elapsed (- (float-time) total-start))
            (results-fwd   (nreverse results))
+           ;; Write the CPU profile report (if profiling was requested).
+           (profile-file  (when sd7-indent-perf--profile
+                            (sd7-indent-perf--message
+                             "Writing CPU profile report…")
+                            (sd7-indent-perf--write-profile-report
+                             report-dir id)))
            (report        (sd7-indent-perf--write-report
                            results-fwd input-dir output-dir
-                           report-dir id total-elapsed)))
+                           report-dir id total-elapsed
+                           profile-file)))
       (sd7-indent-perf--message
        "Done.  Wall clock: %s"
        (sd7-indent-perf--format-duration total-elapsed))
       (sd7-indent-perf--message "Report: %s" report)
+      (when profile-file
+        (sd7-indent-perf--message "CPU profile: %s" profile-file))
       report)))
 
 ;;; --------------------------------------------------------------------------
 ;;; Interactive entry point
 
 ;;;###autoload
-(defun sd7-indent-perf-run (input-dir output-dir report-dir id)
+(defun sd7-indent-perf-run (input-dir output-dir report-dir id &optional profile)
   "Interactively run the Seed7 indentation benchmark.
 
-Prompts for INPUT-DIR, OUTPUT-DIR, REPORT-DIR, and ID.
-Previous values are offered as defaults and remembered within the session.
+Prompts for INPUT-DIR, OUTPUT-DIR, REPORT-DIR, ID, and whether to enable CPU
+profiling.  Previous values are offered as defaults and remembered within the
+session.
 
 OUTPUT-DIR will mirror INPUT-DIR with re-indented file content; it is
 created if absent.  The original files in INPUT-DIR are never modified.
 
-The RST report is written to REPORT-DIR/seed7mode-indent-perf-ID.rst."
+The RST report is written to REPORT-DIR/seed7mode-indent-perf-ID.rst.
+When PROFILE is non-nil the Emacs CPU profiler is active during `indent-region'
+and the report is also written to REPORT-DIR/seed7mode-indent-perf-ID-profile.txt."
   (interactive
-   (list
-    (read-directory-name "Input directory (Seed7 source tree): "
-                         sd7-indent-perf--last-input-dir)
-    (read-directory-name "Output directory (re-indented tree): "
-                         sd7-indent-perf--last-output-dir)
-    (read-directory-name "Report directory: "
-                         sd7-indent-perf--last-report-dir)
-    (read-string (format "Report ID (default %S): "
-                         sd7-indent-perf--last-id)
-                 nil nil sd7-indent-perf--last-id)))
+   (let* ((in-dir  (read-directory-name "Input directory (Seed7 source tree): "
+                                        sd7-indent-perf--last-input-dir))
+          (out-dir (read-directory-name "Output directory (re-indented tree): "
+                                        sd7-indent-perf--last-output-dir))
+          (rep-dir (read-directory-name "Report directory: "
+                                        sd7-indent-perf--last-report-dir))
+          (rep-id  (read-string (format "Report ID (default %S): "
+                                        sd7-indent-perf--last-id)
+                                nil nil sd7-indent-perf--last-id))
+          (prof-ans (read-string
+                     "Enable CPU profiler? [no / yes / N (first N files)]: "
+                     "no"))
+          (prof-val (cond
+                     ((member prof-ans '("no" "n" ""))     nil)
+                     ((member prof-ans '("yes" "y" "all")) t)
+                     ((string-match-p "\\`[0-9]+\\'" prof-ans)
+                      (string-to-number prof-ans))
+                     (t nil))))
+     (list in-dir out-dir rep-dir rep-id prof-val)))
   (setq sd7-indent-perf--last-input-dir  (directory-file-name
                                           (expand-file-name input-dir))
         sd7-indent-perf--last-output-dir (directory-file-name
                                           (expand-file-name output-dir))
         sd7-indent-perf--last-report-dir (directory-file-name
                                           (expand-file-name report-dir))
-        sd7-indent-perf--last-id         id)
+        sd7-indent-perf--last-id         id
+        sd7-indent-perf--profile         profile)
   ;; Show the live progress buffer in another window before starting.
+  (with-current-buffer (get-buffer-create sd7-indent-perf--progress-buffer)
+    (erase-buffer))
+  (display-buffer sd7-indent-perf--progress-buffer
+                  '((display-buffer-pop-up-window) (inhibit-same-window . t)))
+  (sd7-indent-perf-run-core input-dir output-dir report-dir id))
+
+;;;###autoload
+(defun sd7-indent-perf-run-with-profile (input-dir output-dir report-dir id
+                                                    &optional n-files)
+  "Run the Seed7 indentation benchmark with the Emacs CPU profiler enabled.
+
+Like `sd7-indent-perf-run' but always enables profiling.  If N-FILES is a
+positive integer, only the first N-FILES files are profiled (the rest are still
+re-indented and timed, but without profiler overhead).  Useful when the full
+corpus is too large and a representative sample suffices.
+
+The CPU profile is written to REPORT-DIR/seed7mode-indent-perf-ID-profile.txt."
+  (interactive
+   (let* ((in-dir  (read-directory-name "Input directory (Seed7 source tree): "
+                                        sd7-indent-perf--last-input-dir))
+          (out-dir (read-directory-name "Output directory (re-indented tree): "
+                                        sd7-indent-perf--last-output-dir))
+          (rep-dir (read-directory-name "Report directory: "
+                                        sd7-indent-perf--last-report-dir))
+          (rep-id  (read-string (format "Report ID (default %S): "
+                                        sd7-indent-perf--last-id)
+                                nil nil sd7-indent-perf--last-id))
+          (n-str   (read-string
+                    "Limit profiling to first N files (RET = all files): "
+                    ""))
+          (n-val   (if (string-match-p "\\`[0-9]+\\'" n-str)
+                       (string-to-number n-str)
+                     t)))
+     (list in-dir out-dir rep-dir rep-id n-val)))
+  (setq sd7-indent-perf--last-input-dir  (directory-file-name
+                                          (expand-file-name input-dir))
+        sd7-indent-perf--last-output-dir (directory-file-name
+                                          (expand-file-name output-dir))
+        sd7-indent-perf--last-report-dir (directory-file-name
+                                          (expand-file-name report-dir))
+        sd7-indent-perf--last-id         id
+        sd7-indent-perf--profile         (or n-files t))
   (with-current-buffer (get-buffer-create sd7-indent-perf--progress-buffer)
     (erase-buffer))
   (display-buffer sd7-indent-perf--progress-buffer
@@ -543,7 +781,12 @@ The RST report is written to REPORT-DIR/seed7mode-indent-perf-ID.rst."
 
 Expected positional arguments (after --)::
 
-  INPUT_DIR OUTPUT_DIR REPORT_DIR ID
+  INPUT_DIR OUTPUT_DIR REPORT_DIR ID [--profile [N]]
+
+The optional --profile flag activates the Emacs CPU profiler around
+`indent-region' calls and writes the hot-spot report alongside the RST report.
+An optional integer N immediately after --profile limits profiling to the
+first N files.
 
 Exits Emacs with 0 on success or 1 on error."
   (let ((args command-line-args-left))
@@ -551,8 +794,16 @@ Exits Emacs with 0 on success or 1 on error."
     (when (equal (car args) "--")
       (setq args (cdr args)))
     (when (< (length args) 4)
-      (message "Usage: -- INPUT_DIR OUTPUT_DIR REPORT_DIR ID")
+      (message "Usage: -- INPUT_DIR OUTPUT_DIR REPORT_DIR ID [--profile [N]]")
       (kill-emacs 1))
+    ;; Parse optional --profile [N] from position 4 onward.
+    (let ((tail (nthcdr 4 args)))
+      (when (equal (car tail) "--profile")
+        (let ((n-str (cadr tail)))
+          (setq sd7-indent-perf--profile
+                (if (and n-str (string-match-p "\\`[0-9]+\\'" n-str))
+                    (string-to-number n-str)
+                  t)))))
     (condition-case err
         (progn
           (sd7-indent-perf-run-core
