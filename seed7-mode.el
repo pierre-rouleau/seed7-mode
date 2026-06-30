@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260625.2209
+;; Package-Version: 20260630.1245
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -362,6 +362,7 @@
 ;;       . `seed7--indent-last-block-spec'
 ;;       . `seed7--indent-block-bounds'
 ;;       . `seed7-line-inside-a-block'
+;;         . `seed7--safe-enclosing-block-bounds'
 ;;         . `seed7--block-end-pos-for'
 ;;         . `seed7--indent-offset-for'
 ;;         . `seed7--on-lineof'
@@ -398,17 +399,18 @@
 ;;     . `seed7-bol-position'
 ;;   - Seed7 Indentation Calculator Function
 ;;     o `seed7-complete-statement-or-indent'
-;;       * `seed7-indent-line'
+;;       * `seed7-indent-region'
+;;         . `seed7-indent-region'
 ;;         . `seed7-calc-indent'
 ;;           . `seed7--cached-block-bounds'
 ;;           . `seed7--indent-one-line'
 ;;       * `seed7-fill'
 ;;         * `seed7-indent-block'
-;;           o `seed7-indent-line'
+;;           o `seed7-indent-region'
 ;; - Seed7 Code Template Expansion
 ;;   * `seed7-complete-statement-or-indent'
 ;;     . `seed7--delete-backward'
-;;     o `seed7-indent-line'
+;;     o `seed7-indent-region'
 ;;     . `seed7-insert-if-statement'
 ;;     . `seed7-insert-if-else-statement'
 ;;     . `seed7-insert-if-elsif-statement'
@@ -540,7 +542,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-26T02:09:26+0000 W26-5"
+(defconst seed7-mode-version-timestamp "2026-06-30T16:45:51+0000 W27-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4474,6 +4476,15 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
           (seed7-to-indent)))
       (point))))
 
+(defun seed7--safe-to-block-backward (&optional at-beginning-of-line)
+  "Move to enclosing block start, or return nil on block-match failure.
+
+ This is intended for navigation-time probing where falling back to
+ `scan-sexps' is preferable to aborting the command."
+  (condition-case nil
+      (seed7-to-block-backward at-beginning-of-line :dont-push-mark)
+    (user-error nil)))
+
 (defvar-local seed7--sexp-dispatch-active nil
   "Non-nil while `seed7--forward-sexp-function' is dispatching to a Seed7 helper.
 This prevents re-entry when those helpers internally invoke `backward-sexp' or
@@ -4624,7 +4635,9 @@ navigation command."
                  (save-excursion
                    (seed7-to-indent)
                    (looking-at-p seed7-block-end-regexp)))
-            (seed7-to-block-backward nil :dont-push-mark))
+            (or (seed7--safe-to-block-backward)
+                (goto-char (or (scan-sexps (point) -1)
+                               (buffer-end arg)))))
            ;;
            ;; Backward: current line ends with ); — may be end of a
            ;; const/var array definition block.
@@ -4633,12 +4646,16 @@ navigation command."
            ;; `seed7--array-definition-start-regexp' at the destination indent
            ;; position.
            ((seed7--at-array-definition-end-line-p)
-            (seed7-to-block-backward nil :dont-push-mark))
+            (or (seed7--safe-to-block-backward)
+                (goto-char (or (scan-sexps (point) -1)
+                               (buffer-end arg)))))
            ;;
            ;; Backward: current line ends with }; — may be end of a
            ;; const/var set definition block.
            ((seed7--at-set-definition-end-line-p)
-            (seed7-to-block-backward nil :dont-push-mark))
+            (or (seed7--safe-to-block-backward)
+                (goto-char (or (scan-sexps (point) -1)
+                               (buffer-end arg)))))
            ;;
            ;; Backward: current line is the return statement of a short
            ;; function (matches `seed7-short-func-end-regexp'), or point is
@@ -5231,7 +5248,7 @@ Return nil otherwise."
 (defvar-local seed7--indent-search-boundary-cache nil
   "Sequential indentation cache for `seed7--indent-search-boundary'.
 
-Used only during one `seed7-indent-line' invocation or one region-indentation
+Used only during one `seed7-indent-region' invocation or one region-indentation
 pass.  Value is a plist with keys:
 - :line-beg    beginning position of the line the cache was computed for,
 - :target-col  indentation column used for the lookup,
@@ -5625,7 +5642,7 @@ N is: - :previous-non-empty for the previous non-empty line,
 
 (defun seed7--block-end-pos-for (header)
   "Return position of end of block starting with HEADER.
-Move point."
+ Move point."
   (cond
    ((member header '("const proc: "
                      "const func "
@@ -5654,11 +5671,7 @@ Move point."
     (seed7-to-block-forward :dont-push-mark)
     (point))
    ;;
-   ((string= header "exception")
-    (seed7-to-next-line-starts-with "end block")
-    (point))
-   ;;
-   ((member header '("catch " "catch\t"))
+   ((member header '("exception" "catch " "catch\t"))
     (seed7-to-next-line-starts-with "end block")
     (point))
    ;;
@@ -5815,6 +5828,21 @@ Move point."
       (save-excursion (goto-char start-pos)
                       (line-end-position))))
 
+(defun seed7--safe-enclosing-block-bounds (match-text)
+  "Return (START . END) for block described by MATCH-TEXT, or nil.
+
+This is a defensive wrapper for indentation-time probing.  Some candidate
+matches found by `seed7-block-line-start-regexp' are not valid enclosing
+blocks for the current point.  In that case, do not abort indentation;
+just return nil so the caller can continue searching farther upward."
+  (condition-case nil
+      (save-excursion
+        (let ((end-pos   (seed7--block-end-pos-for match-text))
+              (start-pos (seed7-to-block-backward nil :dont-push-mark)))
+          (when (and start-pos end-pos)
+            (cons start-pos end-pos))))
+    (user-error nil)))
+
 (defun seed7-line-inside-a-block (n &optional dont-skip-comment-start beg-bound)
   "Check if line N is inside a Seed7 block.
 N is: - :previous-non-empty for the previous non-empty line,
@@ -5862,81 +5890,93 @@ If it finds something it returns a list that holds the following information:
                 (skip-chars-forward " \t")
                 (setq block-start-indent-column (current-column))
                 ;; Identify the end position and start position of the currently
-                ;; enclosing block
-                (save-excursion
-                  (setq enclosing-block-end-pos (seed7--block-end-pos-for match-text))
-                  ;; Identify the beginning of the enclosing top-level block
-                  (setq enclosing-block-start-pos
-                        (seed7-to-block-backward nil :dont-push-mark)))
-                (when (<= block-start-pos current-pos enclosing-block-end-pos)
-                  ;; It's a real and valid block: 3 cases are possible:
-                  (cond
-                   ;; Case 1: point is on the start line of a top level block.
-                   ((and (seed7--on-lineof block-start-pos current-pos)
-                         (member match-text '("const proc: "
-                                              "const func "
-                                              "const type: ")))
-                    ;; In that case the enclosing block start should be the same as
-                    ;; the block start.  If it's not the case there's a logic error.
-                    (when (eq enclosing-block-start-pos block-start-pos)
-                      ;; When at the line of top-level enclosing block, use the
-                      ;; `seed7-calc-indent' to get the indentation of the line just
-                      ;; above the current line, as if the previous line was a noop
-                      ;; statement.  Simulate the noop statement by temporary
-                      ;; inserting it in the above line.  This way it will be
-                      ;; possible to handle the case where the statement is inside
-                      ;; the first line of another block statement like an if
-                      ;; statement.
-                      ;; Note that calling `seed7-calc-indent' means recursing into
-                      ;; it since it's `seed7-calc-indent' that calls
-                      ;; `seed7-line-inside-a-block'.  But doing it this way we use
-                      ;; all the logic necessary to compute the indentation for this
-                      ;; case.
-                      ;; Allow modification of a read-only buffer and ensure that
-                      ;; the undo history is not modified by the insertion and
-                      ;; removal operations.
-                      (let ((inhibit-read-only t))
-                        (with-silent-modifications
-                          (setq keep-searching nil
-                                result (list
-                                        (save-excursion
-                                          (forward-line 0)
-                                          (let ((noop-start (point))
-                                                (noop-end nil))
-                                            (insert " noop;\n")
-                                            (setq noop-end (point))
-                                            (forward-line -1)
-                                            (unwind-protect
-                                                ;; compute indentation with noop
-                                                (seed7-calc-indent)
-                                              ;; always delete inserted noop
-                                              (delete-region noop-start noop-end))))
-                                        match-text
-                                        enclosing-block-start-pos
-                                        enclosing-block-end-pos
-                                        block-start-indent-column))))))
-                   ;;
-                   ;; Case 2: point is on an internal block start line.
-                   ((seed7--on-lineof block-start-pos current-pos)
-                    ;; Look for the previous block and use info from it.
-                    (goto-char block-start-pos)
-                    (when (seed7-re-search-backward
-                           seed7-block-line-start-regexp beg-bound)
-                      (setq match-text (replace-regexp-in-string
-                                        "[[:blank:]]+$" " "
-                                        (substring-no-properties (match-string 1))))
-                      (setq block-start-pos (point))
-                      (skip-chars-forward " \t")
-                      (setq block-start-indent-column (current-column))
-                      ;; Identify the end position and start position of the
-                      ;; currently enclosing block
-                      (save-excursion
-                        (setq enclosing-block-end-pos
-                              (seed7--block-end-pos-for match-text))
-                        ;; Identify the beginning of the enclosing top-level block
-                        (setq enclosing-block-start-pos
-                              (seed7-to-block-backward nil :dont-push-mark)))
-                      (when (<= block-start-pos current-pos enclosing-block-end-pos)
+                ;; enclosing block.  If this candidate is not a valid enclosing
+                ;; block, just keep searching farther upward.
+                (let ((bounds (seed7--safe-enclosing-block-bounds match-text)))
+                  (when bounds
+                    (setq enclosing-block-start-pos (car bounds)
+                          enclosing-block-end-pos   (cdr bounds))
+
+                    (when (<= block-start-pos current-pos enclosing-block-end-pos)
+                      ;; It's a real and valid block: 3 cases are possible:
+                      (cond
+                       ;; Case 1: point is on the start line of a top level block.
+                       ((and (seed7--on-lineof block-start-pos current-pos)
+                             (member match-text '("const proc: "
+                                                  "const func "
+                                                  "const type: ")))
+                        ;; In that case the enclosing block start should be the same as
+                        ;; the block start.  If it's not the case there's a logic error.
+                        (when (eq enclosing-block-start-pos block-start-pos)
+                          ;; When at the line of top-level enclosing block, use the
+                          ;; `seed7-calc-indent' to get the indentation of the line just
+                          ;; above the current line, as if the previous line was a noop
+                          ;; statement.  Simulate the noop statement by temporary
+                          ;; inserting it in the above line.  This way it will be
+                          ;; possible to handle the case where the statement is inside
+                          ;; the first line of another block statement like an if
+                          ;; statement.
+                          ;; Note that calling `seed7-calc-indent' means recursing into
+                          ;; it since it's `seed7-calc-indent' that calls
+                          ;; `seed7-line-inside-a-block'.  But doing it this way we use
+                          ;; all the logic necessary to compute the indentation for this
+                          ;; case.
+                          ;; Allow modification of a read-only buffer and ensure that
+                          ;; the undo history is not modified by the insertion and
+                          ;; removal operations.
+                          (let ((inhibit-read-only t))
+                            (with-silent-modifications
+                              (setq keep-searching nil
+                                    result (list
+                                            (save-excursion
+                                              (forward-line 0)
+                                              (let ((noop-start (point))
+                                                    (noop-end nil))
+                                                (insert " noop;\n")
+                                                (setq noop-end (point))
+                                                (forward-line -1)
+                                                (unwind-protect
+                                                    ;; compute indentation with noop
+                                                    (seed7-calc-indent)
+                                                  ;; always delete inserted noop
+                                                  (delete-region noop-start noop-end))))
+                                            match-text
+                                            enclosing-block-start-pos
+                                            enclosing-block-end-pos
+                                            block-start-indent-column))))))
+                       ;;
+                       ;; Case 2: point is on an internal block start line.
+                       ((seed7--on-lineof block-start-pos current-pos)
+                        ;; Look for the previous block and use info from it.
+                        (goto-char block-start-pos)
+                        (when (seed7-re-search-backward
+                               seed7-block-line-start-regexp beg-bound)
+                          (setq match-text (replace-regexp-in-string
+                                            "[[:blank:]]+$" " "
+                                            (substring-no-properties (match-string 1))))
+                          (setq block-start-pos (point))
+                          (skip-chars-forward " \t")
+                          (setq block-start-indent-column (current-column))
+                          ;; Identify the end position and start position of the
+                          ;; currently enclosing block
+                          (let ((bounds (seed7--safe-enclosing-block-bounds match-text)))
+                            (when bounds
+                              (setq enclosing-block-start-pos (car bounds)
+                                    enclosing-block-end-pos (cdr bounds))
+                              (when (<= block-start-pos current-pos enclosing-block-end-pos)
+                                (setq keep-searching nil
+                                      result (list (+ block-start-indent-column
+                                                      (seed7--indent-offset-for
+                                                       match-text
+                                                       line-n-first-text))
+                                                   match-text
+                                                   block-start-pos
+                                                   enclosing-block-end-pos
+                                                   block-start-indent-column)))))))
+                       ;;
+                       ;; Case 3: point is on a line that is not on the block start,
+                       ;;         but between the block start and the block end.
+                       (t
                         (setq keep-searching nil
                               result (list (+ block-start-indent-column
                                               (seed7--indent-offset-for
@@ -5945,20 +5985,7 @@ If it finds something it returns a list that holds the following information:
                                            match-text
                                            block-start-pos
                                            enclosing-block-end-pos
-                                           block-start-indent-column)))))
-                   ;;
-                   ;; Case 3: point is on a line that is not on the block start,
-                   ;;         but between the block start and the block end.
-                   (t
-                    (setq keep-searching nil
-                          result (list (+ block-start-indent-column
-                                          (seed7--indent-offset-for
-                                           match-text
-                                           line-n-first-text))
-                                       match-text
-                                       block-start-pos
-                                       enclosing-block-end-pos
-                                       block-start-indent-column)))))
+                                           block-start-indent-column)))))))
                 (when keep-searching
                   ;; Found something that looks like a block, but either not
                   ;; a real block or not the block that holds the line.
@@ -5983,7 +6010,7 @@ Used by `seed7--cached-block-spec-current-line' to avoid recomputation
 when the current line is still inside the same block.
 
 During normal indentation this variable is dynamically rebound by
-`seed7-indent-line', so the cache lifetime is one indentation command
+`seed7-indent-region', so the cache lifetime is one indentation command
 or one region-indentation pass.  Direct callers of `seed7-calc-indent'
 may use the buffer-local value.")
 
@@ -5997,7 +6024,7 @@ Used by `seed7--cached-block-bounds' to provide O(1) begin/end lookup
 without returning or allocating the full block spec.
 
 During normal indentation this variable is dynamically rebound by
-`seed7-indent-line', so the cache lifetime is one indentation command
+`seed7-indent-region', so the cache lifetime is one indentation command
 or one region-indentation pass.  Direct callers of `seed7-calc-indent'
 may use the buffer-local value.")
 
@@ -6081,20 +6108,13 @@ If a block is found, return a list of 5 elements:
 - 2: block start position (the beginning of the start keyword line),
 - 3: enclosing block end position,
 - 4: indent column of the block start line."
-  (let ((cached-spec
-         (and (eq n 0)
-              (not dont-skip-comment-start)
-              (seed7--cached-block-spec-current-line))))
-    (cond
-     ;; Fast path: cached spec is still valid for current line, and if a
-     ;; lower bound is supplied, the cached block still starts at or after it.
-     ((and cached-spec
-           (or (not beg-bound)
-               (<= beg-bound (nth 2 cached-spec))))
-      cached-spec)
-     ;;
-     ;; Cache miss or cached block is outside requested lower bound.
-     (t
+  (or (and (eq n 0)
+           (not dont-skip-comment-start)
+           (not beg-bound)
+           ;; Fast path: if current-line cache is valid: use it
+           (seed7--cached-block-spec-current-line))
+      ;;
+      ;; Cache miss
       (let ((spec (seed7-line-inside-a-block
                    n dont-skip-comment-start beg-bound)))
         (when (and (eq n 0) spec)
@@ -6105,7 +6125,7 @@ If a block is found, return a list of 5 elements:
           (setq seed7--indent-block-bounds
                 (cons (nth 2 seed7--indent-last-block-spec)
                       (nth 3 seed7--indent-last-block-spec))))
-        spec)))))
+        spec)))
 
 ;; ---------------------------------------------------------------------------
 
@@ -6789,12 +6809,22 @@ Return nil when no such previous line exists."
         (skip-chars-forward " \t")
         (current-column)))))
 
-
 (defun seed7-line-is-procfunc-beg-of-decl (n &optional dont-skip-comment-start)
   "Return indent column when line N is a procedure or function declaration.
 Skip comment start unless DONT-SKIP-COMMENT-START is non-nil."
   (seed7-line-starts-with n seed7-procfunc-beg-of-decl-nc-re
                           dont-skip-comment-start))
+
+(defun seed7--safe-current-line-defun-start-indent ()
+   "Return indent of enclosing defun start for current line, or nil.
+ This is a defensive indentation-time probe.  If
+ `seed7-to-block-backward' cannot match a corresponding callable start,
+ do not abort indentation; return nil so callers can try other logic."
+   (condition-case nil
+       (save-excursion
+         (seed7-to-block-backward nil :dont-push-mark)
+         (seed7-current-line-indent))
+     (user-error nil)))
 
 (defun seed7-line-is-defun-end (n &optional dont-skip-comment-start)
   "Return the defining-line indentation when line N ends a definition.
@@ -6817,26 +6847,28 @@ N is: - :previous-non-empty for the previous non-empty line,
           nil)
 
          ;; Handle line that is an end func, struct or enum.
-         ((seed7-line-starts-with-any
-           0
-           (list
-            "end[[:blank:]]+?func[[:blank:]]*?;"
-            "end[[:blank:]]+?struct[[:blank:]]*?;"
-            "end[[:blank:]]+?enum[[:blank:]]*?;"))
-          (seed7-to-block-backward nil :dont-push-mark)
-          (seed7-current-line-indent))
+         ((seed7--set (and (seed7-line-starts-with-any
+                            0
+                            (list
+                             "end[[:blank:]]+?func[[:blank:]]*?;"
+                             "end[[:blank:]]+?struct[[:blank:]]*?;"
+                             "end[[:blank:]]+?enum[[:blank:]]*?;")
+                            nil
+                            end-pos)
+                           (seed7--safe-current-line-defun-start-indent))
+                      previous-defun-column)
+          previous-defun-column)
 
          ;; Handle forward and native/action declarations of func and proc.
-         ((seed7--set
-           (seed7-line-starts-with-any
-            0
-            (list
-             seed7-func-forward-or-action-declaration-nc-re
-             seed7---inner-callables-4
-             seed7-proc-forward-or-action-declaration-re)
-            nil
-            end-pos)
-           previous-defun-column)
+         ((seed7--set (seed7-line-starts-with-any
+                       0
+                       (list
+                        seed7-func-forward-or-action-declaration-nc-re
+                        seed7---inner-callables-4
+                        seed7-proc-forward-or-action-declaration-re)
+                       nil
+                       end-pos)
+                      previous-defun-column)
           previous-defun-column)
 
          ;; Fallback only for plausible lines, not for every ordinary code line.
@@ -7388,32 +7420,41 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
       (unless (eq indent 0)
         (indent-to indent)))))
 
+(defun seed7-indent-region (&optional start end)
+  "Indent Seed7 code from START to END using one shared cache pass.
+When START and END are nil, use the active region."
+  (interactive "r")
+  (setq start (or start
+                  (and (use-region-p) (region-beginning))
+                  (user-error "No active region to indent")))
+  (setq end   (or end
+                  (and (use-region-p) (region-end))
+                  (user-error "No active region to indent")))
+  (save-excursion
+    (let ((end-marker (copy-marker end))
+          ;; Keep only this cache across the whole region pass.
+          (seed7--indent-search-boundary-cache nil))
+      (goto-char start)
+      (forward-line 0)
+      (while (< (point) end-marker)
+        ;; cache indent info per-line, not per-region
+        (let ((seed7--indent-last-block-spec nil)
+              (seed7--indent-block-bounds nil))
+            (seed7--indent-one-line))
+        (forward-line 1))
+      (set-marker end-marker nil))))
+
 (defun seed7-indent-line ()
-  "Indent the current Seed7 line of code or all marked lines.
+  "Indent the current Seed7 line of code.
 If point was inside the indentation space move it to first non-whitespace,
-otherwise leave point over the same character.
-If a region is marked, use it to identify the lines that must be indented,
-then deactivates it (to prevent the area to limit searches)."
+otherwise leave point over the same character."
   (interactive "*")
   (let ((move-point (seed7-inside-line-indent-p))
-        ;; clear both caches; code below repopulates them per line via the
-        ;; call to `seed7--indent-one-line' --> `seed7-calc-indent'.
         (seed7--indent-last-block-spec nil)
-        (seed7--indent-block-bounds    nil)
-        ;; Cache consecutive `seed7--indent-search-boundary' lookups during one
-        ;; indentation command / region pass.
+        (seed7--indent-block-bounds nil)
         (seed7--indent-search-boundary-cache nil))
     (save-excursion
-      (if (use-region-p)
-          ;; region active: indent complete region
-          (let ((line-count (count-lines (region-beginning) (region-end))))
-            (goto-char (region-beginning))
-            (deactivate-mark)
-            (dotimes (_ line-count)
-              (seed7--indent-one-line)
-              (forward-line 1)))
-        ;; no region: indent current line
-        (seed7--indent-one-line)))
+      (seed7--indent-one-line))
     (when move-point
       (seed7-to-indent))))
 
@@ -7421,10 +7462,18 @@ then deactivates it (to prevent the area to limit searches)."
   "Indent the block enclosing point.  Do not move point."
   (interactive)
   (save-excursion
-    (seed7-to-block-forward :dont-push-mark)
-    (set-mark (point))
-    (seed7-to-block-backward :at-beginning-of-line :dont-push-mark)
-    (seed7-indent-line)))
+    (let* ((start (save-excursion
+                    (unless (seed7-to-block-backward
+                             :at-beginning-of-line
+                             :dont-push-mark)
+                      (user-error "No enclosing block start found"))
+                    (point)))
+           (end (save-excursion
+                  (goto-char start)
+                  (unless (seed7-to-block-forward :dont-push-mark)
+                    (user-error "No enclosing block end found"))
+                  (point))))
+      (seed7-indent-region start end))))
 
 (defun seed7-fill ()
   "Refill/justify comment or string paragraph, or re-indent current code block."
@@ -7974,9 +8023,13 @@ and \\[tempo-backward-mark] to move to previous one."
   (delete-char n))
 
 (defun seed7-complete-statement-or-indent ()
-  "Adjust indentation of current line or block.
-Expand statement if point follows specific keyword located at the beginning of
-a code line.  The supported keywords are:
+  "Adjust indentation of current line or marked block.
+
+If a block is marked, indent it.  Otherwise, if point follows specific
+keyword located at the beginning of a code line expands it.  If there's
+no keyword, just indent the line
+
+The supported keywords are:
 
 ============ =========================================================
 Keyword      Expansion
@@ -8016,154 +8069,156 @@ enum         enum type definition
 struct       struct type definition
 ============ ========================================================="
   (interactive "*")
-  (let ((keyword nil)
-        (col-at-keyword-beg nil)
-        (in-indent nil))
-    (save-excursion
-      (backward-word)
-      (setq col-at-keyword-beg (current-column)
-            in-indent (seed7-inside-line-indent-p)
-            keyword (thing-at-point 'word :no-properties)))
-    ;; expand only if there's 1 word at the beginning of a line of code,
-    ;; with nothing after and only for specified predefined keywords
-    ;; or inside parens, just before the closing parens
-    (if (and (not (use-region-p))
-             keyword
-             (not (seed7-inside-comment-p))
-             (not (seed7-inside-string-p))
-             (or (and (or in-indent
-                          (eq col-at-keyword-beg 0))
-                      (or (looking-at-p "\n")
-                          (eobp))
-                      (member keyword '("inc"
-                                        "const" "var"
-                                        "enum" "struct"
-                                        "proc"
-                                        "func" "funcs"
-                                        "if" "ife" "ifei" "ifeie"
-                                        "case"
-                                        "for"   "foru"
-                                        "fors"
-                                        "fore"  "foreu"
-                                        "forek" "foreku"
-                                        "fork"  "forku"
-                                        "repeat"
-                                        "while"
-                                        "bl"
-                                        "gl")))
-                 (and (looking-at-p " ?)")
-                      (member keyword '("in"
-                                        "invar"
-                                        "inout"
-                                        "ref"
-                                        "val"
-                                        "callbn")))))
-        (progn
-          (when seed7-template-expansion-disables-overwrite-mode
-            (overwrite-mode 0))
-          (cond
-           ((string= keyword "if")
-            (seed7--delete-backward 2)
-            (seed7-insert-if-statement))
-           ((string= keyword "ife")
-            (seed7--delete-backward 3)
-            (seed7-insert-if-else-statement))
-           ((string= keyword "ifei")
-            (seed7--delete-backward 4)
-            (seed7-insert-if-elsif-statement))
-           ((string= keyword "ifeie")
-            (seed7--delete-backward 5)
-            (seed7-insert-if-elsif-else-statement))
-           ((string= keyword "case")
-            (seed7--delete-backward 4)
-            (seed7-insert-case-statement))
-           ((string= keyword "for")
-            (seed7--delete-backward 3)
-            (seed7-insert-for))
-           ((string= keyword "foru")
-            (seed7--delete-backward 4)
-            (seed7-insert-for-until))
-           ((string= keyword "fors")
-            (seed7--delete-backward 4)
-            (seed7-insert-for-step))
-           ((string= keyword "fore")
-            (seed7--delete-backward 4)
-            (seed7-insert-for-each))
-           ((string= keyword "foreu")
-            (seed7--delete-backward 5)
-            (seed7-insert-for-each-until))
-           ((string= keyword "forek")
-            (seed7--delete-backward 5)
-            (seed7-insert-for-each-key))
-           ((string= keyword "foreku")
-            (seed7--delete-backward 6)
-            (seed7-insert-for-each-key-until))
-           ((string= keyword "fork")
-            (seed7--delete-backward 4)
-            (seed7-insert-for-key))
-           ((string= keyword "forku")
-            (seed7--delete-backward 5)
-            (seed7-insert-for-key-until))
-           ((string= keyword "repeat")
-            (seed7--delete-backward 6)
-            (seed7-insert-repeat))
-           ((string= keyword "while")
-            (seed7--delete-backward 5)
-            (seed7-insert-while))
-           ((string= keyword "bl")
-            (seed7--delete-backward 2)
-            (seed7-insert-block))
-           ((string= keyword "gl")
-            (seed7--delete-backward 2)
-            (seed7-insert-global))
+  (if (use-region-p)
+      (seed7-indent-region)
+    (let ((keyword nil)
+          (col-at-keyword-beg nil)
+          (in-indent nil))
+      (save-excursion
+        (backward-word)
+        (setq col-at-keyword-beg (current-column)
+              in-indent (seed7-inside-line-indent-p)
+              keyword (thing-at-point 'word :no-properties)))
+      ;; expand only if there's 1 word at the beginning of a line of code,
+      ;; with nothing after and only for specified predefined keywords
+      ;; or inside parens, just before the closing parens
+      (if (and (not (use-region-p))
+               keyword
+               (not (seed7-inside-comment-p))
+               (not (seed7-inside-string-p))
+               (or (and (or in-indent
+                            (eq col-at-keyword-beg 0))
+                        (or (looking-at-p "\n")
+                            (eobp))
+                        (member keyword '("inc"
+                                          "const" "var"
+                                          "enum" "struct"
+                                          "proc"
+                                          "func" "funcs"
+                                          "if" "ife" "ifei" "ifeie"
+                                          "case"
+                                          "for"   "foru"
+                                          "fors"
+                                          "fore"  "foreu"
+                                          "forek" "foreku"
+                                          "fork"  "forku"
+                                          "repeat"
+                                          "while"
+                                          "bl"
+                                          "gl")))
+                   (and (looking-at-p " ?)")
+                        (member keyword '("in"
+                                          "invar"
+                                          "inout"
+                                          "ref"
+                                          "val"
+                                          "callbn")))))
+          (progn
+            (when seed7-template-expansion-disables-overwrite-mode
+              (overwrite-mode 0))
+            (cond
+             ((string= keyword "if")
+              (seed7--delete-backward 2)
+              (seed7-insert-if-statement))
+             ((string= keyword "ife")
+              (seed7--delete-backward 3)
+              (seed7-insert-if-else-statement))
+             ((string= keyword "ifei")
+              (seed7--delete-backward 4)
+              (seed7-insert-if-elsif-statement))
+             ((string= keyword "ifeie")
+              (seed7--delete-backward 5)
+              (seed7-insert-if-elsif-else-statement))
+             ((string= keyword "case")
+              (seed7--delete-backward 4)
+              (seed7-insert-case-statement))
+             ((string= keyword "for")
+              (seed7--delete-backward 3)
+              (seed7-insert-for))
+             ((string= keyword "foru")
+              (seed7--delete-backward 4)
+              (seed7-insert-for-until))
+             ((string= keyword "fors")
+              (seed7--delete-backward 4)
+              (seed7-insert-for-step))
+             ((string= keyword "fore")
+              (seed7--delete-backward 4)
+              (seed7-insert-for-each))
+             ((string= keyword "foreu")
+              (seed7--delete-backward 5)
+              (seed7-insert-for-each-until))
+             ((string= keyword "forek")
+              (seed7--delete-backward 5)
+              (seed7-insert-for-each-key))
+             ((string= keyword "foreku")
+              (seed7--delete-backward 6)
+              (seed7-insert-for-each-key-until))
+             ((string= keyword "fork")
+              (seed7--delete-backward 4)
+              (seed7-insert-for-key))
+             ((string= keyword "forku")
+              (seed7--delete-backward 5)
+              (seed7-insert-for-key-until))
+             ((string= keyword "repeat")
+              (seed7--delete-backward 6)
+              (seed7-insert-repeat))
+             ((string= keyword "while")
+              (seed7--delete-backward 5)
+              (seed7-insert-while))
+             ((string= keyword "bl")
+              (seed7--delete-backward 2)
+              (seed7-insert-block))
+             ((string= keyword "gl")
+              (seed7--delete-backward 2)
+              (seed7-insert-global))
 
-           ((string= keyword "proc")
-            (seed7--delete-backward 4)
-            (seed7-insert-procedure-declaration))
-           ((string= keyword "func")
-            (seed7--delete-backward 4)
-            (seed7-insert-func-declaration))
-           ((string= keyword "funcs")
-            (seed7--delete-backward 5)
-            (seed7-insert-short-function-declaration))
+             ((string= keyword "proc")
+              (seed7--delete-backward 4)
+              (seed7-insert-procedure-declaration))
+             ((string= keyword "func")
+              (seed7--delete-backward 4)
+              (seed7-insert-func-declaration))
+             ((string= keyword "funcs")
+              (seed7--delete-backward 5)
+              (seed7-insert-short-function-declaration))
 
-           ((string= keyword "var")
-            (seed7--delete-backward 3)
-            (seed7-insert-var-declaration))
-           ((string= keyword "const")
-            (seed7--delete-backward 5)
-            (seed7-insert-const-declaration))
-           ((string= keyword "in")
-            (seed7--delete-backward 2)
-            (seed7-insert-in-parameter))
-           ((string= keyword "invar")
-            (seed7--delete-backward 5)
-            (seed7-insert-invar-parameter))
-           ((string= keyword "inout")
-            (seed7--delete-backward 5)
-            (seed7-insert-inout-parameter))
-           ((string= keyword "ref")
-            (seed7--delete-backward 3)
-            (seed7-insert-reference-parameter))
-           ((string= keyword "val")
-            (seed7--delete-backward 3)
-            (seed7-insert-value-parameter))
-           ((string= keyword "callbn")
-            (seed7--delete-backward 6)
-            (seed7-insert-call-by-name-parameter))
+             ((string= keyword "var")
+              (seed7--delete-backward 3)
+              (seed7-insert-var-declaration))
+             ((string= keyword "const")
+              (seed7--delete-backward 5)
+              (seed7-insert-const-declaration))
+             ((string= keyword "in")
+              (seed7--delete-backward 2)
+              (seed7-insert-in-parameter))
+             ((string= keyword "invar")
+              (seed7--delete-backward 5)
+              (seed7-insert-invar-parameter))
+             ((string= keyword "inout")
+              (seed7--delete-backward 5)
+              (seed7-insert-inout-parameter))
+             ((string= keyword "ref")
+              (seed7--delete-backward 3)
+              (seed7-insert-reference-parameter))
+             ((string= keyword "val")
+              (seed7--delete-backward 3)
+              (seed7-insert-value-parameter))
+             ((string= keyword "callbn")
+              (seed7--delete-backward 6)
+              (seed7-insert-call-by-name-parameter))
 
-           ((string= keyword "inc")
-            (seed7--delete-backward 3)
-            (seed7-insert-include))
-           ((string= keyword "enum")
-            (seed7--delete-backward 4)
-            (seed7-insert-enumeration-type-declaration))
-           ((string= keyword "struct")
-            (seed7--delete-backward 6)
-            (seed7-insert-struct-type-declaration))))
-
-      ;; not on keyword; just indent
-      (seed7-indent-line))))
+             ((string= keyword "inc")
+              (seed7--delete-backward 3)
+              (seed7-insert-include))
+             ((string= keyword "enum")
+              (seed7--delete-backward 4)
+              (seed7-insert-enumeration-type-declaration))
+             ((string= keyword "struct")
+              (seed7--delete-backward 6)
+              (seed7-insert-struct-type-declaration))))
+        ;;
+        ;; point is not on keyword; just indent the line
+        (seed7-indent-line)))))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Compilation
@@ -10300,7 +10355,8 @@ compilation requires a working installation of Seed7.
 
   ;; Seed7 Indentation
   (when seed7-auto-indent
-    (setq-local indent-line-function #'seed7-indent-line))
+    (setq-local indent-line-function   #'seed7-indent-line)
+    (setq-local indent-region-function #'seed7-indent-region))
 
   (when seed7-support-abbrev-mode
     ;; Seed7 Abbreviation Support
