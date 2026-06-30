@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260629.1602
+;; Package-Version: 20260629.2303
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -542,7 +542,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-29T20:02:33+0000 W27-1"
+(defconst seed7-mode-version-timestamp "2026-06-30T03:03:44+0000 W27-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6805,6 +6805,18 @@ Skip comment start unless DONT-SKIP-COMMENT-START is non-nil."
   (seed7-line-starts-with n seed7-procfunc-beg-of-decl-nc-re
                           dont-skip-comment-start))
 
+
+(defun seed7--safe-current-line-defun-start-indent ()
+   "Return indent of enclosing defun start for current line, or nil.
+ This is a defensive indentation-time probe.  If
+ `seed7-to-block-backward' cannot match a corresponding callable start,
+ do not abort indentation; return nil so callers can try other logic."
+   (condition-case nil
+       (save-excursion
+         (seed7-to-block-backward nil :dont-push-mark)
+         (seed7-current-line-indent))
+     (user-error nil)))
+
 (defun seed7-line-is-defun-end (n &optional dont-skip-comment-start)
   "Return the defining-line indentation when line N ends a definition.
 Recognizes func, proc, struct, enum, forward, and native/action declaration
@@ -6826,26 +6838,28 @@ N is: - :previous-non-empty for the previous non-empty line,
           nil)
 
          ;; Handle line that is an end func, struct or enum.
-         ((seed7-line-starts-with-any
-           0
-           (list
-            "end[[:blank:]]+?func[[:blank:]]*?;"
-            "end[[:blank:]]+?struct[[:blank:]]*?;"
-            "end[[:blank:]]+?enum[[:blank:]]*?;"))
-          (seed7-to-block-backward nil :dont-push-mark)
-          (seed7-current-line-indent))
+         ((seed7--set (and (seed7-line-starts-with-any
+                            0
+                            (list
+                             "end[[:blank:]]+?func[[:blank:]]*?;"
+                             "end[[:blank:]]+?struct[[:blank:]]*?;"
+                             "end[[:blank:]]+?enum[[:blank:]]*?;")
+                            nil
+                            end-pos)
+                           (seed7--safe-current-line-defun-start-indent))
+                      previous-defun-column)
+          previous-defun-column)
 
          ;; Handle forward and native/action declarations of func and proc.
-         ((seed7--set
-           (seed7-line-starts-with-any
-            0
-            (list
-             seed7-func-forward-or-action-declaration-nc-re
-             seed7---inner-callables-4
-             seed7-proc-forward-or-action-declaration-re)
-            nil
-            end-pos)
-           previous-defun-column)
+         ((seed7--set (seed7-line-starts-with-any
+                       0
+                       (list
+                        seed7-func-forward-or-action-declaration-nc-re
+                        seed7---inner-callables-4
+                        seed7-proc-forward-or-action-declaration-re)
+                       nil
+                       end-pos)
+                      previous-defun-column)
           previous-defun-column)
 
          ;; Fallback only for plausible lines, not for every ordinary code line.
