@@ -875,7 +875,7 @@ all of them.  The `PEL Seed7 support`_ provides more key bindings using function
                                                  function, procedure, struct_,
                                                  enum_, array_, set_.
 
-. seed7-list-entities         ``C-c C-l``        List all defined Seed7 entities (functions, procedures,
+. seed7-list-entities          ``C-c C-l``       List all defined Seed7 entities (functions, procedures,
                                                  enumerations, structures, arrays, sets) defined in the Seed7 file visited by
                                                  the current buffer showing the line, type and name of the Seed7 entity.
                                                  The list is shown in a special ``*Seed7 Entities: FNAME``
