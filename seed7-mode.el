@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260630.1006
+;; Package-Version: 20260630.1125
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -542,7 +542,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-30T14:06:30+0000 W27-2"
+(defconst seed7-mode-version-timestamp "2026-06-30T15:25:53+0000 W27-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5640,56 +5640,46 @@ N is: - :previous-non-empty for the previous non-empty line,
       - A negative number for previous lines: -1 previous, -2 line before..."
   (seed7-line-starts-with n seed7-block-end-regexp dont-skip-comment-start))
 
-(defconst seed7--block-end-kind-by-header
-  (let ((table (make-hash-table :test #'equal)))
-    ;; Headers whose end can be found with `seed7-to-block-forward'.
-    (dolist (header '("const proc: "
-                      "const func "
-                      "const type: "
-                      "local"
-                      "repeat"
-                      "begin"
-                      "block"
-                      "global"
-                      "else"
-                      "result"
-                      "if "
-                      "elsif "
-                      "while "
-                      "for "
-                      "case "
-                      ;; Also support tabs when caller did not normalize them.
-                      "const proc:\t"
-                      "const func\t"
-                      "const type:\t"
-                      "if\t"
-                      "elsif\t"
-                      "while\t"
-                      "for\t"
-                      "case\t"))
-      (puthash header 'block-forward table))
-    ;; Headers whose end is the `end block` line.
-    (puthash "exception" 'end-block table)
-    (puthash "catch " 'end-block table)
-    (puthash "catch\t" 'end-block table)
-    table)
-  "Map a Seed7 block header string to the strategy used to locate its end.")
-
 (defun seed7--block-end-pos-for (header)
   "Return position of end of block starting with HEADER.
-Move point."
-  (let ((val (gethash header seed7--block-end-kind-by-header)))
-    (cond
-     ;;
-     ((eq val 'block-forward)
-      (seed7-to-block-forward :dont-push-mark)
-      (point))
-     ;;
-     ((eq val 'end-block)
-      (seed7-to-next-line-starts-with "end block")
-      (point))
-     ;;
-     (t (error "Unsupported block header: %s" header)))))
+ Move point."
+  (cond
+   ((member header '("const proc: "
+                     "const func "
+                     "const type: "
+                     "local"
+                     "repeat"
+                     "begin"
+                     "block"
+                     "global"
+                     "else"
+                     "result"
+                     "if "
+                     "elsif "
+                     "while "
+                     "for "
+                     "case "
+                     ;; ... also support tabs when caller did not normalize them.
+                     "const proc:\t"
+                     "const func\t"
+                     "const type:\t"
+                     "if\t"
+                     "elsif\t"
+                     "while\t"
+                     "for\t"
+                     "case\t"))
+    (seed7-to-block-forward :dont-push-mark)
+    (point))
+   ;;
+   ((string= header "exception")
+    (seed7-to-next-line-starts-with "end block")
+    (point))
+   ;;
+   ((member header '("catch " "catch\t"))
+    (seed7-to-next-line-starts-with "end block")
+    (point))
+   ;;
+   (t (error "Unsupported block header: %s" header))))
 
 (defun seed7--indent-offset-for (header first-text)
   "Return indentation offset (in columns) for the inside of a block.
