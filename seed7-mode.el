@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260630.1125
+;; Package-Version: 20260630.1245
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -542,7 +542,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-30T15:25:53+0000 W27-2"
+(defconst seed7-mode-version-timestamp "2026-06-30T16:45:51+0000 W27-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5671,11 +5671,7 @@ N is: - :previous-non-empty for the previous non-empty line,
     (seed7-to-block-forward :dont-push-mark)
     (point))
    ;;
-   ((string= header "exception")
-    (seed7-to-next-line-starts-with "end block")
-    (point))
-   ;;
-   ((member header '("catch " "catch\t"))
+   ((member header '("exception" "catch " "catch\t"))
     (seed7-to-next-line-starts-with "end block")
     (point))
    ;;
