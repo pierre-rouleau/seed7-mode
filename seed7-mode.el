@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260629.2303
+;; Package-Version: 20260629.2326
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -542,7 +542,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-30T03:03:44+0000 W27-2"
+(defconst seed7-mode-version-timestamp "2026-06-30T03:26:24+0000 W27-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4476,6 +4476,15 @@ NO match.  From %d, at point %d, nesting=%d, line %d  for: %S"
           (seed7-to-indent)))
       (point))))
 
+(defun seed7--safe-to-block-backward (&optional at-beginning-of-line)
+  "Move to enclosing block start, or return nil on block-match failure.
+
+ This is intended for navigation-time probing where falling back to
+ `scan-sexps' is preferable to aborting the command."
+  (condition-case nil
+      (seed7-to-block-backward at-beginning-of-line :dont-push-mark)
+    (user-error nil)))
+
 (defvar-local seed7--sexp-dispatch-active nil
   "Non-nil while `seed7--forward-sexp-function' is dispatching to a Seed7 helper.
 This prevents re-entry when those helpers internally invoke `backward-sexp' or
@@ -4626,7 +4635,9 @@ navigation command."
                  (save-excursion
                    (seed7-to-indent)
                    (looking-at-p seed7-block-end-regexp)))
-            (seed7-to-block-backward nil :dont-push-mark))
+            (or (seed7--safe-to-block-backward)
+                (goto-char (or (scan-sexps (point) -1)
+                               (buffer-end arg)))))
            ;;
            ;; Backward: current line ends with ); — may be end of a
            ;; const/var array definition block.
@@ -4635,12 +4646,16 @@ navigation command."
            ;; `seed7--array-definition-start-regexp' at the destination indent
            ;; position.
            ((seed7--at-array-definition-end-line-p)
-            (seed7-to-block-backward nil :dont-push-mark))
+            (or (seed7--safe-to-block-backward)
+                (goto-char (or (scan-sexps (point) -1)
+                               (buffer-end arg)))))
            ;;
            ;; Backward: current line ends with }; — may be end of a
            ;; const/var set definition block.
            ((seed7--at-set-definition-end-line-p)
-            (seed7-to-block-backward nil :dont-push-mark))
+            (or (seed7--safe-to-block-backward)
+                (goto-char (or (scan-sexps (point) -1)
+                               (buffer-end arg)))))
            ;;
            ;; Backward: current line is the return statement of a short
            ;; function (matches `seed7-short-func-end-regexp'), or point is
@@ -6798,13 +6813,11 @@ Return nil when no such previous line exists."
         (skip-chars-forward " \t")
         (current-column)))))
 
-
 (defun seed7-line-is-procfunc-beg-of-decl (n &optional dont-skip-comment-start)
   "Return indent column when line N is a procedure or function declaration.
 Skip comment start unless DONT-SKIP-COMMENT-START is non-nil."
   (seed7-line-starts-with n seed7-procfunc-beg-of-decl-nc-re
                           dont-skip-comment-start))
-
 
 (defun seed7--safe-current-line-defun-start-indent ()
    "Return indent of enclosing defun start for current line, or nil.
@@ -7453,16 +7466,17 @@ otherwise leave point over the same character."
   "Indent the block enclosing point.  Do not move point."
   (interactive)
   (save-excursion
-    (let ((start (save-excursion
-                   (unless (seed7-to-block-backward
-                            :at-beginning-of-line
-                            :dont-push-mark)
-                     (user-error "No enclosing block start found"))
-                   (point)))
-          (end (save-excursion
-                 (unless (seed7-to-block-forward :dont-push-mark)
-                   (user-error "No enclosing block end found"))
-                 (point))))
+    (let* ((start (save-excursion
+                    (unless (seed7-to-block-backward
+                             :at-beginning-of-line
+                             :dont-push-mark)
+                      (user-error "No enclosing block start found"))
+                    (point)))
+           (end (save-excursion
+                  (goto-char start)
+                  (unless (seed7-to-block-forward :dont-push-mark)
+                    (user-error "No enclosing block end found"))
+                  (point))))
       (seed7-indent-region start end))))
 
 (defun seed7-fill ()
