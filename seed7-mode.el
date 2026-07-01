@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260630.1245
+;; Package-Version: 20260701.1300
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -542,7 +542,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-06-30T16:45:51+0000 W27-2"
+(defconst seed7-mode-version-timestamp "2026-07-01T17:00:53+0000 W27-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -8023,11 +8023,15 @@ and \\[tempo-backward-mark] to move to previous one."
   (delete-char n))
 
 (defun seed7-complete-statement-or-indent ()
-  "Adjust indentation of current line or marked block.
+  "Expand keyword or adjust indentation of current line or marked block.
 
-If a block is marked, indent it.  Otherwise, if point follows specific
-keyword located at the beginning of a code line expands it.  If there's
-no keyword, just indent the line
+If a block is marked, indent it, regardless of point position inside the
+marked area.
+
+If point follows one of the expansion keywords listed below and on a line that
+holds nothing else except whitespace, expand the keyword.
+
+If there's no keyword, just indent the line
 
 The supported keywords are:
 
@@ -8073,22 +8077,23 @@ struct       struct type definition
       (seed7-indent-region)
     (let ((keyword nil)
           (col-at-keyword-beg nil)
-          (in-indent nil))
+          (in-indent nil)
+          (line-start-pos (line-beginning-position)))
       (save-excursion
         (backward-word)
-        (setq col-at-keyword-beg (current-column)
-              in-indent (seed7-inside-line-indent-p)
-              keyword (thing-at-point 'word :no-properties)))
+        (when (>= (point) line-start-pos)
+          (setq col-at-keyword-beg (current-column)
+                in-indent          (seed7-inside-line-indent-p)
+                keyword            (thing-at-point 'word :no-properties))))
       ;; expand only if there's 1 word at the beginning of a line of code,
       ;; with nothing after and only for specified predefined keywords
       ;; or inside parens, just before the closing parens
-      (if (and (not (use-region-p))
-               keyword
+      (if (and keyword
                (not (seed7-inside-comment-p))
                (not (seed7-inside-string-p))
                (or (and (or in-indent
                             (eq col-at-keyword-beg 0))
-                        (or (looking-at-p "\n")
+                        (or (looking-at-p "[[:blank:]]*\n")
                             (eobp))
                         (member keyword '("inc"
                                           "const" "var"
@@ -8113,108 +8118,109 @@ struct       struct type definition
                                           "ref"
                                           "val"
                                           "callbn")))))
-          (progn
-            (when seed7-template-expansion-disables-overwrite-mode
-              (overwrite-mode 0))
+          (let ((overwrite-mode (if seed7-template-expansion-disables-overwrite-mode
+                                   nil
+                                 overwrite-mode)))
+            (backward-word)
             (cond
              ((string= keyword "if")
-              (seed7--delete-backward 2)
+              (delete-char 2)
               (seed7-insert-if-statement))
              ((string= keyword "ife")
-              (seed7--delete-backward 3)
+              (delete-char 3)
               (seed7-insert-if-else-statement))
              ((string= keyword "ifei")
-              (seed7--delete-backward 4)
+              (delete-char 4)
               (seed7-insert-if-elsif-statement))
              ((string= keyword "ifeie")
-              (seed7--delete-backward 5)
+              (delete-char 5)
               (seed7-insert-if-elsif-else-statement))
              ((string= keyword "case")
-              (seed7--delete-backward 4)
+              (delete-char 4)
               (seed7-insert-case-statement))
              ((string= keyword "for")
-              (seed7--delete-backward 3)
+              (delete-char 3)
               (seed7-insert-for))
              ((string= keyword "foru")
-              (seed7--delete-backward 4)
+              (delete-char 4)
               (seed7-insert-for-until))
              ((string= keyword "fors")
-              (seed7--delete-backward 4)
+              (delete-char 4)
               (seed7-insert-for-step))
              ((string= keyword "fore")
-              (seed7--delete-backward 4)
+              (delete-char 4)
               (seed7-insert-for-each))
              ((string= keyword "foreu")
-              (seed7--delete-backward 5)
+              (delete-char 5)
               (seed7-insert-for-each-until))
              ((string= keyword "forek")
-              (seed7--delete-backward 5)
+              (delete-char 5)
               (seed7-insert-for-each-key))
              ((string= keyword "foreku")
-              (seed7--delete-backward 6)
+              (delete-char 6)
               (seed7-insert-for-each-key-until))
              ((string= keyword "fork")
-              (seed7--delete-backward 4)
+              (delete-char 4)
               (seed7-insert-for-key))
              ((string= keyword "forku")
-              (seed7--delete-backward 5)
+              (delete-char 5)
               (seed7-insert-for-key-until))
              ((string= keyword "repeat")
-              (seed7--delete-backward 6)
+              (delete-char 6)
               (seed7-insert-repeat))
              ((string= keyword "while")
-              (seed7--delete-backward 5)
+              (delete-char 5)
               (seed7-insert-while))
              ((string= keyword "bl")
-              (seed7--delete-backward 2)
+              (delete-char 2)
               (seed7-insert-block))
              ((string= keyword "gl")
-              (seed7--delete-backward 2)
+              (delete-char 2)
               (seed7-insert-global))
 
              ((string= keyword "proc")
-              (seed7--delete-backward 4)
+              (delete-char 4)
               (seed7-insert-procedure-declaration))
              ((string= keyword "func")
-              (seed7--delete-backward 4)
+              (delete-char 4)
               (seed7-insert-func-declaration))
              ((string= keyword "funcs")
-              (seed7--delete-backward 5)
+              (delete-char 5)
               (seed7-insert-short-function-declaration))
 
              ((string= keyword "var")
-              (seed7--delete-backward 3)
+              (delete-char 3)
               (seed7-insert-var-declaration))
              ((string= keyword "const")
-              (seed7--delete-backward 5)
+              (delete-char 5)
               (seed7-insert-const-declaration))
              ((string= keyword "in")
-              (seed7--delete-backward 2)
+              (delete-char 2)
               (seed7-insert-in-parameter))
              ((string= keyword "invar")
-              (seed7--delete-backward 5)
+              (delete-char 5)
               (seed7-insert-invar-parameter))
              ((string= keyword "inout")
-              (seed7--delete-backward 5)
+              (delete-char 5)
               (seed7-insert-inout-parameter))
              ((string= keyword "ref")
-              (seed7--delete-backward 3)
+              (delete-char 3)
               (seed7-insert-reference-parameter))
              ((string= keyword "val")
-              (seed7--delete-backward 3)
+              (delete-char 3)
               (seed7-insert-value-parameter))
              ((string= keyword "callbn")
-              (seed7--delete-backward 6)
+              (delete-char 6)
               (seed7-insert-call-by-name-parameter))
 
              ((string= keyword "inc")
-              (seed7--delete-backward 3)
+              (delete-char 3)
               (seed7-insert-include))
              ((string= keyword "enum")
-              (seed7--delete-backward 4)
+              (delete-char 4)
               (seed7-insert-enumeration-type-declaration))
              ((string= keyword "struct")
-              (seed7--delete-backward 6)
+              (delete-char 6)
               (seed7-insert-struct-type-declaration))))
         ;;
         ;; point is not on keyword; just indent the line
