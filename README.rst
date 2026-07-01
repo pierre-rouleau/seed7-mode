@@ -35,7 +35,7 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 - Cross-reference integration with xref support that uses a Seed7 code
   analyzer back-end - you must have Seed7 installed to use it.
 - Explicit outline-minor-mode support.
-- Command to list all elements of Seed7 file: seed7-list-entities.
+- Command to `list all elements of Seed7 file`_: seed7-list-entities.
 - Intelligent template and keyword expansion.
 - Context-aware marking with block-aware extension to `er/expand-region`_ command.
 - Deep integration with iMenu and Speedbar with nested callable lineage.
@@ -803,6 +803,9 @@ sort by type, name and line number and jump to the chosen declaration.
 
 This command is bound to the ``C-c C-l`` key and is available from the menu.
 
+.. image:: screenshots/seed7-entity-list.gif
+   :scale: 50%
+
 Code Navigation Commands
 ------------------------
 
@@ -1437,6 +1440,7 @@ Any help, questions, suggestions are welcome!
 .. links
 
 
+.. _list all elements of Seed7 file:            `List all Seed7 Elements`_
 .. _seed7-mode.el:                              seed7-mode.el
 .. _Terminal-mode Emacs:                        screenshots/terminal-example-01.png
 .. _Graphical Emacs:                            screenshots/graphic-light-example-01.png
