@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260701.1300
+;; Package-Version: 20260701.1344
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -542,7 +542,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-01T17:00:53+0000 W27-3"
+(defconst seed7-mode-version-timestamp "2026-07-01T17:44:07+0000 W27-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -601,8 +601,8 @@ in the top menu and inside the Speedbar."
 
 When `seed7-complete-statement-or-indent' performs code expansion and
 `seed7-template-expansion-disables-overwrite-mode' is on, it forces
-`overwrite-mode' off in the current buffer to prevent writing over the
-expanded code.
+`overwrite-mode' off in the current buffer during keyword expansion
+to prevent writing over the expanded code.
 
 To disable this behavior turn this user-option off."
   :group 'seed7
@@ -8031,7 +8031,7 @@ marked area.
 If point follows one of the expansion keywords listed below and on a line that
 holds nothing else except whitespace, expand the keyword.
 
-If there's no keyword, just indent the line
+If there's no keyword, just indent the line.
 
 The supported keywords are:
 
