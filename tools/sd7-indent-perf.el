@@ -2,7 +2,7 @@
 
 ;; Created   : Tuesday, June 24 2026.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-02 13:22:33 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-02 13:41:24 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -194,6 +194,25 @@ the RST report.")
     (format "first %d file(s)" sd7-indent-perf--profile))
    (t "unknown")))
 
+(defun sd7-indent-perf--format-profiler-entry (entry)
+  "Return a human-readable string for the profiler ENTRY.
+ENTRY is the raw entry object stored in a `profiler-calltree' node's
+`entry' slot (see `profiler-calltree-entry').  This avoids depending on
+private/internal `profiler.el' helpers (such as `profiler-calltree-name'
+or `profiler-format-entry'), whose availability differs across Emacs
+versions."
+  (cond
+   ((eq entry t) "Others")
+   ((stringp entry) entry)
+   ((symbolp entry) (symbol-name entry))
+   ((and (fboundp 'help-fns-function-name)
+         (or (subrp entry) (functionp entry)))
+    (condition-case nil
+        (help-fns-function-name entry)
+      (error (format "%S" entry))))
+   ((byte-code-function-p entry) (format "#<compiled %#x>" (sxhash entry)))
+   (t (format "%S" entry))))
+
 (defun sd7-indent-perf--profile-report-text ()
   "Return the Emacs CPU profiler results as a plain-text string.
 Uses `profiler-cpu-log' and `profiler-calltree-build' to build a call tree,
@@ -214,7 +233,8 @@ count.  Works in both interactive and batch mode."
          (lambda (node)
            (when (profiler-calltree-leaf-p node)
              (push (cons (profiler-calltree-count node)
-                         (profiler-calltree-name  node))
+                         (sd7-indent-perf--format-profiler-entry
+                          (profiler-calltree-entry node)))
                    entries))))
         (setq entries (sort entries (lambda (a b) (> (car a) (car b)))))
         (let ((total (apply #'+ (mapcar #'car entries))))
