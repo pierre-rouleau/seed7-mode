@@ -112,8 +112,8 @@ ELC_FILES := $(subst .el,.elc,$(EL_FILES))
 #   - Those files are used as markers for make and prevent re-execution of
 #     the tests that have already passed.
 
-# ALL_TEST_FILES := $(wildcard tests/ert-tests/seed7-test-*.el)
-ALL_TEST_FILES := tests/ert-tests/seed7-test-arrays-01.el \
+# ERT_TEST_EL_FILES := $(wildcard tests/ert-tests/seed7-test-*.el)
+ERT_TEST_EL_FILES := tests/ert-tests/seed7-test-arrays-01.el \
                   tests/ert-tests/seed7-test-font-lock-01.el \
                   tests/ert-tests/seed7-test-font-lock-02.el \
                   tests/ert-tests/seed7-test-font-lock-02b.el \
@@ -125,7 +125,7 @@ ALL_TEST_FILES := tests/ert-tests/seed7-test-arrays-01.el \
                   tests/ert-tests/seed7-test-nav-nested-01.el \
                   tests/ert-tests/seed7-test-syntax-propertize-01.el
 
-ALL_TEST_PASSED := $(ALL_TEST_FILES:.el=.el.test-passed)
+ALL_ERT_TEST_PASSED := $(ERT_TEST_EL_FILES:.el=.el.test-passed)
 
 # ----------------------------------------------------------------------------
 # Building Emacs Lisp Tools
@@ -147,8 +147,8 @@ ALL_TEST_PASSED := $(ALL_TEST_FILES:.el=.el.test-passed)
 TOOLS_EL_FILES  := tools/seed7-fopen-controlled.el \
                    tools/seed7-fopen-time.el \
                    tools/seed7-indent-bench.el \
-                   tools/sd7-indent-perf.el \
                    tools/seed7-mode-time.el \
+                   tools/sd7-indent-perf.el \
                    tools/sd7-nav-index.el
 
 TOOLS_ELC_FILES := $(subst .el,.elc,$(TOOLS_EL_FILES))
@@ -244,55 +244,23 @@ else
 endif
 
 # ----------------------------------------------------------------------------
-# RULE - how to compile the Emacs-Lisp source code files - tools files
-# ---------------------------------------------------------------------
-# Explicit compile rules for the tools files.
-# Suffix rules (.el.elc) do not cross directory boundaries, so explicit rules
-# are used here.
-
-ifeq ($(EMACS_NATIVE_COMP_AVAILABLE), yes)
-
-tools/seed7-mode-time.elc: tools/seed7-mode-time.el \
-                           seed7-mode.elc
-	$(EMACS) -Q --batch -L . --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile $<
-	$(EMACS) -Q --batch -L . --eval '(setq byte-compile-error-on-warn t)' -f batch-native-compile $<
-
-tools/seed7-indent-bench.elc: tools/seed7-indent-bench.el \
-                              seed7-mode.elc \
-                              tools/seed7-mode-time.elc
-	$(EMACS) -Q --batch -L . --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile $<
-	$(EMACS) -Q --batch -L . --eval '(setq byte-compile-error-on-warn t)' -f batch-native-compile $<
-
-else
-
-tools/seed7-mode-time.elc: tools/seed7-mode-time.el \
-                           seed7-mode.elc
-	$(EMACS) -Q --batch -L . --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile $<
-
-tools/seed7-indent-bench.elc: tools/seed7-indent-bench.el \
-                              seed7-mode.elc \
-                              tools/seed7-mode-time.elc
-	$(EMACS) -Q --batch -L . --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile $<
-
-endif
-
-# ----------------------------------------------------------------------------
 # Tool Code dependencies
 # ----------------------
+
+# See TOOLS_EL_FILES
 
 tools/seed7-fopen-controlled.elc: seed7-mode.elc tools/seed7-fopen-time.elc
 tools/seed7-fopen-time.elc:       seed7-mode.elc
 tools/seed7-indent-bench.elc:     seed7-mode.elc tools/seed7-fopen-time.elc
-tools/sd7-indent-perf.elc:        seed7-mode.elc
 tools/seed7-mode-time.elc:        seed7-mode.elc
 tools/sd7-nav-index.elc:          seed7-mode.elc
-
+tools/sd7-indent-perf.elc:        seed7-mode.elc
 
 # ----------------------------------------------------------------------------
 # Test Code dependencies
 # ----------------------
 
-# See ALL_TEST_FILES
+# See ERT_TEST_EL_FILES
 
 tests/ert-tests/seed7-test-arrays-01.el.test-passed:             seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-arrays-01.elc
 tests/ert-tests/seed7-test-font-lock-01.el.test-passed:          seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-font-lock-01.elc
@@ -317,7 +285,7 @@ tests/ert-tests/seed7-test-%.el.test-passed: tests/ert-tests/seed7-test-%.el $(E
 
 .PHONY:	test clean-test
 
-test:	$(ALL_TEST_PASSED)
+test:	$(ALL_ERT_TEST_PASSED)
 
 # The rm -f option prevents complaints from rm when the file is not present.
 clean-test:
