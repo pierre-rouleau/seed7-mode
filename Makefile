@@ -147,7 +147,10 @@ ALL_TEST_PASSED := $(ALL_TEST_FILES:.el=.el.test-passed)
 TOOLS_EL_FILES  := tools/seed7-fopen-controlled.el \
                    tools/seed7-fopen-time.el \
                    tools/seed7-indent-bench.el \
-                   tools/seed7-mode-time.el
+                   tools/sd7-indent-perf.el \
+                   tools/seed7-mode-time.el \
+                   tools/sd7-nav-index.el
+
 TOOLS_ELC_FILES := $(subst .el,.elc,$(TOOLS_EL_FILES))
 
 # ----------------------------------------------------------------------------
@@ -280,7 +283,10 @@ endif
 tools/seed7-fopen-controlled.elc: seed7-mode.elc tools/seed7-fopen-time.elc
 tools/seed7-fopen-time.elc:       seed7-mode.elc
 tools/seed7-indent-bench.elc:     seed7-mode.elc tools/seed7-fopen-time.elc
+tools/sd7-indent-perf.elc:        seed7-mode.elc
 tools/seed7-mode-time.elc:        seed7-mode.elc
+tools/sd7-nav-index.elc:          seed7-mode.elc
+
 
 # ----------------------------------------------------------------------------
 # Test Code dependencies
