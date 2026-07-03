@@ -3456,13 +3456,19 @@ rather than inheriting the `return' line's own indent step.
 
 Return the indentation column of the corresponding `const func' header
 when N's predecessor is exactly a short-function-terminating `return'
-statement.  Return nil otherwise."
+statement -- whether that `return' statement is written on a single
+physical line or spans several continuation lines (e.g. a multi-line
+`or'/`and' expression).  Return nil otherwise."
   (save-excursion
     (when (and (seed7-move-to-line n dont-skip-comment-start)
                (seed7-move-to-line :previous-non-empty dont-skip-comment-start))
-      (when (save-excursion
-              (forward-line 0)
-              (looking-at-p seed7-short-func-end-regexp))
+      (when (or (save-excursion
+                  (forward-line 0)
+                  (looking-at-p seed7-short-func-end-regexp))
+                (save-excursion
+                  (end-of-line)
+                  (skip-chars-backward " \t" (line-beginning-position))
+                  (seed7--at-multiline-short-func-end-p)))
         (when (seed7-to-block-backward nil :dont-push-mark)
           (skip-chars-forward " \t")
           (current-column))))))

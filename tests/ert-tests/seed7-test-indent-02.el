@@ -810,6 +810,143 @@
                      seed7-test-indent-02--return-or-and-correct))))
 
 ;; ---------------------------------------------------------------------------
+;; 10b. Adjacent short `const func ... is' functions, each with a multi-line
+;;      `return' (regression)
+;; ----------------------------------------------------------------------
+;;
+;; This is the regression case reported against prg/bas7.sd7 around lines
+;; 700 and 707: once a short function's `return' statement spans several
+;; continuation lines (an `or'/`and' expression), `seed7-line-after-short-
+;; func-end' failed to recognize that the line right after it (the next
+;; `const func' header) follows the end of that short function, because it
+;; only matched a `return' that terminates on the very same physical line.
+;; The next `const func' header line then fell through to the generic
+;; indent-step fallback, which inherited the deep indentation of the
+;; `return' statement's last continuation line instead of column 0.  The
+;; effect compounds: a third adjacent short function following a second
+;; miscomputed one is indented even further.
+
+(defconst seed7-test-indent-02--adjacent-multiline-return-correct
+  (concat
+   "const func boolean: isStringExpr (in string: symbol) is\n"
+   "  return symbol in string_var_name or\n"
+   "         symbol <> \"\" and\n"
+   "         (symbol[length(symbol)] = '$' or symbol[1] in defstr_var and\n"
+   "          not symbol[length(symbol)] in numeric_var_suffix);\n"
+   "\n"
+   "\n"
+   "const func boolean: isStringVar (in string: symbol) is\n"
+   "  return symbol in string_var_name or\n"
+   "         symbol <> \"\" and\n"
+   "         (symbol[length(symbol)] = '$' or symbol[1] in defstr_var and\n"
+   "          not symbol[length(symbol)] in numeric_var_suffix);\n"
+   "\n"
+   "\n"
+   "const func boolean: isNumericExpr (in string: symbol) is\n"
+   "  return symbol in numeric_functions or\n"
+   "         symbol <> \"\" and\n"
+   "         (symbol[1] = '(' or\n"
+   "          symbol[1] in letter_char - defstr_var);\n")
+  "Correctly-indented adjacent short functions with multi-line returns.")
+
+(defconst seed7-test-indent-02--adjacent-multiline-return-misaligned
+  (concat
+   "const func boolean: isStringExpr (in string: symbol) is\n"
+   "return symbol in string_var_name or\n"
+   "symbol <> \"\" and\n"
+   "(symbol[length(symbol)] = '$' or symbol[1] in defstr_var and\n"
+   "not symbol[length(symbol)] in numeric_var_suffix);\n"
+   "\n"
+   "\n"
+   "const func boolean: isStringVar (in string: symbol) is\n"
+   "return symbol in string_var_name or\n"
+   "symbol <> \"\" and\n"
+   "(symbol[length(symbol)] = '$' or symbol[1] in defstr_var and\n"
+   "not symbol[length(symbol)] in numeric_var_suffix);\n"
+   "\n"
+   "\n"
+   "const func boolean: isNumericExpr (in string: symbol) is\n"
+   "return symbol in numeric_functions or\n"
+   "symbol <> \"\" and\n"
+   "(symbol[1] = '(' or\n"
+   "symbol[1] in letter_char - defstr_var);\n")
+  "Misaligned adjacent short functions with multi-line returns.")
+
+(ert-deftest seed7-indent/adjacent-multiline-return-keeps-correct-layout ()
+  "Indenting already-correct adjacent multi-line-return functions keeps the layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--adjacent-multiline-return-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 2))
+    (should (= (seed7-test-indent-02--line-indentation 3) 9))
+    (should (= (seed7-test-indent-02--line-indentation 4) 9))
+    (should (= (seed7-test-indent-02--line-indentation 5) 10))
+    (should (= (seed7-test-indent-02--line-indentation 8) 0))
+    (should (= (seed7-test-indent-02--line-indentation 9) 2))
+    (should (= (seed7-test-indent-02--line-indentation 10) 9))
+    (should (= (seed7-test-indent-02--line-indentation 11) 9))
+    (should (= (seed7-test-indent-02--line-indentation 12) 10))
+    (should (= (seed7-test-indent-02--line-indentation 15) 0))
+    (should (= (seed7-test-indent-02--line-indentation 16) 2))
+    (should (= (seed7-test-indent-02--line-indentation 17) 9))
+    (should (= (seed7-test-indent-02--line-indentation 18) 9))
+    (should (= (seed7-test-indent-02--line-indentation 19) 10))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--adjacent-multiline-return-correct))))
+
+(ert-deftest seed7-indent/adjacent-multiline-return-fixes-misaligned-layout ()
+  "Indenting misaligned adjacent multi-line-return functions restores the layout.
+
+Regression test for the bug reported against `prg/bas7.sd7' lines 700 and
+707: `seed7-line-after-short-func-end' did not recognize the line following
+a short function's multi-line `return' statement, so the next `const func'
+header inherited the deep indent-step of the `return' statement's last
+continuation line instead of being reset to column 0.  Left unfixed, the
+error compounds on each subsequent adjacent short function."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--adjacent-multiline-return-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 2))
+    (should (= (seed7-test-indent-02--line-indentation 3) 9))
+    (should (= (seed7-test-indent-02--line-indentation 4) 9))
+    (should (= (seed7-test-indent-02--line-indentation 5) 10))
+    (should (= (seed7-test-indent-02--line-indentation 8) 0))
+    (should (= (seed7-test-indent-02--line-indentation 9) 2))
+    (should (= (seed7-test-indent-02--line-indentation 10) 9))
+    (should (= (seed7-test-indent-02--line-indentation 11) 9))
+    (should (= (seed7-test-indent-02--line-indentation 12) 10))
+    (should (= (seed7-test-indent-02--line-indentation 15) 0))
+    (should (= (seed7-test-indent-02--line-indentation 16) 2))
+    (should (= (seed7-test-indent-02--line-indentation 17) 9))
+    (should (= (seed7-test-indent-02--line-indentation 18) 9))
+    (should (= (seed7-test-indent-02--line-indentation 19) 10))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--adjacent-multiline-return-correct))))
+
+(ert-deftest seed7-indent/adjacent-multiline-return-tab-indents-next-header ()
+  "Pressing TAB on the `const func' header after a multi-line return must
+leave it at column 0, not inherit the return statement's indent step.
+
+This exercises `seed7-indent-line' directly (the interactive TAB path) on
+the second function's header line (line 8), reproducing the reported
+failure on prg/bas7.sd7 line 700."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--adjacent-multiline-return-correct)
+    (seed7-mode)
+    (goto-char (point-min))
+    (forward-line 7)                    ; move to the second `const func' line
+    (indent-line-to 10)                 ; deliberately misindent it
+    (seed7-indent-line)
+    (should (= (seed7-test-indent-02--line-indentation 8) 0))))
+
+;; ---------------------------------------------------------------------------
 ;; 11. Array definition block
 ;; --------------------------
 ;;
