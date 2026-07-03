@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-25 16:15:53 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-03 10:55:38 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -249,7 +249,7 @@
 (defconst seed7-test-indent-02--is-return-misaligned
   (concat
    "const func boolean: alwaysTrue is\n"
-   "  return TRUE;\n")
+   "return TRUE;\n")
   "Misaligned `is return' function.")
 
 (ert-deftest seed7-indent/is-return-keeps-correct-layout ()
@@ -919,6 +919,99 @@
     (should (= (seed7-test-indent-02--line-indentation 4) 2))
     (should (string= (buffer-string)
                      seed7-test-indent-02--set-def-correct))))
+;; ---------------------------------------------------------------------------
+;; Regression: adjacent short `is return' functions (prg/chkarr.sd7, lines 50-87)
+;; -------------------------------------------------------------------------
+;;
+;; Several consecutive `const func ... is' / `return ...;' declarations,
+;; separated by blank lines, must each have their `return' line indented
+;; to column 2.  This reproduces the bug where `seed7--block-end-pos-for'
+;; misidentifies the end of a short function's enclosing block, so
+;; `seed7-line-inside-a-block' fails to recognize the first `return' line
+;; as belonging to the preceding `const func ... is' declaration.
+
+(defconst seed7-test-indent-02--adjacent-is-return-correct
+  (concat
+   "const func boolean: boolExpr (ref boolean: value) is\n"
+   "  return value and str(rand(1, 9))[2 ..] = \"\";\n"
+   "\n"
+   "\n"
+   "const func integer: intExpr (in integer: number) is\n"
+   "  return number + length(str(rand(1, 9))[2 ..]);\n"
+   "\n"
+   "\n"
+   "const func float: floatExpr (in float: number) is\n"
+   "  return number;\n")
+  "Correctly-indented adjacent `is return' functions, as in prg/chkarr.sd7.")
+
+(defconst seed7-test-indent-02--adjacent-is-return-misaligned
+  (concat
+   "const func boolean: boolExpr (ref boolean: value) is\n"
+   "return value and str(rand(1, 9))[2 ..] = \"\";\n"
+   "\n"
+   "\n"
+   "const func integer: intExpr (in integer: number) is\n"
+   "return number + length(str(rand(1, 9))[2 ..]);\n"
+   "\n"
+   "\n"
+   "const func float: floatExpr (in float: number) is\n"
+   "return number;\n")
+  "Misaligned adjacent `is return' functions, matching prg/chkarr.sd7 as-is.")
+
+(ert-deftest seed7-indent/adjacent-is-return-keeps-correct-layout ()
+  "Indenting already-correct adjacent `is return' functions keeps the layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--adjacent-is-return-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 2))
+    (should (= (seed7-test-indent-02--line-indentation 5) 0))
+    (should (= (seed7-test-indent-02--line-indentation 6) 2))
+    (should (= (seed7-test-indent-02--line-indentation 9) 0))
+    (should (= (seed7-test-indent-02--line-indentation 10) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--adjacent-is-return-correct))))
+
+(ert-deftest seed7-indent/adjacent-is-return-fixes-misaligned-layout ()
+  "Indenting misaligned adjacent `is return' functions restores the layout.
+
+Regression test for the bug reported against `prg/chkarr.sd7' lines 51, 55,
+67, 71, 75, 79, 83: `seed7--block-end-pos-for' treats a short
+`const func ... is' declaration like a long-body function ending in
+`end func;', so the first `return' line of the short function is never
+recognized as being inside the enclosing block and is left at column 0
+by both `indent-region' and interactive `TAB'."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--adjacent-is-return-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 2))
+    (should (= (seed7-test-indent-02--line-indentation 5) 0))
+    (should (= (seed7-test-indent-02--line-indentation 6) 2))
+    (should (= (seed7-test-indent-02--line-indentation 9) 0))
+    (should (= (seed7-test-indent-02--line-indentation 10) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--adjacent-is-return-correct))))
+;; ---------------------------------------------------------------------------
+
+(ert-deftest seed7-indent/adjacent-is-return-tab-indents-return-line ()
+  "Pressing TAB on an unindented short-function `return' line must indent it.
+
+This exercises `seed7-indent-line' directly (the interactive TAB path),
+as opposed to `indent-region', to catch the reported failure where TAB
+on line 2 (`return value and ...;') does nothing."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--adjacent-is-return-misaligned)
+    (seed7-mode)
+    (goto-char (point-min))
+    (forward-line 1)                    ; move to the first `return' line
+    (seed7-indent-line)
+    (should (= (seed7-test-indent-02--line-indentation 2) 2))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-02)
