@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-03 10:55:38 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-03 17:50:36 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -1012,6 +1012,65 @@ on line 2 (`return value and ...;') does nothing."
     (forward-line 1)                    ; move to the first `return' line
     (seed7-indent-line)
     (should (= (seed7-test-indent-02--line-indentation 2) 2))))
+
+;; ---------------------------------------------------------------------------
+;; Tests modeled directly on prg/bas7.sd7 Lines 693-707
+
+(defconst seed7-test-indent-02--multiline-return-short-func-correct
+  (concat
+   "const func boolean: isStringExpr (in string: symbol) is\n"
+   "  return symbol in string_var_name or\n"
+   "         symbol <> \"\" and\n"
+   "         (symbol[length(symbol)] = '$' or symbol[1] = '\\\"' or\n"
+   "          not symbol[length(symbol)] in numeric_var_suffix);\n"
+   "\n"
+   "\n"
+   "const func boolean: isStringVar (in string: symbol) is\n"
+   "  return symbol in string_var_name;\n")
+  "Correctly-indented adjacent short functions with a multi-line `return'.")
+
+(defconst seed7-test-indent-02--multiline-return-short-func-misaligned
+  (concat
+   "const func boolean: isStringExpr (in string: symbol) is\n"
+   "  return symbol in string_var_name or\n"
+   "         symbol <> \"\" and\n"
+   "         (symbol[length(symbol)] = '$' or symbol[1] = '\\\"' or\n"
+   "          not symbol[length(symbol)] in numeric_var_suffix);\n"
+   "\n"
+   "\n"
+   "          const func boolean: isStringVar (in string: symbol) is\n"
+   "            return symbol in string_var_name;\n")
+  "Misaligned header/return after a multi-line `return' short function,
+matching the bug reported against prg/bas7.sd7 lines 693-701.")
+
+(ert-deftest seed7-indent/multiline-return-short-func-keeps-correct-layout ()
+  "A `const func' header after a multi-line-`return' short function stays at
+column 0, reproducing the layout of prg/bas7.sd7 lines 693-701."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--multiline-return-short-func-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 8) 0))
+    (should (= (seed7-test-indent-02--line-indentation 9) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--multiline-return-short-func-correct))))
+
+(ert-deftest seed7-indent/multiline-return-short-func-fixes-misaligned-layout ()
+  "Regression test for the bug reported against prg/bas7.sd7 lines 700 and 707:
+after a short function whose `return' statement spans multiple continuation
+lines, the next `const func' header (and its own `return' line) must be
+dedented back to column 0/2 instead of inheriting the deep indentation of the
+`return' statement's last continuation line."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--multiline-return-short-func-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 8) 0))
+    (should (= (seed7-test-indent-02--line-indentation 9) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--multiline-return-short-func-correct))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-02)
