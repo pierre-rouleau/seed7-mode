@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260703.1117
+;; Package-Version: 20260703.1126
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -542,7 +542,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-03T15:17:19+0000 W27-5"
+(defconst seed7-mode-version-timestamp "2026-07-03T15:26:17+0000 W27-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5659,7 +5659,8 @@ Move point."
         (seed7-to-block-forward :dont-push-mark)
         (point))
        (bare-is
-        (seed7-re-search-forward seed7-short-func-end-regexp)
+        (or (seed7-re-search-forward seed7-short-func-end-regexp)
+            (error "Unsupported incomplete short function header: %s" header))
         (point))
        (t
         (seed7-to-block-forward :dont-push-mark)
