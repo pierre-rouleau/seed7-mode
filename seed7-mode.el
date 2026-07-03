@@ -285,6 +285,7 @@
 ;;       . `seed7--show-info'
 ;;       . `seed7--no-defun-found-msg-for'
 ;;       . `seed7-line-after-short-func-end'
+;;       . `seed7-line-after-forward-declaration-end'
 ;;     - Seed7 Procedure/Function Navigation Commands
 ;;       * `seed7-beg-of-defun'
 ;;       * `seed7-beg-of-next-defun'
@@ -3492,6 +3493,62 @@ statement.  Return nil otherwise."
             (when (seed7-to-block-backward nil :dont-push-mark)
               (skip-chars-forward " \t")
               (current-column))))))))
+
+(defun seed7-line-after-forward-declaration-end (n &optional dont-skip-comment-start)
+  "Return the sibling indentation column for a line after a forward declaration.
+
+A Seed7 forward or action declaration (`const func ... is forward;',
+`const proc ... is forward;', `... is DYNAMIC;', or
+`... is action \"NAME\";') has no block body.  When its parameter list
+is broken across several continuation lines aligned under the opening
+parenthesis (e.g. prg/bas7.sd7 lines 1655-1658), the line that actually
+terminates the declaration does not itself start with `const', so
+`seed7-line-is-defun-end' fails to recognize it.  A statement that
+follows such a declaration then wrongly inherits the deep indent step
+of that continuation line instead of being dedented back to the column
+of the `const func'/`const proc' header.
+
+Return the indentation column of the header line that begins the
+forward/action declaration when N's predecessor line terminates such a
+multi-line declaration.  Return nil otherwise."
+  (save-excursion
+    (when (and (seed7-move-to-line n dont-skip-comment-start)
+               (seed7-move-to-line :previous-non-empty dont-skip-comment-start))
+      (let ((stmt-end-pos (line-end-position))
+            (decl-beg-pos nil)
+            (give-up nil))
+        ;; The `const func'/`const proc' header of a forward or action
+        ;; declaration may be several continuation lines above the line
+        ;; that actually terminates the declaration when its parameter
+        ;; list is broken across lines aligned under the opening paren.
+        ;; Walk backward from the previous non-empty line across such
+        ;; continuation lines until the declaration header is found, or
+        ;; until a blank line / new block-start line is met first
+        ;; (meaning this is not such a continuation).
+        (save-excursion
+          (forward-line 0)
+          (while (not (or decl-beg-pos give-up))
+            (cond
+             ((looking-at-p seed7-procfunc-beg-of-decl-nc-re)
+              (setq decl-beg-pos (point)))
+             ((or (seed7-blank-line-p)
+                  (looking-at-p seed7-block-line-start-regexp))
+              (setq give-up t))
+             ((not (eq (forward-line -1) 0))
+              (setq give-up t)))))
+        (when (and decl-beg-pos (not give-up))
+          (goto-char decl-beg-pos)
+          (when (and (looking-at-p
+                      seed7-procfunc-forward-or-action-declaration-re)
+                     ;; Confirm the declaration actually terminates at (or
+                     ;; before) the previous non-empty line found above,
+                     ;; not somewhere further down.
+                     (save-excursion
+                       (re-search-forward
+                        seed7-procfunc-forward-or-action-declaration-re nil t)
+                       (<= (point) (1+ stmt-end-pos))))
+            (skip-chars-forward " \t")
+            (current-column)))))))
 
 ;;*** Seed7 Procedure/Function Navigation Commands
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -7458,6 +7515,13 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
        ((seed7--set (seed7-line-after-short-func-end 0)
                     indent-column))
 
+       ;; Just after a forward or action declaration whose parameter list
+       ;; spans several continuation lines, align with the `const func'/
+       ;; `const proc' header rather than inheriting the indent step of
+       ;; the declaration's last continuation line.
+       ((seed7--set (seed7-line-after-forward-declaration-end 0)
+                    indent-column))
+
        ;; When inside a paren block, adjust indent to the column
        ;; following the open paren; any of: ( { [
        ((seed7--set (seed7-line-inside-parens-pair-column 0)
@@ -7497,6 +7561,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
     (if indent-column
         indent-column
       (or (seed7-line-after-short-func-end 0)
+          (seed7-line-after-forward-declaration-end 0)
           (* (or indent-step
                  (seed7-line-indent-step :previous-non-empty))
              seed7-indent-width)))))

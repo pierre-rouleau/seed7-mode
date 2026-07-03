@@ -1073,6 +1073,72 @@ dedented back to column 0/2 instead of inheriting the deep indentation of the
                      seed7-test-indent-02--multiline-return-short-func-correct))))
 
 ;; ---------------------------------------------------------------------------
+;; Tests modeled directly on prg/bas7.sd7 Lines 1655-1661
+
+(defconst seed7-test-indent-02--multiline-forward-decl-correct
+  (concat
+   "const func string: exec_str_expr (\n"
+   "                                  inout string: symbol,\n"
+   "                                  inout string: line,\n"
+   "                                  inout string: variable_name) is forward;\n"
+   "\n"
+   "\n"
+   "const func string: exec_str_function (in string: symbol) is func\n"
+   "  begin\n"
+   "    write(symbol);\n"
+   "  end func;\n")
+  "Correctly-indented `const func' header following a multi-line forward
+declaration, reproducing the layout of prg/bas7.sd7 lines 1655-1661.")
+
+(defconst seed7-test-indent-02--multiline-forward-decl-misaligned
+  (concat
+   "const func string: exec_str_expr (\n"
+   "                                  inout string: symbol,\n"
+   "                                  inout string: line,\n"
+   "                                  inout string: variable_name) is forward;\n"
+   "\n"
+   "\n"
+   "                                  const func string: exec_str_function (in string: symbol) is func\n"
+   "                                    begin\n"
+   "                                      write(symbol);\n"
+   "                                    end func;\n")
+  "Misaligned header/body after a multi-line forward declaration, matching
+the bug reported against prg/bas7.sd7 line 1661.")
+
+(ert-deftest seed7-indent/multiline-forward-decl-keeps-correct-layout ()
+  "A `const func' header after a multi-line forward declaration stays at
+column 0, reproducing the layout of prg/bas7.sd7 lines 1655-1661."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--multiline-forward-decl-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 7) 0))
+    (should (= (seed7-test-indent-02--line-indentation 8) 2))
+    (should (= (seed7-test-indent-02--line-indentation 9) 4))
+    (should (= (seed7-test-indent-02--line-indentation 10) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--multiline-forward-decl-correct))))
+
+(ert-deftest seed7-indent/multiline-forward-decl-fixes-misaligned-layout ()
+  "Regression test for the bug reported against prg/bas7.sd7 line 1661:
+after a forward declaration whose parameter list spans multiple continuation
+lines, the next `const func' header (and its body) must be dedented back to
+column 0/2/4 instead of inheriting the deep indentation of the declaration's
+last continuation line."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--multiline-forward-decl-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 7) 0))
+    (should (= (seed7-test-indent-02--line-indentation 8) 2))
+    (should (= (seed7-test-indent-02--line-indentation 9) 4))
+    (should (= (seed7-test-indent-02--line-indentation 10) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--multiline-forward-decl-correct))))
+
+;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-02)
 
 ;;; seed7-test-indent-02.el ends here
