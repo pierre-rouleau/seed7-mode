@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260703.1439
+;; Package-Version: 20260703.1444
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-03T18:39:23+0000 W27-5"
+(defconst seed7-mode-version-timestamp "2026-07-03T18:44:12+0000 W27-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5718,6 +5718,7 @@ Move point."
                      "while "
                      "for "
                      "case "
+                     ;; ... also support tabs when caller did not normalize them.
                      "const proc:\t"
                      "const type:\t"
                      "if\t"
