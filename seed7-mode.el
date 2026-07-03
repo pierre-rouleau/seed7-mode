@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260703.1053
+;; Package-Version: 20260703.1117
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -542,7 +542,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-03T14:53:31+0000 W27-5"
+(defconst seed7-mode-version-timestamp "2026-07-03T15:17:19+0000 W27-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5644,25 +5644,27 @@ N is: - :previous-non-empty for the previous non-empty line,
   "Return position of end of block starting with HEADER.
 Move point."
   (cond
+   ;;
    ((member header '("const func " "const func\t"))
-    (save-excursion
-      (forward-line 0)
+    (let ((long-body
+           (save-excursion
+             (forward-line 0)
+             (re-search-forward "\\_<is[[:blank:]]+func\\_>" (line-end-position) t)))
+          (bare-is
+           (save-excursion
+             (forward-line 0)
+             (re-search-forward "\\_<is[[:blank:]]*$" (line-end-position) t))))
       (cond
-       ;; Long-body function: `... is func`
-       ((re-search-forward "\\_<is[[:blank:]]+func\\_>" (line-end-position) t)
+       (long-body
         (seed7-to-block-forward :dont-push-mark)
         (point))
-
-       ;; Short function: declaration line ends with bare `is`
-       ((re-search-forward "\\_<is[[:blank:]]*\\'" (line-end-position) t)
+       (bare-is
         (seed7-re-search-forward seed7-short-func-end-regexp)
         (point))
-
-       ;; Fallback to existing behavior
        (t
         (seed7-to-block-forward :dont-push-mark)
         (point)))))
-
+   ;;
    ((member header '("const proc: "
                      "const type: "
                      "local"
@@ -5686,11 +5688,11 @@ Move point."
                      "case\t"))
     (seed7-to-block-forward :dont-push-mark)
     (point))
-
+   ;;
    ((member header '("exception" "catch " "catch\t"))
     (seed7-to-next-line-starts-with "end block")
     (point))
-
+   ;;
    (t
     (error "Unsupported block header: %s" header))))
 
