@@ -119,6 +119,7 @@ ERT_TEST_EL_FILES := tests/ert-tests/seed7-test-arrays-01.el \
                   tests/ert-tests/seed7-test-font-lock-02b.el \
                   tests/ert-tests/seed7-test-indent-01.el \
                   tests/ert-tests/seed7-test-indent-02.el \
+                  tests/ert-tests/seed7-test-indent-03.el \
                   tests/ert-tests/seed7-test-mark-defun-01.el \
                   tests/ert-tests/seed7-test-nav-array-01.el \
                   tests/ert-tests/seed7-test-nav-final-pos-01.el \
@@ -268,6 +269,7 @@ tests/ert-tests/seed7-test-font-lock-02.el.test-passed:          seed7-mode.elc 
 tests/ert-tests/seed7-test-font-lock-02b.el.test-passed:         seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-font-lock-02b.elc
 tests/ert-tests/seed7-test-indent-01.el.test-passed:             seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-indent-01.elc
 tests/ert-tests/seed7-test-indent-02.el.test-passed:             seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-indent-02.elc
+tests/ert-tests/seed7-test-indent-03.el.test-passed:             seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-indent-03.elc
 tests/ert-tests/seed7-test-mark-defun-01.el.test-passed:         seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-mark-defun-01.el
 tests/ert-tests/seed7-test-nav-array-01.el.test-passed:          seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-array-01.elc
 tests/ert-tests/seed7-test-nav-final-pos-01.el.test-passed:      seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-final-pos-01.elc
