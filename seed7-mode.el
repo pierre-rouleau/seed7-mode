@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260703.1444
+;; Package-Version: 20260703.1755
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-03T18:44:12+0000 W27-5"
+(defconst seed7-mode-version-timestamp "2026-07-03T21:55:15+0000 W27-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3460,12 +3460,38 @@ statement.  Return nil otherwise."
   (save-excursion
     (when (and (seed7-move-to-line n dont-skip-comment-start)
                (seed7-move-to-line :previous-non-empty dont-skip-comment-start))
-      (when (save-excursion
-              (forward-line 0)
-              (looking-at-p seed7-short-func-end-regexp))
-        (when (seed7-to-block-backward nil :dont-push-mark)
-          (skip-chars-forward " \t")
-          (current-column))))))
+      (let ((stmt-end-pos (line-end-position))
+            (return-pos nil)
+            (give-up nil))
+        ;; The terminating `return ...;' of a short function may span
+        ;; several continuation lines (e.g. prg/bas7.sd7 lines 694-697).
+        ;; Walk backward from the previous non-empty line across such
+        ;; continuation lines until the line that starts with `return'
+        ;; is found, or until a blank line / new block-start line is
+        ;; met first (meaning this is not a short-function terminator).
+        (save-excursion
+          (forward-line 0)
+          (while (not (or return-pos give-up))
+            (cond
+             ((looking-at-p "[[:blank:]]*return\\_>")
+              (setq return-pos (point)))
+             ((or (seed7-blank-line-p)
+                  (looking-at-p seed7-block-line-start-regexp))
+              (setq give-up t))
+             ((not (eq (forward-line -1) 0))
+              (setq give-up t)))))
+        (when (and return-pos (not give-up))
+          (goto-char return-pos)
+          (when (and (looking-at-p seed7-short-func-end-regexp)
+                     ;; Confirm the statement actually terminates at (or
+                     ;; before) the previous non-empty line found above,
+                     ;; not somewhere further down.
+                     (save-excursion
+                       (re-search-forward seed7-short-func-end-regexp nil t)
+                       (<= (point) (1+ stmt-end-pos))))
+            (when (seed7-to-block-backward nil :dont-push-mark)
+              (skip-chars-forward " \t")
+              (current-column))))))))
 
 ;;*** Seed7 Procedure/Function Navigation Commands
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
