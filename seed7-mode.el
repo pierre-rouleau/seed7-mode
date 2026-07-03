@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260703.1342
+;; Package-Version: 20260703.1418
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -284,6 +284,7 @@
 ;;       . `seed7--pos-msg'
 ;;       . `seed7--show-info'
 ;;       . `seed7--no-defun-found-msg-for'
+;;       . `seed7-line-after-short-func-end'
 ;;     - Seed7 Procedure/Function Navigation Commands
 ;;       * `seed7-beg-of-defun'
 ;;       * `seed7-beg-of-next-defun'
@@ -542,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-03T17:42:23+0000 W27-5"
+(defconst seed7-mode-version-timestamp "2026-07-03T18:18:14+0000 W27-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3442,6 +3443,29 @@ Arguments:
           (seed7--plural-s n)
           (if (eq direction 'forward) "below" "above")))
 
+(defun seed7-line-after-short-func-end (n &optional dont-skip-comment-start)
+  "Return the sibling indentation column for a line following a short function.
+
+A Seed7 short function (`const func ... is' immediately followed by a
+single `return ...;' statement, with no `end func;') leaves no explicit
+block-end marker.  A statement that follows such a function (skipping
+blank lines) is therefore reported as being outside of any block by
+`seed7-line-inside-a-block-cached', but it must still be dedented back to
+the column of the `const func' header that started that short function,
+rather than inheriting the `return' line's own indent step.
+
+Return the indentation column of the corresponding `const func' header
+when N's predecessor is exactly a short-function-terminating `return'
+statement.  Return nil otherwise."
+  (save-excursion
+    (when (and (seed7-move-to-line n dont-skip-comment-start)
+               (seed7-move-to-line :previous-non-empty dont-skip-comment-start))
+      (when (save-excursion
+              (forward-line 0)
+              (looking-at-p seed7-short-func-end-regexp))
+        (when (seed7-to-block-backward nil :dont-push-mark)
+          (skip-chars-forward " \t")
+          (current-column))))))
 
 ;;*** Seed7 Procedure/Function Navigation Commands
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5674,7 +5698,7 @@ Move point."
                        (save-excursion
                          (goto-char (match-beginning 0))
                          (looking-at-p seed7-short-func-end-regexp)))
-            (error "Unsupported incomplete short function header: %s" header)))
+            (user-error "Unsupported incomplete short function header: %s" header)))
         (point))
        (t
         (seed7-to-block-forward :dont-push-mark)
@@ -5875,7 +5899,7 @@ just return nil so the caller can continue searching farther upward."
               (start-pos (seed7-to-block-backward nil :dont-push-mark)))
           (when (and start-pos end-pos)
             (cons start-pos end-pos))))
-    (error nil)))
+    (user-error nil)))
 
 (defun seed7-line-inside-a-block (n &optional dont-skip-comment-start beg-bound)
   "Check if line N is inside a Seed7 block.
@@ -7400,6 +7424,12 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                          :previous-non-empty)
                         indent-column))
         (setq indent-column (- indent-column seed7-indent-width)))
+
+       ;; Just after the terminating `return ...;' of a short function
+       ;; (no `end func;'), align with the `const func' header rather than
+       ;; inheriting the return statement's own indent step.
+       ((seed7--set (seed7-line-after-short-func-end 0)
+                    indent-column))
 
        ;; When inside a paren block, adjust indent to the column
        ;; following the open paren; any of: ( { [
