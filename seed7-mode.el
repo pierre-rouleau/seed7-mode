@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260703.1156
+;; Package-Version: 20260703.1342
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -542,7 +542,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-03T15:56:16+0000 W27-5"
+(defconst seed7-mode-version-timestamp "2026-07-03T17:42:23+0000 W27-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5661,9 +5661,15 @@ Move point."
         (seed7-to-block-forward :dont-push-mark)
         (point))
        (bare-is
-        (let ((closest (seed7-re-search-forward-closest
-                        (list seed7-short-func-end-regexp
-                              seed7-block-line-start-regexp))))
+        ;; Do not search from the header line itself, otherwise
+        ;; `seed7-block-line-start-regexp' can match the current
+        ;; `const func ... is' header and incorrectly win as the
+        ;; "closest" match.
+        (forward-line 1)
+        (let ((closest
+               (seed7-re-search-forward-closest
+                (list seed7-short-func-end-regexp
+                      seed7-block-line-start-regexp))))
           (unless (and closest
                        (save-excursion
                          (goto-char (match-beginning 0))
