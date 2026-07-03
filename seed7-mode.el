@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260703.1418
+;; Package-Version: 20260703.1439
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-03T18:18:14+0000 W27-5"
+(defconst seed7-mode-version-timestamp "2026-07-03T18:39:23+0000 W27-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7469,9 +7469,10 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
         (error "No rule yet to indent line %d" (seed7-current-line-number)))))
     (if indent-column
         indent-column
-      (* (or indent-step
-             (seed7-line-indent-step :previous-non-empty))
-         seed7-indent-width))))
+      (or (seed7-line-after-short-func-end 0)
+          (* (or indent-step
+                 (seed7-line-indent-step :previous-non-empty))
+             seed7-indent-width)))))
 
 
 (defun seed7--indent-one-line ()
