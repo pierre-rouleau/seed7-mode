@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260701.1344
+;; Package-Version: 20260703.1444
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -284,6 +284,7 @@
 ;;       . `seed7--pos-msg'
 ;;       . `seed7--show-info'
 ;;       . `seed7--no-defun-found-msg-for'
+;;       . `seed7-line-after-short-func-end'
 ;;     - Seed7 Procedure/Function Navigation Commands
 ;;       * `seed7-beg-of-defun'
 ;;       * `seed7-beg-of-next-defun'
@@ -542,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-01T17:44:07+0000 W27-3"
+(defconst seed7-mode-version-timestamp "2026-07-03T18:44:12+0000 W27-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1947,8 +1948,10 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
   "Regexp to detect end of procedure or long function.  No group.")
 
 (defconst seed7-short-func-end-regexp
-  "^[[:blank:]]+return[^;]*;"
+  "^[[:blank:]]*return[^;]*;"
   "Regexp to detect end of short function.  No group.
+Allow return to not be indented; it should be but in case it's not
+it is still a valid end of a function block.
 Uses `[^;]*' (negated character class) instead of nested lazy quantifiers
 to prevent catastrophic backtracking on large files.
 Matches a return statement starting on a line beginning with whitespace,
@@ -3440,6 +3443,29 @@ Arguments:
           (seed7--plural-s n)
           (if (eq direction 'forward) "below" "above")))
 
+(defun seed7-line-after-short-func-end (n &optional dont-skip-comment-start)
+  "Return the sibling indentation column for a line following a short function.
+
+A Seed7 short function (`const func ... is' immediately followed by a
+single `return ...;' statement, with no `end func;') leaves no explicit
+block-end marker.  A statement that follows such a function (skipping
+blank lines) is therefore reported as being outside of any block by
+`seed7-line-inside-a-block-cached', but it must still be dedented back to
+the column of the `const func' header that started that short function,
+rather than inheriting the `return' line's own indent step.
+
+Return the indentation column of the corresponding `const func' header
+when N's predecessor is exactly a short-function-terminating `return'
+statement.  Return nil otherwise."
+  (save-excursion
+    (when (and (seed7-move-to-line n dont-skip-comment-start)
+               (seed7-move-to-line :previous-non-empty dont-skip-comment-start))
+      (when (save-excursion
+              (forward-line 0)
+              (looking-at-p seed7-short-func-end-regexp))
+        (when (seed7-to-block-backward nil :dont-push-mark)
+          (skip-chars-forward " \t")
+          (current-column))))))
 
 ;;*** Seed7 Procedure/Function Navigation Commands
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5642,10 +5668,43 @@ N is: - :previous-non-empty for the previous non-empty line,
 
 (defun seed7--block-end-pos-for (header)
   "Return position of end of block starting with HEADER.
- Move point."
+Move point."
   (cond
+   ;;
+   ((member header '("const func " "const func\t"))
+    (let ((long-body
+           (save-excursion
+             (forward-line 0)
+             (re-search-forward "\\_<is[[:blank:]]+func\\_>" (line-end-position) t)))
+          (bare-is
+           (save-excursion
+             (forward-line 0)
+             (re-search-forward "\\_<is[[:blank:]]*$" (line-end-position) t))))
+      (cond
+       (long-body
+        (seed7-to-block-forward :dont-push-mark)
+        (point))
+       (bare-is
+        ;; Do not search from the header line itself, otherwise
+        ;; `seed7-block-line-start-regexp' can match the current
+        ;; `const func ... is' header and incorrectly win as the
+        ;; "closest" match.
+        (forward-line 1)
+        (let ((closest
+               (seed7-re-search-forward-closest
+                (list seed7-short-func-end-regexp
+                      seed7-block-line-start-regexp))))
+          (unless (and closest
+                       (save-excursion
+                         (goto-char (match-beginning 0))
+                         (looking-at-p seed7-short-func-end-regexp)))
+            (user-error "Unsupported incomplete short function header: %s" header)))
+        (point))
+       (t
+        (seed7-to-block-forward :dont-push-mark)
+        (point)))))
+   ;;
    ((member header '("const proc: "
-                     "const func "
                      "const type: "
                      "local"
                      "repeat"
@@ -5661,7 +5720,6 @@ N is: - :previous-non-empty for the previous non-empty line,
                      "case "
                      ;; ... also support tabs when caller did not normalize them.
                      "const proc:\t"
-                     "const func\t"
                      "const type:\t"
                      "if\t"
                      "elsif\t"
@@ -5675,7 +5733,8 @@ N is: - :previous-non-empty for the previous non-empty line,
     (seed7-to-next-line-starts-with "end block")
     (point))
    ;;
-   (t (error "Unsupported block header: %s" header))))
+   (t
+    (error "Unsupported block header: %s" header))))
 
 (defun seed7--indent-offset-for (header first-text)
   "Return indentation offset (in columns) for the inside of a block.
@@ -7367,6 +7426,12 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                         indent-column))
         (setq indent-column (- indent-column seed7-indent-width)))
 
+       ;; Just after the terminating `return ...;' of a short function
+       ;; (no `end func;'), align with the `const func' header rather than
+       ;; inheriting the return statement's own indent step.
+       ((seed7--set (seed7-line-after-short-func-end 0)
+                    indent-column))
+
        ;; When inside a paren block, adjust indent to the column
        ;; following the open paren; any of: ( { [
        ((seed7--set (seed7-line-inside-parens-pair-column 0)
@@ -7405,9 +7470,10 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
         (error "No rule yet to indent line %d" (seed7-current-line-number)))))
     (if indent-column
         indent-column
-      (* (or indent-step
-             (seed7-line-indent-step :previous-non-empty))
-         seed7-indent-width))))
+      (or (seed7-line-after-short-func-end 0)
+          (* (or indent-step
+                 (seed7-line-indent-step :previous-non-empty))
+             seed7-indent-width)))))
 
 
 (defun seed7--indent-one-line ()
