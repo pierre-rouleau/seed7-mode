@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260703.1755
+;; Package-Version: 20260704.1712
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-03T21:55:15+0000 W27-5"
+(defconst seed7-mode-version-timestamp "2026-07-04T21:12:28+0000 W27-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6149,7 +6149,19 @@ column) is not exposed."
            (end-pos   (marker-position (nth 3 seed7--indent-last-block-spec))))
       (when (and start-pos end-pos
                  (<= start-pos current-pos end-pos))
-        (list (nth 0 seed7--indent-last-block-spec)
+        ;; Do NOT reuse the cached final indent column (element 0) verbatim:
+        ;; it was computed for whichever line originally populated the
+        ;; cache, using THAT line's first word.  The offset added on top
+        ;; of the block-start indentation (element 4) depends on the
+        ;; CURRENT line's own first word (e.g. "begin"/"local"/"elsif"
+        ;; get offset 0, ordinary statements get `seed7-indent-width'),
+        ;; so it must be recomputed here even on the cache-hit fast path.
+        (list (+ (nth 4 seed7--indent-last-block-spec)
+                 (seed7--indent-offset-for
+                  (nth 1 seed7--indent-last-block-spec)
+                  (save-excursion
+                    (seed7-to-indent)
+                    (buffer-substring-no-properties (point) (line-end-position)))))
               (nth 1 seed7--indent-last-block-spec)
               start-pos
               end-pos
@@ -6929,7 +6941,34 @@ N is: - :previous-non-empty for the previous non-empty line,
         (cond
          ;; Fast reject: ordinary code lines cannot be definition-ending lines.
          ((not (member first-word-on-line '("end" "const")))
-          nil)
+          ;; The line may be a continuation line of a multi-line
+          ;; forward, DYNAMIC, or native/action declaration whose
+          ;; header ("const func|proc ...") is indented less than
+          ;; this continuation line, e.g.:
+          ;;   const func string: exec_str_expr (
+          ;;                                     inout string: symbol,
+          ;;                                     ...
+          ;;                                     inout string: v) is forward;
+          ;; Locate that header line and re-check the declaration from
+          ;; there, still bounded by END-POS (the end of this
+          ;; continuation line).
+          (let ((boundary (seed7--indent-search-boundary-uncached
+                           (current-column))))
+            (when boundary
+              (save-excursion
+                (goto-char boundary)
+                (seed7-to-indent)
+                (when (string= (seed7--current-line-nth-word 1) "const")
+                  (seed7--set (seed7-line-starts-with-any
+                               0
+                               (list
+                                seed7-func-forward-or-action-declaration-nc-re
+                                seed7---inner-callables-4
+                                seed7-proc-forward-or-action-declaration-re)
+                               nil
+                               end-pos)
+                              previous-defun-column)
+                  previous-defun-column)))))
 
          ;; Handle line that is an end func, struct or enum.
          ((seed7--set (and (seed7-line-starts-with-any
