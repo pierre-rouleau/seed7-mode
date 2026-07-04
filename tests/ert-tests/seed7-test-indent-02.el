@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-03 17:50:36 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-04 17:06:11 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -1071,6 +1071,88 @@ dedented back to column 0/2 instead of inheriting the deep indentation of the
     (should (= (seed7-test-indent-02--line-indentation 9) 2))
     (should (string= (buffer-string)
                      seed7-test-indent-02--multiline-return-short-func-correct))))
+
+;; ---------------------------------------------------------------------------
+;; ---------------------------------------------------------------------------
+;; Tests modeled directly on prg/bas7.sd7 Lines 1655-1661
+
+(defconst seed7-test-indent-02--multiline-forward-decl-correct
+  (concat
+   "const func string: exec_str_expr (\n"
+   "                                  inout string: symbol,\n"
+   "                                  inout string: line,\n"
+   "                                  inout string: variable_name) is forward;\n"
+   "\n"
+   "\n"
+   "const func string: exec_str_function (in defFnType: defFn, inout string: symbol, inout string: line) is func\n"
+   "  result\n"
+   "    var string: exprResult is \"\";\n"
+   "  begin\n"
+   "    exprResult := \"\";\n"
+   "  end func;\n")
+  "Correctly-indented multi-line forward declaration followed by a func,
+matching the layout of prg/bas7.sd7 lines 1655-1661.")
+
+(defconst seed7-test-indent-02--multiline-forward-decl-misaligned
+  (concat
+   "const func string: exec_str_expr (\n"
+   "                                  inout string: symbol,\n"
+   "                                  inout string: line,\n"
+   "                                  inout string: variable_name) is forward;\n"
+   "\n"
+   "\n"
+   "                                  const func string: exec_str_function (in defFnType: defFn, inout string: symbol, inout string: line) is func\n"
+   "                                    result\n"
+   "                                      var string: exprResult is \"\";\n"
+   "                                    begin\n"
+   "                                      exprResult := \"\";\n"
+   "                                    end func;\n")
+  "Misaligned func header/body after a multi-line forward declaration,
+matching the bug reported against prg/bas7.sd7 line 1661: the `const func'
+header inherits the deep indentation of the forward declaration's last
+continuation line instead of being dedented back to column 0.")
+
+(defun seed7-test-indent-02--normalize-blank-lines (text)
+  "Replace whitespace-only lines in TEXT by empty lines."
+  (replace-regexp-in-string "^[[:blank:]]+$" "" text))
+
+(defun seed7-test-indent-02--check-multiline-forward-decl-layout ()
+  "Assert the expected indentation of the multiline-forward-decl fixture."
+  (should (= (seed7-test-indent-02--line-indentation 7) 0))
+  (should (= (seed7-test-indent-02--line-indentation 8) 2))
+  (should (= (seed7-test-indent-02--line-indentation 9) 4))
+  (should (= (seed7-test-indent-02--line-indentation 10) 2))
+  (should (= (seed7-test-indent-02--line-indentation 11) 4))
+  (should (= (seed7-test-indent-02--line-indentation 12) 2)))
+
+(ert-deftest seed7-indent/multiline-forward-decl-keeps-correct-layout ()
+  "A `const func' header after a multi-line forward declaration stays at column 0."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--multiline-forward-decl-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (seed7-test-indent-02--check-multiline-forward-decl-layout)
+    (should
+     (string=
+      (seed7-test-indent-02--normalize-blank-lines (buffer-string))
+      (seed7-test-indent-02--normalize-blank-lines
+       seed7-test-indent-02--multiline-forward-decl-correct)))))
+
+(ert-deftest seed7-indent/multiline-forward-decl-fixes-misaligned-layout ()
+  "After a multi-line `... is forward;' declaration, the next `const func'
+must be dedented back to column 0."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--multiline-forward-decl-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (seed7-test-indent-02--check-multiline-forward-decl-layout)
+    (should
+     (string=
+      (seed7-test-indent-02--normalize-blank-lines (buffer-string))
+      (seed7-test-indent-02--normalize-blank-lines
+       seed7-test-indent-02--multiline-forward-decl-correct)))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-02)
