@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260704.1712
+;; Package-Version: 20260704.1756
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-04T21:12:28+0000 W27-6"
+(defconst seed7-mode-version-timestamp "2026-07-04T21:56:44+0000 W27-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6146,9 +6146,25 @@ column) is not exposed."
                           (seed7-to-indent)
                           (point)))
            (start-pos (marker-position (nth 2 seed7--indent-last-block-spec)))
-           (end-pos   (marker-position (nth 3 seed7--indent-last-block-spec))))
+           (end-pos   (marker-position (nth 3 seed7--indent-last-block-spec)))
+           (current-first-text
+            (save-excursion
+              (seed7-to-indent)
+              (buffer-substring-no-properties (point) (line-end-position)))))
       (when (and start-pos end-pos
-                 (<= start-pos current-pos end-pos))
+                 (<= start-pos current-pos end-pos)
+                 ;; Reject the fast path when the CURRENT line itself starts
+                 ;; a nested section/block (e.g. "begin", "local", "elsif",
+                 ;; "else", "exception", "catch", "until", "result", ...).
+                 ;; Such boundary lines can sit inside a broader cached
+                 ;; [start,end] window (e.g. the whole enclosing function
+                 ;; body) while requiring their OWN fresh backward search
+                 ;; to resolve the correct immediate governing header,
+                 ;; which may differ from whatever header populated the
+                 ;; cache for an earlier line in that same window.
+                 (not (string-match-p
+                       (concat "\\`" seed7-block-start-regexp)
+                       current-first-text)))
         ;; Do NOT reuse the cached final indent column (element 0) verbatim:
         ;; it was computed for whichever line originally populated the
         ;; cache, using THAT line's first word.  The offset added on top
@@ -6156,12 +6172,13 @@ column) is not exposed."
         ;; CURRENT line's own first word (e.g. "begin"/"local"/"elsif"
         ;; get offset 0, ordinary statements get `seed7-indent-width'),
         ;; so it must be recomputed here even on the cache-hit fast path.
+        ;; (message "CACHE-HIT line=%d header=%S start=%d end=%d"
+        ;;          (line-number-at-pos) (nth 1 seed7--indent-last-block-spec)
+        ;;          start-pos end-pos)
         (list (+ (nth 4 seed7--indent-last-block-spec)
                  (seed7--indent-offset-for
                   (nth 1 seed7--indent-last-block-spec)
-                  (save-excursion
-                    (seed7-to-indent)
-                    (buffer-substring-no-properties (point) (line-end-position)))))
+                  current-first-text))
               (nth 1 seed7--indent-last-block-spec)
               start-pos
               end-pos
@@ -6217,6 +6234,8 @@ If a block is found, return a list of 5 elements:
         (when (and (eq n 0) spec)
           (setq seed7--indent-last-block-spec
                 (seed7--cache-block-spec spec))
+          ;; (message "CACHE-MISS line=%d header=%S start=%d end=%d indent-col=%d" (line-number-at-pos) (nth 1 spec) (nth 2 spec) (nth 3 spec)
+          ;;          (nth 0 spec))
           ;; Also update the lightweight bounds cache used for early-bound
           ;; lookups at the top of `seed7-calc-indent'.
           (setq seed7--indent-block-bounds
@@ -7451,9 +7470,19 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                      (not (seed7--indent-search-boundary-valid-p
                            beg-bound (line-beginning-position))))
             (setq beg-bound nil))
-          (seed7--set (seed7-line-inside-a-block-cached
-                       0 nil beg-bound)
-                      spec-list))
+          (or (seed7--set (seed7-line-inside-a-block-cached
+                           0 nil beg-bound)
+                          spec-list)
+             ;; The early bound inherited from the previously cached block
+             ;; can be too narrow/stale for a line that is ITSELF a new
+             ;; nested block-start keyword (e.g. "begin" immediately
+             ;; following "result"), causing the bounded lookup to find
+             ;; nothing even though the line clearly IS inside a block.
+             ;; Retry once with a full, unbounded search before falling
+             ;; through to the generic indent-step fallback below.
+             (and beg-bound
+                  (seed7--set (seed7-line-inside-a-block-cached 0 nil nil)
+                              spec-list))))
         ;; Inside a block.  Check if inside any special zones first.
         ;; For all of those extra checks limit the zone to the scope of the
         ;; current block to improve efficiency. Extend the boundary by 1
