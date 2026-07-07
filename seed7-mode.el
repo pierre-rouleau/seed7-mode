@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260704.1756
+;; Package-Version: 20260707.1035
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-04T21:56:44+0000 W27-6"
+(defconst seed7-mode-version-timestamp "2026-07-07T14:35:17+0000 W28-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1948,7 +1948,7 @@ Group 4: - \"func\" for proc or function that ends with \"end func\".
   "Regexp to detect end of procedure or long function.  No group.")
 
 (defconst seed7-short-func-end-regexp
-  "^[[:blank:]]*return[^;]*;"
+  "^[[:blank:]]*return\\_>[^;]*;"
   "Regexp to detect end of short function.  No group.
 Allow return to not be indented; it should be but in case it's not
 it is still a valid end of a function block.
@@ -2828,6 +2828,43 @@ seed7: cannot run \"%s\"%s: %s"
       ;; When used, delete temp file even if the process or insertion fails.
       (when (and stderr-buffer (file-exists-p temp-stderr-file))
         (delete-file temp-stderr-file)))))
+
+;; ---------------------------------------------------------------------------
+;;* Seed7 Mode Log Utility
+;; =======================
+(defconst seed7--debug-indent-log-buffer-name "*seed7-mode-log*"
+  "Name of the buffer used to accumulate Seed7 indentation debug traces.")
+
+(defun seed7--debug-indent-log-buffer ()
+  "Return the (possibly newly created) Seed7 debug log buffer."
+  (get-buffer-create seed7--debug-indent-log-buffer-name))
+
+(defun seed7--debug-indent-line-p ()
+  "Return non-nil for line ranges currently under indentation debugging."
+  (let ((line (line-number-at-pos)))
+    (or (<= 8757 line 8795)
+        (<= 8936 line 8941))))
+
+(defun seed7--debug-indent-log (fmt &rest args)
+  "Append one formatted indentation debug line to the Seed7 debug log buffer."
+  (when (seed7--debug-indent-line-p)
+    (with-current-buffer (seed7--debug-indent-log-buffer)
+      (goto-char (point-max))
+      (insert (apply #'format fmt args) "\n"))))
+
+(defun seed7-debug-indent-log-clear ()
+  "Clear the Seed7 indentation debug log buffer."
+  (interactive)
+  (with-current-buffer (seed7--debug-indent-log-buffer)
+    (erase-buffer))
+  (message "Seed7 debug log buffer cleared."))
+
+(defun seed7-debug-indent-log-save (file)
+  "Save the contents of the Seed7 indentation debug log buffer to FILE."
+  (interactive "FSave Seed7 debug log to file: ")
+  (with-current-buffer (seed7--debug-indent-log-buffer)
+    (write-region (point-min) (point-max) file))
+  (message "Seed7 debug log saved to %s" file))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Code Navigation
@@ -7473,16 +7510,16 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
           (or (seed7--set (seed7-line-inside-a-block-cached
                            0 nil beg-bound)
                           spec-list)
-             ;; The early bound inherited from the previously cached block
-             ;; can be too narrow/stale for a line that is ITSELF a new
-             ;; nested block-start keyword (e.g. "begin" immediately
-             ;; following "result"), causing the bounded lookup to find
-             ;; nothing even though the line clearly IS inside a block.
-             ;; Retry once with a full, unbounded search before falling
-             ;; through to the generic indent-step fallback below.
-             (and beg-bound
-                  (seed7--set (seed7-line-inside-a-block-cached 0 nil nil)
-                              spec-list))))
+              ;; The early bound inherited from the previously cached block
+              ;; can be too narrow/stale for a line that is ITSELF a new
+              ;; nested block-start keyword (e.g. "begin" immediately
+              ;; following "result"), causing the bounded lookup to find
+              ;; nothing even though the line clearly IS inside a block.
+              ;; Retry once with a full, unbounded search before falling
+              ;; through to the generic indent-step fallback below.
+              (and beg-bound
+                   (seed7--set (seed7-line-inside-a-block-cached 0 nil nil)
+                               spec-list))))
         ;; Inside a block.  Check if inside any special zones first.
         ;; For all of those extra checks limit the zone to the scope of the
         ;; current block to improve efficiency. Extend the boundary by 1
@@ -7568,7 +7605,6 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
           (* (or indent-step
                  (seed7-line-indent-step :previous-non-empty))
              seed7-indent-width)))))
-
 
 (defun seed7--indent-one-line ()
   "Utility: indent the current Seed7 line of code."
