@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260707.1035
+;; Package-Version: 20260707.1049
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-07T14:35:17+0000 W28-2"
+(defconst seed7-mode-version-timestamp "2026-07-07T14:49:47+0000 W28-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7507,6 +7507,9 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                      (not (seed7--indent-search-boundary-valid-p
                            beg-bound (line-beginning-position))))
             (setq beg-bound nil))
+          (seed7--debug-indent-log
+           "BEGBOUND line=%d early-begin-pos=%S indent-bound=%S beg-bound=%S"
+           (line-number-at-pos) early-begin-pos indent-bound beg-bound)
           (or (seed7--set (seed7-line-inside-a-block-cached
                            0 nil beg-bound)
                           spec-list)
@@ -7599,12 +7602,27 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
         ;; inside code it will leave the line unchanged and will print the
         ;; error.
         (error "No rule yet to indent line %d" (seed7-current-line-number)))))
-    (if indent-column
-        indent-column
-      (or (seed7-line-after-short-func-end 0)
-          (* (or indent-step
-                 (seed7-line-indent-step :previous-non-empty))
-             seed7-indent-width)))))
+
+    (let ((result
+           (if indent-column
+               indent-column
+             (or (seed7-line-after-short-func-end 0)
+                 (* (or indent-step
+                        (seed7-line-indent-step :previous-non-empty))
+                    seed7-indent-width)))))
+      (seed7--debug-indent-log
+       "RESULT line=%d indent-column=%S indent-step=%S result=%S"
+       (line-number-at-pos) indent-column indent-step result)
+      result)
+
+    ;; (if indent-column
+    ;;     indent-column
+    ;;   (or (seed7-line-after-short-func-end 0)
+    ;;       (* (or indent-step
+    ;;              (seed7-line-indent-step :previous-non-empty))
+    ;;          seed7-indent-width)))
+
+    ))
 
 (defun seed7--indent-one-line ()
   "Utility: indent the current Seed7 line of code."
