@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260707.1049
+;; Package-Version: 20260707.1704
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-07T14:49:47+0000 W28-2"
+(defconst seed7-mode-version-timestamp "2026-07-07T21:04:40+0000 W28-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5950,19 +5950,28 @@ Move point."
       (save-excursion (goto-char start-pos)
                       (line-end-position))))
 
-(defun seed7--safe-enclosing-block-bounds (match-text)
+(defun seed7--safe-enclosing-block-bounds (match-text known-start-pos)
   "Return (START . END) for block described by MATCH-TEXT, or nil.
 
 This is a defensive wrapper for indentation-time probing.  Some candidate
 matches found by `seed7-block-line-start-regexp' are not valid enclosing
 blocks for the current point.  In that case, do not abort indentation;
-just return nil so the caller can continue searching farther upward."
+just return nil so the caller can continue searching farther upward.
+
+KNOWN-START-POS is the already-known position of the start of the block
+(the beginning of the MATCH-TEXT keyword line), as determined by the
+caller.  Using it directly avoids re-deriving the start position with
+`seed7-to-block-backward' from a point that has already been moved
+forward by `seed7--block-end-pos-for', which is both wasteful and
+fragile for large, deeply-nested blocks (the backward nesting-counting
+search can misfire, e.g. on nested `if'/`elsif'/`case' bodies, throwing
+a `user-error' that gets silently swallowed and yields incorrect nil
+bounds)."
   (condition-case nil
       (save-excursion
-        (let ((end-pos   (seed7--block-end-pos-for match-text))
-              (start-pos (seed7-to-block-backward nil :dont-push-mark)))
-          (when (and start-pos end-pos)
-            (cons start-pos end-pos))))
+        (let ((end-pos (seed7--block-end-pos-for match-text)))
+          (when (and known-start-pos end-pos)
+            (cons known-start-pos end-pos))))
     (user-error nil)))
 
 (defun seed7-line-inside-a-block (n &optional dont-skip-comment-start beg-bound)
@@ -6014,7 +6023,8 @@ If it finds something it returns a list that holds the following information:
                 ;; Identify the end position and start position of the currently
                 ;; enclosing block.  If this candidate is not a valid enclosing
                 ;; block, just keep searching farther upward.
-                (let ((bounds (seed7--safe-enclosing-block-bounds match-text)))
+                (let ((bounds (seed7--safe-enclosing-block-bounds
+                               match-text block-start-pos)))
                   (when bounds
                     (setq enclosing-block-start-pos (car bounds)
                           enclosing-block-end-pos   (cdr bounds))
@@ -6081,7 +6091,8 @@ If it finds something it returns a list that holds the following information:
                           (setq block-start-indent-column (current-column))
                           ;; Identify the end position and start position of the
                           ;; currently enclosing block
-                          (let ((bounds (seed7--safe-enclosing-block-bounds match-text)))
+                          (let ((bounds (seed7--safe-enclosing-block-bounds
+                                         match-text block-start-pos)))
                             (when bounds
                               (setq enclosing-block-start-pos (car bounds)
                                     enclosing-block-end-pos (cdr bounds))
@@ -7602,7 +7613,6 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
         ;; inside code it will leave the line unchanged and will print the
         ;; error.
         (error "No rule yet to indent line %d" (seed7-current-line-number)))))
-
     (let ((result
            (if indent-column
                indent-column
