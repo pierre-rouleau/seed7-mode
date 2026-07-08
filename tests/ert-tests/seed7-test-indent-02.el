@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-08 15:14:54 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-08 16:04:29 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -1343,6 +1343,123 @@ indentation of the surrounding `if'/`else'/`end if' block."
     (seed7-test-indent-02--check-return-prefixed-vars-multi-layout)
     (should (string= (buffer-string)
                      seed7-test-indent-02--return-prefixed-vars-multi-correct))))
+
+;; ---------------------------------------------------------------------------
+;; Test with more keywords
+
+;; ---------------------------------------------------------------------------
+;; Regression: variable names prefixed by any Seed7 keyword must not be
+;; misidentified as that keyword by boundary-sensitive regexes.
+;;
+;; This generalizes the `return_variable' bug (prg/bas7.sd7 exec_call_key)
+;; to every keyword family in seed7-mode.el that participates in
+;; keyword-boundary matching: `seed7--pragma-keywords',
+;; `seed7--lead-in-statement-keywords', `seed7-is-statement-keywords',
+;; `seed7--in-middle-statement-keywords', `seed7--block-start-keywords',
+;; plus "func", "proc", "repeat", "until", and "elsif" (Seed7 does not use
+;; the spelling "elseif").
+;;
+;; For each keyword, an identifier is formed as "<keyword>_suffix" (or
+;; "<keyword>Suffix" when the keyword itself ends in a way that would be
+;; awkward with an underscore) and used as: a declared variable name, an
+;; assignment target, a condition operand, and a call argument -- the same
+;; positions that exposed the original `return_variable' bug.
+
+(defconst seed7-test-indent-02--keyword-prefixed-identifiers
+  '(;; seed7--pragma-keywords (Line ~1000 of seed7-mode.el)
+    "library_name" "message_text" "info_flag" "trace_level"
+    "decls_count" "names_list" "syntax_ok" "system_id"
+    ;; seed7--lead-in-statement-keywords (Line ~1040)
+    "raise_flag" "return_variable"
+    ;; seed7-is-statement-keywords (Line ~1071)
+    "forward_flag" "DYNAMIC_mode" "new_value" "sub_total" "action_code"
+    ;; seed7--in-middle-statement-keywords (Line ~1107)
+    "begin_marker" "default_value" "do_work" "downto_value"
+    "exception_flag" "fixLen_value" "key_name" "len_value"
+    "local_value" "of_type" "otherwise_flag" "param_value"
+    "range_value" "result_code" "step_value" "then_flag"
+    "to_value" "until_flag"
+    ;; seed7--block-start-keywords (Line ~1140)
+    "block_data" "case_value" "enum_type" "for_count" "global_var"
+    "if_flag" "struct_data" "while_flag"
+    ;; Additional keywords explicitly requested
+    "func_name" "proc_name" "repeat_count" "elsif_flag")
+  "Identifiers formed by suffixing every Seed7 keyword family that
+participates in keyword-boundary regex matching in seed7-mode.el, used to
+verify that `\\_<'/`\\_>'/whitespace-delimited (or buggy `\\<'/`\\>'/`\\b')
+matching never misidentifies a keyword-prefixed identifier as the keyword
+itself.")
+
+(defun seed7-test-indent-02--keyword-prefixed-fixture (ident)
+  "Return a correctly-indented Seed7 proc body using IDENT as a variable name.
+
+IDENT is used as a declared local variable, an assignment target, a
+condition operand, and a `writeln' argument -- the same statement
+positions that exposed the original `return_variable' bug."
+  (concat
+   (format "const proc: procUsing_%s (in string: symbol) is func\n" ident)
+   "  local\n"
+   (format "    var string: %s is \"\";\n" ident)
+   "  begin\n"
+   (format "    %s := symbol;\n" ident)
+   (format "    if %s <> \"\" then\n" ident)
+   (format "      writeln(log, %s);\n" ident)
+   "    else\n"
+   "      writeln(log, \"empty\");\n"
+   "    end if;\n"
+   "  end func;\n"))
+
+(defun seed7-test-indent-02--keyword-prefixed-fixture-flat (ident)
+  "Return an unindented (column 0) version of the IDENT fixture body."
+  (mapconcat #'string-trim
+             (split-string (seed7-test-indent-02--keyword-prefixed-fixture ident)
+                            "\n")
+             "\n"))
+
+(defun seed7-test-indent-02--check-keyword-prefixed-layout ()
+  "Assert the expected indentation columns for the IDENT fixture."
+  (should (= (seed7-test-indent-02--line-indentation 1) 0))
+  (should (= (seed7-test-indent-02--line-indentation 2) 2))
+  (should (= (seed7-test-indent-02--line-indentation 3) 4))
+  (should (= (seed7-test-indent-02--line-indentation 4) 2))
+  (should (= (seed7-test-indent-02--line-indentation 5) 4))
+  (should (= (seed7-test-indent-02--line-indentation 6) 4))
+  (should (= (seed7-test-indent-02--line-indentation 7) 6))
+  (should (= (seed7-test-indent-02--line-indentation 8) 4))
+  (should (= (seed7-test-indent-02--line-indentation 9) 6))
+  (should (= (seed7-test-indent-02--line-indentation 10) 4))
+  (should (= (seed7-test-indent-02--line-indentation 11) 2)))
+
+(ert-deftest seed7-indent/keyword-prefixed-vars-keep-correct-layout ()
+  "Variables prefixed by a Seed7 keyword must not lose or gain indentation
+when the surrounding code is already correctly indented, for every keyword
+in `seed7-test-indent-02--keyword-prefixed-identifiers'."
+  (dolist (ident seed7-test-indent-02--keyword-prefixed-identifiers)
+    (with-temp-buffer
+      (setq-local indent-tabs-mode nil)
+      (insert (seed7-test-indent-02--keyword-prefixed-fixture ident))
+      (seed7-mode)
+      (indent-region (point-min) (point-max))
+      (seed7-test-indent-02--check-keyword-prefixed-layout)
+      (should (string= (buffer-string)
+                       (seed7-test-indent-02--keyword-prefixed-fixture ident))))))
+
+(ert-deftest seed7-indent/keyword-prefixed-vars-fix-misaligned-layout ()
+  "Regression test generalizing the `return_variable' bug: for every
+keyword in `seed7-test-indent-02--keyword-prefixed-identifiers', a
+same-named-prefixed variable used as a declaration, assignment target,
+condition operand, and call argument must not corrupt `indent-region'
+of the surrounding `if'/`else'/`end if' block when starting from
+unindented (column 0) code."
+  (dolist (ident seed7-test-indent-02--keyword-prefixed-identifiers)
+    (with-temp-buffer
+      (setq-local indent-tabs-mode nil)
+      (insert (seed7-test-indent-02--keyword-prefixed-fixture-flat ident))
+      (seed7-mode)
+      (indent-region (point-min) (point-max))
+      (seed7-test-indent-02--check-keyword-prefixed-layout)
+      (should (string= (buffer-string)
+                       (seed7-test-indent-02--keyword-prefixed-fixture ident))))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-02)
