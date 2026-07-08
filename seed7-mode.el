@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260707.1704
+;; Package-Version: 20260708.1019
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-07T21:04:40+0000 W28-2"
+(defconst seed7-mode-version-timestamp "2026-07-08T14:19:14+0000 W28-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -2832,39 +2832,50 @@ seed7: cannot run \"%s\"%s: %s"
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Mode Log Utility
 ;; =======================
-(defconst seed7--debug-indent-log-buffer-name "*seed7-mode-log*"
-  "Name of the buffer used to accumulate Seed7 indentation debug traces.")
+;;
+;; Note: un-comment the following code and adjust the line numbers inside
+;;       `seed7--debug-indent-line-p' : they correspond to the line numbers
+;;       of the Seed7 file where the indentation fails and must be examined.
+;;       Also add calls to `seed7--debug-indent-log' inside
+;;       `seed7-calc-indent' to get debugging information.
+;;
+;;       By default this code is disabled as it slows operation down.
+;;       It is kept to help future debugging sessions.
 
-(defun seed7--debug-indent-log-buffer ()
-  "Return the (possibly newly created) Seed7 debug log buffer."
-  (get-buffer-create seed7--debug-indent-log-buffer-name))
 
-(defun seed7--debug-indent-line-p ()
-  "Return non-nil for line ranges currently under indentation debugging."
-  (let ((line (line-number-at-pos)))
-    (or (<= 8757 line 8795)
-        (<= 8936 line 8941))))
-
-(defun seed7--debug-indent-log (fmt &rest args)
-  "Append one formatted indentation debug line to the Seed7 debug log buffer."
-  (when (seed7--debug-indent-line-p)
-    (with-current-buffer (seed7--debug-indent-log-buffer)
-      (goto-char (point-max))
-      (insert (apply #'format fmt args) "\n"))))
-
-(defun seed7-debug-indent-log-clear ()
-  "Clear the Seed7 indentation debug log buffer."
-  (interactive)
-  (with-current-buffer (seed7--debug-indent-log-buffer)
-    (erase-buffer))
-  (message "Seed7 debug log buffer cleared."))
-
-(defun seed7-debug-indent-log-save (file)
-  "Save the contents of the Seed7 indentation debug log buffer to FILE."
-  (interactive "FSave Seed7 debug log to file: ")
-  (with-current-buffer (seed7--debug-indent-log-buffer)
-    (write-region (point-min) (point-max) file))
-  (message "Seed7 debug log saved to %s" file))
+;; (defconst seed7--debug-indent-log-buffer-name "*seed7-mode-log*"
+;;   "Name of the buffer used to accumulate Seed7 indentation debug traces.")
+;;
+;; (defun seed7--debug-indent-log-buffer ()
+;;   "Return the (possibly newly created) Seed7 debug log buffer."
+;;   (get-buffer-create seed7--debug-indent-log-buffer-name))
+;;
+;; (defun seed7--debug-indent-line-p ()
+;;   "Return non-nil for line ranges currently under indentation debugging."
+;;   (let ((line (line-number-at-pos)))
+;;     (or (<= 8757 line 8795)
+;;         (<= 8936 line 8941))))
+;;
+;; (defun seed7--debug-indent-log (fmt &rest args)
+;;   "Append one formatted indentation debug line to the Seed7 debug log buffer."
+;;   (when (seed7--debug-indent-line-p)
+;;     (with-current-buffer (seed7--debug-indent-log-buffer)
+;;       (goto-char (point-max))
+;;       (insert (apply #'format fmt args) "\n"))))
+;;
+;; (defun seed7-debug-indent-log-clear ()
+;;   "Clear the Seed7 indentation debug log buffer."
+;;   (interactive)
+;;   (with-current-buffer (seed7--debug-indent-log-buffer)
+;;     (erase-buffer))
+;;   (message "Seed7 debug log buffer cleared."))
+;;
+;; (defun seed7-debug-indent-log-save (file)
+;;   "Save the contents of the Seed7 indentation debug log buffer to FILE."
+;;   (interactive "FSave Seed7 debug log to file: ")
+;;   (with-current-buffer (seed7--debug-indent-log-buffer)
+;;     (write-region (point-min) (point-max) file))
+;;   (message "Seed7 debug log saved to %s" file))
 
 ;; ---------------------------------------------------------------------------
 ;;* Seed7 Code Navigation
@@ -7518,9 +7529,9 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                      (not (seed7--indent-search-boundary-valid-p
                            beg-bound (line-beginning-position))))
             (setq beg-bound nil))
-          (seed7--debug-indent-log
-           "BEGBOUND line=%d early-begin-pos=%S indent-bound=%S beg-bound=%S"
-           (line-number-at-pos) early-begin-pos indent-bound beg-bound)
+          ;; (seed7--debug-indent-log
+          ;;  "BEGBOUND line=%d early-begin-pos=%S indent-bound=%S beg-bound=%S"
+          ;;  (line-number-at-pos) early-begin-pos indent-bound beg-bound)
           (or (seed7--set (seed7-line-inside-a-block-cached
                            0 nil beg-bound)
                           spec-list)
@@ -7613,26 +7624,26 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
         ;; inside code it will leave the line unchanged and will print the
         ;; error.
         (error "No rule yet to indent line %d" (seed7-current-line-number)))))
-    (let ((result
-           (if indent-column
-               indent-column
-             (or (seed7-line-after-short-func-end 0)
-                 (* (or indent-step
-                        (seed7-line-indent-step :previous-non-empty))
-                    seed7-indent-width)))))
-      (seed7--debug-indent-log
-       "RESULT line=%d indent-column=%S indent-step=%S result=%S"
-       (line-number-at-pos) indent-column indent-step result)
-      result)
 
-    ;; (if indent-column
-    ;;     indent-column
-    ;;   (or (seed7-line-after-short-func-end 0)
-    ;;       (* (or indent-step
-    ;;              (seed7-line-indent-step :previous-non-empty))
-    ;;          seed7-indent-width)))
+    ;; Un-comment following code and comment next block when debugging.
+    ;; (let ((result
+    ;;        (if indent-column
+    ;;            indent-column
+    ;;          (or (seed7-line-after-short-func-end 0)
+    ;;              (* (or indent-step
+    ;;                     (seed7-line-indent-step :previous-non-empty))
+    ;;                 seed7-indent-width)))))
+    ;;   (seed7--debug-indent-log
+    ;;    "RESULT line=%d indent-column=%S indent-step=%S result=%S"
+    ;;    (line-number-at-pos) indent-column indent-step result)
+    ;;   result)
 
-    ))
+    (if indent-column
+        indent-column
+      (or (seed7-line-after-short-func-end 0)
+          (* (or indent-step
+                 (seed7-line-indent-step :previous-non-empty))
+             seed7-indent-width)))))
 
 (defun seed7--indent-one-line ()
   "Utility: indent the current Seed7 line of code."
