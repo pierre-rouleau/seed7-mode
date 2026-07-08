@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260708.1019
+;; Package-Version: 20260708.1421
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-08T14:19:14+0000 W28-3"
+(defconst seed7-mode-version-timestamp "2026-07-08T18:21:34+0000 W28-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3557,8 +3557,8 @@ statement.  Return nil otherwise."
 ;;          also drop the extra +? that caused the +?+? double-quantifier:
 (defconst seed7---inner-callables-2
   (format
-   "\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s;\\)\\)"
-   ;;                                                ^^ no +? here; [^;]+ already quantifies
+   "\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return\\_>%s;\\)\\)"
+   ;;                                                    ^^ no +? here; [^;]+ already quantifies
    ;;             (---------------)
    ;;    (----------------------------)     (-------------)
    ;;  (-----------------------------------------------------)
@@ -3570,7 +3570,7 @@ statement.  Return nil otherwise."
   "const proc: .+? is forward;")
 
 (defconst seed7--callable-return-re
-  (format "return%s;"
+  (format "return\\_>%s;"
           seed7--any-non-semicolon-re))
 
 (defconst seed7--inner-callables-triplets-re
