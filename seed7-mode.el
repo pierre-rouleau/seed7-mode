@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260708.2223
+;; Package-Version: 20260709.1346
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-09T02:23:49+0000 W28-4"
+(defconst seed7-mode-version-timestamp "2026-07-09T17:46:06+0000 W28-4"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7028,39 +7028,39 @@ N is: - :previous-non-empty for the previous non-empty line,
           ;; `syntax-ppss'/`parse-partial-sexp' on every line walked) for
           ;; the overwhelming majority of ordinary code lines.
           (when (save-excursion
-                 (goto-char end-pos)
-                 (or (looking-back "is[[:blank:]]+forward;" (line-beginning-position))
-                     (looking-back "is[[:blank:]]+DYNAMIC;" (line-beginning-position))
-                     (looking-back "is[[:blank:]]+action[[:blank:]]+\"[^\"]*\";"
-                                   (line-beginning-position))))
-              ;; The line may be a continuation line of a multi-line
-              ;; forward, DYNAMIC, or native/action declaration whose
-              ;; header ("const func|proc ...") is indented less than
-              ;; this continuation line, e.g.:
-              ;;   const func string: exec_str_expr (
-              ;;                                     inout string: symbol,
-              ;;                                     ...
-              ;;                                     inout string: v) is forward;
-              ;; Locate that header line and re-check the declaration from
-              ;; there, still bounded by END-POS (the end of this
-              ;; continuation line).
-              (let ((boundary (seed7--indent-search-boundary-uncached
-                               (current-column))))
-                (when boundary
-                  (save-excursion
-                    (goto-char boundary)
-                    (seed7-to-indent)
-                    (when (string= (seed7--current-line-nth-word 1) "const")
-                      (seed7--set (seed7-line-starts-with-any
-                                   0
-                                   (list
-                                    seed7-func-forward-or-action-declaration-nc-re
-                                    seed7---inner-callables-4
-                                    seed7-proc-forward-or-action-declaration-re)
-                                   nil
-                                   end-pos)
-                                  previous-defun-column)
-                      previous-defun-column))))))
+                  (goto-char end-pos)
+                  (or (looking-back "is[[:blank:]]+forward;" (line-beginning-position))
+                      (looking-back "is[[:blank:]]+DYNAMIC;" (line-beginning-position))
+                      (looking-back "is[[:blank:]]+action[[:blank:]]+\"[^\"]*\";"
+                                    (line-beginning-position))))
+            ;; The line may be a continuation line of a multi-line
+            ;; forward, DYNAMIC, or native/action declaration whose
+            ;; header ("const func|proc ...") is indented less than
+            ;; this continuation line, e.g.:
+            ;;   const func string: exec_str_expr (
+            ;;                                     inout string: symbol,
+            ;;                                     ...
+            ;;                                     inout string: v) is forward;
+            ;; Locate that header line and re-check the declaration from
+            ;; there, still bounded by END-POS (the end of this
+            ;; continuation line).
+            (let ((boundary (seed7--indent-search-boundary-uncached
+                             (current-column))))
+              (when boundary
+                (save-excursion
+                  (goto-char boundary)
+                  (seed7-to-indent)
+                  (when (string= (seed7--current-line-nth-word 1) "const")
+                    (seed7--set (seed7-line-starts-with-any
+                                 0
+                                 (list
+                                  seed7-func-forward-or-action-declaration-nc-re
+                                  seed7---inner-callables-4
+                                  seed7-proc-forward-or-action-declaration-re)
+                                 nil
+                                 end-pos)
+                                previous-defun-column)
+                    previous-defun-column))))))
 
          ;; Handle line that is an end func, struct or enum.
          ((seed7--set (and (seed7-line-starts-with-any
@@ -7086,6 +7086,21 @@ N is: - :previous-non-empty for the previous non-empty line,
                        end-pos)
                       previous-defun-column)
           previous-defun-column)
+
+         ;; Fast reject `#2`: these block terminators can never end a defun
+         ;; (func/proc/struct/enum use different, mutually exclusive
+         ;; terminator keywords), so skip the expensive
+         ;; seed7-beg-of-defun/seed7-end-of-defun round trip entirely.
+         ((seed7-line-starts-with-any
+           0
+           '("end[[:blank:]]+?if[[:blank:]]*?;"
+             "end[[:blank:]]+?for[[:blank:]]*?;"
+             "end[[:blank:]]+?while[[:blank:]]*?;"
+             "end[[:blank:]]+?case[[:blank:]]*?;"
+             "end[[:blank:]]+?block[[:blank:]]*?;")
+           nil
+           end-pos)
+          nil)
 
          ;; Fallback only for plausible lines, not for every ordinary code line.
          (t
