@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-03 10:55:38 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-08 16:04:29 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -1012,6 +1012,454 @@ on line 2 (`return value and ...;') does nothing."
     (forward-line 1)                    ; move to the first `return' line
     (seed7-indent-line)
     (should (= (seed7-test-indent-02--line-indentation 2) 2))))
+
+;; ---------------------------------------------------------------------------
+;; Tests modeled directly on prg/bas7.sd7 Lines 693-707
+
+(defconst seed7-test-indent-02--multiline-return-short-func-correct
+  (concat
+   "const func boolean: isStringExpr (in string: symbol) is\n"
+   "  return symbol in string_var_name or\n"
+   "         symbol <> \"\" and\n"
+   "         (symbol[length(symbol)] = '$' or symbol[1] = '\\\"' or\n"
+   "          not symbol[length(symbol)] in numeric_var_suffix);\n"
+   "\n"
+   "\n"
+   "const func boolean: isStringVar (in string: symbol) is\n"
+   "  return symbol in string_var_name;\n")
+  "Correctly-indented adjacent short functions with a multi-line `return'.")
+
+(defconst seed7-test-indent-02--multiline-return-short-func-misaligned
+  (concat
+   "const func boolean: isStringExpr (in string: symbol) is\n"
+   "  return symbol in string_var_name or\n"
+   "         symbol <> \"\" and\n"
+   "         (symbol[length(symbol)] = '$' or symbol[1] = '\\\"' or\n"
+   "          not symbol[length(symbol)] in numeric_var_suffix);\n"
+   "\n"
+   "\n"
+   "          const func boolean: isStringVar (in string: symbol) is\n"
+   "            return symbol in string_var_name;\n")
+  "Misaligned header/return after a multi-line `return' short function,
+matching the bug reported against prg/bas7.sd7 lines 693-701.")
+
+(ert-deftest seed7-indent/multiline-return-short-func-keeps-correct-layout ()
+  "A `const func' header after a multi-line-`return' short function stays at
+column 0, reproducing the layout of prg/bas7.sd7 lines 693-701."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--multiline-return-short-func-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 8) 0))
+    (should (= (seed7-test-indent-02--line-indentation 9) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--multiline-return-short-func-correct))))
+
+(ert-deftest seed7-indent/multiline-return-short-func-fixes-misaligned-layout ()
+  "Regression test for the bug reported against prg/bas7.sd7 lines 700 and 707:
+after a short function whose `return' statement spans multiple continuation
+lines, the next `const func' header (and its own `return' line) must be
+dedented back to column 0/2 instead of inheriting the deep indentation of the
+`return' statement's last continuation line."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--multiline-return-short-func-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 8) 0))
+    (should (= (seed7-test-indent-02--line-indentation 9) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--multiline-return-short-func-correct))))
+
+;; ---------------------------------------------------------------------------
+;; ---------------------------------------------------------------------------
+;; Tests modeled directly on prg/bas7.sd7 Lines 1655-1661
+
+(defconst seed7-test-indent-02--multiline-forward-decl-correct
+  (concat
+   "const func string: exec_str_expr (\n"
+   "                                  inout string: symbol,\n"
+   "                                  inout string: line,\n"
+   "                                  inout string: variable_name) is forward;\n"
+   "\n"
+   "\n"
+   "const func string: exec_str_function (in defFnType: defFn, inout string: symbol, inout string: line) is func\n"
+   "  result\n"
+   "    var string: exprResult is \"\";\n"
+   "  begin\n"
+   "    exprResult := \"\";\n"
+   "  end func;\n")
+  "Correctly-indented multi-line forward declaration followed by a func,
+matching the layout of prg/bas7.sd7 lines 1655-1661.")
+
+(defconst seed7-test-indent-02--multiline-forward-decl-misaligned
+  (concat
+   "const func string: exec_str_expr (\n"
+   "                                  inout string: symbol,\n"
+   "                                  inout string: line,\n"
+   "                                  inout string: variable_name) is forward;\n"
+   "\n"
+   "\n"
+   "                                  const func string: exec_str_function (in defFnType: defFn, inout string: symbol, inout string: line) is func\n"
+   "                                    result\n"
+   "                                      var string: exprResult is \"\";\n"
+   "                                    begin\n"
+   "                                      exprResult := \"\";\n"
+   "                                    end func;\n")
+  "Misaligned func header/body after a multi-line forward declaration,
+matching the bug reported against prg/bas7.sd7 line 1661: the `const func'
+header inherits the deep indentation of the forward declaration's last
+continuation line instead of being dedented back to column 0.")
+
+(defun seed7-test-indent-02--normalize-blank-lines (text)
+  "Replace whitespace-only lines in TEXT by empty lines."
+  (replace-regexp-in-string "^[[:blank:]]+$" "" text))
+
+(defun seed7-test-indent-02--check-multiline-forward-decl-layout ()
+  "Assert the expected indentation of the multiline-forward-decl fixture."
+  (should (= (seed7-test-indent-02--line-indentation 7) 0))
+  (should (= (seed7-test-indent-02--line-indentation 8) 2))
+  (should (= (seed7-test-indent-02--line-indentation 9) 4))
+  (should (= (seed7-test-indent-02--line-indentation 10) 2))
+  (should (= (seed7-test-indent-02--line-indentation 11) 4))
+  (should (= (seed7-test-indent-02--line-indentation 12) 2)))
+
+(ert-deftest seed7-indent/multiline-forward-decl-keeps-correct-layout ()
+  "A `const func' header after a multi-line forward declaration stays at column 0."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--multiline-forward-decl-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (seed7-test-indent-02--check-multiline-forward-decl-layout)
+    (should
+     (string=
+      (seed7-test-indent-02--normalize-blank-lines (buffer-string))
+      (seed7-test-indent-02--normalize-blank-lines
+       seed7-test-indent-02--multiline-forward-decl-correct)))))
+
+(ert-deftest seed7-indent/multiline-forward-decl-fixes-misaligned-layout ()
+  "After a multi-line `... is forward;' declaration, the next `const func'
+must be dedented back to column 0."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--multiline-forward-decl-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (seed7-test-indent-02--check-multiline-forward-decl-layout)
+    (should
+     (string=
+      (seed7-test-indent-02--normalize-blank-lines (buffer-string))
+      (seed7-test-indent-02--normalize-blank-lines
+       seed7-test-indent-02--multiline-forward-decl-correct)))))
+
+;; ---------------------------------------------------------------------------
+;; Test Seed7 code that has variables with names that start with 'return'
+;; Make sure this does not cause issues in the indentation.
+
+;; ---------------------------------------------------------------------------
+;; Regression: variable names that start with the `return' keyword
+;; (prg/bas7.sd7 exec_call_key, lines 8793-8938)
+;; ---------------------------------------------------------------------------
+;;
+;; `seed7---inner-callables-2' and `seed7--callable-return-re' used to build
+;; their "return ...;" pattern via `(format "return%s;" seed7--any-non-semicolon-re)'
+;; with no boundary after the literal "return".  Since
+;; `seed7--any-non-semicolon-re' is "[^;]+", this spuriously matched an
+;; entire assignment statement like `return_variable := get_name(symbol, line);'
+;; as if it were a `return ...;' statement, corrupting the nesting-counting
+;; regex used by `seed7-beg-of-defun' / `seed7-to-block-forward' and breaking
+;; indentation of every following line in the enclosing block.  The fix adds
+;; `\\_>' immediately after "return" in both constants.
+
+(defconst seed7-test-indent-02--return-prefixed-var-correct
+  (concat
+   "const proc: procWithReturnPrefixedVar (inout string: symbol, inout string: line) is func\n"
+   "  local\n"
+   "    var string: return_variable is \"\";\n"
+   "    var string: status_variable is \"\";\n"
+   "  begin\n"
+   "    return_variable := get_name(symbol, line);\n"
+   "    status_variable := get_name(symbol, line);\n"
+   "    if return_variable = status_variable then\n"
+   "      writeln(log, \"match\");\n"
+   "    elsif return_variable <> \"\" then\n"
+   "      writeln(log, \"nonempty\");\n"
+   "    end if;\n"
+   "  end func;\n")
+  "Correctly-indented proc using a `return_variable' local variable,
+matching the layout of prg/bas7.sd7 exec_call_key (lines 8793-8938).")
+
+(defconst seed7-test-indent-02--return-prefixed-var-misaligned
+  (concat
+   "const proc: procWithReturnPrefixedVar (inout string: symbol, inout string: line) is func\n"
+   "  local\n"
+   "    var string: return_variable is \"\";\n"
+   "    var string: status_variable is \"\";\n"
+   "  begin\n"
+   "    return_variable := get_name(symbol, line);\n"
+   "  status_variable := get_name(symbol, line);\n"
+   "  if return_variable = status_variable then\n"
+   "    writeln(log, \"match\");\n"
+   "  elsif return_variable <> \"\" then\n"
+   "    writeln(log, \"nonempty\");\n"
+   "  end if;\n"
+   "  end func;\n")
+  "Misaligned proc reproducing the bug: everything after the
+`return_variable := ...;' assignment loses 2 columns of indentation,
+matching prg/bas7.sd7 lines 8807-8938 before the `\\\\_>' regex fix.")
+
+(defun seed7-test-indent-02--check-return-prefixed-var-layout ()
+  "Assert the expected indentation for the return-prefixed-var fixture."
+  (should (= (seed7-test-indent-02--line-indentation 1) 0))
+  (should (= (seed7-test-indent-02--line-indentation 2) 2))
+  (should (= (seed7-test-indent-02--line-indentation 3) 4))
+  (should (= (seed7-test-indent-02--line-indentation 4) 4))
+  (should (= (seed7-test-indent-02--line-indentation 5) 2))
+  (should (= (seed7-test-indent-02--line-indentation 6) 4))
+  (should (= (seed7-test-indent-02--line-indentation 7) 4))
+  (should (= (seed7-test-indent-02--line-indentation 8) 4))
+  (should (= (seed7-test-indent-02--line-indentation 9) 6))
+  (should (= (seed7-test-indent-02--line-indentation 10) 4))
+  (should (= (seed7-test-indent-02--line-indentation 11) 6))
+  (should (= (seed7-test-indent-02--line-indentation 12) 4))
+  (should (= (seed7-test-indent-02--line-indentation 13) 2)))
+
+(ert-deftest seed7-indent/return-prefixed-var-keeps-correct-layout ()
+  "A `return_variable' local variable must not be mistaken for a `return'
+statement by the nesting-counting regexes, reproducing prg/bas7.sd7
+exec_call_key's layout when already correctly indented."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--return-prefixed-var-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (seed7-test-indent-02--check-return-prefixed-var-layout)
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--return-prefixed-var-correct))))
+
+(ert-deftest seed7-indent/return-prefixed-var-fixes-misaligned-layout ()
+  "Regression test for prg/bas7.sd7 lines 8807/8808: assigning to a
+`return_variable' local must not corrupt indentation of subsequent lines
+in the same block, as it did when `seed7---inner-callables-2' and
+`seed7--callable-return-re' matched \"return_variable := ...;\" as a
+`return ...;' statement."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--return-prefixed-var-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (seed7-test-indent-02--check-return-prefixed-var-layout)
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--return-prefixed-var-correct))))
+
+;; ---------------------------------------------------------------------------
+;; Generalized case: several distinct `return'-prefixed identifiers used in
+;; different statement positions (assignment target, condition, expression
+;; argument), to ensure the `\\_>' fix is not narrowly specific to the exact
+;; identifier `return_variable' or to the assignment position alone.
+
+(defconst seed7-test-indent-02--return-prefixed-vars-multi-correct
+  (concat
+   "const func string: computeReturnCode (in string: symbol) is func\n"
+   "  result\n"
+   "    var string: returned_value is \"\";\n"
+   "  local\n"
+   "    var integer: return_code is 0;\n"
+   "  begin\n"
+   "    return_code := length(symbol);\n"
+   "    if return_code > 0 then\n"
+   "      returned_value := str(return_code);\n"
+   "    else\n"
+   "      returned_value := \"empty\";\n"
+   "    end if;\n"
+   "    writeln(log, returned_value);\n"
+   "  end func;\n")
+  "Correctly-indented function using several `return'-prefixed identifiers
+(`returned_value', `return_code') as a result variable, a local variable,
+an assignment target, a condition operand, and a call argument.")
+
+(defconst seed7-test-indent-02--return-prefixed-vars-multi-misaligned
+  (concat
+   "const func string: computeReturnCode (in string: symbol) is func\n"
+   "  result\n"
+   "    var string: returned_value is \"\";\n"
+   "  local\n"
+   "    var integer: return_code is 0;\n"
+   "  begin\n"
+   "    return_code := length(symbol);\n"
+   "  if return_code > 0 then\n"
+   "    returned_value := str(return_code);\n"
+   "  else\n"
+   "    returned_value := \"empty\";\n"
+   "  end if;\n"
+   "  writeln(log, returned_value);\n"
+   "  end func;\n")
+  "Misaligned version reproducing the same class of bug for multiple
+`return'-prefixed identifiers (`return_code', `returned_value') rather
+than just `return_variable'.")
+
+(defun seed7-test-indent-02--check-return-prefixed-vars-multi-layout ()
+  "Assert the expected indentation for the multi-var return-prefixed fixture."
+  (should (= (seed7-test-indent-02--line-indentation 1) 0))
+  (should (= (seed7-test-indent-02--line-indentation 2) 2))
+  (should (= (seed7-test-indent-02--line-indentation 3) 4))
+  (should (= (seed7-test-indent-02--line-indentation 4) 2))
+  (should (= (seed7-test-indent-02--line-indentation 5) 4))
+  (should (= (seed7-test-indent-02--line-indentation 6) 2))
+  (should (= (seed7-test-indent-02--line-indentation 7) 4))
+  (should (= (seed7-test-indent-02--line-indentation 8) 4))
+  (should (= (seed7-test-indent-02--line-indentation 9) 6))
+  (should (= (seed7-test-indent-02--line-indentation 10) 4))
+  (should (= (seed7-test-indent-02--line-indentation 11) 6))
+  (should (= (seed7-test-indent-02--line-indentation 12) 4))
+  (should (= (seed7-test-indent-02--line-indentation 13) 4))
+  (should (= (seed7-test-indent-02--line-indentation 14) 2)))
+
+(ert-deftest seed7-indent/return-prefixed-vars-multi-keeps-correct-layout ()
+  "Several `return'-prefixed identifiers used as result/local variables,
+assignment targets, condition operands, and call arguments must not
+confuse the `return ...;' nesting-counting regexes when already correctly
+indented."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--return-prefixed-vars-multi-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (seed7-test-indent-02--check-return-prefixed-vars-multi-layout)
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--return-prefixed-vars-multi-correct))))
+
+(ert-deftest seed7-indent/return-prefixed-vars-multi-fixes-misaligned-layout ()
+  "Regression test generalizing the `return_variable' bug: `return_code'
+and `returned_value' used in several statement positions must not corrupt
+indentation of the surrounding `if'/`else'/`end if' block."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--return-prefixed-vars-multi-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (seed7-test-indent-02--check-return-prefixed-vars-multi-layout)
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--return-prefixed-vars-multi-correct))))
+
+;; ---------------------------------------------------------------------------
+;; Test with more keywords
+
+;; ---------------------------------------------------------------------------
+;; Regression: variable names prefixed by any Seed7 keyword must not be
+;; misidentified as that keyword by boundary-sensitive regexes.
+;;
+;; This generalizes the `return_variable' bug (prg/bas7.sd7 exec_call_key)
+;; to every keyword family in seed7-mode.el that participates in
+;; keyword-boundary matching: `seed7--pragma-keywords',
+;; `seed7--lead-in-statement-keywords', `seed7-is-statement-keywords',
+;; `seed7--in-middle-statement-keywords', `seed7--block-start-keywords',
+;; plus "func", "proc", "repeat", "until", and "elsif" (Seed7 does not use
+;; the spelling "elseif").
+;;
+;; For each keyword, an identifier is formed as "<keyword>_suffix" (or
+;; "<keyword>Suffix" when the keyword itself ends in a way that would be
+;; awkward with an underscore) and used as: a declared variable name, an
+;; assignment target, a condition operand, and a call argument -- the same
+;; positions that exposed the original `return_variable' bug.
+
+(defconst seed7-test-indent-02--keyword-prefixed-identifiers
+  '(;; seed7--pragma-keywords (Line ~1000 of seed7-mode.el)
+    "library_name" "message_text" "info_flag" "trace_level"
+    "decls_count" "names_list" "syntax_ok" "system_id"
+    ;; seed7--lead-in-statement-keywords (Line ~1040)
+    "raise_flag" "return_variable"
+    ;; seed7-is-statement-keywords (Line ~1071)
+    "forward_flag" "DYNAMIC_mode" "new_value" "sub_total" "action_code"
+    ;; seed7--in-middle-statement-keywords (Line ~1107)
+    "begin_marker" "default_value" "do_work" "downto_value"
+    "exception_flag" "fixLen_value" "key_name" "len_value"
+    "local_value" "of_type" "otherwise_flag" "param_value"
+    "range_value" "result_code" "step_value" "then_flag"
+    "to_value" "until_flag"
+    ;; seed7--block-start-keywords (Line ~1140)
+    "block_data" "case_value" "enum_type" "for_count" "global_var"
+    "if_flag" "struct_data" "while_flag"
+    ;; Additional keywords explicitly requested
+    "func_name" "proc_name" "repeat_count" "elsif_flag")
+  "Identifiers formed by suffixing every Seed7 keyword family that
+participates in keyword-boundary regex matching in seed7-mode.el, used to
+verify that `\\_<'/`\\_>'/whitespace-delimited (or buggy `\\<'/`\\>'/`\\b')
+matching never misidentifies a keyword-prefixed identifier as the keyword
+itself.")
+
+(defun seed7-test-indent-02--keyword-prefixed-fixture (ident)
+  "Return a correctly-indented Seed7 proc body using IDENT as a variable name.
+
+IDENT is used as a declared local variable, an assignment target, a
+condition operand, and a `writeln' argument -- the same statement
+positions that exposed the original `return_variable' bug."
+  (concat
+   (format "const proc: procUsing_%s (in string: symbol) is func\n" ident)
+   "  local\n"
+   (format "    var string: %s is \"\";\n" ident)
+   "  begin\n"
+   (format "    %s := symbol;\n" ident)
+   (format "    if %s <> \"\" then\n" ident)
+   (format "      writeln(log, %s);\n" ident)
+   "    else\n"
+   "      writeln(log, \"empty\");\n"
+   "    end if;\n"
+   "  end func;\n"))
+
+(defun seed7-test-indent-02--keyword-prefixed-fixture-flat (ident)
+  "Return an unindented (column 0) version of the IDENT fixture body."
+  (mapconcat #'string-trim
+             (split-string (seed7-test-indent-02--keyword-prefixed-fixture ident)
+                            "\n")
+             "\n"))
+
+(defun seed7-test-indent-02--check-keyword-prefixed-layout ()
+  "Assert the expected indentation columns for the IDENT fixture."
+  (should (= (seed7-test-indent-02--line-indentation 1) 0))
+  (should (= (seed7-test-indent-02--line-indentation 2) 2))
+  (should (= (seed7-test-indent-02--line-indentation 3) 4))
+  (should (= (seed7-test-indent-02--line-indentation 4) 2))
+  (should (= (seed7-test-indent-02--line-indentation 5) 4))
+  (should (= (seed7-test-indent-02--line-indentation 6) 4))
+  (should (= (seed7-test-indent-02--line-indentation 7) 6))
+  (should (= (seed7-test-indent-02--line-indentation 8) 4))
+  (should (= (seed7-test-indent-02--line-indentation 9) 6))
+  (should (= (seed7-test-indent-02--line-indentation 10) 4))
+  (should (= (seed7-test-indent-02--line-indentation 11) 2)))
+
+(ert-deftest seed7-indent/keyword-prefixed-vars-keep-correct-layout ()
+  "Variables prefixed by a Seed7 keyword must not lose or gain indentation
+when the surrounding code is already correctly indented, for every keyword
+in `seed7-test-indent-02--keyword-prefixed-identifiers'."
+  (dolist (ident seed7-test-indent-02--keyword-prefixed-identifiers)
+    (with-temp-buffer
+      (setq-local indent-tabs-mode nil)
+      (insert (seed7-test-indent-02--keyword-prefixed-fixture ident))
+      (seed7-mode)
+      (indent-region (point-min) (point-max))
+      (seed7-test-indent-02--check-keyword-prefixed-layout)
+      (should (string= (buffer-string)
+                       (seed7-test-indent-02--keyword-prefixed-fixture ident))))))
+
+(ert-deftest seed7-indent/keyword-prefixed-vars-fix-misaligned-layout ()
+  "Regression test generalizing the `return_variable' bug: for every
+keyword in `seed7-test-indent-02--keyword-prefixed-identifiers', a
+same-named-prefixed variable used as a declaration, assignment target,
+condition operand, and call argument must not corrupt `indent-region'
+of the surrounding `if'/`else'/`end if' block when starting from
+unindented (column 0) code."
+  (dolist (ident seed7-test-indent-02--keyword-prefixed-identifiers)
+    (with-temp-buffer
+      (setq-local indent-tabs-mode nil)
+      (insert (seed7-test-indent-02--keyword-prefixed-fixture-flat ident))
+      (seed7-mode)
+      (indent-region (point-min) (point-max))
+      (seed7-test-indent-02--check-keyword-prefixed-layout)
+      (should (string= (buffer-string)
+                       (seed7-test-indent-02--keyword-prefixed-fixture ident))))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-02)
