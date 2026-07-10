@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260710.1647
+;; Package-Version: 20260710.1742
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-10T20:47:08+0000 W28-5"
+(defconst seed7-mode-version-timestamp "2026-07-10T21:42:09+0000 W28-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1815,20 +1815,20 @@ When optional CAPTURE is non-nil, The returned regexp captures
 Otherwise the returned regexp captures nothing."
   (declare (side-effect-free t))
   (format
-   ;;    const     (varfunc| func          )RT    :
-   ;;              (-----------------------)
-   ;;              G1                      G2
-   "^%s*?const%s+\\(%s\\(?:var\\)?func%s+\\)%s%s??:"
-   ;;%        %     %                 %     % %
-   ;;1        2     3                 4     5 6
+   ;;    const     proc  :  |  (varfunc| func          )RT    :
+   ;;              (--)     |  (-----------------------)
+   ;;              G1       |  G1'                     G2
+   "^%s*?const%s+\\(?:\\(%sproc\\)%s*?:\\|\\(%s\\(?:var\\)?func%s+\\)%s%s??:\\)"
    seed7--blank-re                      ; 1
    seed7--whitespace-re                 ; 2
-   (if capture "" "?:")                 ; 3
-   seed7--blank-re                      ; 4
+   (if capture "" "?:")                 ; 3: proc branch capture
+   seed7--whitespace-re                 ; 4: optional blank before ':'
+   (if capture "" "?:")                 ; 5: func branch capture
+   seed7--blank-re                      ; 6
    (if capture
-       seed7-type-identifier-re         ; 5 : RT : Return Type
+       seed7-type-identifier-re         ; 7 : RT : Return Type
      seed7-type-identifier-nc-re)
-   seed7--whitespace-re))               ; 6
+   seed7--whitespace-re))               ; 8
 
 (defconst seed7-proc-beg-of-decl-re
   (format
