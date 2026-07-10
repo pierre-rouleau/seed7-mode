@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260710.1742
+;; Package-Version: 20260710.1756
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-10T21:42:09+0000 W28-5"
+(defconst seed7-mode-version-timestamp "2026-07-10T21:56:58+0000 W28-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6185,33 +6185,45 @@ If it finds something it returns a list that holds the following information:
                        ;;
                        ;; Case 2: point is on an internal block start line.
                        ((seed7--on-lineof block-start-pos current-pos)
-                        ;; Look for the previous block and use info from it.
+                        ;; Look for the TRUE enclosing block. Keep walking
+                        ;; backward past any sibling candidate whose own
+                        ;; bounds do not actually contain CURRENT-POS (e.g.
+                        ;; a preceding one-line action/forward declaration
+                        ;; sibling at the same nesting level) instead of
+                        ;; accepting the first candidate found.
                         (goto-char block-start-pos)
-                        (when (seed7-re-search-backward
-                               seed7-block-line-start-regexp beg-bound)
-                          (setq match-text (replace-regexp-in-string
-                                            "[[:blank:]]+$" " "
-                                            (substring-no-properties (match-string 1))))
-                          (setq block-start-pos (point))
-                          (skip-chars-forward " \t")
-                          (setq block-start-indent-column (current-column))
-                          ;; Identify the end position and start position of the
-                          ;; currently enclosing block
-                          (let ((bounds (seed7--safe-enclosing-block-bounds
-                                         match-text block-start-pos)))
-                            (when bounds
-                              (setq enclosing-block-start-pos (car bounds)
-                                    enclosing-block-end-pos (cdr bounds))
-                              (when (<= block-start-pos current-pos enclosing-block-end-pos)
-                                (setq keep-searching nil
-                                      result (list (+ block-start-indent-column
-                                                      (seed7--indent-offset-for
+                        (let ((inner-searching t))
+                          (while (and inner-searching
+                                      (seed7-re-search-backward
+                                       seed7-block-line-start-regexp beg-bound))
+                            (setq match-text (replace-regexp-in-string
+                                              "[[:blank:]]+$" " "
+                                              (substring-no-properties (match-string 1))))
+                            (setq block-start-pos (point))
+                            (skip-chars-forward " \t")
+                            (setq block-start-indent-column (current-column))
+                            (let ((bounds (seed7--safe-enclosing-block-bounds
+                                           match-text block-start-pos)))
+                              (if (and bounds
+                                       (<= block-start-pos current-pos (cdr bounds)))
+                                  (progn
+                                    (setq enclosing-block-start-pos (car bounds)
+                                          enclosing-block-end-pos (cdr bounds))
+                                    (setq inner-searching nil
+                                          keep-searching nil
+                                          result (list (+ block-start-indent-column
+                                                          (seed7--indent-offset-for
+                                                           match-text
+                                                           line-n-first-text))
                                                        match-text
-                                                       line-n-first-text))
-                                                   match-text
-                                                   block-start-pos
-                                                   enclosing-block-end-pos
-                                                   block-start-indent-column)))))))
+                                                       block-start-pos
+                                                       enclosing-block-end-pos
+                                                       block-start-indent-column)))
+                                ;; Not a valid enclosing candidate (e.g. a
+                                ;; sibling one-liner): keep walking backward
+                                ;; from just before this candidate's start.
+                                (goto-char block-start-pos)
+                                (unless (bobp) (backward-char)))))))
                        ;;
                        ;; Case 3: point is on a line that is not on the block start,
                        ;;         but between the block start and the block end.
@@ -7468,8 +7480,9 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
       (error "seed7-calc-indent: recursion depth exceeded at line %d"
              (line-number-at-pos)))
     ;; don't indent blank lines
-    (unless (and (not first-word-on-line)
-                 (seed7-blank-line-p))
+    (if (and (not first-word-on-line)
+             (seed7-blank-line-p))
+        (setq indent-column 0)
       (cond
        ;; in comment
        ((and (seed7-current-line-start-inside-comment-p)
