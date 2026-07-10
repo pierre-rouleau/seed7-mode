@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260710.1619
+;; Package-Version: 20260710.1647
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-10T20:19:23+0000 W28-5"
+(defconst seed7-mode-version-timestamp "2026-07-10T20:47:08+0000 W28-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -4399,10 +4399,19 @@ Return found position or nil if nothing found."
                                ;; Found a peer level clause: stop if at
                                ;; nesting level 0
                                ((match-beginning 3)
-                                (when (and (not (string= word2 "func"))
-                                           (eq nesting 0))
-                                  (setq searching nil)
-                                  (setq found-position (point))))
+                                ;; A complete one-line action/forward
+                                ;; declaration (e.g. `const func ... is
+                                ;; action "...";'). It has the same
+                                ;; textual shape as a block-opening
+                                ;; header, but it is a complete
+                                ;; statement that never opens a compound
+                                ;; block and never signals the end of
+                                ;; the enclosing `begin'/`local' section
+                                ;; either. Skip over it silently: do
+                                ;; not touch `nesting', do not stop the
+                                ;; search — keep looking for the real
+                                ;; end of the enclosing section.
+                                nil)
                                ;; found nothing
                                (t (user-error
                                    "seed7-to-block-forward: \
