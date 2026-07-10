@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260709.1346
+;; Package-Version: 20260710.1334
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-09T17:46:06+0000 W28-4"
+(defconst seed7-mode-version-timestamp "2026-07-10T17:34:02+0000 W28-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3544,18 +3544,14 @@ statement.  Return nil otherwise."
 ;;*** Seed7 Procedure/Function Navigation Commands
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-;; [ TODO 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
-(defconst seed7---inner-callables-1
+(defconst seed7---func/proc-decl-start-re
   ;;          (---------------)               (----------)
   ;;                                     (--------------------)
   ;; (-----------------------------------------------------------)
   "\\(const \\(?:func\\|proc\\)[^;]+?is\\(?:\\(?: +func\\)?$\\)\\)"
-  "Group 1: complete text.")
+  "Func/Proc declaration start. Group 1: complete text.")
 
-;; [ TODO 2025-06-30, by Pierre Rouleau: Add support for multiple lines]
-;; AFTER — with fixed seed7--any-wp-text-re the format is already correct;
-;;          also drop the extra +? that caused the +?+? double-quantifier:
-(defconst seed7---inner-callables-2
+(defconst seed7---func/proc-decl-end-re
   (format
    "\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return\\_>%s;\\)\\)"
    ;;                                                    ^^ no +? here; [^;]+ already quantifies
@@ -3563,26 +3559,35 @@ statement.  Return nil otherwise."
    ;;    (----------------------------)     (-------------)
    ;;  (-----------------------------------------------------)
    seed7--any-non-semicolon-re)
-  "Group 1: entire text.")
+  "Func/Proc end.  Group 1: entire text.")
 
-
-(defconst seed7---inner-callables-4
-  "const proc: .+? is forward;")
-
-(defconst seed7--callable-return-re
-  (format "return\\_>%s;"
-          seed7--any-non-semicolon-re))
-
-(defconst seed7--inner-callables-triplets-re
+(defconst seed7--callable-decl-parts-re
   (format
-   "^[[:blank:]]*?\\(?:%s\\|%s\\|%s\\)"
-   seed7---inner-callables-1                        ; G1
-   seed7---inner-callables-2                        ; G2
+   "^[[:blank:]]*?\\(?:%s\\|%s\\|\\(%s\\)\\)"
+   seed7---func/proc-decl-start-re                  ; G1
+   seed7---func/proc-decl-end-re                    ; G2
    seed7-func-forward-or-action-declaration-nc-re)  ; G3
   "A regexp with 3 groups:
 - group 1: function/procedure start,
 - group 2: function/procedure end,
 - group 3: action or forward function declaration.")
+
+;; Matches something like:
+;;    const proc: declareExtern (inout file: c_prog, in string: prototype) is forward;
+(defconst seed7--forward-proc-decl-re
+  "const proc: .+? is forward;"
+  "Forward procedure declaration.  No capturing group.")
+
+(defconst seed7--callable-return-re
+  (format "return\\_>%s;"
+          seed7--any-non-semicolon-re))
+
+(defconst seed7--local-block-re
+  (format
+   "^[[:blank:]]*?\\(?:%s\\|\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s;\\)\\|begin\\_>\\)\\)"
+   seed7---func/proc-decl-start-re
+   seed7--any-non-semicolon-re)
+  "regexp TODO: TO-IDENTIFY!!!!!")
 
 (defun seed7-beg-of-defun (&optional n silent dont-push-mark)
   "Move backward to the beginning of the current function or procedure.
@@ -3645,7 +3650,7 @@ statement.  Return nil otherwise."
             ;; Block A — nesting-aware backward search for the enclosing
             ;; long-body proc/func declaration (`const proc/func … is func').
             ;;
-            ;; Scan backward with `seed7--inner-callables-triplets-re':
+            ;; Scan backward with `seed7--callable-decl-parts-re':
             ;;
             ;;   Group 1 — proc/func declaration start:
             ;;     nesting = 0 → this is the enclosing declaration; record it.
@@ -3668,7 +3673,7 @@ statement.  Return nil otherwise."
                 (let ((nesting   0)
                       (searching t))
                   (while (and searching (not (bobp)))
-                    (if (seed7-re-search-backward seed7--inner-callables-triplets-re)
+                    (if (seed7-re-search-backward seed7--callable-decl-parts-re)
                         (cond
                          ;; Group 1: a proc/func declaration start.
                          ((match-beginning 1)
@@ -3892,7 +3897,7 @@ Move inside the current if inside one, to the next if outside one.
             ;; - Retain the one that is closest to point.
 
             ;; -- Search for next procedure or long function, nesting-aware. -
-            ;; Uses `seed7--inner-callables-triplets-re' to count open/close
+            ;; Uses `seed7--callable-decl-parts-re' to count open/close
             ;; func/proc scopes so that a nested function does not cause an
             ;; early stop.
             ;;   Group 1: proc/func declaration start   → nesting depth increases
@@ -3912,7 +3917,7 @@ Move inside the current if inside one, to the next if outside one.
                     (searching t)
                     matched-end-pos)
                 (while (and searching (not (eobp)))
-                  (if (seed7-re-search-forward seed7--inner-callables-triplets-re)
+                  (if (seed7-re-search-forward seed7--callable-decl-parts-re)
                       (cond
                        ;; Group 1: callable declaration start.
                        ;; Only long-body declarations ending in "is func" open a nested
@@ -4260,7 +4265,7 @@ The regexp has 2 or 3 groups:
         (start-pos 'end-of-line))
     (setq regexp
           (cond
-           ;; deal with special cases first
+           ;; Deal with special cases first.
            ;; Get the regexp for searching a block. Each regex is a string with 2
            ;; capturing sections: match 1 is the start of the block, match 2 is the
            ;; end.  The following regexp allow no white-space before the keywords even
@@ -4274,7 +4279,9 @@ The regexp has 2 or 3 groups:
            ((string= word1 "otherwise") "^[[:blank:]]*?\\(?:\\(case[[:blank:]]\\)\\|\\(end case;?\\)\\)")
            ((string= word1 "elsif")     "^[[:blank:]]*?\\(?:\\(if[[:blank:]]\\)\\|\\(end if;?\\)\\|\\((elsif[[:blank:]]\\|else\\)\\)")
            ((string= word1 "else")      "^[[:blank:]]*?\\(?:\\(if[[:blank:]]\\)\\|\\(end if;?\\)\\)")
-           ((member word1 '("local" "begin")) seed7--inner-callables-triplets-re)
+           ((string= word1 "result")    "^[[:blank:]]*?\\(?:\\(result\\_>\\)\\|\\(local\\_>\\|begin\\_>\\)\\)")
+           ((string= word1 "local")     seed7--local-block-re)
+           ((string= word1 "begin")     seed7--callable-decl-parts-re)
            ((string= word1 "const")
             (cond
              ((member word2 '("varfunc" "func" "proc"))
@@ -4442,7 +4449,7 @@ The regexp has 2 or 3 groups:
            ((string= word1 "return")              "\\(^[[:blank:]]*?const func\\>\\)\\|\\(^;INVALID-MAKE-IT-NEVER-MATCH;\\)")
            ((string= word1 "end")
             (cond
-             ((string= word2 "func") seed7--inner-callables-triplets-re)
+             ((string= word2 "func") seed7--callable-decl-parts-re)
              ((string= word2 "global")            "^[[:blank:]]*?\\(?:\\(global\\>\\)\\|\\(end global;\\)\\)")
              ((string= word2 "block")             "^[[:space:]]*?\\(block\\>\\(?:[[:space:]]*?#.*?\\)?$\\)\\|\\(end block;\\)")
              ((member word2 '("case"
@@ -4786,10 +4793,11 @@ navigation command."
   "Return end-of-line of the `is func'/`is' terminator if point is inside or
 at the start of a multi-line callable declaration header, else return nil.
 
-When `re-search-backward' is used on a multi-line G1 pattern (see
-`seed7---inner-callables-1'), the match ends on the `... is func' or `... is'
-line.  If point lies on or before that line (but before its end), the match-end
-is AFTER point and `re-search-backward' cannot find the declaration.
+When `re-search-backward' is used on a multi-line nested func/proc
+declaration pattern (via `seed7---func/proc-decl-start-re'), the
+match ends on the `... is func' or `... is' line.  If point lies on or
+before that line (but before its end), the match-end is *after* point
+and `re-search-backward' cannot find the declaration.
 
 This helper detects that situation — including the case where point is on the
 very first line of the header (`const proc/func ...') — and returns a position
@@ -4848,7 +4856,7 @@ Algorithm
 ---------
 The outer while loop iterates once per nesting level.  Each iteration
 performs a nesting-aware backward scan using
-`seed7--inner-callables-triplets-re':
+`seed7--callable-decl-parts-re':
 
   Group 1 — proc/func declaration start:
     nesting = 0, long-body (`is func'): this is the enclosing callable;
@@ -4899,7 +4907,7 @@ performs a nesting-aware backward scan using
                 (nesting    0)
                 (searching  t))
              (while (and searching (not (bobp)))
-              (if (seed7-re-search-backward seed7--inner-callables-triplets-re)
+              (if (seed7-re-search-backward seed7--callable-decl-parts-re)
                   (cond
                    ;; ---- Group 1: proc/func declaration start ---------------
                    ((match-beginning 1)
@@ -5422,10 +5430,19 @@ Return nil when no such line exists."
                    previous-line-beg
                    (= cached-line-beg previous-line-beg)
                    (= cached-target-col target-col)
-                   (seed7--indent-search-boundary-valid-p
-                    cached-boundary previous-line-beg)
-                   (seed7--indent-search-boundary-valid-p
-                    cached-boundary line-beg))
+                   (seed7--indent-search-boundary-valid-p cached-boundary previous-line-beg)
+                   (seed7--indent-search-boundary-valid-p cached-boundary line-beg)
+                   ;; Never take the stale fast path when the CURRENT line
+                   ;; itself opens a new section/block ("begin", "local",
+                   ;; "elsif", "else", "exception", "catch", "until",
+                   ;; "result", ...): such lines require their own fresh
+                   ;; boundary search regardless of matching the previous
+                   ;; line's pre-correction column. `seed7-block-start-regexp'
+                   ;; already covers all of these keywords.
+                   (not (save-excursion
+                          (goto-char line-beg)
+                          (seed7-to-indent)
+                          (looking-at-p seed7-block-start-regexp))))
               cached-boundary)
              (t
               (seed7--indent-search-boundary-uncached target-col line-beg))))
@@ -6514,8 +6531,10 @@ Invalid boundaries: begin=%S, end=%S"
 (defun seed7-line-at-endof-array-definition-block (n &optional
                                                      dont-skip-comment-start)
   "Check if line N is the end of an array definition block.
-Return the indentation column of the array definition block statement
-if line N is the end of an array block, nil otherwise.
+
+Return the indentation column of the array definition block's own
+`const'/`var' header line if line N is the end of an array block,
+nil otherwise.
 N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
@@ -6524,9 +6543,6 @@ N is: - :previous-non-empty for the previous non-empty line,
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
       (let* ((line-start-pos (point))
-             (block-indent-column (progn
-                                    (skip-chars-forward " \t")
-                                    (current-column)))
              (line-end-pos (line-end-position))
              (block-start-pos nil)
              (enclosing-block-end-pos nil))
@@ -6539,12 +6555,20 @@ N is: - :previous-non-empty for the previous non-empty line,
           ;; backward without a bound, which could scan far above line N.
           (when (seed7-re-search-backward ");" line-start-pos)
             (setq enclosing-block-end-pos (point))
+            ;; `seed7-re-search-backward' leaves point just *before* the
+            ;; closing paren; `backward-sexp' needs point *after* it to
+            ;; jump to the beginning of the whole (possibly deeply nested) array literal.
+            (goto-char (1+ enclosing-block-end-pos))
             (seed7--with-backward-sexp
-              (seed7-to-indent)
-              (when (looking-at-p seed7--array-definition-start-regexp)
-                (setq block-start-pos (point))
-                (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
-                  block-indent-column)))))))))
+             (seed7-to-indent)
+             (when (looking-at-p seed7--array-definition-start-regexp)
+               (setq block-start-pos (point))
+               (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
+                 ;; Return the header's own column — the closing line of a
+                 ;; nested array literal is aligned with its innermost
+                 ;; open paren, not necessarily one `seed7-indent-width'
+                 ;; step below the header (see `Te'/`Td' in aes.s7i).
+                 (current-column))))))))))
 
 (defun seed7-line-inside-set-definition-block (n &optional
                                                  scope-begin-pos
@@ -6676,8 +6700,10 @@ search boundaries for the assignment operator and statement-end searches."
 (defun seed7-line-at-endof-set-definition-block (n &optional
                                                    dont-skip-comment-start)
   "Check if line N is the end of a set definition block.
-Return the indentation column of the set definition block statement
-if line N is the end of a set definition block, nil otherwise.
+
+Return the indentation column of the set definition block's own
+`const'/`var' header line if line N is the end of an array block,
+nil otherwise.
 N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
         is non-nil,
@@ -6686,9 +6712,6 @@ N is: - :previous-non-empty for the previous non-empty line,
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
       (let* ((line-start-pos (point))
-             (block-indent-column (progn
-                                    (skip-chars-forward " \t")
-                                    (current-column)))
              (line-end-pos (line-end-position))
              (block-start-pos nil)
              (enclosing-block-end-pos nil))
@@ -6706,7 +6729,8 @@ N is: - :previous-non-empty for the previous non-empty line,
               (when (looking-at-p seed7--set-definition-start-regexp)
                 (setq block-start-pos (point))
                 (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
-                  block-indent-column)))))))))
+                  ;; return header's own column
+                  (current-column))))))))))
 
 ;; --
 
@@ -7055,7 +7079,7 @@ N is: - :previous-non-empty for the previous non-empty line,
                                  0
                                  (list
                                   seed7-func-forward-or-action-declaration-nc-re
-                                  seed7---inner-callables-4
+                                  seed7--forward-proc-decl-re
                                   seed7-proc-forward-or-action-declaration-re)
                                  nil
                                  end-pos)
@@ -7080,7 +7104,7 @@ N is: - :previous-non-empty for the previous non-empty line,
                        0
                        (list
                         seed7-func-forward-or-action-declaration-nc-re
-                        seed7---inner-callables-4
+                        seed7--forward-proc-decl-re
                         seed7-proc-forward-or-action-declaration-re)
                        nil
                        end-pos)
@@ -7608,8 +7632,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                         indent-column)
             (seed7--set (seed7-line-at-endof-set-definition-block
                          :previous-non-empty)
-                        indent-column))
-        (setq indent-column (- indent-column seed7-indent-width)))
+                        indent-column)))
 
        ;; Just after the terminating `return ...;' of a short function
        ;; (no `end func;'), align with the `const func' header rather than
