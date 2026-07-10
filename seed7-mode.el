@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260710.1410
+;; Package-Version: 20260710.1530
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -365,6 +365,7 @@
 ;;       . `seed7-line-inside-a-block'
 ;;         . `seed7--safe-enclosing-block-bounds'
 ;;         . `seed7--block-end-pos-for'
+;;           . `seed7--line-ends-a-statement-p'
 ;;         . `seed7--indent-offset-for'
 ;;         . `seed7--on-lineof'
 ;;     . `seed7-line-inside-until-logic-expression'
@@ -543,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-10T18:10:00+0000 W28-5"
+(defconst seed7-mode-version-timestamp "2026-07-10T19:30:01+0000 W28-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1533,11 +1534,11 @@ declaration without visiting every control-flow keyword on the way.
 
 Performance improvement (measured keyword match counts):
   chkarr.sd7 : 2,943 total keywords → ~150 declarations  (~20× fewer iters)
-  castle.sd7  :   706 total keywords →  ~50 declarations  (~14× fewer iters)
+  castle.sd7 :   706 total keywords →  ~50 declarations  (~14× fewer iters)
 
 The column check in `seed7--to-top' (< start-col) is still correct for
 indented `const func'/`const proc' in .s7i template bodies such as
-`ENABLE_SORT' in aarray.s7i, since those are either `is action \"...\"'
+`ENABLE_SORT' in array.s7i, since those are either `is action \"...\"'
 one-liners or short `return...;' functions — neither creates a
 `begin...end func' block you can be indenting code *inside*.")
 
@@ -5759,6 +5760,24 @@ N is: - :previous-non-empty for the previous non-empty line,
       - A negative number for previous lines: -1 previous, -2 line before..."
   (seed7-line-starts-with n seed7-block-end-regexp dont-skip-comment-start))
 
+(defun seed7--line-ends-a-statement-p ()
+  "Return non-nil if the current line ends a Seed7 statement.
+
+A complete statement line ends with the statement-terminating semicolon
+`;' (ignoring trailing whitespace) and therefore does not open an
+indented compound block, even though its start matches
+`seed7-block-line-start-regexp' — e.g. one-line action/primitive
+declarations such as (code modified to fit the width):
+ const proc: (inout arrayType: dst) := (in arrayType: src) is action \"ARR_CPY\";
+ const func arrayType: SORT (in arrayType: arr) is action \"ARR_SORT\";
+ const type: TEST_1 is array integer;
+Point can be anywhere; only `(line-end-position)' of the current line
+is inspected, never a continuation line."
+  (save-excursion
+    (goto-char (line-end-position))
+    (skip-chars-backward " \t")
+    (eq (char-before (point)) ?\;)))
+
 (defun seed7--block-end-pos-for (header)
   "Return position of end of block starting with HEADER.
 Move point."
@@ -5793,13 +5812,30 @@ Move point."
                          (looking-at-p seed7-short-func-end-regexp)))
             (user-error "Unsupported incomplete short function header: %s" header)))
         (point))
+       ;; One-line action/primitive declaration, e.g. ENABLE_SORT's
+       ;; `SORT' declaration: `is action "ARR_SORT";' on the same line.
+       ;; It is a complete statement, not an opening of a compound
+       ;; block; treat its own line end as the "block" end so it can
+       ;; never be mistaken for the enclosing block of a following
+       ;; sibling declaration.
+       ((seed7--line-ends-a-statement-p)
+        (line-end-position))
+       ;;
        (t
         (seed7-to-block-forward :dont-push-mark)
         (point)))))
    ;;
    ((member header '("const proc: "
                      "const type: "
-                     "local"
+                     "const proc:\t"
+                     "const type:\t"))
+    (if (seed7--line-ends-a-statement-p)
+        (line-end-position)
+      (seed7-to-block-forward :dont-push-mark)
+      (point)))
+   ;;
+   ;;
+   ((member header '("local"
                      "repeat"
                      "begin"
                      "block"
@@ -5812,8 +5848,6 @@ Move point."
                      "for "
                      "case "
                      ;; ... also support tabs when caller did not normalize them.
-                     "const proc:\t"
-                     "const type:\t"
                      "if\t"
                      "elsif\t"
                      "while\t"
