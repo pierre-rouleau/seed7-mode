@@ -212,6 +212,15 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
   lineage display.  The new implementation is much faster and display of
   nested function lineage no longer impacts performance.
 
+- Fix *seed7-line-at-endof-array-definition-block* and
+  *seed7-line-at-endof-set-definition-block*: a deeply nested/aligned
+  array or set literal (such as Seed7's =Te=/=Td= tables in
+  =lib/aes.s7i=) could cause the line following the closing array/set
+  to be mis-indented.  The helpers now position point correctly before
+  calling *backward-sexp* and return the indentation column of the
+  block's own =const=/=var= header line directly, instead of deriving
+  it from the closing line's own indentation.
+
 ** Build / CI / Development Tools/
 
 - GitHub Actions workflows added for multi-platform byte and native

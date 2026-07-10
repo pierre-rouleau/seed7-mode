@@ -72,6 +72,8 @@
   "Absolute path of the directory that holds the Seed7 test code files.")
 
 ;; line, column, expected result of (seed7-line-at-endof-array-definition-block 0)
+;; The expected value is the indentation column of the array's own
+;; `const'/`var' header line (not the indentation of the tested line).
 (defconst seed7--endof-array-definition-block-tests
   '((22 0 nil)
     (23 0 nil)
@@ -92,11 +94,11 @@
     (44 0 nil)
     (45 0 nil)
     (46 0 nil)
-    (47 0 2)
-    (47 6 2)
-    (47 7 2)
-    (47 8 2)
-    (47 9 2)
+    (47 0 0)
+    (47 6 0)
+    (47 7 0)
+    (47 8 0)
+    (47 9 0)
     (48 0 nil)
     (49 0 nil)
     (50 0 nil)
@@ -106,9 +108,9 @@
     (54 0 nil)
     (55 0 nil)
     (56 0 nil)
-    (57 0 2)
-    (57 9 2)
-    (57 36 2)
+    (57 0 0)
+    (57 9 0)
+    (57 36 0)
     ;; Inside inStringerVar
     (62 0 nil)
     (63 0 nil)
