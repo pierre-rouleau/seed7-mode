@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-08 16:04:29 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-10 06:09:04 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -866,6 +866,86 @@
     (should (= (seed7-test-indent-02--line-indentation 5) 2))
     (should (string= (buffer-string)
                      seed7-test-indent-02--array-def-correct))))
+
+;; ---------------------------------------------------------------------------
+;; 11b. Deeply nested array definition followed by another array
+;;      declaration (mirrors the `Te'/`Td' tables in lib/aes.s7i).
+;; --------------------------------------------------------------------------
+;;
+;;   const array array integer: Te is [] (   ; col 0
+;;     [0] (1, 2,                            ; col 2
+;;          3, 4));                          ; nested continuation
+;;                                           ; blank
+;;   const array array integer: Td is [] (   ; col 0  <- must stay 0
+;;     [0] (5, 6,                            ; col 2
+;;          7, 8));                          ; nested continuation
+
+(defconst seed7-test-indent-02--nested-array-def-correct
+  (concat
+   "const array array integer: Te is [] (\n"
+   "  [0] (1, 2,\n"
+   "       3, 4));\n"
+   "\n"
+   "const array array integer: Td is [] (\n"
+   "  [0] (5, 6,\n"
+   "       7, 8));\n")
+  "Correctly-indented adjacent deeply nested array definitions, mirroring
+the `Te'/`Td' tables in lib/aes.s7i.")
+
+(defconst seed7-test-indent-02--nested-array-def-misaligned
+  (concat
+   "const array array integer: Te is [] (\n"
+   "[0] (1, 2,\n"
+   "3, 4));\n"
+   "\n"
+   "      const array array integer: Td is [] (\n"
+   "[0] (5, 6,\n"
+   "7, 8));\n")
+  "Misaligned version: body lines flush left and `Td' header pushed to
+column 6, exercising the bug where `Td' inherited a residual
+continuation-indent from `Te''s closing line instead of column 0.")
+
+(defun seed7-test-indent-02--trim-trailing-ws (string)
+  "Trim trailing whitespace from each line of STRING, preserving line breaks."
+  (mapconcat #'string-trim-right (split-string string "\n") "\n"))
+
+(ert-deftest seed7-indent/nested-array-def-keeps-correct-layout ()
+  "Indenting already-correct adjacent nested array definitions keeps the layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--nested-array-def-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 5) 0))
+    (should (string= (seed7-test-indent-02--trim-trailing-ws (buffer-string))
+                     (seed7-test-indent-02--trim-trailing-ws
+                      seed7-test-indent-02--nested-array-def-correct)))))
+
+(ert-deftest seed7-indent/nested-array-def-fixes-misaligned-layout ()
+  "`indent-region' restores `Td' (and `Te') to column 0 after a deeply
+nested closing continuation line, reproducing the lib/aes.s7i defect."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--nested-array-def-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 5) 0))
+    (should (string= (seed7-test-indent-02--trim-trailing-ws (buffer-string))
+                     (seed7-test-indent-02--trim-trailing-ws
+                      seed7-test-indent-02--nested-array-def-correct)))))
+
+(ert-deftest seed7-indent/nested-array-def-tab-indents-second-header ()
+  "`seed7-indent-line' alone (simulating TAB) on the misaligned `Td' header
+line restores it to column 0, without touching the rest of the buffer."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--nested-array-def-misaligned)
+    (seed7-mode)
+    (seed7-test-indent-02--goto-line 5)
+    (seed7-indent-line)
+    (should (= (seed7-test-indent-02--line-indentation 5) 0))))
 
 ;; ---------------------------------------------------------------------------
 ;; 12. Set definition block
