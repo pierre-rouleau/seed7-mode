@@ -2,7 +2,7 @@
 
 ;; Created   : Friday, July 11 2025.
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-25 12:04:28 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-10 05:44:41 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -92,11 +92,11 @@
     (44 0 nil)
     (45 0 nil)
     (46 0 nil)
-    (47 0 2)
-    (47 6 2)
-    (47 7 2)
-    (47 8 2)
-    (47 9 2)
+    (47 0 0)
+    (47 6 0)
+    (47 7 0)
+    (47 8 0)
+    (47 9 0)
     (48 0 nil)
     (49 0 nil)
     (50 0 nil)
@@ -106,9 +106,9 @@
     (54 0 nil)
     (55 0 nil)
     (56 0 nil)
-    (57 0 2)
-    (57 9 2)
-    (57 36 2)
+    (57 0 0)
+    (57 9 0)
+    (57 36 0)
     ;; Inside inStringerVar
     (62 0 nil)
     (63 0 nil)
@@ -171,7 +171,8 @@
     ))
 
 (ert-deftest ert-test-endof-array-definition-block ()
-  "Test ability to detect end of array definition block."
+  "Test ability to detect end of array definition block.
+Test with file: ../seed7-code/arrays-01.sd7"
   (let ((test-seed7-code-filename (expand-file-name "arrays-01.sd7"
                                                     seed7-test-seed7-code-dirname)))
 

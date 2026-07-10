@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260709.1346
+;; Package-Version: 20260710.0530
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-09T17:46:06+0000 W28-4"
+(defconst seed7-mode-version-timestamp "2026-07-10T09:30:04+0000 W28-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6514,8 +6514,10 @@ Invalid boundaries: begin=%S, end=%S"
 (defun seed7-line-at-endof-array-definition-block (n &optional
                                                      dont-skip-comment-start)
   "Check if line N is the end of an array definition block.
-Return the indentation column of the array definition block statement
-if line N is the end of an array block, nil otherwise.
+
+Return the indentation column of the array definition block's own
+`const'/`var' header line if line N is the end of an array block,
+nil otherwise.
 N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
          is non-nil,
@@ -6524,9 +6526,6 @@ N is: - :previous-non-empty for the previous non-empty line,
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
       (let* ((line-start-pos (point))
-             (block-indent-column (progn
-                                    (skip-chars-forward " \t")
-                                    (current-column)))
              (line-end-pos (line-end-position))
              (block-start-pos nil)
              (enclosing-block-end-pos nil))
@@ -6539,12 +6538,20 @@ N is: - :previous-non-empty for the previous non-empty line,
           ;; backward without a bound, which could scan far above line N.
           (when (seed7-re-search-backward ");" line-start-pos)
             (setq enclosing-block-end-pos (point))
+            ;; `seed7-re-search-backward' leaves point just *before* the
+            ;; closing paren; `backward-sexp' needs point *after* it to
+            ;; jump to the beginning of the whole (possibly deeply nested) array literal.
+            (goto-char (1+ enclosing-block-end-pos))
             (seed7--with-backward-sexp
-              (seed7-to-indent)
-              (when (looking-at-p seed7--array-definition-start-regexp)
-                (setq block-start-pos (point))
-                (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
-                  block-indent-column)))))))))
+             (seed7-to-indent)
+             (when (looking-at-p seed7--array-definition-start-regexp)
+               (setq block-start-pos (point))
+               (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
+                 ;; Return the header's own column — the closing line of a
+                 ;; nested array literal is aligned with its innermost
+                 ;; open paren, not necessarily one `seed7-indent-width'
+                 ;; step below the header (see `Te'/`Td' in aes.s7i).
+                 (current-column))))))))))
 
 (defun seed7-line-inside-set-definition-block (n &optional
                                                  scope-begin-pos
@@ -6676,8 +6683,10 @@ search boundaries for the assignment operator and statement-end searches."
 (defun seed7-line-at-endof-set-definition-block (n &optional
                                                    dont-skip-comment-start)
   "Check if line N is the end of a set definition block.
-Return the indentation column of the set definition block statement
-if line N is the end of a set definition block, nil otherwise.
+
+Return the indentation column of the set definition block's own
+`const'/`var' header line if line N is the end of an array block,
+nil otherwise.
 N is: - :previous-non-empty for the previous non-empty line,
         skipping lines with starting comments unless DONT-SKIP-COMMENT-START
         is non-nil,
@@ -6686,9 +6695,6 @@ N is: - :previous-non-empty for the previous non-empty line,
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
       (let* ((line-start-pos (point))
-             (block-indent-column (progn
-                                    (skip-chars-forward " \t")
-                                    (current-column)))
              (line-end-pos (line-end-position))
              (block-start-pos nil)
              (enclosing-block-end-pos nil))
@@ -6706,7 +6712,8 @@ N is: - :previous-non-empty for the previous non-empty line,
               (when (looking-at-p seed7--set-definition-start-regexp)
                 (setq block-start-pos (point))
                 (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
-                  block-indent-column)))))))))
+                  ;; return header's own column
+                  (current-column))))))))))
 
 ;; --
 
@@ -7608,8 +7615,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                         indent-column)
             (seed7--set (seed7-line-at-endof-set-definition-block
                          :previous-non-empty)
-                        indent-column))
-        (setq indent-column (- indent-column seed7-indent-width)))
+                        indent-column)))
 
        ;; Just after the terminating `return ...;' of a short function
        ;; (no `end func;'), align with the `const func' header rather than
