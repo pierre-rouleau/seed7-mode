@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260710.1557
+;; Package-Version: 20260710.1619
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-10T19:57:30+0000 W28-5"
+(defconst seed7-mode-version-timestamp "2026-07-10T20:19:23+0000 W28-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5786,25 +5786,25 @@ deciding: if a `;' is reached before a bare `is' at end of line or
   (save-excursion
     (forward-line 0)
     (skip-chars-forward " \t")
-    ;; Skip past "const func TYPE: " / "const proc: " / etc. up to the
-    ;; first paren/bracket group, then over any further adjoining groups.
-    (while (looking-at "[^([;\n]")
-      (forward-char 1))
     (let ((limit (save-excursion (forward-line 6) (line-end-position)))
           (result nil)
           (done nil))
       (while (and (not done) (< (point) limit))
         (cond
+         ;; Check block-opener signals FIRST, at the current position,
+         ;; before any generic forward movement — otherwise these tokens
+         ;; can be silently skipped over (e.g. "is func" appearing before
+         ;; any parenthesis/bracket/semicolon is ever seen).
+         ((looking-at "is[[:blank:]]+func\\_>")
+          (setq done t))
+         ((looking-at "is[[:blank:]]*$")
+          (setq done t))
          ((memq (char-after) '(?\( ?\[))
           (condition-case nil
               (forward-sexp)
             (scan-error (setq done t))))
          ((eq (char-after) ?\;)
           (setq result t done t))
-         ((looking-at "is[[:blank:]]+func\\_>")
-          (setq done t))
-         ((looking-at "is[[:blank:]]*$")
-          (setq done t))
          ((eq (char-after) ?\n)
           (forward-char 1))
          (t (forward-char 1))))
