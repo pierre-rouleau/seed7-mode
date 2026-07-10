@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260710.1334
+;; Package-Version: 20260710.1410
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -543,7 +543,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-10T17:34:02+0000 W28-5"
+(defconst seed7-mode-version-timestamp "2026-07-10T18:10:00+0000 W28-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3582,12 +3582,14 @@ statement.  Return nil otherwise."
   (format "return\\_>%s;"
           seed7--any-non-semicolon-re))
 
+;; [:todo 2026-07-10, by Pierre Rouleau: add better docstring ]
 (defconst seed7--local-block-re
   (format
    "^[[:blank:]]*?\\(?:%s\\|\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s;\\)\\|begin\\_>\\)\\)"
    seed7---func/proc-decl-start-re
    seed7--any-non-semicolon-re)
-  "regexp TODO: TO-IDENTIFY!!!!!")
+  "Local block context regexp")
+
 
 (defun seed7-beg-of-defun (&optional n silent dont-push-mark)
   "Move backward to the beginning of the current function or procedure.
