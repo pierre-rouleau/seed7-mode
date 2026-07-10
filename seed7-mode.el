@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260710.1530
+;; Package-Version: 20260710.1557
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-10T19:30:01+0000 W28-5"
+(defconst seed7-mode-version-timestamp "2026-07-10T19:57:30+0000 W28-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3583,13 +3583,25 @@ statement.  Return nil otherwise."
   (format "return\\_>%s;"
           seed7--any-non-semicolon-re))
 
-;; [:todo 2026-07-10, by Pierre Rouleau: add better docstring ]
 (defconst seed7--local-block-re
   (format
    "^[[:blank:]]*?\\(?:%s\\|\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s;\\)\\|begin\\_>\\)\\)"
    seed7---func/proc-decl-start-re
    seed7--any-non-semicolon-re)
-  "Local block context regexp")
+  "Regexp used to locate the end of a `local' declaration section.
+
+Searched forward from a `local' keyword line to find where the
+local-variable-declaration section ends, so that indentation of the
+declarations inside it can be computed relative to it.
+
+Group 1: the start of a nested callable declaration
+  (`const func/proc ... is'), matched by `seed7---func/proc-decl-start-re'.
+  A match here means nesting must increase — this is a *deeper* local
+  block, not the end of the current one.
+Group 2: the end of the enclosing local section: `end func;', `end proc;',
+  a short-function `return ...;', or `begin' — whichever comes first.
+  A match here (at nesting 0) is the position where the `local' section
+  of the enclosing callable ends.")
 
 
 (defun seed7-beg-of-defun (&optional n silent dont-push-mark)
@@ -5761,22 +5773,42 @@ N is: - :previous-non-empty for the previous non-empty line,
   (seed7-line-starts-with n seed7-block-end-regexp dont-skip-comment-start))
 
 (defun seed7--line-ends-a-statement-p ()
-  "Return non-nil if the current line ends a Seed7 statement.
+  "Return non-nil if the Seed7 statement whose header starts at point
+is a complete one-liner/multi-line statement terminated by `;', rather
+than the opening of a compound block.
 
-A complete statement line ends with the statement-terminating semicolon
-`;' (ignoring trailing whitespace) and therefore does not open an
-indented compound block, even though its start matches
-`seed7-block-line-start-regexp' — e.g. one-line action/primitive
-declarations such as (code modified to fit the width):
- const proc: (inout arrayType: dst) := (in arrayType: src) is action \"ARR_CPY\";
- const func arrayType: SORT (in arrayType: arr) is action \"ARR_SORT\";
- const type: TEST_1 is array integer;
-Point can be anywhere; only `(line-end-position)' of the current line
-is inspected, never a continuation line."
+The declaration's parameter list — delimited by balanced parentheses
+or brackets — may continue onto following physical lines (e.g. the
+`insert' and `ARR_RANGE' declarations in array.s7i). This skips any
+such balanced group(s) that immediately follow the header text before
+deciding: if a `;' is reached before a bare `is' at end of line or
+`is func', the statement is a complete one-liner."
   (save-excursion
-    (goto-char (line-end-position))
-    (skip-chars-backward " \t")
-    (eq (char-before (point)) ?\;)))
+    (forward-line 0)
+    (skip-chars-forward " \t")
+    ;; Skip past "const func TYPE: " / "const proc: " / etc. up to the
+    ;; first paren/bracket group, then over any further adjoining groups.
+    (while (looking-at "[^([;\n]")
+      (forward-char 1))
+    (let ((limit (save-excursion (forward-line 6) (line-end-position)))
+          (result nil)
+          (done nil))
+      (while (and (not done) (< (point) limit))
+        (cond
+         ((memq (char-after) '(?\( ?\[))
+          (condition-case nil
+              (forward-sexp)
+            (scan-error (setq done t))))
+         ((eq (char-after) ?\;)
+          (setq result t done t))
+         ((looking-at "is[[:blank:]]+func\\_>")
+          (setq done t))
+         ((looking-at "is[[:blank:]]*$")
+          (setq done t))
+         ((eq (char-after) ?\n)
+          (forward-char 1))
+         (t (forward-char 1))))
+      result)))
 
 (defun seed7--block-end-pos-for (header)
   "Return position of end of block starting with HEADER.
@@ -6098,6 +6130,7 @@ If it finds something it returns a list that holds the following information:
                       (cond
                        ;; Case 1: point is on the start line of a top level block.
                        ((and (seed7--on-lineof block-start-pos current-pos)
+                             (= block-start-indent-column 0)
                              (member match-text '("const proc: "
                                                   "const func "
                                                   "const type: ")))
