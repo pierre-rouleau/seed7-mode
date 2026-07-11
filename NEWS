@@ -124,6 +124,15 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
   - *seed7-line-inside-a-block-cached* added to reduce repeated calls
     from *seed7-indent-line* on multi-line statements.
 
+- *Indentation correctness*: Improved the indentation logic to support more
+  Seed7 code constructions that were previously not handled properly,
+  including:
+
+  - =const type: ... is func= declarations.
+  - Short functions definitions with just a return statement.
+  - Nested function definitions.
+  - Action declarations.
+
 - *Xref support*:
   - Cache is now invalidated when the Seed7 buffer is saved or reverted.
   - *seed7-xref* =~= expansion, space-in-path handling, and failing
