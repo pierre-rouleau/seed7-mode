@@ -1,6 +1,15 @@
-Time of the execution of seed7-complete-statement-or-indent to indent the complete files:
+# Time of the execution of seed7-complete-statement-or-indent to indent the complete files:
 
-aes.s7i:       9.2734 seconds : test 1 in session 1.  1143 lines.
-array.s7i:     5.3291 seconds : test 1 in session 2.   610 lines.
-array.s7i:     6.1219 seconds : test 2 in session 2.   610 lines.
-array.s7i:     8.1122 seconds : test 1 in session 3.   610 lines.  All indented properly.
+1: aes.s7i:       9.2734 seconds : test 1 in session 1.  1143 lines.
+2: array.s7i:     5.3291 seconds : test 1 in session 2.   610 lines.
+3: array.s7i:     6.1219 seconds : test 2 in session 2.   610 lines.
+4: array.s7i:     8.1122 seconds : test 1 in session 3.   610 lines.  All indented properly.
+
+# Notes
+#
+# #4: The 8.1122 s run uses commit 6ba8b5e, which correctly recognizes
+#        const type: ... is func
+# declarations as callable blocks and fixes all observed array.s7i
+# indentation errors. It is slower than the two earlier session-2 single
+# runs. Since these measurements were taken in separate sessions with no
+# repeated-run statistics, the comparison is indicative only.
