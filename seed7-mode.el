@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260711.0850
+;; Package-Version: 20260711.1012
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-11T12:50:05+0000 W28-6"
+(defconst seed7-mode-version-timestamp "2026-07-11T14:12:02+0000 W28-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6058,16 +6058,7 @@ Move point."
         ;; relative to the const type
         seed7-indent-width
       ;; struct/enum member definitions are indented twice.
-      (* 2 seed7-indent-width))
-    ;; ---------------------------------------------------------------------------
-    ;; (if (or (string-prefix-p "end struct;" first-text)
-    ;;         (string-prefix-p "end enum;"   first-text))
-    ;;     ;; end struct/enum is indented once relative to the const type
-    ;;     seed7-indent-width
-    ;;   ;; the definitions are indented twice.
-    ;;   (* 2 seed7-indent-width))
-
-    )
+      (* 2 seed7-indent-width)))
    ((string= header "const type: ")
     (if (or (string-prefix-p "end struct;" first-text)
             (string-prefix-p "end enum;"   first-text)
