@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-10 23:20:39 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-11 08:50:29 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -1700,7 +1700,6 @@ with `SORT' (col 4) and `begin' (col 2) respectively.")
 second physical line (e.g. array.s7i's `insert'/ARR_RANGE shape) must
 not be treated as opening a compound block, and must not corrupt the
 indentation of declarations that follow it."
-  (skip-unless nil)                     ; this test is currently failing.
   (with-temp-buffer
     (setq-local indent-tabs-mode nil)
     (insert (concat
@@ -1714,7 +1713,7 @@ indentation of declarations that follow it."
     (seed7-mode)
     (indent-region (point-min) (point-max))
     (should (= (seed7-test-indent-02--line-indentation 3) 4))
-    (should (= (seed7-test-indent-02--line-indentation 4) 4)) ; continuation, adjust if a different rule applies
+    (should (= (seed7-test-indent-02--line-indentation 4) 24)) ; continuation, adjust if a different rule applies
     (should (= (seed7-test-indent-02--line-indentation 6) 4))
     (should (= (seed7-test-indent-02--line-indentation 7) 2))))
 

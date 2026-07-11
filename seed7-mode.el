@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260710.2318
+;; Package-Version: 20260711.0850
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-11T03:18:22+0000 W28-6"
+(defconst seed7-mode-version-timestamp "2026-07-11T12:50:05+0000 W28-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3546,11 +3546,11 @@ statement.  Return nil otherwise."
 ;;*** Seed7 Procedure/Function Navigation Commands
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(defconst seed7---func/proc-decl-start-re
-  ;;          (---------------)               (----------)
-  ;;                                     (--------------------)
-  ;; (-----------------------------------------------------------)
-  "\\(const \\(?:func\\|proc\\)[^;]+?is\\(?:\\(?: +func\\)?$\\)\\)"
+(defconst seed7---func/proc/type-decl-start-re
+  ;;          (---------------------)                (----------)
+  ;;                                            (--------------------)
+  ;; (------------------------------------------------------------------)
+  "\\(const \\(?:func\\|proc\\|type\\)[^;]+?is\\(?:\\(?: +func\\)?$\\)\\)"
   "Func/Proc declaration start. Group 1: complete text.")
 
 (defconst seed7---func/proc-decl-end-re
@@ -3566,7 +3566,7 @@ statement.  Return nil otherwise."
 (defconst seed7--callable-decl-parts-re
   (format
    "^[[:blank:]]*?\\(?:%s\\|%s\\|\\(%s\\)\\)"
-   seed7---func/proc-decl-start-re                  ; G1
+   seed7---func/proc/type-decl-start-re             ; G1
    seed7---func/proc-decl-end-re                    ; G2
    seed7-func-forward-or-action-declaration-nc-re)  ; G3
   "A regexp with 3 groups:
@@ -3587,7 +3587,7 @@ statement.  Return nil otherwise."
 (defconst seed7--local-block-re
   (format
    "^[[:blank:]]*?\\(?:%s\\|\\(\\(?:end \\(?:func\\|proc\\);\\)\\|\\(?:return%s;\\)\\|begin\\_>\\)\\)"
-   seed7---func/proc-decl-start-re
+   seed7---func/proc/type-decl-start-re
    seed7--any-non-semicolon-re)
   "Regexp used to locate the end of a `local' declaration section.
 
@@ -3596,7 +3596,7 @@ local-variable-declaration section ends, so that indentation of the
 declarations inside it can be computed relative to it.
 
 Group 1: the start of a nested callable declaration
-  (`const func/proc ... is'), matched by `seed7---func/proc-decl-start-re'.
+  (`const func/proc ... is'), matched by `seed7---func/proc/type-decl-start-re'.
   A match here means nesting must increase — this is a *deeper* local
   block, not the end of the current one.
 Group 2: the end of the enclosing local section: `end func;', `end proc;',
@@ -4819,7 +4819,7 @@ navigation command."
 at the start of a multi-line callable declaration header, else return nil.
 
 When `re-search-backward' is used on a multi-line nested func/proc
-declaration pattern (via `seed7---func/proc-decl-start-re'), the
+declaration pattern (via `seed7---func/proc/type-decl-start-re'), the
 match ends on the `... is func' or `... is' line.  If point lies on or
 before that line (but before its end), the match-end is *after* point
 and `re-search-backward' cannot find the declaration.
