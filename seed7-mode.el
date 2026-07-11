@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260710.1756
+;; Package-Version: 20260710.2318
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-10T21:56:58+0000 W28-5"
+(defconst seed7-mode-version-timestamp "2026-07-11T03:18:22+0000 W28-6"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1819,6 +1819,7 @@ Otherwise the returned regexp captures nothing."
    ;;              (--)     |  (-----------------------)
    ;;              G1       |  G1'                     G2
    "^%s*?const%s+\\(?:\\(%sproc\\)%s*?:\\|\\(%s\\(?:var\\)?func%s+\\)%s%s??:\\)"
+   ;; 1        2          3        4          5                6     7 8
    seed7--blank-re                      ; 1
    seed7--whitespace-re                 ; 2
    (if capture "" "?:")                 ; 3: proc branch capture
@@ -5651,14 +5652,22 @@ N is: - :previous-non-empty for the previous non-empty line,
 If END-POS is non-nil, it identifies the limit for the string."
   (save-excursion
     (when (seed7-move-to-line n dont-skip-comment-start)
-      (if (string=  (substring regexp 0 1) "^")
-          (forward-line 0)
-        (skip-chars-forward " \t"))
-      (when (and (looking-at-p regexp)
-                 (or (not end-pos)
-                     (save-excursion
-                       (re-search-forward regexp end-pos :noerror))))
-        (current-column)))))
+      ;; Capture the line's actual indentation column BEFORE possibly
+      ;; repositioning to the true beginning of line for an anchored
+      ;; ("^"-prefixed) REGEXP match check. Anchored regexps need point
+      ;; at true column 0 to match correctly, but the column this
+      ;; function reports must always be the line's real indentation,
+      ;; not column 0 — otherwise callers that use the returned column
+      ;; as an indentation value (e.g. `seed7-line-is-defun-end') get 0
+      ;; for every anchored match on a non-top-level (indented) line.
+      (let ((indent-column (current-column)))
+        (when (string= (substring regexp 0 1) "^")
+          (forward-line 0))
+        (when (and (looking-at-p regexp)
+                   (or (not end-pos)
+                       (save-excursion
+                         (re-search-forward regexp end-pos :noerror))))
+          indent-column)))))
 
 (defun seed7-line-starts-with-any (n regexps
                                      &optional dont-skip-comment-start end-pos)
@@ -6036,10 +6045,44 @@ Move point."
 
    ((string= header "const type: ")
     (if (or (string-prefix-p "end struct;" first-text)
-            (string-prefix-p "end enum;"   first-text))
-        ;; end struct/enum is indented once relative to the const type
+            (string-prefix-p "end enum;"   first-text)
+            ;; A `const type: X is func ... end func;' declaration is a
+            ;; func-style body (like `const proc:'/`const func'), not a
+            ;; struct/enum member list -- its `local'/`begin' section
+            ;; markers and closing `end func;' get a single indent level,
+            ;; not the double indent used for struct/enum members.
+            (string-prefix-p "local"     first-text)
+            (string-prefix-p "begin"     first-text)
+            (string-prefix-p "end func;" first-text))
+        ;; end struct/enum/func, local, and begin are indented once
+        ;; relative to the const type
         seed7-indent-width
-      ;; the definitions are indented twice.
+      ;; struct/enum member definitions are indented twice.
+      (* 2 seed7-indent-width))
+    ;; ---------------------------------------------------------------------------
+    ;; (if (or (string-prefix-p "end struct;" first-text)
+    ;;         (string-prefix-p "end enum;"   first-text))
+    ;;     ;; end struct/enum is indented once relative to the const type
+    ;;     seed7-indent-width
+    ;;   ;; the definitions are indented twice.
+    ;;   (* 2 seed7-indent-width))
+
+    )
+   ((string= header "const type: ")
+    (if (or (string-prefix-p "end struct;" first-text)
+            (string-prefix-p "end enum;"   first-text)
+            ;; A `const type: X is func ... end func;' declaration is a
+            ;; func-style body (like `const proc:'/`const func'), not a
+            ;; struct/enum member list -- its `local'/`begin' section
+            ;; markers and closing `end func;' get a single indent level,
+            ;; not the double indent used for struct/enum members.
+            (string-prefix-p "local"     first-text)
+            (string-prefix-p "begin"     first-text)
+            (string-prefix-p "end func;" first-text))
+        ;; end struct/enum/func, local, and begin are indented once
+        ;; relative to the const type
+        seed7-indent-width
+      ;; struct/enum member definitions are indented twice.
       (* 2 seed7-indent-width)))
 
    ;; (error "Unsupported header %s" header)
@@ -6204,6 +6247,8 @@ If it finds something it returns a list that holds the following information:
                             (setq block-start-indent-column (current-column))
                             (let ((bounds (seed7--safe-enclosing-block-bounds
                                            match-text block-start-pos)))
+                              ;; (message "seed7-DEBUG Case2: candidate match-text=%S block-start-pos=%d bounds=%S current-pos=%d"
+                              ;;          match-text block-start-pos bounds current-pos)
                               (if (and bounds
                                        (<= block-start-pos current-pos (cdr bounds)))
                                   (progn
