@@ -5799,8 +5799,9 @@ The declaration's parameter list — delimited by balanced parentheses
 or brackets — may continue onto following physical lines (e.g. the
 `insert' and `ARR_RANGE' declarations in array.s7i). This skips any
 such balanced group(s) that immediately follow the header text before
-deciding: if a `;' is reached before a bare `is' at end of line or
-`is func', the statement is a complete one-liner."
+deciding: if a `;' is reached before a bare `is' at end of line,
+`is func', or `is new struct'/`is new enum', the statement is a
+complete one-liner."
   (save-excursion
     (forward-line 0)
     (skip-chars-forward " \t")
@@ -5813,7 +5814,17 @@ deciding: if a `;' is reached before a bare `is' at end of line or
          ;; before any generic forward movement — otherwise these tokens
          ;; can be silently skipped over (e.g. "is func" appearing before
          ;; any parenthesis/bracket/semicolon is ever seen).
-         ((looking-at "is[[:blank:]]+func\\_>")
+         ((looking-at "\\_<is[[:blank:]]+func\\_>")
+          (setq done t))
+         ;; `const type: X is new struct'/`is new enum' opens a
+         ;; struct/enum member-list block (closed by `end struct;'/
+         ;; `end enum;'), not a one-liner.  Without this check, the
+         ;; generic char scan below runs past the header line into the
+         ;; struct/enum's own member declarations and finds their `;'
+         ;; terminator, wrongly concluding the header itself is a
+         ;; complete one-liner statement -- which collapses the whole
+         ;; member list out of the block, breaking indentation.
+         ((looking-at "\\_<is[[:blank:]]+new[[:blank:]]+\\(?:struct\\|enum\\)\\_>")
           (setq done t))
          ((looking-at "is[[:blank:]]*$")
           (setq done t))
@@ -6043,22 +6054,6 @@ Move point."
    ((string= header "const proc: ")
     seed7-indent-width)
 
-   ((string= header "const type: ")
-    (if (or (string-prefix-p "end struct;" first-text)
-            (string-prefix-p "end enum;"   first-text)
-            ;; A `const type: X is func ... end func;' declaration is a
-            ;; func-style body (like `const proc:'/`const func'), not a
-            ;; struct/enum member list -- its `local'/`begin' section
-            ;; markers and closing `end func;' get a single indent level,
-            ;; not the double indent used for struct/enum members.
-            (string-prefix-p "local"     first-text)
-            (string-prefix-p "begin"     first-text)
-            (string-prefix-p "end func;" first-text))
-        ;; end struct/enum/func, local, and begin are indented once
-        ;; relative to the const type
-        seed7-indent-width
-      ;; struct/enum member definitions are indented twice.
-      (* 2 seed7-indent-width)))
    ((string= header "const type: ")
     (if (or (string-prefix-p "end struct;" first-text)
             (string-prefix-p "end enum;"   first-text)
