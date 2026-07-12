@@ -123,6 +123,7 @@ ERT_TEST_EL_FILES := tests/ert-tests/seed7-test-arrays-01.el \
                   tests/ert-tests/seed7-test-nav-array-01.el \
                   tests/ert-tests/seed7-test-nav-final-pos-01.el \
                   tests/ert-tests/seed7-test-nav-nested-01.el \
+                  tests/ert-tests/seed7-test-nav-trailing-comment-01.el	\
                   tests/ert-tests/seed7-test-syntax-propertize-01.el
 
 ALL_ERT_TEST_PASSED := $(ERT_TEST_EL_FILES:.el=.el.test-passed)
@@ -262,18 +263,20 @@ tools/sd7-indent-perf.elc:        seed7-mode.elc
 
 # See ERT_TEST_EL_FILES
 
-tests/ert-tests/seed7-test-arrays-01.el.test-passed:             seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-arrays-01.elc
-tests/ert-tests/seed7-test-font-lock-01.el.test-passed:          seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-font-lock-01.elc
-tests/ert-tests/seed7-test-font-lock-02.el.test-passed:          seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-font-lock-02.elc
-tests/ert-tests/seed7-test-font-lock-02b.el.test-passed:         seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-font-lock-02b.elc
-tests/ert-tests/seed7-test-indent-01.el.test-passed:             seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-indent-01.elc
-tests/ert-tests/seed7-test-indent-02.el.test-passed:             seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-indent-02.elc
-tests/ert-tests/seed7-test-mark-defun-01.el.test-passed:         seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-mark-defun-01.el
-tests/ert-tests/seed7-test-nav-array-01.el.test-passed:          seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-array-01.elc
-tests/ert-tests/seed7-test-nav-final-pos-01.el.test-passed:      seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-final-pos-01.elc
-tests/ert-tests/seed7-test-nav-nested-01.el.test-passed:         seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-nested-01.elc
-tests/ert-tests/seed7-test-syntax-propertize-01.el.test-passed:  seed7-mode.elc tests/ert-tests/pel-ert.elc  tests/ert-tests/seed7-test-syntax-propertize-01.el
+tests/ert-tests/seed7-test-arrays-01.el.test-passed:               seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-arrays-01.elc
+tests/ert-tests/seed7-test-font-lock-01.el.test-passed:            seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-font-lock-01.elc
+tests/ert-tests/seed7-test-font-lock-02.el.test-passed:            seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-font-lock-02.elc
+tests/ert-tests/seed7-test-font-lock-02b.el.test-passed:           seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-font-lock-02b.elc
+tests/ert-tests/seed7-test-indent-01.el.test-passed:               seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-indent-01.elc
+tests/ert-tests/seed7-test-indent-02.el.test-passed:               seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-indent-02.elc
+tests/ert-tests/seed7-test-mark-defun-01.el.test-passed:           seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-mark-defun-01.el
+tests/ert-tests/seed7-test-nav-array-01.el.test-passed:            seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-array-01.elc
+tests/ert-tests/seed7-test-nav-final-pos-01.el.test-passed:        seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-final-pos-01.elc
+tests/ert-tests/seed7-test-nav-nested-01.el.test-passed:           seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-nested-01.elc
+tests/ert-tests/seed7-test-nav-trailing-comment-01.el.test-passed: seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-nav-trailing-comment-01.elc
+tests/ert-tests/seed7-test-syntax-propertize-01.el.test-passed:    seed7-mode.elc tests/ert-tests/pel-ert.elc tests/ert-tests/seed7-test-syntax-propertize-01.el
 #tests/ert-tests/seed7-test-sets-01.el.test-passed:          seed7-mode.elc tests/ert-tests/seed7-test-sets-01.elc
+
 
 # ----------------------------------------------------------------------------
 # RULE - execute ERT tests
