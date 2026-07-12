@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260711.0850
+;; Package-Version: 20260712.0959
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-11T12:50:05+0000 W28-6"
+(defconst seed7-mode-version-timestamp "2026-07-12T13:59:30+0000 W28-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5815,6 +5815,12 @@ deciding: if a `;' is reached before a bare `is' at end of line or
          ;; any parenthesis/bracket/semicolon is ever seen).
          ((looking-at "is[[:blank:]]+func\\_>")
           (setq done t))
+         ;; `const type: X is new struct'/`is new enum', and inheritance-style
+         ;; `const type: X is sub BaseType struct'/`is sub BaseType enum', all
+         ;; open a struct/enum member-list block (closed by `end struct;'/
+         ;; `end enum;'), not a one-liner.
+         ((looking-at "\\_<is[[:blank:]]+\\(?:new\\|sub\\)\\(?:[[:blank:]]+[[:alpha:]][[:alnum:]_]*\\)?[[:blank:]]+\\(?:struct\\|enum\\)\\_>")
+          (setq done t))
          ((looking-at "is[[:blank:]]*$")
           (setq done t))
          ((memq (char-after) '(?\( ?\[))
@@ -6043,31 +6049,6 @@ Move point."
    ((string= header "const proc: ")
     seed7-indent-width)
 
-   ((string= header "const type: ")
-    (if (or (string-prefix-p "end struct;" first-text)
-            (string-prefix-p "end enum;"   first-text)
-            ;; A `const type: X is func ... end func;' declaration is a
-            ;; func-style body (like `const proc:'/`const func'), not a
-            ;; struct/enum member list -- its `local'/`begin' section
-            ;; markers and closing `end func;' get a single indent level,
-            ;; not the double indent used for struct/enum members.
-            (string-prefix-p "local"     first-text)
-            (string-prefix-p "begin"     first-text)
-            (string-prefix-p "end func;" first-text))
-        ;; end struct/enum/func, local, and begin are indented once
-        ;; relative to the const type
-        seed7-indent-width
-      ;; struct/enum member definitions are indented twice.
-      (* 2 seed7-indent-width))
-    ;; ---------------------------------------------------------------------------
-    ;; (if (or (string-prefix-p "end struct;" first-text)
-    ;;         (string-prefix-p "end enum;"   first-text))
-    ;;     ;; end struct/enum is indented once relative to the const type
-    ;;     seed7-indent-width
-    ;;   ;; the definitions are indented twice.
-    ;;   (* 2 seed7-indent-width))
-
-    )
    ((string= header "const type: ")
     (if (or (string-prefix-p "end struct;" first-text)
             (string-prefix-p "end enum;"   first-text)
