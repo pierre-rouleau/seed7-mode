@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-12 09:55:08 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-12 11:51:29 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -1998,6 +1998,102 @@ line) restores the expected layout."
     (should (= (seed7-test-indent-02--line-indentation 3) 2))
     (should (string= (buffer-string)
                      seed7-test-indent-02--enum-sub-correct))))
+
+;; ---------------------------------------------------------------------------
+;; 18. Func declaration with trailing whitespace + comment after `is func',
+;;     and indentation of the declaration that follows the closing `end func;'
+;; ----------------------------------------------------------------------------
+;;
+;; NOTE: line 1 below intentionally ends with `is func <SPACE>#' — trailing
+;; whitespace followed by a `#' comment.  This must be preserved verbatim
+;; (many editors strip trailing whitespace on save; the `#' after the space
+;; keeps it non-trailing in the source, so it survives such cleanups).
+
+(defconst seed7-test-indent-02--func-trailing-comment-correct
+  (concat
+   "const func string: gcmMult (in string: factor1, in factorHType: factorH) is func #\n"
+   "  result\n"
+   "    var string: product is \"\";\n"
+   "  local\n"
+   "    var integer: index is 0;\n"
+   "  begin\n"
+   "    index := 1;\n"
+   "  end func;\n"
+   "\n"
+   "const proc: main is func\n"
+   "  begin\n"
+   "    writeln(\"done\");\n"
+   "  end func;\n")
+  "Correctly-indented fixture: `is func' line has trailing ` #' comment.
+The second declaration (`const proc: main is func') must be indented at
+column 0, verifying that the following declaration is not corrupted by
+the preceding trailing-whitespace/comment `is func' line.")
+
+(defconst seed7-test-indent-02--func-trailing-comment-misaligned
+  (concat
+   "const func string: gcmMult (in string: factor1, in factorHType: factorH) is func #\n"
+   "result\n"
+   "var string: product is \"\";\n"
+   "local\n"
+   "var integer: index is 0;\n"
+   "begin\n"
+   "index := 1;\n"
+   "end func;\n"
+   "\n"
+   "const proc: main is func\n"
+   "begin\n"
+   "writeln(\"done\");\n"
+   "end func;\n")
+  "Misaligned counterpart of `seed7-test-indent-02--func-trailing-comment-correct'.")
+
+(ert-deftest seed7-indent/func-trailing-comment-keeps-correct-layout ()
+  "A `is func' line followed by trailing whitespace and a `#' comment must
+not break indentation of its own body nor of the declaration that follows."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--func-trailing-comment-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))   ; declaration
+    (should (= (seed7-test-indent-02--line-indentation 2) 2))   ; result
+    (should (= (seed7-test-indent-02--line-indentation 3) 4))   ; var string
+    (should (= (seed7-test-indent-02--line-indentation 4) 2))   ; local
+    (should (= (seed7-test-indent-02--line-indentation 5) 4))   ; var integer
+    (should (= (seed7-test-indent-02--line-indentation 6) 2))   ; begin
+    (should (= (seed7-test-indent-02--line-indentation 7) 4))   ; index := 1;
+    (should (= (seed7-test-indent-02--line-indentation 8) 2))   ; end func;
+    (should (= (seed7-test-indent-02--line-indentation 10) 0))  ; const proc: main
+    (should (= (seed7-test-indent-02--line-indentation 11) 2))  ; begin
+    (should (= (seed7-test-indent-02--line-indentation 12) 4))  ; writeln(...)
+    (should (= (seed7-test-indent-02--line-indentation 13) 2))  ; end func;
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--func-trailing-comment-correct))))
+
+(ert-deftest seed7-indent/func-trailing-comment-fixes-misaligned-layout ()
+  "`indent-region' must restore correct indentation even when the earlier
+`is func' line has trailing whitespace + a `#' comment."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--func-trailing-comment-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--func-trailing-comment-correct))))
+
+(ert-deftest seed7-indent/func-trailing-comment-fixes-misaligned-layout-line-by-line ()
+  "Calling `seed7-indent-line' on each line (simulating manual <TAB>) must
+also restore correct indentation, including for the declaration following
+`end func;'."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--func-trailing-comment-misaligned)
+    (seed7-mode)
+    (goto-char (point-min))
+    (while (not (eobp))
+      (seed7-indent-line)
+      (forward-line 1))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--func-trailing-comment-correct))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-02)

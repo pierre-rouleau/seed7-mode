@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260712.0959
+;; Package-Version: 20260712.1221
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-12T13:59:30+0000 W28-7"
+(defconst seed7-mode-version-timestamp "2026-07-12T16:21:20+0000 W28-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -3547,10 +3547,10 @@ statement.  Return nil otherwise."
 ;;    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (defconst seed7---func/proc/type-decl-start-re
-  ;;          (---------------------)                (----------)
-  ;;                                            (--------------------)
-  ;; (------------------------------------------------------------------)
-  "\\(const \\(?:func\\|proc\\|type\\)[^;]+?is\\(?:\\(?: +func\\)?$\\)\\)"
+  ;;          (---------------------)                (----------)               (-------)
+  ;;                                            (---------------------------------------------)
+  ;; (-------------------------------------------------------------------------------------------)
+  "\\(const \\(?:func\\|proc\\|type\\)[^;]+?is\\(?:\\(?: +func\\)?[[:blank:]]*\\(?:#.*?\\)?$\\)\\)"
   "Func/Proc declaration start. Group 1: complete text.")
 
 (defconst seed7---func/proc-decl-end-re
@@ -3695,7 +3695,7 @@ Group 2: the end of the enclosing local section: `end func;', `end proc;',
                          ((match-beginning 1)
                           (let ((is-long-body
                                  (string-match-p
-                                  "\\bis[[:blank:]]+\\(?:func\\|proc\\)[[:blank:]]*\\'"
+                                  "\\bis[[:blank:]]+\\(?:func\\|proc\\)[[:blank:]]*\\(?:#.*?\\)?\\'"
                                   (match-string-no-properties 1))))
                             (if (eq nesting 0)
                                 ;; At nesting=0: stop only when this declaration
@@ -3940,8 +3940,8 @@ Move inside the current if inside one, to the next if outside one.
                        ;; callable for this scan.  Short functions ending in plain "is"
                        ;; are handled by the short-function candidate search below.
                        ((match-beginning 1)
-                        (when (string-match-p "\\bis[[:blank:]]+func[[:blank:]]*\\'"
-                                              (match-string-no-properties 1))
+                        (when (string-match-p "\\bis[[:blank:]]+func[[:blank:]]*\\(?:#.*?\\)?\\'"
+                               (match-string-no-properties 1))
                           (setq nesting (1+ nesting))))
                        ;; Group 2: end func/proc; or return ...;
                        ((match-beginning 2)
@@ -4846,7 +4846,7 @@ Returns nil when no adjustment is needed:
      ;; (Only when point is exactly at line-end-position is re-search-backward
      ;; already able to find the match; for any earlier position it cannot.)
      ((looking-at
-       "^[[:blank:]]*[^;]*?is\\(?: +func\\)?[[:blank:]]*$")
+       "^[[:blank:]]*[^;]*?is\\(?: +func\\)?[[:blank:]]*\\(?:#.*?\\)?$")
       (line-end-position))
      ;; Otherwise — whether this is the opening `const proc/func' line of a
      ;; multi-line header or a continuation line — scan forward for the
@@ -4858,7 +4858,7 @@ Returns nil when no adjustment is needed:
           (cond
            ;; Found the `is func' / `is' terminator.
            ((looking-at
-             "^[[:blank:]]*[^;]*?is\\(?: +func\\)?[[:blank:]]*$")
+             "^[[:blank:]]*[^;]*?is\\(?: +func\\)?[[:blank:]]*\\(?:#.*?\\)?$")
             (setq found (line-end-position)))
            ;; Hit a body start, a new declaration, or a complete statement
            ;; (ends with `;'): no terminator in this direction.
