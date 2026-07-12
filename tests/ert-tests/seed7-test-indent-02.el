@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-12 09:27:03 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-12 09:40:41 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -1798,6 +1798,8 @@ expected layout."
     (should (string= (buffer-string)
                      seed7-test-indent-02--struct-correct))))
 
+;; ---------------------------------------------------------------------------
+
 (defconst seed7-test-indent-02--struct-sub-correct
   (concat
    "const type: aesState is sub noCipherState struct\n"
@@ -1815,6 +1817,47 @@ expected layout."
    "var integer: rounds is 0;\n"
    "var string: cipherBlock is \"\";\n"
    "end struct;\n"))
+
+(ert-deftest seed7-indent/struct-sub-keeps-correct-layout ()
+  "Indenting an already-correct `is sub ... struct' definition keeps the layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--struct-sub-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 4))
+    (should (= (seed7-test-indent-02--line-indentation 5) 4))
+    (should (= (seed7-test-indent-02--line-indentation 6) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--struct-sub-correct))))
+
+(ert-deftest seed7-indent/struct-sub-fixes-misaligned-layout ()
+  "Indenting a misaligned `is sub ... struct' definition restores the layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--struct-sub-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 4))
+    (should (= (seed7-test-indent-02--line-indentation 5) 4))
+    (should (= (seed7-test-indent-02--line-indentation 6) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--struct-sub-correct))))
+
+(ert-deftest seed7-indent/struct-sub-fixes-misaligned-layout-line-by-line ()
+  "`seed7-indent-line' on each line restores a misaligned `is sub ... struct'."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--struct-sub-misaligned)
+    (seed7-mode)
+    (goto-char (point-min))
+    (while (not (eobp))
+      (seed7-indent-line)
+      (forward-line 1))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--struct-sub-correct))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-02)
