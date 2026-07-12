@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-11 08:50:29 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-12 09:27:03 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -89,6 +89,8 @@
 ;; 13. One-line action/primitive declarations must not accumulate indentation.
 ;;
 ;; 14. Nested block-opening callable inside `begin', followed by `end func;'.
+;;
+;; 15. Struct member-list definition: `const type: X is new struct ... end struct;'
 
 ;; ---------------------------------------------------------------------------
 ;;; Code:
@@ -1716,6 +1718,103 @@ indentation of declarations that follow it."
     (should (= (seed7-test-indent-02--line-indentation 4) 24)) ; continuation, adjust if a different rule applies
     (should (= (seed7-test-indent-02--line-indentation 6) 4))
     (should (= (seed7-test-indent-02--line-indentation 7) 2))))
+
+;; ---------------------------------------------------------------------------
+;; 15. Struct member-list definition: `const type: X is new struct ... end struct;'
+;; ----------------------------------------------------------------------------
+;;
+;;   const type: defFnType is new struct     ; col 0
+;;     var string: name is "";                ; col 4
+;;     var string: params is "";               ; col 4
+;;     var string: expression is "";           ; col 4
+;;   end struct;                               ; col 2
+
+(defconst seed7-test-indent-02--struct-correct
+  (concat
+   "const type: defFnType is new struct\n"
+   "    var string: name is \"\";\n"
+   "    var string: params is \"\";\n"
+   "    var string: expression is \"\";\n"
+   "  end struct;\n")
+  "Correctly-indented struct member-list fixture.")
+
+(defconst seed7-test-indent-02--struct-misaligned
+  (concat
+   "const type: defFnType is new struct\n"
+   "var string: name is \"\";\n"
+   "var string: params is \"\";\n"
+   "var string: expression is \"\";\n"
+   "end struct;\n")
+  "Misaligned struct member-list fixture.")
+
+(ert-deftest seed7-indent/struct-keeps-correct-layout ()
+  "Indenting an already-correct struct definition keeps the layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--struct-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 4))
+    (should (= (seed7-test-indent-02--line-indentation 3) 4))
+    (should (= (seed7-test-indent-02--line-indentation 4) 4))
+    (should (= (seed7-test-indent-02--line-indentation 5) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--struct-correct))))
+
+(ert-deftest seed7-indent/struct-fixes-misaligned-layout ()
+  "Indenting a misaligned struct definition (via `indent-region') restores
+the expected layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--struct-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 4))
+    (should (= (seed7-test-indent-02--line-indentation 3) 4))
+    (should (= (seed7-test-indent-02--line-indentation 4) 4))
+    (should (= (seed7-test-indent-02--line-indentation 5) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--struct-correct))))
+
+(ert-deftest seed7-indent/struct-fixes-misaligned-layout-line-by-line ()
+  "Calling `seed7-indent-line' on each line of a misaligned struct
+definition (simulating manual <TAB> on each line) restores the
+expected layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--struct-misaligned)
+    (seed7-mode)
+    (goto-char (point-min))
+    (while (not (eobp))
+      (seed7-indent-line)
+      (forward-line 1))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 4))
+    (should (= (seed7-test-indent-02--line-indentation 3) 4))
+    (should (= (seed7-test-indent-02--line-indentation 4) 4))
+    (should (= (seed7-test-indent-02--line-indentation 5) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--struct-correct))))
+
+(defconst seed7-test-indent-02--struct-sub-correct
+  (concat
+   "const type: aesState is sub noCipherState struct\n"
+   "    var array bin32: encryptionSubKey is 0 times bin32.value;\n"
+   "    var array bin32: decryptionSubKey is 0 times bin32.value;\n"
+   "    var integer: rounds is 0;\n"
+   "    var string: cipherBlock is \"\";\n"
+   "  end struct;\n"))
+
+(defconst seed7-test-indent-02--struct-sub-misaligned
+  (concat
+   "const type: aesState is sub noCipherState struct\n"
+   "var array bin32: encryptionSubKey is 0 times bin32.value;\n"
+   "var array bin32: decryptionSubKey is 0 times bin32.value;\n"
+   "var integer: rounds is 0;\n"
+   "var string: cipherBlock is \"\";\n"
+   "end struct;\n"))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-02)

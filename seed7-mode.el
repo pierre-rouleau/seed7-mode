@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260711.1012
+;; Package-Version: 20260712.0925
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-11T14:12:02+0000 W28-6"
+(defconst seed7-mode-version-timestamp "2026-07-12T13:25:52+0000 W28-7"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -5814,6 +5814,12 @@ deciding: if a `;' is reached before a bare `is' at end of line or
          ;; can be silently skipped over (e.g. "is func" appearing before
          ;; any parenthesis/bracket/semicolon is ever seen).
          ((looking-at "is[[:blank:]]+func\\_>")
+          (setq done t))
+         ;; `const type: X is new struct'/`is new enum', and inheritance-style
+         ;; `const type: X is sub BaseType struct'/`is sub BaseType enum', all
+         ;; open a struct/enum member-list block (closed by `end struct;'/
+         ;; `end enum;'), not a one-liner.
+         ((looking-at "\\_<is[[:blank:]]+\\(?:new\\|sub\\)\\(?:[[:blank:]]+[[:alpha:]][[:alnum:]_]*\\)?[[:blank:]]+\\(?:struct\\|enum\\)\\_>")
           (setq done t))
          ((looking-at "is[[:blank:]]*$")
           (setq done t))
