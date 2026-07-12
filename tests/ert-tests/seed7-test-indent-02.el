@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-12 09:40:41 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-12 09:55:08 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -91,6 +91,10 @@
 ;; 14. Nested block-opening callable inside `begin', followed by `end func;'.
 ;;
 ;; 15. Struct member-list definition: `const type: X is new struct ... end struct;'
+;;
+;; 16. Enum member-list definition: `const type: X is new enum ... end enum;'
+;;
+;; 17. Enum inheritance-style member-list definition:
 
 ;; ---------------------------------------------------------------------------
 ;;; Code:
@@ -1858,6 +1862,142 @@ expected layout."
       (forward-line 1))
     (should (string= (buffer-string)
                      seed7-test-indent-02--struct-sub-correct))))
+
+;; ---------------------------------------------------------------------------
+;; 16. Enum member-list definition: `const type: X is new enum ... end enum;'
+;; ----------------------------------------------------------------------------
+;;
+;;   const type: color is new enum      ; col 0
+;;     red, green, blue                  ; col 4
+;;   end enum;                           ; col 2
+
+(defconst seed7-test-indent-02--enum-correct
+  (concat
+   "const type: color is new enum\n"
+   "    red, green, blue\n"
+   "  end enum;\n")
+  "Correctly-indented enum member-list fixture.")
+
+(defconst seed7-test-indent-02--enum-misaligned
+  (concat
+   "const type: color is new enum\n"
+   "red, green, blue\n"
+   "end enum;\n")
+  "Misaligned enum member-list fixture.")
+
+(ert-deftest seed7-indent/enum-keeps-correct-layout ()
+  "Indenting an already-correct enum definition keeps the layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--enum-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 4))
+    (should (= (seed7-test-indent-02--line-indentation 3) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--enum-correct))))
+
+(ert-deftest seed7-indent/enum-fixes-misaligned-layout ()
+  "Indenting a misaligned enum definition (via `indent-region') restores
+the expected layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--enum-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 4))
+    (should (= (seed7-test-indent-02--line-indentation 3) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--enum-correct))))
+
+(ert-deftest seed7-indent/enum-fixes-misaligned-layout-line-by-line ()
+  "Calling `seed7-indent-line' on each line of a misaligned enum
+definition (simulating manual <TAB> on each line) restores the
+expected layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--enum-misaligned)
+    (seed7-mode)
+    (goto-char (point-min))
+    (while (not (eobp))
+      (seed7-indent-line)
+      (forward-line 1))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 4))
+    (should (= (seed7-test-indent-02--line-indentation 3) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--enum-correct))))
+
+;; ---------------------------------------------------------------------------
+;; 17. Enum inheritance-style member-list definition:
+;;     `const type: X is sub BaseType enum ... end enum;'
+;; ----------------------------------------------------------------------------
+;;
+;;   const type: extendedColor is sub color enum   ; col 0
+;;     yellow, orange, purple                       ; col 4
+;;   end enum;                                       ; col 2
+
+(defconst seed7-test-indent-02--enum-sub-correct
+  (concat
+   "const type: extendedColor is sub color enum\n"
+   "    yellow, orange, purple\n"
+   "  end enum;\n")
+  "Correctly-indented inheritance-style enum member-list fixture.")
+
+(defconst seed7-test-indent-02--enum-sub-misaligned
+  (concat
+   "const type: extendedColor is sub color enum\n"
+   "yellow, orange, purple\n"
+   "end enum;\n")
+  "Misaligned inheritance-style enum member-list fixture.")
+
+(ert-deftest seed7-indent/enum-sub-keeps-correct-layout ()
+  "Indenting an already-correct inheritance-style enum definition keeps
+the layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--enum-sub-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 4))
+    (should (= (seed7-test-indent-02--line-indentation 3) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--enum-sub-correct))))
+
+(ert-deftest seed7-indent/enum-sub-fixes-misaligned-layout ()
+  "Indenting a misaligned inheritance-style enum definition (via
+`indent-region') restores the expected layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--enum-sub-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 4))
+    (should (= (seed7-test-indent-02--line-indentation 3) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--enum-sub-correct))))
+
+(ert-deftest seed7-indent/enum-sub-fixes-misaligned-layout-line-by-line ()
+  "Calling `seed7-indent-line' on each line of a misaligned
+inheritance-style enum definition (simulating manual <TAB> on each
+line) restores the expected layout."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--enum-sub-misaligned)
+    (seed7-mode)
+    (goto-char (point-min))
+    (while (not (eobp))
+      (seed7-indent-line)
+      (forward-line 1))
+    (should (= (seed7-test-indent-02--line-indentation 1) 0))
+    (should (= (seed7-test-indent-02--line-indentation 2) 4))
+    (should (= (seed7-test-indent-02--line-indentation 3) 2))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--enum-sub-correct))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-02)
