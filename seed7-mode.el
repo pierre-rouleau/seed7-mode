@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260713.0650
+;; Package-Version: 20260713.1010
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-13T10:50:24+0000 W29-1"
+(defconst seed7-mode-version-timestamp "2026-07-13T14:10:19+0000 W29-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7666,8 +7666,8 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                          indent-column2)
              (not (seed7-line-inside-parens-pair-column
                    0
-                   (seed7-bol-position -1)
-                   (seed7-position-of-end-of-statement -1))))
+                   early-begin-pos
+                   early-end-pos)))
         (setq indent-column indent-column2))
 
        ;; Handle special cases before checking if line is inside a block
