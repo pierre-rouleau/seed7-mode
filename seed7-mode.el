@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260712.1221
+;; Package-Version: 20260713.0650
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-12T16:21:20+0000 W28-7"
+(defconst seed7-mode-version-timestamp "2026-07-13T10:50:24+0000 W29-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6808,7 +6808,19 @@ search boundaries for the assignment operator and statement-end searches."
                                   (seed7-statement-end-pos assignment-pos scope-end-pos))))
         (when (and assignment-pos
                    statement-end-pos
-                   (< assignment-pos current-pos statement-end-pos))
+                   (< assignment-pos current-pos statement-end-pos)
+                   ;; Reject assignment operators nested inside an open
+                   ;; paren/bracket/brace (e.g. a local declare-and-assign
+                   ;; sub-expression used as a function argument, such as
+                   ;; `raisesIndexError(stri := "" [ .. ]))'.  Those are not
+                   ;; statement-level assignments and must never be used as
+                   ;; the alignment reference for continuation lines: doing
+                   ;; so causes runaway/compounding indentation whenever
+                   ;; each successive continuation line also contains a
+                   ;; nested `:='.
+                   (not (nth 1 (parse-partial-sexp
+                                (or scope-begin-pos (point-min))
+                                assignment-pos))))
           (goto-char assignment-pos)
           (skip-chars-forward " \t")
           (current-column))))))
