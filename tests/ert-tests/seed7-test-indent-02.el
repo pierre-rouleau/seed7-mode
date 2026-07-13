@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-12 11:51:29 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-13 07:15:25 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -2094,6 +2094,199 @@ also restore correct indentation, including for the declaration following
       (forward-line 1))
     (should (string= (buffer-string)
                      seed7-test-indent-02--func-trailing-comment-correct))))
+
+;; ---------------------------------------------------------------------------
+;; 19. `if' condition continuation lines containing a nested `:=' (declare-
+;;     and-assign inside a function call argument) must not be mistaken for
+;;     a statement-level assignment continuation.
+;; ---------------------------------------------------------------------------
+
+(defconst seed7-test-indent-02--nested-assign-in-logic-correct
+  (concat
+   "const proc: main is func\n"
+   "  local\n"
+   "    var string: stri is \"\";\n"
+   "    var boolean: okay is TRUE;\n"
+   "  begin\n"
+   "    if not raisesIndexError(stri := \"\" [ .. integer.first ]) or\n"
+   "       not raisesIndexError(stri := \"\" [ ..            -5 ]) or\n"
+   "       not raisesIndexError(stri := \"\" [ ..            -2 ]) then\n"
+   "      writeln(\" ***** stri := STRING [ .. STOP ] does not work correctly. (1)\");\n"
+   "      okay := FALSE;\n"
+   "    end if;\n"
+   "  end func;\n")
+  "Correctly-indented fixture: `if' condition continuation lines each
+contain a nested `:=' inside a function call argument list (a Seed7
+declare-and-assign sub-expression), not a statement-level assignment.")
+
+(defconst seed7-test-indent-02--nested-assign-in-logic-misaligned
+  (concat
+   "const proc: main is func\n"
+   "local\n"
+   "var string: stri is \"\";\n"
+   "var boolean: okay is TRUE;\n"
+   "begin\n"
+   "if not raisesIndexError(stri := \"\" [ .. integer.first ]) or\n"
+   "not raisesIndexError(stri := \"\" [ ..            -5 ]) or\n"
+   "not raisesIndexError(stri := \"\" [ ..            -2 ]) then\n"
+   "writeln(\" ***** stri := STRING [ .. STOP ] does not work correctly. (1)\");\n"
+   "okay := FALSE;\n"
+   "end if;\n"
+   "end func;\n")
+  "Un-indented `seed7-test-indent-02--nested-assign-in-logic-correct'.")
+
+(ert-deftest seed7-indent/nested-assign-in-logic-keeps-correct-layout ()
+  "A nested `:=' inside a function-call argument on an `if' condition
+continuation line must not trigger assignment-statement-continuation
+alignment, nor cause runaway/compounding indentation."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--nested-assign-in-logic-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 6) 4))   ; if ...
+    (should (= (seed7-test-indent-02--line-indentation 7) 7))   ; not ... or
+    (should (= (seed7-test-indent-02--line-indentation 8) 7))   ; not ... then
+    (should (= (seed7-test-indent-02--line-indentation 9) 6))   ; writeln(...)
+    (should (= (seed7-test-indent-02--line-indentation 10) 6))  ; okay := FALSE;
+    (should (= (seed7-test-indent-02--line-indentation 11) 4))  ; end if;
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--nested-assign-in-logic-correct))))
+
+(ert-deftest seed7-indent/nested-assign-in-logic-fixes-misaligned-layout ()
+  "`indent-region' must restore correct indentation for `if' condition
+continuation lines that each contain a nested `:=', without compounding
+drift to the right."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--nested-assign-in-logic-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--nested-assign-in-logic-correct))))
+
+(ert-deftest seed7-indent/nested-assign-in-logic-fixes-misaligned-layout-line-by-line ()
+  "Calling `seed7-indent-line' on each line (simulating manual <TAB>) must
+also restore correct indentation for this pattern."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--nested-assign-in-logic-misaligned)
+    (seed7-mode)
+    (goto-char (point-min))
+    (while (not (eobp))
+      (seed7-indent-line)
+      (forward-line 1))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--nested-assign-in-logic-correct))))
+
+;; ---------------------------------------------------------------------------
+;; 20. `if' condition continuation lines using `=' comparisons with nested
+;;     `[ .. ]' string slicing and `intExpr(...)' function calls, preceded
+;;     by an unrelated top-level `:=' assignment statement.
+;; ---------------------------------------------------------------------------
+
+(defconst seed7-test-indent-02--slice-compare-eq-correct
+  (concat
+   "const proc: main is func\n"
+   "  local\n"
+   "    var string: stri is \"\";\n"
+   "    var boolean: okay is TRUE;\n"
+   "  begin\n"
+   "    stri := \"1234567890\";\n"
+   "    if not raisesIndexError(stri[ .. integer.first ] = \"abcdefgh\") or\n"
+   "       not raisesIndexError(stri[ ..            -5 ] = \"abcdefgh\") or\n"
+   "       not raisesIndexError(stri[ ..            -2 ] = \"abcdefgh\") or\n"
+   "       not raisesIndexError(stri[ ..            -1 ] = \"abcdefgh\") or\n"
+   "       not raisesIndexError(stri[ .. intExpr(integer.first) ] = \"abcdefgh\") or\n"
+   "       not raisesIndexError(stri[ .. intExpr(           -5) ] = \"abcdefgh\") or\n"
+   "       not raisesIndexError(stri[ .. intExpr(           -2) ] = \"abcdefgh\") or\n"
+   "       not raisesIndexError(stri[ .. intExpr(           -1) ] = \"abcdefgh\") then\n"
+   "      writeln(\" ***** STRING [ .. STOP ] does not work correctly. (9)\");\n"
+   "      okay := FALSE;\n"
+   "    end if;\n"
+   "  end func;\n")
+  "Correctly-indented fixture: `if' continuation lines use `=' comparisons
+against nested `[ .. ]' string slices and `intExpr(...)' calls, with a
+single space after `if' so continuation lines align at column 7
+(if-column 4 + \"if\" length 2 + 1). The preceding `stri := \"1234567890\";'
+statement is an unrelated top-level `:=' assignment and must not affect
+alignment of the `if' continuation lines below.")
+
+(defconst seed7-test-indent-02--slice-compare-eq-misaligned
+  (concat
+   "const proc: main is func\n"
+   "local\n"
+   "var string: stri is \"\";\n"
+   "var boolean: okay is TRUE;\n"
+   "begin\n"
+   "stri := \"1234567890\";\n"
+   "if not raisesIndexError(stri[ .. integer.first ] = \"abcdefgh\") or\n"
+   "not raisesIndexError(stri[ ..            -5 ] = \"abcdefgh\") or\n"
+   "not raisesIndexError(stri[ ..            -2 ] = \"abcdefgh\") or\n"
+   "not raisesIndexError(stri[ ..            -1 ] = \"abcdefgh\") or\n"
+   "not raisesIndexError(stri[ .. intExpr(integer.first) ] = \"abcdefgh\") or\n"
+   "not raisesIndexError(stri[ .. intExpr(           -5) ] = \"abcdefgh\") or\n"
+   "not raisesIndexError(stri[ .. intExpr(           -2) ] = \"abcdefgh\") or\n"
+   "not raisesIndexError(stri[ .. intExpr(           -1) ] = \"abcdefgh\") then\n"
+   "writeln(\" ***** STRING [ .. STOP ] does not work correctly. (9)\");\n"
+   "okay := FALSE;\n"
+   "end if;\n"
+   "end func;\n")
+  "Misaligned counterpart of `seed7-test-indent-02--slice-compare-eq-correct'.
+Only leading whitespace differs from the `-correct' fixture; mid-line
+spacing after the first non-blank character on each line is identical,
+since `seed7-mode' indentation logic never rewrites it.")
+
+(ert-deftest seed7-indent/slice-compare-eq-keeps-correct-layout ()
+  "Nested `[ .. ]' slices and `intExpr(...)' calls combined with `='
+comparisons on `if' continuation lines (single space after `if') must
+keep the stable logic-check-expression column 7, unaffected by an
+earlier unrelated `:=' statement."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--slice-compare-eq-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 6) 4))   ; stri := "1234567890";
+    (should (= (seed7-test-indent-02--line-indentation 7) 4))   ; if ...
+    (should (= (seed7-test-indent-02--line-indentation 8) 7))   ; not ... or
+    (should (= (seed7-test-indent-02--line-indentation 9) 7))   ; not ... or
+    (should (= (seed7-test-indent-02--line-indentation 10) 7))  ; not ... or
+    (should (= (seed7-test-indent-02--line-indentation 11) 7))  ; not ... or
+    (should (= (seed7-test-indent-02--line-indentation 12) 7))  ; not ... or
+    (should (= (seed7-test-indent-02--line-indentation 13) 7))  ; not ... or
+    (should (= (seed7-test-indent-02--line-indentation 14) 7))  ; not ... then
+    (should (= (seed7-test-indent-02--line-indentation 15) 6))  ; writeln(...)
+    (should (= (seed7-test-indent-02--line-indentation 16) 6))  ; okay := FALSE;
+    (should (= (seed7-test-indent-02--line-indentation 17) 4))  ; end if;
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--slice-compare-eq-correct))))
+
+(ert-deftest seed7-indent/slice-compare-eq-fixes-misaligned-layout ()
+  "`indent-region' must restore correct indentation for `if' continuation
+lines using `=' comparisons against nested `[ .. ]' slices and
+`intExpr(...)' calls."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--slice-compare-eq-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--slice-compare-eq-correct))))
+
+(ert-deftest seed7-indent/slice-compare-eq-fixes-misaligned-layout-line-by-line ()
+  "Calling `seed7-indent-line' on each line (simulating manual <TAB>) must
+also restore correct indentation for this pattern."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--slice-compare-eq-misaligned)
+    (seed7-mode)
+    (goto-char (point-min))
+    (while (not (eobp))
+      (seed7-indent-line)
+      (forward-line 1))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--slice-compare-eq-correct))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-02)
