@@ -187,6 +187,12 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 
 - Fix *indentation issue caused by ~:=~ inside a function call parameter list*
 
+- Fix *indentation of continuation lines of a multi-line function-call
+  argument list on the RHS of a top-level ~:=~ assignment* (e.g. Seed7's
+  =lib/x509cert.s7i= ~aTime := time(year, ...)~ statement).  Such lines were
+  incorrectly aligned under the assignment operator instead of under the
+  still-open call's opening paren.
+
 - Fix *seed7-line-inside-parens-pair*: was using the wrong variable for
   the line-beginning position.
 
