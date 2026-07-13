@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260713.0650
+;; Package-Version: 20260713.0937
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-13T10:50:24+0000 W29-1"
+(defconst seed7-mode-version-timestamp "2026-07-13T13:37:30+0000 W29-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6809,6 +6809,8 @@ search boundaries for the assignment operator and statement-end searches."
         (when (and assignment-pos
                    statement-end-pos
                    (< assignment-pos current-pos statement-end-pos)
+                   ;; [:todo 2026-07-13, by Pierre Rouleau:
+                   ;;    Also reject when inside function argument]
                    ;; Reject assignment operators nested inside an open
                    ;; paren/bracket/brace (e.g. a local declare-and-assign
                    ;; sub-expression used as a function argument, such as
