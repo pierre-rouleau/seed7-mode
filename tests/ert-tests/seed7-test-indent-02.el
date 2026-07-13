@@ -2289,6 +2289,96 @@ also restore correct indentation for this pattern."
                      seed7-test-indent-02--slice-compare-eq-correct))))
 
 ;; ---------------------------------------------------------------------------
+;; 21. Top-level `:=' assignment whose RHS is a multi-line function call:
+;;     every continuation line remains inside the still-open parens of the
+;;     call and must align under the column following the open paren, not
+;;     under the column following `:='.  Based on the `aTime := time(...)'
+;;     statement in Seed7's lib/x509cert.s7i.
+;; ---------------------------------------------------------------------------
+
+(defconst seed7-test-indent-02--multiline-call-arg-in-assign-correct
+  (concat
+   "const proc: main is func\n"
+   "  local\n"
+   "    var string: stri is \"20260713100000Z\";\n"
+   "    var time: aTime is time.value;\n"
+   "  begin\n"
+   "    aTime := time(year,\n"
+   "                  integer(stri[ 3 fixLen 2]),  # month\n"
+   "                  integer(stri[ 5 fixLen 2]),  # day\n"
+   "                  integer(stri[ 7 fixLen 2]),  # hour\n"
+   "                  integer(stri[ 9 fixLen 2]),  # minute\n"
+   "                  integer(stri[11 fixLen 2])); # second\n"
+   "  end func;\n")
+  "Correctly-indented fixture: a top-level `:=' assignment whose RHS is a
+multi-line function call.  Every continuation line is inside the still-open
+parens of the `time(...)' call and must align under the column following
+`time(', not under the column following `:='.")
+
+(defconst seed7-test-indent-02--multiline-call-arg-in-assign-misaligned
+  (concat
+   "const proc: main is func\n"
+   "local\n"
+   "var string: stri is \"20260713100000Z\";\n"
+   "var time: aTime is time.value;\n"
+   "begin\n"
+   "aTime := time(year,\n"
+   "integer(stri[ 3 fixLen 2]),  # month\n"
+   "integer(stri[ 5 fixLen 2]),  # day\n"
+   "integer(stri[ 7 fixLen 2]),  # hour\n"
+   "integer(stri[ 9 fixLen 2]),  # minute\n"
+   "integer(stri[11 fixLen 2])); # second\n"
+   "end func;\n")
+  "Un-indented counterpart of
+`seed7-test-indent-02--multiline-call-arg-in-assign-correct'.")
+
+(ert-deftest seed7-indent/multiline-call-arg-in-assign-keeps-correct-layout ()
+  "Every continuation line of the multi-line `time(...)' call on the RHS of
+the top-level `aTime := ...' assignment must align under the column
+following the open paren of `time(', not under the column following `:='."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--multiline-call-arg-in-assign-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (= (seed7-test-indent-02--line-indentation 6) 4))    ; aTime := time(year,
+    (should (= (seed7-test-indent-02--line-indentation 7) 18))   ; integer(...) # month
+    (should (= (seed7-test-indent-02--line-indentation 8) 18))   ; integer(...) # day
+    (should (= (seed7-test-indent-02--line-indentation 9) 18))   ; integer(...) # hour
+    (should (= (seed7-test-indent-02--line-indentation 10) 18))  ; integer(...) # minute
+    (should (= (seed7-test-indent-02--line-indentation 11) 18))  ; integer(...) # second
+    (should (= (seed7-test-indent-02--line-indentation 12) 2))   ; end func;
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--multiline-call-arg-in-assign-correct))))
+
+(ert-deftest seed7-indent/multiline-call-arg-in-assign-fixes-misaligned-layout ()
+  "`indent-region' must restore correct indentation for a multi-line
+function-call argument list appearing on the RHS of a top-level `:='
+assignment, without any continuation line drifting to the assignment
+operator's column."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--multiline-call-arg-in-assign-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--multiline-call-arg-in-assign-correct))))
+
+(ert-deftest seed7-indent/multiline-call-arg-in-assign-fixes-misaligned-layout-line-by-line ()
+  "Calling `seed7-indent-line' on each line (simulating manual <TAB>) must
+also restore correct indentation for this pattern."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--multiline-call-arg-in-assign-misaligned)
+    (seed7-mode)
+    (goto-char (point-min))
+    (while (not (eobp))
+      (seed7-indent-line)
+      (forward-line 1))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--multiline-call-arg-in-assign-correct))))
+
+;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-02)
 
 ;;; seed7-test-indent-02.el ends here

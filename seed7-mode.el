@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260713.0954
+;; Package-Version: 20260713.1015
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-13T13:54:29+0000 W29-1"
+(defconst seed7-mode-version-timestamp "2026-07-13T14:15:00+0000 W29-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6809,8 +6809,6 @@ search boundaries for the assignment operator and statement-end searches."
         (when (and assignment-pos
                    statement-end-pos
                    (< assignment-pos current-pos statement-end-pos)
-                   ;; [:todo 2026-07-13, by Pierre Rouleau:
-                   ;;    Also reject when line is inside function argument list]
                    ;; Reject assignment operators nested inside an open
                    ;; paren/bracket/brace (e.g. a local declare-and-assign
                    ;; sub-expression used as a function argument, such as
@@ -6822,7 +6820,19 @@ search boundaries for the assignment operator and statement-end searches."
                    ;; nested `:='.
                    (not (nth 1 (parse-partial-sexp
                                 (or scope-begin-pos (point-min))
-                                assignment-pos))))
+                                assignment-pos)))
+                   ;; Reject line N itself when it lies inside an open
+                   ;; paren/bracket/brace that was opened on the RHS of the
+                   ;; assignment, i.e. inside a (possibly multi-line)
+                   ;; function-call argument list such as:
+                   ;;   aTime := time(year,
+                   ;;                 integer(stri[ 3 fixLen 2]),  # month
+                   ;;                 ...);
+                   ;; Those continuation lines are argument-list continuations,
+                   ;; not statement-level assignment continuations, and must be
+                   ;; aligned by the normal parens-pair indentation logic
+                   ;; instead of by the assignment operator's column.
+                   (not (nth 1 (parse-partial-sexp assignment-pos current-pos))))
           (goto-char assignment-pos)
           (skip-chars-forward " \t")
           (current-column))))))
