@@ -1,0 +1,169 @@
+        1092  93% - ...
+        1092  93%  - call-interactively
+        1092  93%   - apply
+        1092  93%    - call-interactively@ido-cr+-record-current-command
+        1092  93%     - #<primitive-function call-interactively>
+        1092  93%      - funcall-interactively
+        1052  89%       - pel-profile-all
+        1052  89%        - pel-profile-dir
+        1052  89%         - pel-profile-indent
+        1052  89%          - pel-profile-indentation-test-of
+        1052  89%           - call-interactively
+        1052  89%            - apply
+        1052  89%             - call-interactively@ido-cr+-record-current-command
+        1052  89%              - #<primitive-function call-interactively>
+        1052  89%               - funcall-interactively
+        1052  89%                - seed7-complete-statement-or-indent
+        1052  89%                 - seed7-indent-region
+        1052  89%                  - seed7--indent-one-line
+        1050  89%                   - seed7-calc-indent
+         616  52%                    - seed7-line-inside-array-definition-block
+         405  34%                     - forward-sexp
+         405  34%                      - seed7--forward-sexp-function
+         160  13%                       - internal--syntax-propertize
+         160  13%                        - syntax-propertize
+         152  12%                           seed7-mode-syntax-propertize
+         211  17%                     - seed7-re-search-backward
+         192  16%                        re-search-backward
+          10   0%                      - run-with-timer
+          10   0%                       - run-at-time
+           6   0%                        - timer-set-time
+           5   0%                           timer--time-setter
+           3   0%                        - timer-activate
+           3   0%                         - timer--activate
+           3   0%                            timer--time-less-p
+           1   0%                          timer-relative-time
+           9   0%                      - seed7-inside-comment-p
+           9   0%                       - syntax-ppss
+           9   0%                          parse-partial-sexp
+         349  29%                    - seed7-line-inside-nested-parens-pairs-column
+         349  29%                     - seed7-line-inside-nested-parens-pairs
+         349  29%                      - seed7-line-inside-parens-pair
+         349  29%                       - seed7-line-inside-syntax-parens-pair
+         230  19%                        - forward-sexp
+         230  19%                           seed7--forward-sexp-function
+         116   9%                        - syntax-ppss
+         116   9%                           parse-partial-sexp
+          48   4%                    - seed7-comment-column
+          45   3%                     - seed7-calc-indent
+          45   3%                      - seed7-line-inside-array-definition-block
+          35   2%                       - forward-sexp
+          35   2%                        - seed7--forward-sexp-function
+          10   0%                         - internal--syntax-propertize
+          10   0%                          - syntax-propertize
+           8   0%                             seed7-mode-syntax-propertize
+          10   0%                       - seed7-re-search-backward
+          10   0%                          re-search-backward
+           3   0%                     - seed7-line-code-ends-with
+           2   0%                      - seed7-move-to-line
+           2   0%                       - seed7-to-previous-non-empty-line
+           2   0%                        - seed7-inside-comment-p
+           2   0%                         - syntax-ppss
+           2   0%                            parse-partial-sexp
+           1   0%                      - seed7-re-search-backward
+           1   0%                       - seed7-inside-comment-p
+           1   0%                        - syntax-ppss
+           1   0%                           parse-partial-sexp
+          28   2%                    - seed7--current-line-nth-word
+          28   2%                     - thing-at-point
+          28   2%                      - bounds-of-thing-at-point
+          26   2%                       - #<byte-code-function F4E>
+          26   2%                        - forward-thing
+          26   2%                         - forward-word
+          25   2%                          - internal--syntax-propertize
+          25   2%                           - syntax-propertize
+          24   2%                              seed7-mode-syntax-propertize
+           2   0%                       - #<byte-code-function 436>
+           2   0%                        - forward-thing
+           2   0%                           forward-word
+           7   0%                    - seed7-current-line-start-inside-comment-p
+           7   0%                     - seed7-inside-comment-p
+           7   0%                      - syntax-ppss
+           7   0%                         parse-partial-sexp
+           1   0%                    - seed7-line-at-endof-set-definition-block
+           1   0%                     - seed7-move-to-line
+           1   0%                      - seed7-to-previous-non-empty-line
+           1   0%                       - seed7-inside-comment-p
+           1   0%                        - syntax-ppss
+           1   0%                           parse-partial-sexp
+           1   0%                      seed7-blank-line-p
+           1   0%                     jit-lock-after-change
+          40   3%       - seed7-complete-statement-or-indent
+          40   3%        - seed7-indent-region
+          40   3%         - seed7--indent-one-line
+          40   3%          - seed7-calc-indent
+          40   3%           - seed7-comment-column
+          40   3%            - seed7-calc-indent
+          23   1%             - seed7-line-inside-nested-parens-pairs-column
+          23   1%              - seed7-line-inside-nested-parens-pairs
+          23   1%               - seed7-line-inside-parens-pair
+          20   1%                - seed7-line-inside-syntax-parens-pair
+          15   1%                 - forward-sexp
+          15   1%                    seed7--forward-sexp-function
+           5   0%                 - syntax-ppss
+           5   0%                    parse-partial-sexp
+           3   0%                - seed7-re-search-backward
+           2   0%                 - seed7-inside-comment-p
+           2   0%                  - syntax-ppss
+           2   0%                     parse-partial-sexp
+           1   0%                 - run-with-timer
+           1   0%                  - run-at-time
+           1   0%                   - timer-activate
+           1   0%                    - timer--activate
+           1   0%                       timer--time-less-p
+           4   0%             - seed7-line-is-defun-end
+           4   0%              - seed7-move-to-line
+           4   0%               - seed7-to-previous-non-empty-line
+           4   0%                - seed7-inside-comment-p
+           4   0%                 - syntax-ppss
+           3   0%                    parse-partial-sexp
+           1   0%                    make-closure
+           3   0%             - seed7-line-after-func-return-logic-operator-column
+           3   0%              - seed7-move-to-line
+           3   0%               - seed7-to-previous-non-empty-line
+           3   0%                - seed7-inside-comment-p
+           3   0%                 - syntax-ppss
+           3   0%                    parse-partial-sexp
+           2   0%             - seed7-line-inside-parens-pair-column
+           2   0%              - seed7-line-inside-parens-pair
+           2   0%               - seed7-re-search-backward
+           2   0%                - seed7-inside-comment-p
+           2   0%                 - syntax-ppss
+           2   0%                    parse-partial-sexp
+           2   0%             - seed7-line-at-endof-array-definition-block
+           2   0%              - seed7-move-to-line
+           2   0%               - seed7-to-previous-non-empty-line
+           2   0%                - seed7-inside-comment-p
+           2   0%                 - syntax-ppss
+           2   0%                    parse-partial-sexp
+           2   0%             - seed7-line-starts-with-open-paren-after-logic-operator
+           2   0%              - seed7-move-to-line
+           2   0%               - seed7-to-previous-non-empty-line
+           2   0%                - seed7-inside-comment-p
+           2   0%                 - syntax-ppss
+           2   0%                    parse-partial-sexp
+           1   0%             - seed7-line-inside-a-block-cached
+           1   0%              - seed7-line-inside-a-block
+           1   0%               - seed7-re-search-backward
+           1   0%                - run-with-timer
+           1   0%                 - run-at-time
+           1   0%                  - timer-set-time
+           1   0%                     timer--time-setter
+           1   0%             - seed7-line-after-short-func-end
+           1   0%              - seed7-move-to-line
+           1   0%               - seed7-to-previous-non-empty-line
+           1   0%                - seed7-inside-comment-p
+           1   0%                 - syntax-ppss
+           1   0%                    parse-partial-sexp
+           1   0%             - seed7-line-at-endof-set-definition-block
+           1   0%              - seed7-move-to-line
+           1   0%               - seed7-to-previous-non-empty-line
+           1   0%                - seed7-inside-comment-p
+           1   0%                 - syntax-ppss
+           1   0%                    parse-partial-sexp
+           1   0%             - seed7-line-inside-array-definition-block
+           1   0%              - seed7-re-search-backward
+           1   0%               - seed7-inside-comment-p
+           1   0%                - syntax-ppss
+           1   0%                   parse-partial-sexp
+          82   6%   Automatic GC
