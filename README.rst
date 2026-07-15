@@ -27,10 +27,11 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
    :target: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build-windows.yml
 
 🚧 **Still Under Development** Currently testing indentation of all Seed7
-files in the Seed7 repository - some code pattern still does not indent
-properly or take an excessive amount of time on large files.
-When all indentation work 100% with acceptable performance, the version
-number will be changed to 1.0. 🚧
+files in the `Seed7 repository`_ - some code pattern still does not indent
+properly or take an excessive amount of time on large files.  When seed7-mode
+is able to indent 100% of the Seed7 files in the prg and lib directories of
+the `Seed7 repository`_ flawlessly with acceptable performance, the version number will
+be changed to 1.0. 🚧
 
 **Highlights**
 
@@ -1549,6 +1550,7 @@ Any help, questions, suggestions are welcome!
 .. _Seed7 enums:                                https://seed7.net/manual/types.htm#enumeration
 .. _expand-region package:
 .. _er/expand-region:                           https://github.com/magnars/expand-region.el?tab=readme-ov-file
+.. _Seed7 repository:                           https://github.com/ThomasMertes/seed7
 
 .. ---------------------------------------------------------------------------
 
