@@ -30,8 +30,8 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
 files in the `Seed7 repository`_ - some code pattern still does not indent
 properly or take an excessive amount of time on large files.  When seed7-mode
 is able to indent 100% of the Seed7 files in the prg and lib directories of
-the `Seed7 repository`_ flawlessly with acceptable performance, the version number will
-be changed to 1.0. 🚧
+the `Seed7 repository`_ flawlessly with acceptable performance, I will create
+a release of the package and will remove this notice. 🚧
 
 **Highlights**
 
