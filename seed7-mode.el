@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260713.1010
+;; Package-Version: 20260715.1141
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-13T14:10:19+0000 W29-1"
+(defconst seed7-mode-version-timestamp "2026-07-15T15:41:55+0000 W29-3"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6679,7 +6679,9 @@ N is: - :previous-non-empty for the previous non-empty line,
              (seed7-to-indent)
              (when (looking-at-p seed7--array-definition-start-regexp)
                (setq block-start-pos (point))
-               (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
+               (when (and (< block-start-pos line-start-pos)
+                          (<= line-start-pos enclosing-block-end-pos)
+                          (< enclosing-block-end-pos line-end-pos))
                  ;; Return the header's own column — the closing line of a
                  ;; nested array literal is aligned with its innermost
                  ;; open paren, not necessarily one `seed7-indent-width'
@@ -6852,11 +6854,18 @@ N is: - :previous-non-empty for the previous non-empty line,
           ;; backward without a bound, which could scan far above line N.
           (when (seed7-re-search-backward "};" line-start-pos)
             (setq enclosing-block-end-pos (point))
+            ;; `seed7-re-search-backward' leaves point just *before* the
+            ;; closing brace; `backward-sexp' needs point *after* it to
+            ;; jump to the beginning of the whole (possibly deeply nested)
+            ;; set literal. (Mirrors the array-definition-block twin.)
+            (goto-char (1+ enclosing-block-end-pos))
             (seed7--with-backward-sexp
               (seed7-to-indent)
               (when (looking-at-p seed7--set-definition-start-regexp)
                 (setq block-start-pos (point))
-                (when (< block-start-pos line-start-pos enclosing-block-end-pos line-end-pos)
+                (when (and (< block-start-pos line-start-pos)
+                           (<= line-start-pos enclosing-block-end-pos)
+                           (< enclosing-block-end-pos line-end-pos))
                   ;; return header's own column
                   (current-column))))))))))
 
