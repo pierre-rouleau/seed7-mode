@@ -196,6 +196,9 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 - Fix *seed7-line-inside-parens-pair*: was using the wrong variable for
   the line-beginning position.
 
+- Fix *indentation of declarations (e.g. ~new enum~) immediately following
+  a closing array/set literal line*, as seen in Seed7's =lib/asn1.s7i line 71=.
+
 - Fix *seed7-symbol-at-point*: was using *looking-at-p* (does not
   update match data) instead of *looking-at* in one branch.
 
