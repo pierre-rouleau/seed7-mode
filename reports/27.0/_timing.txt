@@ -1,0 +1,568 @@
+# Performance measurement: Execution of `seed7-complete-statement-or-indent` over the entire
+#                          file starting with all lines non-indented.
+# Executed with seed7-mode: 2026-07-15T14:37:50+0000 W29-3
+#          Package-Version: 20260715.1037
+# New:         Fix indentation of lib/asn1.s7i line 71, code like this:
+#              ~~~
+#               32
+#               33 const array string: classTagName is [0] (
+#               34   "EOC (End-of-Content)",
+#               35   "BOOLEAN",
+#               36   "INTEGER",
+#               37   "BIT STRING",
+#               38   "OCTET STRING",
+#               39   "NULL",
+#               40   "OBJECT IDENTIFIER",
+#               41   "Object Descriptor",
+#               42   "EXTERNAL",
+#               43   "REAL (float)",
+#               44   "ENUMERATED",
+#               45   "EMBEDDED PDV",
+#               46   "UTF8String",
+#               47   "RELATIVE-OID",
+#               48   "(reserved 14)",
+#               49   "(reserved 15)",
+#               50   "SEQUENCE",
+#               51   "SET",
+#               52   "NumericString",
+#               53   "PrintableString",
+#               54   "T61String",
+#               55   "VideotexString",
+#               56   "IA5String",
+#               57   "UTCTime",
+#               58   "GeneralizedTime",
+#               59   "GraphicString",
+#               60   "VisibleString",
+#               61   "GeneralString",
+#               62   "UniversalString",
+#               63   "CHARACTER STRING",
+#               64   "BMPString",
+#               65   "(use long-form)"
+#               66   );
+#               67
+#               68 (**
+#               69  *  Tag type used by ASN.1/BER data elements.
+#               70  *)
+#               71   const type: asn1TagType is new enum  # <--- Indentation error!!
+#               72       tagEndOfContent,
+#               73       tagBoolean,
+#               74       tagInteger,
+#               75       tagBitString,
+#               76       tagOctetString,
+#               77       tagNull,
+#               78       tagObjectIdentifier,
+#               79       tagObjectDescriptor,
+#               80       tagExternal,
+#               81       tagReal,
+#               82       tagEnumerated,
+#               83       tagEmbeddedPdv,
+#               84       tagUTF8String,
+#               85       tagRelativeOid,
+#               86       tagReserved14,
+#               87       tagReserved15,
+#               88       tagSequence,
+#               89       tagSet,
+#               90       tagNumericString,
+#               91       tagPrintableString,
+#               92       tagT61String,
+#               93       tagVideotexString,
+#               94       tagIA5String,
+#               95       tagUTCTime,
+#               96       tagGeneralizedTime,
+#               97       tagGraphicString,
+#               98       tagVisibleString,
+#               99       tagGeneralString,
+#              100       tagUniversalString,
+#              101       tagCharacterString,
+#              102       tagBMPString,
+#              103       tagUseLongForm
+#              104     end enum;
+#              105
+#              ~~~
+# To fix 2 function must be modified:
+#  - `seed7-line-at-endof-array-definition-block` and
+#  - `seed7-line-at-endof-set-definition-block`.
+# ---------------------------------------------------------------------------
+# With the fix to `seed7-line-at-endof-array-definition-block` but
+# before the fix to `seed7-line-at-endof-set-definition-block`:
+aes.s7i         : indented in:      69.9333 seconds. 1143  lines
+aes_gcm.s7i     : indented in:       1.3042 seconds. 394   lines
+ar.s7i          : indented in:      20.9292 seconds. 1531  lines
+arc4.s7i        : indented in:       0.1947 seconds. 143   lines
+archive.s7i     : indented in:       0.1876 seconds. 142   lines
+archive_base.s7i: indented in:       0.2003 seconds. 134   lines
+array.s7i       : indented in:       7.3566 seconds. 609   lines
+asn1.s7i        : indented in:       2.3105 seconds. 543   lines
+asn1oid.s7i     : indented in:       0.3540 seconds. 156   lines
+basearray.s7i   : indented in:       4.1123 seconds. 449   lines
+bigfile.s7i     : indented in:       0.1175 seconds. 135   lines
+bigint.s7i      : indented in:       2.1519 seconds. 823   lines
+bigrat.s7i      : indented in:       5.7211 seconds. 783   lines
+bin16.s7i       : indented in:       2.2054 seconds. 591   lines
+bin32.s7i       : indented in:       1.0612 seconds. 489   lines
+bin64.s7i       : indented in:       1.1061 seconds. 538   lines
+bitdata.s7i     : indented in:       9.8652 seconds. 1329  lines
+bitmapfont.s7i  : indented in:       0.2834 seconds. 214   lines
+bitset.s7i      : indented in:       2.4027 seconds. 592   lines
+bitsetof.s7i    : indented in:       3.5074 seconds. 430   lines
+blowfish.s7i    : indented in:       1.7674 seconds. 382   lines
+bmp.s7i         : indented in:      11.8078 seconds. 923   lines
+boolean.s7i     : indented in:       0.4424 seconds. 402   lines
+browser.s7i     : indented in:       0.7448 seconds. 279   lines
+bstring.s7i     : indented in:       0.2800 seconds. 226   lines
+bytedata.s7i    : indented in:       1.4438 seconds. 481   lines
+bzip2.s7i       : indented in:       7.4309 seconds. 886   lines
+cards.s7i       : indented in:       3.0076 seconds. 1341  lines
+cc_conf.s7i     : indented in:      11.2111 seconds. 1313  lines
+ccittfax.s7i    : indented in:       9.7254 seconds. 1021  lines
+cgi.s7i         : indented in:       0.1057 seconds. 108   lines
+cgidialog.s7i   : indented in:      27.3590 seconds. 1117  lines
+char.s7i        : indented in:       0.2324 seconds. 355   lines
+charsets.s7i    : indented in:      17.3462 seconds. 2023  lines
+chartype.s7i    : indented in:       0.2213 seconds. 120   lines
+cipher.s7i      : indented in:       0.1555 seconds. 145   lines
+cli_cmds.s7i    : indented in:      16.3270 seconds. 1359  lines
+clib_file.s7i   : indented in:       0.3384 seconds. 300   lines
+color.s7i       : indented in:       0.4684 seconds. 184   lines
+complex.s7i     : indented in:       1.3874 seconds. 463   lines
+compress.s7i    : indented in:       0.1703 seconds. 149   lines
+console.s7i     : indented in:       0.3713 seconds. 187   lines
+cpio.s7i        : indented in:      27.8793 seconds. 1707  lines
+crc32.s7i       : indented in:       0.3082 seconds. 192   lines
+cronos16.s7i    : indented in:      13.2145 seconds. 1172  lines
+cronos27.s7i    : indented in:      15.7329 seconds. 1463  lines
+csv.s7i         : indented in:       0.2790 seconds. 200   lines
+db_prop.s7i     : indented in:      13.5072 seconds. 988   lines
+deflate.s7i     : indented in:       6.3470 seconds. 739   lines
+des.s7i         : indented in:       2.4822 seconds. 443   lines
+dialog.s7i      : indented in:       0.7893 seconds. 310   lines
+dir.s7i         : indented in:       0.1583 seconds. 162   lines
+draw.s7i        : indented in:       7.4676 seconds. 853   lines
+duration.s7i    : indented in:       9.4049 seconds. 1037  lines
+echo.s7i        : indented in:       0.1380 seconds. 131   lines
+editline.s7i    : indented in:       1.3713 seconds. 397   lines
+elf.s7i         : indented in:      30.5845 seconds. 1559  lines
+elliptic.s7i    : indented in:      51.4165 seconds. 648   lines
+enable_io.s7i   : indented in:       0.9196 seconds. 311   lines
+encoding.s7i    : indented in:       7.4597 seconds. 930   lines
+enumeration.s7i : indented in:       1.1210 seconds. 235   lines
+environment.s7i : indented in:       0.1173 seconds. 174   lines
+exif.s7i        : indented in:       0.1653 seconds. 151   lines
+external_file.s7i: indented in:       0.6610 seconds. 339   lines
+field.s7i       : indented in:       0.5291 seconds. 267   lines
+file.s7i        : indented in:       0.5682 seconds. 371   lines
+filebits.s7i    : indented in:       0.0884 seconds. 45    lines
+filesys.s7i     : indented in:       1.8971 seconds. 600   lines
+fileutil.s7i    : indented in:       0.1476 seconds. 143   lines
+fixarray.s7i    : indented in:       1.0263 seconds. 306   lines
+float.s7i       : indented in:       0.9522 seconds. 756   lines
+font.s7i        : indented in:       0.2290 seconds. 195   lines
+font8x8.s7i     : indented in:       2.1975 seconds. 997   lines
+ftp.s7i         : indented in:       8.2258 seconds. 968   lines
+ftpserv.s7i     : indented in:       5.6175 seconds. 630   lines
+getf.s7i        : indented in:       0.1099 seconds. 114   lines
+gethttp.s7i     : indented in:       0.0380 seconds. 40    lines
+gethttps.s7i    : indented in:       0.0383 seconds. 40    lines
+gif.s7i         : indented in:       2.9958 seconds. 560   lines
+graph.s7i       : indented in:       3.4656 seconds. 414   lines
+graph_file.s7i  : indented in:       1.3464 seconds. 398   lines
+gtkserver.s7i   : indented in:       0.1047 seconds. 160   lines
+gzip.s7i        : indented in:       2.6542 seconds. 572   lines
+hash.s7i        : indented in:       4.2790 seconds. 420   lines
+hashsetof.s7i   : indented in:       5.7123 seconds. 498   lines
+hmac.s7i        : indented in:       0.1911 seconds. 151   lines
+html.s7i        : indented in:       0.1009 seconds. 82    lines
+html_ent.s7i    : indented in:       1.4464 seconds. 475   lines
+htmldom.s7i     : indented in:       0.5050 seconds. 285   lines
+http_request.s7i: indented in:       5.0932 seconds. 695   lines
+http_srv_resp.s7i: indented in:       1.2484 seconds. 379   lines
+https_request.s7i: indented in:       0.3851 seconds. 210   lines
+httpserv.s7i    : indented in:       0.8873 seconds. 344   lines
+huffman.s7i     : indented in:       3.4657 seconds. 643   lines
+ico.s7i         : indented in:       0.3227 seconds. 220   lines
+idxarray.s7i    : indented in:       1.3913 seconds. 231   lines
+image.s7i       : indented in:       0.2163 seconds. 155   lines
+imagefile.s7i   : indented in:       0.2004 seconds. 170   lines
+inflate.s7i     : indented in:       1.7081 seconds. 410   lines
+inifile.s7i     : indented in:       0.1630 seconds. 128   lines
+integer.s7i     : indented in:       0.5232 seconds. 662   lines
+iobuffer.s7i    : indented in:       0.6516 seconds. 288   lines
+jpeg.s7i        : indented in:      36.5266 seconds. 1760  lines
+json.s7i        : indented in:      12.0125 seconds. 890   lines
+json_serde.s7i  : indented in:       9.1374 seconds. 782   lines
+keybd.s7i       : indented in:      11.8903 seconds. 638   lines
+keydescr.s7i    : indented in:       0.4466 seconds. 191   lines
+leb128.s7i      : indented in:       0.2603 seconds. 217   lines
+line.s7i        : indented in:       0.1628 seconds. 163   lines
+listener.s7i    : indented in:       0.2860 seconds. 246   lines
+logfile.s7i     : indented in:       0.0598 seconds. 72    lines
+lower.s7i       : indented in:       0.1287 seconds. 141   lines
+lzma.s7i        : indented in:      13.0973 seconds. 933   lines
+lzw.s7i         : indented in:       6.4683 seconds. 860   lines
+magic.s7i       : indented in:       1.7065 seconds. 402   lines
+mahjng32.s7i    : indented in:       0.6704 seconds. 1499  lines
+make.s7i        : indented in:       3.0320 seconds. 543   lines
+makedata.s7i    : indented in:      24.3169 seconds. 1427  lines
+math.s7i        : indented in:       0.0625 seconds. 200   lines
+mixarith.s7i    : indented in:       0.4951 seconds. 248   lines
+modern27.s7i    : indented in:      11.3807 seconds. 1098  lines
+more.s7i        : indented in:       0.1227 seconds. 129   lines
+msgdigest.s7i   : indented in:      17.0665 seconds. 1221  lines
+multiscr.s7i    : indented in:       0.0572 seconds. 67    lines
+null_file.s7i   : indented in:       0.5841 seconds. 344   lines
+osfiles.s7i     : indented in:       5.8866 seconds. 1084  lines
+pbm.s7i         : indented in:       0.3143 seconds. 229   lines
+pcx.s7i         : indented in:       5.5215 seconds. 637   lines
+pem.s7i         : indented in:       0.2029 seconds. 184   lines
+pgm.s7i         : indented in:       0.3464 seconds. 237   lines
+pic16.s7i       : indented in:       0.4822 seconds. 1036  lines
+pic32.s7i       : indented in:       1.2301 seconds. 2059  lines
+pic_util.s7i    : indented in:       0.1289 seconds. 143   lines
+pixelimage.s7i  : indented in:       0.6628 seconds. 319   lines
+pixmap_file.s7i : indented in:       1.6307 seconds. 458   lines
+pixmapfont.s7i  : indented in:       0.5390 seconds. 183   lines
+pkcs1.s7i       : indented in:       3.0264 seconds. 542   lines
+png.s7i         : indented in:      14.7732 seconds. 1063  lines
+poll.s7i        : indented in:       0.3775 seconds. 312   lines
+ppm.s7i         : indented in:       0.3805 seconds. 239   lines
+process.s7i     : indented in:       1.7819 seconds. 540   lines
+progs.s7i       : indented in:       4.1085 seconds. 788   lines
+propertyfile.s7i: indented in:       0.2182 seconds. 154   lines
+rational.s7i    : indented in:       5.4405 seconds. 791   lines
+reference.s7i   : indented in:       0.1333 seconds. 125   lines
+reverse.s7i     : indented in:       0.1005 seconds. 93    lines
+rpm.s7i         : indented in:     145.6267 seconds. 3486  lines
+rpmext.s7i      : indented in:       0.9004 seconds. 317   lines
+scanfile.s7i    : indented in:      18.9166 seconds. 1778  lines
+scanjson.s7i    : indented in:       1.0106 seconds. 412   lines
+scanstri.s7i    : indented in:      18.9297 seconds. 1813  lines
+scantoml.s7i    : indented in:      40.3251 seconds. 1602  lines
+set.s7i         : indented in:       0.0842 seconds. 56    lines
+shell.s7i       : indented in:       1.2882 seconds. 614   lines
+showtls.s7i     : indented in:       4.7680 seconds. 677   lines
+signature.s7i   : indented in:       0.1173 seconds. 130   lines
+smtp.s7i        : indented in:       0.3483 seconds. 260   lines
+sockbase.s7i    : indented in:       0.7894 seconds. 216   lines
+socket.s7i      : indented in:       0.7700 seconds. 325   lines
+sokoban1.s7i    : indented in:       2.5994 seconds. 1518  lines
+sql_base.s7i    : indented in:       5.0771 seconds. 999   lines
+stars.s7i       : indented in:      10.0833 seconds. 1704  lines
+stdfont10.s7i   : indented in:      14.2556 seconds. 3346  lines
+stdfont12.s7i   : indented in:      16.4050 seconds. 3927  lines
+stdfont14.s7i   : indented in:      18.8962 seconds. 4509  lines
+stdfont16.s7i   : indented in:      22.0572 seconds. 5091  lines
+stdfont18.s7i   : indented in:      27.1693 seconds. 5867  lines
+stdfont20.s7i   : indented in:      31.4502 seconds. 6448  lines
+stdfont24.s7i   : indented in:      39.7899 seconds. 7420  lines
+stdfont8.s7i    : indented in:      12.6866 seconds. 2959  lines
+stdfont9.s7i    : indented in:      13.4542 seconds. 3151  lines
+stdio.s7i       : indented in:       0.2202 seconds. 191   lines
+strifile.s7i    : indented in:       0.7893 seconds. 344   lines
+string.s7i      : indented in:       7.1917 seconds. 778   lines
+stritext.s7i    : indented in:       1.3701 seconds. 351   lines
+struct.s7i      : indented in:       1.6666 seconds. 265   lines
+struct_elem.s7i : indented in:       0.1144 seconds. 128   lines
+subfile.s7i     : indented in:       0.1858 seconds. 173   lines
+subrange.s7i    : indented in:       0.1199 seconds. 77    lines
+syntax.s7i      : indented in:       0.7483 seconds. 293   lines
+tar.s7i         : indented in:      33.4399 seconds. 1879  lines
+tar_cmds.s7i    : indented in:       5.2621 seconds. 751   lines
+tdes.s7i        : indented in:       0.1361 seconds. 142   lines
+tee.s7i         : indented in:       0.2145 seconds. 142   lines
+text.s7i        : indented in:       0.1080 seconds. 134   lines
+tga.s7i         : indented in:       6.2289 seconds. 675   lines
+tiff.s7i        : indented in:      94.8880 seconds. 2770  lines
+time.s7i        : indented in:      13.7876 seconds. 1190  lines
+tls.s7i         : indented in:      56.4701 seconds. 2229  lines
+unicode.s7i     : indented in:       2.4707 seconds. 574   lines
+unionfnd.s7i    : indented in:       0.1770 seconds. 129   lines
+upper.s7i       : indented in:       0.1268 seconds. 141   lines
+utf16.s7i       : indented in:       1.4618 seconds. 539   lines
+utf8.s7i        : indented in:       0.2879 seconds. 233   lines
+vecfont10.s7i   : indented in:      11.1349 seconds. 1055  lines
+vecfont18.s7i   : indented in:      12.1038 seconds. 1118  lines
+vector3d.s7i    : indented in:       0.5570 seconds. 292   lines
+vectorfont.s7i  : indented in:       0.3515 seconds. 238   lines
+wildcard.s7i    : indented in:       0.1676 seconds. 139   lines
+window.s7i      : indented in:       1.7436 seconds. 454   lines
+wrinum.s7i      : indented in:       0.5803 seconds. 247   lines
+x509cert.s7i    : indented in:      14.0670 seconds. 1242  lines
+xml_ent.s7i     : indented in:       0.1251 seconds. 93    lines
+xmldom.s7i      : indented in:       0.8180 seconds. 302   lines
+xz.s7i          : indented in:       1.3297 seconds. 441   lines
+zip.s7i         : indented in:      81.1956 seconds. 2791  lines
+zstd.s7i        : indented in:      19.7557 seconds. 1262  lines
+addup.sd7       : indented in:       0.2427 seconds. 189   lines
+# ---------------------------------------------------------------------------
+# Restart the test!
+# With the fix to `seed7-line-at-endof-array-definition-block` and
+# with the fix to `seed7-line-at-endof-set-definition-block`:
+# Executed with seed7-mode: 2026-07-15T15:41:55+0000 W29-3
+#          Package-Version: 20260715.1141
+
+
+aes.s7i         : indented in:      70.3961 seconds. 1143  lines
+aes_gcm.s7i     : indented in:       1.2966 seconds. 394   lines
+ar.s7i          : indented in:      20.6457 seconds. 1531  lines
+arc4.s7i        : indented in:       0.1495 seconds. 143   lines
+archive.s7i     : indented in:       0.1730 seconds. 142   lines
+archive_base.s7i: indented in:       0.1802 seconds. 134   lines
+array.s7i       : indented in:       7.0895 seconds. 609   lines
+asn1.s7i        : indented in:       2.2297 seconds. 543   lines
+asn1oid.s7i     : indented in:       0.3517 seconds. 156   lines
+basearray.s7i   : indented in:       3.8719 seconds. 449   lines
+bigfile.s7i     : indented in:       0.1107 seconds. 135   lines
+bigint.s7i      : indented in:       2.1347 seconds. 823   lines
+bigrat.s7i      : indented in:       5.5491 seconds. 783   lines
+bin16.s7i       : indented in:       2.1056 seconds. 591   lines
+bin32.s7i       : indented in:       1.0229 seconds. 489   lines
+bin64.s7i       : indented in:       1.0606 seconds. 538   lines
+bitdata.s7i     : indented in:       9.7739 seconds. 1329  lines
+bitmapfont.s7i  : indented in:       0.2719 seconds. 214   lines
+bitset.s7i      : indented in:       2.3237 seconds. 592   lines
+bitsetof.s7i    : indented in:       3.5004 seconds. 430   lines
+blowfish.s7i    : indented in:       1.7153 seconds. 382   lines
+bmp.s7i         : indented in:      11.3352 seconds. 923   lines
+boolean.s7i     : indented in:       0.3749 seconds. 402   lines
+.#boolean.s7i   : indented in:       0.0001 seconds. 0     lines
+boolean.s7i     : indented in:       0.3948 seconds. 402   lines
+browser.s7i     : indented in:       0.7085 seconds. 279   lines
+bstring.s7i     : indented in:       0.2811 seconds. 226   lines
+bytedata.s7i    : indented in:       1.3908 seconds. 481   lines
+bzip2.s7i       : indented in:       7.1093 seconds. 886   lines
+cards.s7i       : indented in:       2.8850 seconds. 1341  lines
+cc_conf.s7i     : indented in:      11.0899 seconds. 1313  lines
+ccittfax.s7i    : indented in:       9.7159 seconds. 1021  lines
+cgi.s7i         : indented in:       0.1009 seconds. 108   lines
+cgidialog.s7i   : indented in:      27.2560 seconds. 1117  lines
+char.s7i        : indented in:       0.2190 seconds. 355   lines
+charsets.s7i    : indented in:      17.3683 seconds. 2023  lines
+chartype.s7i    : indented in:       0.2296 seconds. 120   lines
+cipher.s7i      : indented in:       0.1644 seconds. 145   lines
+cli_cmds.s7i    : indented in:      16.1462 seconds. 1359  lines
+clib_file.s7i   : indented in:       0.3478 seconds. 300   lines
+color.s7i       : indented in:       0.4698 seconds. 184   lines
+complex.s7i     : indented in:       1.3606 seconds. 463   lines
+compress.s7i    : indented in:       0.1634 seconds. 149   lines
+console.s7i     : indented in:       0.3295 seconds. 187   lines
+cpio.s7i        : indented in:      27.5589 seconds. 1707  lines
+crc32.s7i       : indented in:       0.2926 seconds. 192   lines
+cronos16.s7i    : indented in:      13.0521 seconds. 1172  lines
+cronos27.s7i    : indented in:      15.6493 seconds. 1463  lines
+csv.s7i         : indented in:       0.2861 seconds. 200   lines
+db_prop.s7i     : indented in:      13.3256 seconds. 988   lines
+deflate.s7i     : indented in:       6.1821 seconds. 739   lines
+des.s7i         : indented in:       2.3984 seconds. 443   lines
+dialog.s7i      : indented in:       0.7474 seconds. 310   lines
+dir.s7i         : indented in:       0.1720 seconds. 162   lines
+draw.s7i        : indented in:       7.1697 seconds. 853   lines
+duration.s7i    : indented in:       9.2050 seconds. 1037  lines
+echo.s7i        : indented in:       0.1533 seconds. 131   lines
+editline.s7i    : indented in:       1.3847 seconds. 397   lines
+elf.s7i         : indented in:      30.3301 seconds. 1559  lines
+elliptic.s7i    : indented in:      49.3441 seconds. 648   lines
+enable_io.s7i   : indented in:       0.8790 seconds. 311   lines
+encoding.s7i    : indented in:       7.4430 seconds. 930   lines
+enumeration.s7i : indented in:       1.0798 seconds. 235   lines
+environment.s7i : indented in:       0.1158 seconds. 174   lines
+exif.s7i        : indented in:       0.1917 seconds. 151   lines
+external_file.s7i: indented in:       0.6366 seconds. 339   lines
+field.s7i       : indented in:       0.5013 seconds. 267   lines
+file.s7i        : indented in:       0.5326 seconds. 371   lines
+filebits.s7i    : indented in:       0.0520 seconds. 45    lines
+filesys.s7i     : indented in:       1.8730 seconds. 600   lines
+fileutil.s7i    : indented in:       0.1688 seconds. 143   lines
+fixarray.s7i    : indented in:       1.0720 seconds. 306   lines
+float.s7i       : indented in:       0.9776 seconds. 756   lines
+font.s7i        : indented in:       0.2585 seconds. 195   lines
+font8x8.s7i     : indented in:       2.1644 seconds. 997   lines
+ftp.s7i         : indented in:       8.2119 seconds. 968   lines
+ftpserv.s7i     : indented in:       5.6114 seconds. 630   lines
+getf.s7i        : indented in:       0.1108 seconds. 114   lines
+gethttp.s7i     : indented in:       0.0386 seconds. 40    lines
+gethttps.s7i    : indented in:       0.0670 seconds. 40    lines
+gif.s7i         : indented in:       3.0367 seconds. 560   lines
+graph.s7i       : indented in:       3.4835 seconds. 414   lines
+graph_file.s7i  : indented in:       1.3609 seconds. 398   lines
+gtkserver.s7i   : indented in:       0.1069 seconds. 160   lines
+gzip.s7i        : indented in:       2.6470 seconds. 572   lines
+hash.s7i        : indented in:       4.2655 seconds. 420   lines
+hashsetof.s7i   : indented in:       5.8500 seconds. 498   lines
+hmac.s7i        : indented in:       0.2094 seconds. 151   lines
+html.s7i        : indented in:       0.0954 seconds. 82    lines
+html_ent.s7i    : indented in:       1.4904 seconds. 475   lines
+htmldom.s7i     : indented in:       0.5246 seconds. 285   lines
+http_request.s7i: indented in:       5.0974 seconds. 695   lines
+http_srv_resp.s7i: indented in:       1.3049 seconds. 379   lines
+https_request.s7i: indented in:       0.3816 seconds. 210   lines
+httpserv.s7i    : indented in:       0.9038 seconds. 344   lines
+huffman.s7i     : indented in:       3.4925 seconds. 643   lines
+ico.s7i         : indented in:       0.3532 seconds. 220   lines
+idxarray.s7i    : indented in:       1.3658 seconds. 231   lines
+image.s7i       : indented in:       0.1827 seconds. 155   lines
+imagefile.s7i   : indented in:       0.2335 seconds. 170   lines
+inflate.s7i     : indented in:       1.7256 seconds. 410   lines
+inifile.s7i     : indented in:       0.1635 seconds. 128   lines
+integer.s7i     : indented in:       0.4930 seconds. 662   lines
+iobuffer.s7i    : indented in:       0.6413 seconds. 288   lines
+jpeg.s7i        : indented in:      36.7287 seconds. 1760  lines
+json.s7i        : indented in:      12.1970 seconds. 890   lines
+json_serde.s7i  : indented in:       9.1259 seconds. 782   lines
+keybd.s7i       : indented in:      11.9668 seconds. 638   lines
+keydescr.s7i    : indented in:       0.4321 seconds. 191   lines
+leb128.s7i      : indented in:       0.2516 seconds. 217   lines
+line.s7i        : indented in:       0.1876 seconds. 163   lines
+listener.s7i    : indented in:       0.2724 seconds. 246   lines
+logfile.s7i     : indented in:       0.0852 seconds. 72    lines
+lower.s7i       : indented in:       0.1218 seconds. 141   lines
+lzma.s7i        : indented in:      13.1257 seconds. 933   lines
+lzw.s7i         : indented in:       6.4432 seconds. 860   lines
+magic.s7i       : indented in:       1.6968 seconds. 402   lines
+mahjng32.s7i    : indented in:       0.7009 seconds. 1499  lines
+make.s7i        : indented in:       3.0697 seconds. 543   lines
+makedata.s7i    : indented in:      24.1904 seconds. 1427  lines
+math.s7i        : indented in:       0.0880 seconds. 200   lines
+mixarith.s7i    : indented in:       0.5180 seconds. 248   lines
+modern27.s7i    : indented in:      11.5369 seconds. 1098  lines
+more.s7i        : indented in:       0.1175 seconds. 129   lines
+msgdigest.s7i   : indented in:      17.1227 seconds. 1221  lines
+multiscr.s7i    : indented in:       0.0872 seconds. 67    lines
+null_file.s7i   : indented in:       0.6221 seconds. 344   lines
+osfiles.s7i     : indented in:       5.9262 seconds. 1084  lines
+pbm.s7i         : indented in:       0.3333 seconds. 229   lines
+pcx.s7i         : indented in:       5.5290 seconds. 637   lines
+pem.s7i         : indented in:       0.1987 seconds. 184   lines
+pgm.s7i         : indented in:       0.3705 seconds. 237   lines
+pic16.s7i       : indented in:       0.4835 seconds. 1036  lines
+pic32.s7i       : indented in:       1.2220 seconds. 2059  lines
+pic_util.s7i    : indented in:       0.1591 seconds. 143   lines
+pixelimage.s7i  : indented in:       0.6442 seconds. 319   lines
+pixmap_file.s7i : indented in:       1.6564 seconds. 458   lines
+pixmapfont.s7i  : indented in:       0.5222 seconds. 183   lines
+pkcs1.s7i       : indented in:       3.0179 seconds. 542   lines
+png.s7i         : indented in:      14.9125 seconds. 1063  lines
+poll.s7i        : indented in:       0.3956 seconds. 312   lines
+ppm.s7i         : indented in:       0.3342 seconds. 239   lines
+process.s7i     : indented in:       1.8057 seconds. 540   lines
+progs.s7i       : indented in:       4.1347 seconds. 788   lines
+propertyfile.s7i: indented in:       0.2066 seconds. 154   lines
+rational.s7i    : indented in:       5.4974 seconds. 791   lines
+reference.s7i   : indented in:       0.1290 seconds. 125   lines
+reverse.s7i     : indented in:       0.0968 seconds. 93    lines
+rpm.s7i         : indented in:     146.4611 seconds. 3486  lines
+rpmext.s7i      : indented in:       0.8909 seconds. 317   lines
+scanfile.s7i    : indented in:      19.0163 seconds. 1778  lines
+scanjson.s7i    : indented in:       1.0112 seconds. 412   lines
+scanstri.s7i    : indented in:      19.0208 seconds. 1813  lines
+scantoml.s7i    : indented in:      40.6995 seconds. 1602  lines
+set.s7i         : indented in:       0.0828 seconds. 56    lines
+shell.s7i       : indented in:       1.3302 seconds. 614   lines
+showtls.s7i     : indented in:       4.8432 seconds. 677   lines
+signature.s7i   : indented in:       0.1198 seconds. 130   lines
+smtp.s7i        : indented in:       0.3687 seconds. 260   lines
+sockbase.s7i    : indented in:       0.8060 seconds. 216   lines
+socket.s7i      : indented in:       0.7567 seconds. 325   lines
+sokoban1.s7i    : indented in:       2.4894 seconds. 1518  lines
+sql_base.s7i    : indented in:       5.0826 seconds. 999   lines
+stars.s7i       : indented in:       9.9600 seconds. 1704  lines
+stdfont10.s7i   : indented in:      13.9803 seconds. 3346  lines
+stdfont12.s7i   : indented in:      16.1185 seconds. 3927  lines
+stdfont14.s7i   : indented in:      18.8559 seconds. 4509  lines
+stdfont16.s7i   : indented in:      22.0788 seconds. 5091  lines
+stdfont18.s7i   : indented in:      27.1309 seconds. 5867  lines
+stdfont20.s7i   : indented in:      31.2840 seconds. 6448  lines
+stdfont24.s7i   : indented in:      39.5330 seconds. 7420  lines
+stdfont8.s7i    : indented in:      12.6958 seconds. 2959  lines
+stdfont9.s7i    : indented in:      13.3248 seconds. 3151  lines
+stdio.s7i       : indented in:       0.1805 seconds. 191   lines
+strifile.s7i    : indented in:       0.7687 seconds. 344   lines
+string.s7i      : indented in:       7.1554 seconds. 778   lines
+stritext.s7i    : indented in:       1.3400 seconds. 351   lines
+struct.s7i      : indented in:       1.7110 seconds. 265   lines
+struct_elem.s7i : indented in:       0.1047 seconds. 128   lines
+subfile.s7i     : indented in:       0.1716 seconds. 173   lines
+subrange.s7i    : indented in:       0.1186 seconds. 77    lines
+syntax.s7i      : indented in:       0.7558 seconds. 293   lines
+tar.s7i         : indented in:      33.0226 seconds. 1879  lines
+tar_cmds.s7i    : indented in:       5.2515 seconds. 751   lines
+tdes.s7i        : indented in:       0.1677 seconds. 142   lines
+tee.s7i         : indented in:       0.2037 seconds. 142   lines
+text.s7i        : indented in:       0.1037 seconds. 134   lines
+tga.s7i         : indented in:       6.1595 seconds. 675   lines
+tiff.s7i        : indented in:      94.4189 seconds. 2770  lines
+time.s7i        : indented in:      13.5875 seconds. 1190  lines
+tls.s7i         : indented in:      55.9534 seconds. 2229  lines
+unicode.s7i     : indented in:       2.5158 seconds. 574   lines
+unionfnd.s7i    : indented in:       0.1399 seconds. 129   lines
+upper.s7i       : indented in:       0.1192 seconds. 141   lines
+utf16.s7i       : indented in:       1.4535 seconds. 539   lines
+utf8.s7i        : indented in:       0.2666 seconds. 233   lines
+vecfont10.s7i   : indented in:      11.0137 seconds. 1055  lines
+vecfont18.s7i   : indented in:      12.0176 seconds. 1118  lines
+vector3d.s7i    : indented in:       0.5508 seconds. 292   lines
+vectorfont.s7i  : indented in:       0.3613 seconds. 238   lines
+wildcard.s7i    : indented in:       0.1534 seconds. 139   lines
+window.s7i      : indented in:       1.7250 seconds. 454   lines
+wrinum.s7i      : indented in:       0.5976 seconds. 247   lines
+x509cert.s7i    : indented in:      13.9007 seconds. 1242  lines
+xml_ent.s7i     : indented in:       0.1170 seconds. 93    lines
+xmldom.s7i      : indented in:       0.7802 seconds. 302   lines
+xz.s7i          : indented in:       1.3558 seconds. 441   lines
+zip.s7i         : indented in:      79.8846 seconds. 2791  lines
+zstd.s7i        : indented in:      19.5851 seconds. 1262  lines
+addup.sd7       : indented in:       0.2374 seconds. 189   lines
+bas7.sd7        : indented in:    1607.3791 seconds. 11458 lines
+bifurk.sd7      : indented in:       0.0829 seconds. 72    lines
+bigfiles.sd7    : indented in:       0.1212 seconds. 128   lines
+brainf7.sd7     : indented in:       0.0879 seconds. 85    lines
+calc7.sd7       : indented in:       0.2174 seconds. 127   lines
+carddemo.sd7    : indented in:       0.2259 seconds. 189   lines
+castle.sd7      : indented in:      95.7328 seconds. 3147  lines
+cat.sd7         : indented in:       0.0964 seconds. 81    lines
+cellauto.sd7    : indented in:       0.0863 seconds. 84    lines
+celsius.sd7     : indented in:       0.0333 seconds. 41    lines
+chk_all.sd7     : indented in:       3.1420 seconds. 842   lines
+chkarr.sd7      : indented in:     744.7589 seconds. 8366  lines
+.#chkbig.sd7    : indented in:       0.0000 seconds. 0     lines
+chkbig.sd7      : indented in:    2386.2154 seconds. 29025 lines
+chkbin.sd7      : indented in:     240.4314 seconds. 6468  lines
+chkbitdata.sd7  : indented in:     366.2743 seconds. 6623  lines
+chkbool.sd7     : indented in:      92.6922 seconds. 3156  lines
+chkbst.sd7      : indented in:       4.7036 seconds. 721   lines
+chkchr.sd7      : indented in:     421.4562 seconds. 2808  lines
+chkcmd.sd7      : indented in:      18.9275 seconds. 1204  lines
+chkdb.sd7       : indented in:     574.4266 seconds. 7453  lines
+chkdecl.sd7     : indented in:      20.9723 seconds. 447   lines
+chkenum.sd7     : indented in:       9.8130 seconds. 1229  lines
+chkerr.sd7      : indented in:     174.2991 seconds. 4662  lines
+chkexc.sd7      : indented in:     106.1917 seconds. 2626  lines
+chkfil.sd7      : indented in:      30.6779 seconds. 1614  lines
+chkflt.sd7      : indented in:    1475.6521 seconds. 20619 lines
+chkhent.sd7     : indented in:       0.0730 seconds. 53    lines
+chkhsh.sd7      : indented in:     140.6037 seconds. 4547  lines
+chkidx.sd7      : indented in:    1111.3569 seconds. 19566 lines
+chkint.sd7      : indented in:    4592.4615 seconds. 38128 lines
+chkjson.sd7     : indented in:      27.6152 seconds. 1763  lines
+chkovf.sd7      : indented in:     242.8859 seconds. 8215  lines
+chkprc.sd7      : indented in:    1208.5042 seconds. 10110 lines
+chkscan.sd7     : indented in:       3.9305 seconds. 713   lines
+chkset.sd7      : indented in:   18550.8435 seconds. 11973 lines
+chkstr.sd7      : indented in:    7371.2561 seconds. 26951 lines
+chktime.sd7     : indented in:      24.0763 seconds. 2024  lines
+chktoml.sd7     : indented in:      16.5052 seconds. 1655  lines
+clock.sd7       : indented in:       0.0694 seconds. 46    lines
+clock2.sd7      : indented in:       0.0624 seconds. 42    lines
+clock3.sd7      : indented in:       0.1158 seconds. 94    lines
+cmpfil.sd7      : indented in:       0.0855 seconds. 83    lines
+comanche.sd7    : indented in:       0.2370 seconds. 179   lines
+confval.sd7     : indented in:       0.8331 seconds. 174   lines
+db7.sd7         : indented in:       1.3447 seconds. 416   lines
+diff7.sd7       : indented in:       0.5969 seconds. 262   lines
+dirtst.sd7      : indented in:       0.0285 seconds. 41    lines
+dirx.sd7        : indented in:       0.1747 seconds. 151   lines
+dna_base.s7i    : indented in:       0.2862 seconds. 147   lines
+dnafight.sd7    : indented in:      23.4218 seconds. 1380  lines
+dragon.sd7      : indented in:       0.0541 seconds. 72    lines
+echo.sd7        : indented in:       0.0266 seconds. 38    lines
+eliza.sd7       : indented in:       0.4733 seconds. 301   lines
+fannkuch.sd7    : indented in:       0.1292 seconds. 130   lines
