@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-01.el --- ERT tests for Seed7 indentation regressions  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-06-25 22:55:18 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-17 11:11:10 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -196,6 +196,62 @@
         (seed7-indent-line)
         (forward-line 1))
       (should (string= region-result (buffer-string))))))
+
+;; ---------------------------------------------------------------------------
+
+(defconst seed7-test-indent--elliptic-sibling-calls-correct
+  (concat
+   "const ellipticCurve: secp192k1 is ellipticCurve(\n"
+   "                                                192, \"secp192k1\",\n"
+   "                                                3_);\n"
+   "\n"
+   "(**\n"
+   " *  The elliptical curve secp192r1.\n"
+   " *)\n"
+   "const ellipticCurve: secp192r1 is ellipticCurve(\n"
+   "                                                192, \"secp192r1\",\n"
+   "                                                4_);\n")
+  "Correct layout for consecutive top-level multiline calls.")
+
+(defconst seed7-test-indent--elliptic-sibling-calls-misaligned
+  (concat
+   "const ellipticCurve: secp192k1 is ellipticCurve(\n"
+   "                                                192, \"secp192k1\",\n"
+   "                                                3_);\n"
+   "\n"
+   "(**\n"
+   " *  The elliptical curve secp192r1.\n"
+   " *)\n"
+   "                                                const ellipticCurve: secp192r1 is ellipticCurve(\n"
+   "                                                192, \"secp192r1\",\n"
+   "                                                4_);\n")
+  "Regression input: sibling declaration inherits the prior `);' column.")
+
+(ert-deftest seed7-indent/elliptic-sibling-call-layout-is-stable ()
+  "A declaration after a completed multiline call remains top-level."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent--elliptic-sibling-calls-correct)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    ;; Line 8 is the second top-level `const ellipticCurve:' declaration.
+    (should (= (seed7-test-indent--line-indentation 8) 0))
+    (should (string=
+             (buffer-string)
+             seed7-test-indent--elliptic-sibling-calls-correct))))
+
+(ert-deftest seed7-indent/elliptic-sibling-call-layout-is-corrected ()
+  "A sibling declaration must not inherit the preceding `);' indentation."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent--elliptic-sibling-calls-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    ;; Line 8 must align with Line 1, not with the closing `);' on Line 3.
+    (should (= (seed7-test-indent--line-indentation 8) 0))
+    (should (string=
+             (buffer-string)
+             seed7-test-indent--elliptic-sibling-calls-correct))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-01)

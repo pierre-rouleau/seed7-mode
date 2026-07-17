@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260715.1141
+;; Package-Version: 20260717.1110
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-15T15:41:55+0000 W29-3"
+(defconst seed7-mode-version-timestamp "2026-07-17T15:10:50+0000 W29-5"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -6688,6 +6688,47 @@ N is: - :previous-non-empty for the previous non-empty line,
                  ;; step below the header (see `Te'/`Td' in aes.s7i).
                  (current-column))))))))))
 
+(defun seed7-line-at-endof-parenthesized-statement
+    (n &optional dont-skip-comment-start)
+  "Check if line N ends a completed parenthesized statement.
+
+Return the indentation column of the line containing the matching opening
+parenthesis when line N ends with `);'.  Return nil otherwise.
+
+N is: - :previous-non-empty for the previous non-empty line,
+        skipping lines with starting comments unless DONT-SKIP-COMMENT-START
+        is non-nil,
+      - 0 for the current line,
+      - A negative number for previous lines: -1 previous, -2 line before..."
+  (save-excursion
+    (when (seed7-move-to-line n dont-skip-comment-start)
+      (let ((line-start-pos (point))
+            (line-end-pos (line-end-position))
+            (opening-paren-pos nil)
+            (closing-paren-pos nil))
+        ;; This helper deliberately handles only a completed `);' expression.
+        ;; Array and set definition blocks retain their dedicated handlers.
+        (when (seed7-line-code-ends-with 0 ");")
+          (goto-char line-end-pos)
+          ;; Keep the search on this line: the terminator must belong to the
+          ;; previous non-empty code line selected above.
+          (when (seed7-re-search-backward ");" line-start-pos)
+            (setq closing-paren-pos (point))
+            ;; `seed7-re-search-backward' leaves point at the `)'.  Move past
+            ;; it so `backward-sexp' reaches its matching opening `('.
+            (goto-char (1+ closing-paren-pos))
+            (seed7--with-backward-sexp
+              (setq opening-paren-pos (point))
+              ;; Do not accept an opener on the closing line itself.  A
+              ;; multiline completed expression must start on an earlier line.
+              (when (and (< opening-paren-pos line-start-pos)
+                         (<= line-start-pos closing-paren-pos)
+                         (< closing-paren-pos line-end-pos))
+                ;; The statement/declaration following the completed call must
+                ;; align with the line that introduced that call.
+                (seed7-to-indent)
+                (current-column)))))))))
+
 (defun seed7-line-inside-set-definition-block (n &optional
                                                  scope-begin-pos
                                                  scope-end-pos
@@ -7805,6 +7846,14 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
        ;; 697          not symbol[length(symbol)] in numeric_var_suffix);
        ((seed7--set
          (seed7-line-starts-with-open-paren-after-logic-operator 0)
+         indent-column))
+
+       ;; A sibling declaration/statement after a completed multiline call
+       ;; aligns with the call's header, rather than with the continuation
+       ;; column of its closing `);' line.
+       ((seed7--set
+         (seed7-line-at-endof-parenthesized-statement
+          :previous-non-empty)
          indent-column))
 
        ((seed7-line-starts-with 0 "(")
