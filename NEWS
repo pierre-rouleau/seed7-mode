@@ -199,6 +199,10 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
 - Fix *indentation of declarations (e.g. ~new enum~) immediately following
   a closing array/set literal line*, as seen in Seed7's =lib/asn1.s7i line 71=.
 
+- Fix *incorrect inherited indentation after completed multiline
+  parenthesized declarations* (for example, consecutive ellipticCurve
+  constants in lib/elliptic.s7i).
+
 - Fix *seed7-symbol-at-point*: was using *looking-at-p* (does not
   update match data) instead of *looking-at* in one branch.
 
