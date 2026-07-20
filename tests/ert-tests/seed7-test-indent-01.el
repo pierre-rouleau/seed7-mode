@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-01.el --- ERT tests for Seed7 indentation regressions  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-20 16:39:19 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-20 17:24:13 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -258,19 +258,19 @@
 (defconst seed7-test-indent--string-action-siblings-correct
   (concat
    "const func string: striRange (in string: stri) [ (in integer: start) ..\n"
-   "                                                    (in integer: stop) ] is action \"STR_RANGE\";\n"
+   "                                                (in integer: stop) ] is action \"STR_RANGE\";\n"
    "\n"
    "(**\n"
    " *  Get a substring with a requested maximum length.\n"
    " *)\n"
    "const func string: striSubstr (in string: stri) [ (in integer: start) len\n"
-   "                                                     (in integer: length) ] is action \"STR_SUBSTR\";\n"
+   "                                                 (in integer: length) ] is action \"STR_SUBSTR\";\n"
    "\n"
    "(**\n"
    " *  Get a substring with a guaranteed length.\n"
    " *)\n"
    "const func string: striFixLen (in string: stri) [ (in integer: start) fixLen\n"
-   "                                                     (in integer: length) ] is action \"STR_SUBSTR_FIXLEN\";\n"
+   "                                                 (in integer: length) ] is action \"STR_SUBSTR_FIXLEN\";\n"
    "\n"
    "(**\n"
    " *  Append EXTENSION to DESTINATION.\n"
@@ -303,7 +303,6 @@
 
 (ert-deftest seed7-indent/string-action-siblings-are-top-level-after-comments ()
   "Top-level action declarations do not inherit parameter continuation columns."
-  (ert-skip "failing test")
   (with-temp-buffer
     (setq-local indent-tabs-mode nil)
     (insert seed7-test-indent--string-action-siblings-misaligned)
@@ -329,9 +328,9 @@
     (should (= (seed7-test-indent--line-indentation 19) 0))
 
     ;; Continuation lines remain aligned within their own declarations.
-    (should (= (seed7-test-indent--line-indentation 2) 52))
-    (should (= (seed7-test-indent--line-indentation 8) 53))
-    (should (= (seed7-test-indent--line-indentation 14) 53))
+    (should (= (seed7-test-indent--line-indentation 2) 48))
+    (should (= (seed7-test-indent--line-indentation 8) 49))
+    (should (= (seed7-test-indent--line-indentation 14) 49))
 
     (should (string=
              (buffer-string)

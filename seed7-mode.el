@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260720.1639
+;; Package-Version: 20260720.1724
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-20T20:39:30+0000 W30-1"
+(defconst seed7-mode-version-timestamp "2026-07-20T21:24:55+0000 W30-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7245,28 +7245,30 @@ N is: - :previous-non-empty for the previous non-empty line,
             ;; Locate that header line and re-check the declaration from
             ;; there, still bounded by END-POS (the end of this
             ;; continuation line).
-            (let ((declaration-regexps
-                   (list seed7-func-forward-or-action-declaration-nc-re
-                         seed7--forward-proc-decl-re
-                         seed7-proc-forward-or-action-declaration-re)))
-              ;; Search backward through candidate `const' lines.  Do not use the
-              ;; candidate's indentation as a boundary: while correcting a malformed
-              ;; declaration, its header can itself be indented incorrectly.
+
+            (let ((candidate-column nil)
+                  (statement-end-pos nil))
+              ;; Search backward through callable declaration headers.  The candidate
+              ;; may itself be wrongly indented, so do not use indentation as a search
+              ;; boundary.
               ;;
-              ;; A candidate is accepted only when its complete declaration reaches
-              ;; END-POS, i.e. the end of the original forward/DYNAMIC/action tail.
-              ;; Thus, a completed earlier declaration separated by comments is rejected.
+              ;; A candidate belongs to this continuation tail only when its first code
+              ;; statement terminator is the semicolon at END-POS.  This works for both
+              ;; one- and multi-line forward/DYNAMIC/action declarations without
+              ;; reparsing their complete signature with a large multiline regexp.
               (save-excursion
                 (while (and (not previous-defun-column)
                             (= (forward-line -1) 0))
                   (seed7-to-indent)
                   (when (and (not (eolp))
                              (not (seed7-inside-comment-p))
-                             (looking-at-p "const\\_>"))
-                    (seed7--set
-                     (seed7-line-starts-with-any
-                      0 declaration-regexps nil end-pos)
-                     previous-defun-column))))
+                             (setq candidate-column
+                                   (seed7-line-is-procfunc-beg-of-decl 0)))
+                    (setq statement-end-pos
+                          (seed7-statement-end-pos nil end-pos))
+                    (when (and statement-end-pos
+                               (= statement-end-pos end-pos))
+                      (setq previous-defun-column candidate-column)))))
               previous-defun-column)))
 
          ;; Handle line that is an end func, struct or enum.
