@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260717.1110
+;; Package-Version: 20260720.1724
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-17T15:10:50+0000 W29-5"
+(defconst seed7-mode-version-timestamp "2026-07-20T21:24:55+0000 W30-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1984,15 +1984,14 @@ spanning any number of continuation lines, ending at the first `;'.")
 - Group 1: procedure name,
 - Group 2: \"func\", \"forward\", \"DYNAMIC\", \"action XYZ\".")
 
-
 (defconst seed7-func-forward-or-action-declaration-nc-re
-  ;;              (----------------)            (------)
-  ;;         (--------------------------------------------)
+  ;;                 (----------------)            (------)
+  ;;          (----------------------------------------------)
   ;;              name
-  (format "\\(?:%s\\(%s%s+?([^;]+?)\\)%s+?is%s+?\\(?:%s\\)\\)"
-          ;;         g     G1
-          ;;    %    %  %             %     %        %
-          ;;    1    2  3             4     5        6
+  (format "^\\(?:%s\\(%s%s+?([^;]+?)\\)%s+?is%s+?\\(?:%s\\)\\)"
+          ;;          g     G1
+          ;;     %    %  %             %     %        %
+          ;;     1    2  3             4     5        6
           (seed7-func-beg-of-decl-re-fmt)       ; 1
           "?:"                                  ; 2: don't capture g
           "[^;]"                                ; 3
@@ -7246,23 +7245,31 @@ N is: - :previous-non-empty for the previous non-empty line,
             ;; Locate that header line and re-check the declaration from
             ;; there, still bounded by END-POS (the end of this
             ;; continuation line).
-            (let ((boundary (seed7--indent-search-boundary-uncached
-                             (current-column))))
-              (when boundary
-                (save-excursion
-                  (goto-char boundary)
+
+            (let ((candidate-column nil)
+                  (statement-end-pos nil))
+              ;; Search backward through callable declaration headers.  The candidate
+              ;; may itself be wrongly indented, so do not use indentation as a search
+              ;; boundary.
+              ;;
+              ;; A candidate belongs to this continuation tail only when its first code
+              ;; statement terminator is the semicolon at END-POS.  This works for both
+              ;; one- and multi-line forward/DYNAMIC/action declarations without
+              ;; reparsing their complete signature with a large multiline regexp.
+              (save-excursion
+                (while (and (not previous-defun-column)
+                            (= (forward-line -1) 0))
                   (seed7-to-indent)
-                  (when (string= (seed7--current-line-nth-word 1) "const")
-                    (seed7--set (seed7-line-starts-with-any
-                                 0
-                                 (list
-                                  seed7-func-forward-or-action-declaration-nc-re
-                                  seed7--forward-proc-decl-re
-                                  seed7-proc-forward-or-action-declaration-re)
-                                 nil
-                                 end-pos)
-                                previous-defun-column)
-                    previous-defun-column))))))
+                  (when (and (not (eolp))
+                             (not (seed7-inside-comment-p))
+                             (setq candidate-column
+                                   (seed7-line-is-procfunc-beg-of-decl 0)))
+                    (setq statement-end-pos
+                          (seed7-statement-end-pos nil end-pos))
+                    (when (and statement-end-pos
+                               (= statement-end-pos end-pos))
+                      (setq previous-defun-column candidate-column)))))
+              previous-defun-column)))
 
          ;; Handle line that is an end func, struct or enum.
          ((seed7--set (and (seed7-line-starts-with-any
@@ -7710,7 +7717,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                      seed7-predef-assignment-operator-regexp)
                     indent-column))
        ;;
-       ;; Assignment statement continuation
+       ;; -- Assignment statement continuation
        ((and (seed7--set (seed7-line-inside-assign-statement-continuation
                           0 early-begin-pos early-end-pos)
                          indent-column2)
@@ -7720,17 +7727,15 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                    early-end-pos)))
         (setq indent-column indent-column2))
 
-       ;; Handle special cases before checking if line is inside a block
-       ;; --------------------------------------------------------------
+       ;; --  Handle special cases before checking if line is inside a block
        ;; Check if line is below end of func|struct|enum before checking if it
        ;; is inside a block and is not itself a 'end func|struct|enum;' line.
        ;; This ensures it handles the next line properly.
        ((and (or (not (seed7-line-is-defun-end 0))
                  (seed7-line-is-procfunc-beg-of-decl 0))
-             (seed7--set (seed7-line-is-defun-end :previous-non-empty)
-                         indent-column)))
+             (setq indent-column (seed7-line-is-defun-end :previous-non-empty))))
 
-       ;; Also perform some tests that are fast to execute.
+       ;; -- Then perform some tests that execute quickly.
        ((string= first-word-on-line "$")
         (setq indent-step 0))
        ((string= first-word-on-line "include")

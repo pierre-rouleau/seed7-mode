@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-01.el --- ERT tests for Seed7 indentation regressions  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-17 11:11:10 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-20 17:24:13 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -252,6 +252,89 @@
     (should (string=
              (buffer-string)
              seed7-test-indent--elliptic-sibling-calls-correct))))
+
+;; ---------------------------------------------------------------------------
+
+(defconst seed7-test-indent--string-action-siblings-correct
+  (concat
+   "const func string: striRange (in string: stri) [ (in integer: start) ..\n"
+   "                                                (in integer: stop) ] is action \"STR_RANGE\";\n"
+   "\n"
+   "(**\n"
+   " *  Get a substring with a requested maximum length.\n"
+   " *)\n"
+   "const func string: striSubstr (in string: stri) [ (in integer: start) len\n"
+   "                                                 (in integer: length) ] is action \"STR_SUBSTR\";\n"
+   "\n"
+   "(**\n"
+   " *  Get a substring with a guaranteed length.\n"
+   " *)\n"
+   "const func string: striFixLen (in string: stri) [ (in integer: start) fixLen\n"
+   "                                                 (in integer: length) ] is action \"STR_SUBSTR_FIXLEN\";\n"
+   "\n"
+   "(**\n"
+   " *  Append EXTENSION to DESTINATION.\n"
+   " *)\n"
+   "const proc: appendTo (inout string: destination) &:= (in string: extension) is action \"STR_APPEND\";\n")
+  "Correct layout for top-level action declarations following comments.")
+
+(defconst seed7-test-indent--string-action-siblings-misaligned
+  (concat
+   "const func string: striRange (in string: stri) [ (in integer: start) ..\n"
+   "                                                    (in integer: stop) ] is action \"STR_RANGE\";\n"
+   "\n"
+   "(**\n"
+   " *  Get a substring with a requested maximum length.\n"
+   " *)\n"
+   "                                                    const func string: striSubstr (in string: stri) [ (in integer: start) len\n"
+   "                                                                                                         (in integer: length) ] is action \"STR_SUBSTR\";\n"
+   "\n"
+   "(**\n"
+   " *  Get a substring with a guaranteed length.\n"
+   " *)\n"
+   "                                                                                                         const func string: striFixLen (in string: stri) [ (in integer: start) fixLen\n"
+   "                                                                                                                             (in integer: length) ] is action \"STR_SUBSTR_FIXLEN\";\n"
+   "\n"
+   "(**\n"
+   " *  Append EXTENSION to DESTINATION.\n"
+   " *)\n"
+   "                                                                                                                             const proc: appendTo (inout string: destination) &:= (in string: extension) is action \"STR_APPEND\";\n")
+  "Input for accumulated indentation after multiline action declarations.")
+
+(ert-deftest seed7-indent/string-action-siblings-are-top-level-after-comments ()
+  "Top-level action declarations do not inherit parameter continuation columns."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent--string-action-siblings-misaligned)
+    (seed7-mode)
+
+    ;; Each continuation tail must be recognized as the end of its own
+    ;; multiline action declaration before region indentation changes the
+    ;; deliberately malformed header columns.
+    ;;
+    ;; The returned integer is the current header indentation: 0 for the
+    ;; first declaration and nonzero for intentionally misindented siblings.
+    (dolist (line '(2 8 14))
+      (seed7-test-indent--goto-line line)
+      (should (integerp (seed7-line-is-defun-end 0))))
+
+    (indent-region (point-min) (point-max))
+
+    ;; Declaration headers, rather than parameter continuations, must be
+    ;; aligned as top-level siblings.
+    (should (= (seed7-test-indent--line-indentation 1) 0))
+    (should (= (seed7-test-indent--line-indentation 7) 0))
+    (should (= (seed7-test-indent--line-indentation 13) 0))
+    (should (= (seed7-test-indent--line-indentation 19) 0))
+
+    ;; Continuation lines remain aligned within their own declarations.
+    (should (= (seed7-test-indent--line-indentation 2) 48))
+    (should (= (seed7-test-indent--line-indentation 8) 49))
+    (should (= (seed7-test-indent--line-indentation 14) 49))
+
+    (should (string=
+             (buffer-string)
+             seed7-test-indent--string-action-siblings-correct))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-01)
