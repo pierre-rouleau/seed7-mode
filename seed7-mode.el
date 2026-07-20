@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260717.1110
+;; Package-Version: 20260720.1556
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-17T15:10:50+0000 W29-5"
+(defconst seed7-mode-version-timestamp "2026-07-20T19:56:19+0000 W30-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7246,23 +7246,29 @@ N is: - :previous-non-empty for the previous non-empty line,
             ;; Locate that header line and re-check the declaration from
             ;; there, still bounded by END-POS (the end of this
             ;; continuation line).
-            (let ((boundary (seed7--indent-search-boundary-uncached
-                             (current-column))))
-              (when boundary
-                (save-excursion
-                  (goto-char boundary)
+            (let ((declaration-regexps
+                   (list seed7-func-forward-or-action-declaration-nc-re
+                         seed7--forward-proc-decl-re
+                         seed7-proc-forward-or-action-declaration-re)))
+              ;; Search backward through candidate `const' lines.  Do not use the
+              ;; candidate's indentation as a boundary: while correcting a malformed
+              ;; declaration, its header can itself be indented incorrectly.
+              ;;
+              ;; A candidate is accepted only when its complete declaration reaches
+              ;; END-POS, i.e. the end of the original forward/DYNAMIC/action tail.
+              ;; Thus, a completed earlier declaration separated by comments is rejected.
+              (save-excursion
+                (while (and (not previous-defun-column)
+                            (= (forward-line -1) 0))
                   (seed7-to-indent)
-                  (when (string= (seed7--current-line-nth-word 1) "const")
-                    (seed7--set (seed7-line-starts-with-any
-                                 0
-                                 (list
-                                  seed7-func-forward-or-action-declaration-nc-re
-                                  seed7--forward-proc-decl-re
-                                  seed7-proc-forward-or-action-declaration-re)
-                                 nil
-                                 end-pos)
-                                previous-defun-column)
-                    previous-defun-column))))))
+                  (when (and (not (eolp))
+                             (not (seed7-inside-comment-p))
+                             (looking-at-p "const\\_>"))
+                    (seed7--set
+                     (seed7-line-starts-with-any
+                      0 declaration-regexps nil end-pos)
+                     previous-defun-column))))
+              previous-defun-column)))
 
          ;; Handle line that is an end func, struct or enum.
          ((seed7--set (and (seed7-line-starts-with-any
@@ -7710,7 +7716,7 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                      seed7-predef-assignment-operator-regexp)
                     indent-column))
        ;;
-       ;; Assignment statement continuation
+       ;; -- Assignment statement continuation
        ((and (seed7--set (seed7-line-inside-assign-statement-continuation
                           0 early-begin-pos early-end-pos)
                          indent-column2)
@@ -7720,17 +7726,15 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
                    early-end-pos)))
         (setq indent-column indent-column2))
 
-       ;; Handle special cases before checking if line is inside a block
-       ;; --------------------------------------------------------------
+       ;; --  Handle special cases before checking if line is inside a block
        ;; Check if line is below end of func|struct|enum before checking if it
        ;; is inside a block and is not itself a 'end func|struct|enum;' line.
        ;; This ensures it handles the next line properly.
        ((and (or (not (seed7-line-is-defun-end 0))
                  (seed7-line-is-procfunc-beg-of-decl 0))
-             (seed7--set (seed7-line-is-defun-end :previous-non-empty)
-                         indent-column)))
+             (setq indent-column (seed7-line-is-defun-end :previous-non-empty))))
 
-       ;; Also perform some tests that are fast to execute.
+       ;; -- Then perform some tests that execute quickly.
        ((string= first-word-on-line "$")
         (setq indent-step 0))
        ((string= first-word-on-line "include")

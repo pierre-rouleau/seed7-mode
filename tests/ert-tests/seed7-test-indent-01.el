@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-01.el --- ERT tests for Seed7 indentation regressions  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-20 11:56:39 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-20 15:58:12 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -324,7 +324,15 @@
 
     (should (string=
              (buffer-string)
-             seed7-test-indent--string-action-siblings-correct))))
+             seed7-test-indent--string-action-siblings-correct)))
+
+
+    ;; A multiline top-level native/action declaration must itself be
+    ;; recognized as a completed definition, even before region indentation.
+    (goto-char (point-min))
+    (forward-line 1)
+    (should (equal (seed7-line-is-defun-end 0) 0)))
+
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-01)
