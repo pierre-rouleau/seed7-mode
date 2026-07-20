@@ -193,6 +193,12 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
   incorrectly aligned under the assignment operator instead of under the
   still-open call's opening paren.
 
+- Fix *indentation of multiline =const func= and =const proc=
+  declarations ending with =is forward=, =is DYNAMIC=, or =is action= construct*.
+  Top-level declarations following such multiline declarations and
+  documentation comments are now correctly aligned instead of inheriting
+  the preceding continuation-line indentation.
+
 - Fix *seed7-line-inside-parens-pair*: was using the wrong variable for
   the line-beginning position.
 
