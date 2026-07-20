@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260720.1556
+;; Package-Version: 20260720.1639
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-20T19:56:19+0000 W30-1"
+(defconst seed7-mode-version-timestamp "2026-07-20T20:39:30+0000 W30-1"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -1984,15 +1984,14 @@ spanning any number of continuation lines, ending at the first `;'.")
 - Group 1: procedure name,
 - Group 2: \"func\", \"forward\", \"DYNAMIC\", \"action XYZ\".")
 
-
 (defconst seed7-func-forward-or-action-declaration-nc-re
-  ;;              (----------------)            (------)
-  ;;         (--------------------------------------------)
+  ;;                 (----------------)            (------)
+  ;;          (----------------------------------------------)
   ;;              name
-  (format "\\(?:%s\\(%s%s+?([^;]+?)\\)%s+?is%s+?\\(?:%s\\)\\)"
-          ;;         g     G1
-          ;;    %    %  %             %     %        %
-          ;;    1    2  3             4     5        6
+  (format "^\\(?:%s\\(%s%s+?([^;]+?)\\)%s+?is%s+?\\(?:%s\\)\\)"
+          ;;          g     G1
+          ;;     %    %  %             %     %        %
+          ;;     1    2  3             4     5        6
           (seed7-func-beg-of-decl-re-fmt)       ; 1
           "?:"                                  ; 2: don't capture g
           "[^;]"                                ; 3
