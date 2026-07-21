@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-13 10:15:49 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-21 12:24:22 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -2377,6 +2377,80 @@ also restore correct indentation for this pattern."
       (forward-line 1))
     (should (string= (buffer-string)
                      seed7-test-indent-02--multiline-call-arg-in-assign-correct))))
+
+;; ---------------------------------------------------------------------------
+;; Regression: `begin' following a nested callable's `end func;' inside an
+;; enclosing `local' section must align with that enclosing `local'.
+
+(defconst seed7-test-indent-02--begin-after-nested-func-end-correct
+  (concat
+   "const proc: XX is func\n"
+   "  local\n"
+   "    const proc: YY is func\n"
+   "      local\n"
+   "        const proc: WW is func\n"
+   "          begin\n"
+   "            WW;\n"
+   "          end func;\n"
+   "        const proc: ZZ is func\n"
+   "          begin\n"
+   "            ZZ;\n"
+   "          end func;\n"
+   "      begin\n"
+   "        YY;\n"
+   "      end func;\n"
+   "  begin\n"
+   "    XX;\n"
+   "  end func;\n")
+  "Nested-callable fixture with `begin' aligned to its enclosing `local'.")
+
+(defconst seed7-test-indent-02--begin-after-nested-func-end-misaligned
+  (concat
+   "const proc: XX is func\n"
+   "  local\n"
+   "    const proc: YY is func\n"
+   "      local\n"
+   "        const proc: WW is func\n"
+   "          begin\n"
+   "            WW;\n"
+   "          end func;\n"
+   "        const proc: ZZ is func\n"
+   "          begin\n"
+   "            ZZ;\n"
+   "          end func;\n"
+   "        begin\n"
+   "          YY;\n"
+   "      end func;\n"
+   "  begin\n"
+   "    XX;\n"
+   "  end func;\n")
+  "Same fixture with YY's `begin' wrongly indented at column 8, rather
+than the column-6 indentation of YY's `local'.")
+
+(ert-deftest seed7-indent/begin-after-nested-func-end-fixes-region-layout ()
+  "A `begin' after a nested callable's `end func;' must align with its
+enclosing callable's `local', not inherit the nested callable's indentation."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--begin-after-nested-func-end-misaligned)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    ;; Line 14 is YY's `begin': it must align with YY's `local' on line 4.
+    (should (= (seed7-test-indent-02--line-indentation 4) 6))
+    (should (= (seed7-test-indent-02--line-indentation 13) 6))
+    (should (= (seed7-test-indent-02--line-indentation 14) 8))
+    (should (string= (buffer-string)
+                     seed7-test-indent-02--begin-after-nested-func-end-correct))))
+
+(ert-deftest seed7-indent/begin-after-nested-func-end-tab-dedents ()
+  "TAB on the affected `begin' restores its enclosing `local' indentation."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-test-indent-02--begin-after-nested-func-end-misaligned)
+    (seed7-mode)
+    (seed7-test-indent-02--goto-line 13)
+    (seed7-indent-line)
+    (should (= (seed7-test-indent-02--line-indentation 13) 6))))
 
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-02)
