@@ -7,7 +7,7 @@
 ;; URL: https://github.com/pierre-rouleau/seed7-mode
 ;; Created   : Wednesday, March 26 2025.
 ;; Version: 0.1
-;; Package-Version: 20260720.1724
+;; Package-Version: 20260721.1143
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -544,7 +544,7 @@
 ;;* Version Info
 ;;  ============
 
-(defconst seed7-mode-version-timestamp "2026-07-20T21:24:55+0000 W30-1"
+(defconst seed7-mode-version-timestamp "2026-07-21T15:43:05+0000 W30-2"
   "Version UTC timestamp of the `seed7-mode' file.
 Automatically updated when saved during development.
 Please do not modify.")
@@ -7730,8 +7730,11 @@ The RECURSE-COUNT should be nil on the first call, 1 on the first recursive
        ;; --  Handle special cases before checking if line is inside a block
        ;; Check if line is below end of func|struct|enum before checking if it
        ;; is inside a block and is not itself a 'end func|struct|enum;' line.
-       ;; This ensures it handles the next line properly.
-       ((and (or (not (seed7-line-is-defun-end 0))
+       ;; Handle ordinary siblings below `end func|struct|enum;' before checking
+       ;; enclosing blocks.  A `begin' may instead close an enclosing `local' or
+       ;; `result' declaration section, so it must use the block-structure logic.
+       ((and (not (string= first-word-on-line "begin"))
+             (or (not (seed7-line-is-defun-end 0))
                  (seed7-line-is-procfunc-beg-of-decl 0))
              (setq indent-column (seed7-line-is-defun-end :previous-non-empty))))
 
