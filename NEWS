@@ -209,6 +209,12 @@ seed7-mode -- Seed7 Classic Emacs Mode -- NEWS     -*- org -*-
   parenthesized declarations* (for example, consecutive ellipticCurve
   constants in lib/elliptic.s7i).
 
+- Fix *indentation of =begin= after a nested function, procedure, or
+  structure declaration*.  When such a =begin= closes an enclosing
+  =local= or =result= section, it now aligns with that section rather
+  than inheriting the indentation of the preceding =end func;=,
+  =end proc;=, or =end struct;=.
+
 - Fix *seed7-symbol-at-point*: was using *looking-at-p* (does not
   update match data) instead of *looking-at* in one branch.
 
