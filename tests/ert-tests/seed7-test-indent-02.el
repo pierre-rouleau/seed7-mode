@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-02.el --- Comprehensive ERT tests for Seed7 indentation  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-21 12:24:22 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-21 12:30:39 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -2435,7 +2435,7 @@ enclosing callable's `local', not inherit the nested callable's indentation."
     (insert seed7-test-indent-02--begin-after-nested-func-end-misaligned)
     (seed7-mode)
     (indent-region (point-min) (point-max))
-    ;; Line 14 is YY's `begin': it must align with YY's `local' on line 4.
+    ;; Line 13 is YY's `begin': it must align with YY's `local' on line 4.
     (should (= (seed7-test-indent-02--line-indentation 4) 6))
     (should (= (seed7-test-indent-02--line-indentation 13) 6))
     (should (= (seed7-test-indent-02--line-indentation 14) 8))
