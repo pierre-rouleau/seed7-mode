@@ -1,0 +1,807 @@
+      227605  96% - ...
+      227605  96%  - pel-profile-indent
+      227605  96%   - pel-profile-indentation-test-of
+      227605  96%    - call-interactively
+      227605  96%     - apply
+      227605  96%      - call-interactively@ido-cr+-record-current-command
+      227605  96%       - #<primitive-function call-interactively>
+      227605  96%        - funcall-interactively
+      227517  96%         - pel-profile-all
+      227517  96%          - pel-profile-dir
+      227517  96%           - pel-profile-indent
+      227517  96%            - pel-profile-indentation-test-of
+      227517  96%             - call-interactively
+      227517  96%              - apply
+      227517  96%               - call-interactively@ido-cr+-record-current-command
+      227517  96%                - #<primitive-function call-interactively>
+      227517  96%                 - funcall-interactively
+      227517  96%                  - seed7-complete-statement-or-indent
+      227517  96%                   - seed7-indent-region
+      227516  96%                    - seed7--indent-one-line
+      227509  96%                     - seed7-calc-indent
+      203238  86%                      - seed7--indent-search-boundary
+      203237  86%                       - seed7--indent-search-boundary-uncached
+      201177  85%                        - syntax-ppss
+      200531  85%                           parse-partial-sexp
+          89   0%                         - #<byte-code-function 254>
+           7   0%                            set-syntax-table
+          77   0%                           make-closure
+          44   0%                           syntax-ppss--update-stats
+          43   0%                           syntax-ppss-toplevel-pos
+          34   0%                           syntax-table
+          31   0%                           syntax-ppss--data
+          27   0%                           set-syntax-table
+          26   0%                           syntax-propertize
+         299   0%                          seed7-to-indent
+       10300   4%                      - seed7-line-inside-parens-pair-column
+       10300   4%                       - seed7-line-inside-parens-pair
+       10137   4%                        - seed7-re-search-backward
+        6251   2%                         - seed7-inside-comment-p
+        6248   2%                          - syntax-ppss
+        6235   2%                             parse-partial-sexp
+           2   0%                             set-syntax-table
+           2   0%                             make-closure
+           2   0%                             syntax-ppss--update-stats
+           1   0%                             syntax-ppss--data
+           1   0%                             #<byte-code-function DCB>
+        3813   1%                         - run-with-timer
+        3812   1%                          - run-at-time
+        2680   1%                           - timer-activate
+        2678   1%                            - timer--activate
+        2676   1%                             - timer--time-less-p
+           6   0%                                timer--time
+        1013   0%                           - timer-set-time
+        1013   0%                            - timer--time-setter
+           1   0%                               timerp
+         117   0%                             timer-relative-time
+           2   0%                           - timer-set-function
+           2   0%                              timerp
+          40   0%                         - seed7-inside-string-p
+          33   0%                          - syntax-ppss
+          25   0%                             parse-partial-sexp
+           1   0%                             syntax-table
+           1   0%                             make-closure
+           1   0%                             syntax-propertize
+           1   0%                             syntax-ppss--update-stats
+           1   0%                          - #<byte-code-function 958>
+           1   0%                             set-match-data
+          23   0%                           re-search-backward
+           3   0%                           make-closure
+           1   0%                         - #<byte-code-function 221>
+           1   0%                            cancel-timer
+          51   0%                        - forward-sexp
+          46   0%                           seed7--forward-sexp-function
+          43   0%                        - seed7-line-inside-syntax-parens-pair
+          42   0%                         - syntax-ppss
+          42   0%                            parse-partial-sexp
+           1   0%                           seed7-move-to-line
+        5148   2%                      - seed7-line-is-defun-end
+        3298   1%                       - seed7-end-of-defun
+        2275   0%                        - seed7-top-block-name
+        2265   0%                         - seed7--to-top
+        2245   0%                          - seed7-re-search-backward
+        1344   0%                           - seed7-inside-comment-p
+        1343   0%                            - syntax-ppss
+        1342   0%                               parse-partial-sexp
+         831   0%                           - run-with-timer
+         830   0%                            - run-at-time
+         577   0%                             - timer-activate
+         576   0%                              - timer--activate
+         575   0%                               - timer--time-less-p
+           2   0%                                  timer--time
+         224   0%                             - timer-set-time
+         224   0%                                timer--time-setter
+          28   0%                               timer-relative-time
+          54   0%                             re-search-backward
+           5   0%                           - seed7-inside-string-p
+           3   0%                            - syntax-ppss
+           1   0%                               syntax-propertize
+           1   0%                             make-closure
+          14   0%                          - run-with-timer
+          14   0%                           - run-at-time
+           9   0%                            - timer-activate
+           9   0%                             - timer--activate
+           9   0%                                timer--time-less-p
+           4   0%                            - timer-set-time
+           4   0%                               timer--time-setter
+           1   0%                              timer-relative-time
+           2   0%                            seed7-to-indent
+          10   0%                         - seed7--block-name
+          10   0%                          - seed7-re-search-forward
+           6   0%                           - seed7-inside-comment-p
+           6   0%                            - syntax-ppss
+           6   0%                               parse-partial-sexp
+           1   0%                           - seed7-inside-string-p
+           1   0%                            - syntax-ppss
+           1   0%                               parse-partial-sexp
+         999   0%                        - seed7-re-search-forward
+         552   0%                         - seed7-inside-comment-p
+         551   0%                          - syntax-ppss
+         453   0%                             parse-partial-sexp
+          94   0%                           - syntax-propertize
+          82   0%                              seed7-mode-syntax-propertize
+           4   0%                            - #<byte-code-function D60>
+           4   0%                             - syntax-propertize-wholelines
+           2   0%                                syntax--lbp
+           1   0%                              syntax-ppss-flush-cache
+           1   0%                             #<byte-code-function D8D>
+         196   0%                         - seed7-inside-string-p
+         191   0%                          - syntax-ppss
+         189   0%                             parse-partial-sexp
+           1   0%                         - internal--syntax-propertize
+           1   0%                          - syntax-propertize
+           1   0%                             seed7-mode-syntax-propertize
+          15   0%                        - seed7-re-search-backward
+           9   0%                         - seed7-inside-comment-p
+           9   0%                          - syntax-ppss
+           9   0%                             parse-partial-sexp
+           5   0%                         - run-with-timer
+           5   0%                          - run-at-time
+           4   0%                           - timer-activate
+           4   0%                            - timer--activate
+           4   0%                               timer--time-less-p
+           1   0%                           - timer-set-time
+           1   0%                              timer--time-setter
+           1   0%                           seed7-inside-string-p
+           1   0%                          match-string-no-properties
+        1784   0%                       - seed7-beg-of-defun
+        1618   0%                        - seed7-re-search-backward
+         954   0%                         - seed7-inside-comment-p
+         954   0%                          - syntax-ppss
+         950   0%                             parse-partial-sexp
+           1   0%                             #<byte-code-function 0E9>
+         529   0%                         - run-with-timer
+         529   0%                          - run-at-time
+         363   0%                           - timer-activate
+         363   0%                            - timer--activate
+         363   0%                               timer--time-less-p
+         153   0%                           - timer-set-time
+         153   0%                              timer--time-setter
+          12   0%                             timer-relative-time
+         126   0%                           re-search-backward
+           8   0%                         - seed7-inside-string-p
+           2   0%                          - syntax-ppss
+           2   0%                             parse-partial-sexp
+         148   0%                        - seed7-re-search-backward-closest
+         148   0%                         - seed7-re-search-backward
+         132   0%                            re-search-backward
+           9   0%                          - seed7-inside-comment-p
+           9   0%                           - syntax-ppss
+           9   0%                              parse-partial-sexp
+           7   0%                          - run-with-timer
+           7   0%                           - run-at-time
+           6   0%                            - timer-activate
+           6   0%                             - timer--activate
+           6   0%                                timer--time-less-p
+           1   0%                            - timer-set-time
+           1   0%                               timer--time-setter
+           9   0%                        - seed7-top-block-name
+           9   0%                         - seed7--to-top
+           5   0%                          - seed7-re-search-backward
+           3   0%                           - seed7-inside-comment-p
+           3   0%                            - syntax-ppss
+           3   0%                               parse-partial-sexp
+           2   0%                           - run-with-timer
+           2   0%                            - run-at-time
+           2   0%                             - timer-activate
+           2   0%                              - timer--activate
+           2   0%                                 timer--time-less-p
+           3   0%                          - run-with-timer
+           3   0%                           - run-at-time
+           3   0%                            - timer-activate
+           3   0%                             - timer--activate
+           3   0%                                timer--time-less-p
+           1   0%                            seed7-to-indent
+          18   0%                       - seed7-move-to-line
+          18   0%                        - seed7-to-previous-non-empty-line
+          14   0%                         - seed7-inside-comment-p
+          14   0%                          - syntax-ppss
+          14   0%                             parse-partial-sexp
+          16   0%                       - seed7--safe-current-line-defun-start-indent
+          16   0%                        - seed7-to-block-backward
+          15   0%                         - seed7-re-search-backward
+          11   0%                          - seed7-inside-comment-p
+          11   0%                           - syntax-ppss
+          11   0%                              parse-partial-sexp
+           3   0%                          - run-with-timer
+           3   0%                           - run-at-time
+           3   0%                            - timer-set-time
+           3   0%                               timer--time-setter
+           1   0%                            re-search-backward
+           1   0%                         - seed7--current-line-nth-word
+           1   0%                          - thing-at-point
+           1   0%                           - bounds-of-thing-at-point
+           1   0%                            - #<byte-code-function 35A>
+           1   0%                             - forward-thing
+           1   0%                                forward-word
+          12   0%                       - seed7--current-line-nth-word
+          11   0%                        - thing-at-point
+           9   0%                         - bounds-of-thing-at-point
+           4   0%                          - #<byte-code-function 173>
+           4   0%                           - forward-thing
+           2   0%                              forward-word
+           1   0%                              intern-soft
+           3   0%                            re-search-forward
+           2   0%                          - #<byte-code-function 79B>
+           2   0%                           - forward-thing
+           1   0%                              format
+           1   0%                              forward-word
+           8   0%                         looking-back
+           8   0%                       - seed7-line-starts-with-any
+           8   0%                          seed7-line-starts-with
+           1   0%                         line-beginning-position
+           1   0%                         line-end-position
+        5111   2%                      - seed7-line-inside-a-block-cached
+        5110   2%                       - seed7-line-inside-a-block
+        2759   1%                        - seed7-re-search-backward
+        1745   0%                         - seed7-inside-comment-p
+        1745   0%                          - syntax-ppss
+        1739   0%                             parse-partial-sexp
+           1   0%                             syntax-ppss--update-stats
+           1   0%                             syntax-ppss-toplevel-pos
+           1   0%                             #<byte-code-function 72B>
+           1   0%                             make-closure
+         890   0%                         - run-with-timer
+         890   0%                          - run-at-time
+         559   0%                           - timer-activate
+         559   0%                            - timer--activate
+         558   0%                             - timer--time-less-p
+           1   0%                                timer--time
+           1   0%                               timerp
+         293   0%                           - timer-set-time
+         293   0%                              timer--time-setter
+          37   0%                             timer-relative-time
+           1   0%                             timer-set-function
+         102   0%                           re-search-backward
+          18   0%                         - seed7-inside-string-p
+          15   0%                          - syntax-ppss
+           9   0%                             parse-partial-sexp
+           2   0%                           - #<byte-code-function F53>
+           1   0%                              set-syntax-table
+           1   0%                             syntax-table
+           1   0%                             syntax-ppss--update-stats
+           1   0%                          - #<byte-code-function A70>
+           1   0%                             set-match-data
+           1   0%                         - #<byte-code-function A01>
+           1   0%                            cancel-timer
+        2308   0%                        - seed7--safe-enclosing-block-bounds
+        2308   0%                         - seed7--block-end-pos-for
+        2302   0%                          - seed7-to-block-forward
+        1581   0%                           - seed7-end-of-defun
+        1497   0%                            - seed7-top-block-name
+        1492   0%                             - seed7--to-top
+        1481   0%                              - seed7-re-search-backward
+         983   0%                               - seed7-inside-comment-p
+         983   0%                                - syntax-ppss
+         976   0%                                   parse-partial-sexp
+           3   0%                                 - syntax-propertize
+           3   0%                                    seed7-mode-syntax-propertize
+           1   0%                                   syntax-ppss--data
+           1   0%                                   #<byte-code-function 149>
+         435   0%                               - run-with-timer
+         435   0%                                - run-at-time
+         285   0%                                 - timer-activate
+         284   0%                                  - timer--activate
+         284   0%                                     timer--time-less-p
+         134   0%                                 - timer-set-time
+         134   0%                                    timer--time-setter
+          16   0%                                   timer-relative-time
+          58   0%                                 re-search-backward
+           4   0%                                 seed7-inside-string-p
+           1   0%                               - #<byte-code-function 73D>
+           1   0%                                  cancel-timer
+           9   0%                              - run-with-timer
+           9   0%                               - run-at-time
+           5   0%                                - timer-activate
+           5   0%                                 - timer--activate
+           5   0%                                    timer--time-less-p
+           4   0%                                - timer-set-time
+           4   0%                                   timer--time-setter
+           1   0%                                seed7-to-indent
+           5   0%                             - seed7--block-name
+           5   0%                              - seed7-re-search-forward
+           4   0%                               - seed7-inside-comment-p
+           4   0%                                - syntax-ppss
+           4   0%                                   parse-partial-sexp
+          79   0%                            - seed7-re-search-forward
+          12   0%                             - seed7-inside-comment-p
+          11   0%                              - syntax-ppss
+          11   0%                                 parse-partial-sexp
+           3   0%                             - internal--syntax-propertize
+           3   0%                              - syntax-propertize
+           3   0%                                 seed7-mode-syntax-propertize
+           5   0%                            - seed7-re-search-backward
+           3   0%                             - seed7-inside-comment-p
+           3   0%                              - syntax-ppss
+           2   0%                                 parse-partial-sexp
+           2   0%                             - run-with-timer
+           2   0%                              - run-at-time
+           1   0%                               - timer-set-time
+           1   0%                                  timer--time-setter
+           1   0%                               - timer-activate
+           1   0%                                - timer--activate
+           1   0%                                   timer--time-less-p
+         541   0%                           - seed7-re-search-forward
+         242   0%                            - seed7-inside-comment-p
+         242   0%                             - syntax-ppss
+         206   0%                                parse-partial-sexp
+          28   0%                              - syntax-propertize
+          26   0%                                 seed7-mode-syntax-propertize
+           2   0%                                #<byte-code-function C8D>
+           1   0%                                set-syntax-table
+           1   0%                                syntax-ppss--update-stats
+         178   0%                            - seed7-inside-string-p
+         170   0%                             - syntax-ppss
+         166   0%                                parse-partial-sexp
+           2   0%                                #<byte-code-function 609>
+           1   0%                                syntax-table
+           1   0%                               #<byte-code-function 561>
+         127   0%                           - seed7--current-line-nth-word
+          97   0%                            - thing-at-point
+          93   0%                             - bounds-of-thing-at-point
+          41   0%                              - #<byte-code-function F7C>
+          38   0%                               - forward-thing
+          19   0%                                  forward-word
+          14   0%                                  format
+           3   0%                                  intern-soft
+          28   0%                              - #<byte-code-function 44E>
+          26   0%                               - forward-thing
+          14   0%                                  forward-word
+           9   0%                                  format
+           1   0%                                  functionp
+           5   0%                                re-search-forward
+           4   0%                              - seq-some
+           2   0%                                 make-closure
+           3   0%                                make-closure
+          22   0%                           - seed7-inside-line-trailing-whitespace-before-line-end-comment-p
+          13   0%                            - seed7-inside-comment-p
+          11   0%                             - syntax-ppss
+           6   0%                                parse-partial-sexp
+           1   0%                                syntax-ppss--update-stats
+           1   0%                                #<byte-code-function B09>
+           1   0%                                syntax-ppss--data
+           1   0%                                syntax-table
+           1   0%                                make-closure
+           3   0%                            - seed7-inside-line-indent-before-comment-p
+           1   0%                               seed7-to-indent
+          10   0%                           - seed7-inside-comment-p
+           9   0%                            - syntax-ppss
+           3   0%                               parse-partial-sexp
+           2   0%                             - #<byte-code-function A11>
+           1   0%                                set-syntax-table
+           9   0%                             seed7--end-regexp-for
+           5   0%                           - seed7-inside-line-indent-before-comment-p
+           3   0%                              seed7-to-indent
+           2   0%                          - seed7-to-next-line-starts-with
+           2   0%                           - seed7-re-search-forward
+           1   0%                            - seed7-inside-string-p
+           1   0%                             - syntax-ppss
+           1   0%                                parse-partial-sexp
+           1   0%                            - seed7-inside-comment-p
+           1   0%                             - syntax-ppss
+           1   0%                                parse-partial-sexp
+           2   0%                          - seed7--line-ends-a-statement-p
+           1   0%                           - forward-sexp
+           1   0%                              seed7--forward-sexp-function
+           1   0%                             looking-at
+          20   0%                        - seed7-calc-indent
+          10   0%                         - seed7-line-inside-parens-pair-column
+          10   0%                          - seed7-line-inside-parens-pair
+          10   0%                           - seed7-re-search-backward
+           6   0%                            - run-with-timer
+           6   0%                             - run-at-time
+           5   0%                              - timer-activate
+           5   0%                               - timer--activate
+           5   0%                                  timer--time-less-p
+           1   0%                              - timer-set-time
+           1   0%                                 timer--time-setter
+           4   0%                            - seed7-inside-comment-p
+           4   0%                             - syntax-ppss
+           4   0%                                parse-partial-sexp
+           3   0%                         - seed7-line-inside-set-definition-block
+           3   0%                          - seed7-re-search-backward
+           2   0%                           - run-with-timer
+           2   0%                            - run-at-time
+           2   0%                             - timer-activate
+           2   0%                              - timer--activate
+           2   0%                                 timer--time-less-p
+           1   0%                           - seed7-inside-comment-p
+           1   0%                            - syntax-ppss
+           1   0%                               parse-partial-sexp
+           2   0%                         - seed7--indent-search-boundary
+           2   0%                          - seed7--indent-search-boundary-uncached
+           2   0%                           - syntax-ppss
+           2   0%                              parse-partial-sexp
+           2   0%                         - seed7-line-inside-array-definition-block
+           2   0%                          - seed7-re-search-backward
+           1   0%                           - run-with-timer
+           1   0%                            - run-at-time
+           1   0%                             - timer-activate
+           1   0%                              - timer--activate
+           1   0%                                 timer--time-less-p
+           1   0%                             re-search-backward
+           1   0%                         - seed7-line-at-endof-parenthesized-statement
+           1   0%                          - seed7-move-to-line
+           1   0%                           - seed7-to-previous-non-empty-line
+           1   0%                            - seed7-inside-comment-p
+           1   0%                             - syntax-ppss
+           1   0%                                parse-partial-sexp
+           1   0%                         - seed7-line-inside-a-block-cached
+           1   0%                          - seed7-line-inside-a-block
+           1   0%                           - seed7-re-search-backward
+           1   0%                            - run-with-timer
+           1   0%                             - run-at-time
+           1   0%                              - timer-activate
+           1   0%                               - timer--activate
+           1   0%                                  timer--time-less-p
+           1   0%                         - seed7-line-at-endof-array-definition-block
+           1   0%                          - backward-sexp
+           1   0%                           - forward-sexp
+           1   0%                              seed7--forward-sexp-function
+           7   0%                          replace-regexp-in-string
+           1   0%                          seed7--on-lineof
+           1   0%                          seed7--indent-offset-for
+           1   0%                          match-string
+           1   0%                          seed7-move-to-line
+        1584   0%                      - seed7-line-inside-array-definition-block
+        1574   0%                       - seed7-re-search-backward
+        1316   0%                          re-search-backward
+         189   0%                        - seed7-inside-comment-p
+         189   0%                         - syntax-ppss
+         189   0%                            parse-partial-sexp
+          65   0%                        - run-with-timer
+          65   0%                         - run-at-time
+          30   0%                          - timer-activate
+          30   0%                           - timer--activate
+          29   0%                              timer--time-less-p
+          27   0%                          - timer-set-time
+          27   0%                             timer--time-setter
+           7   0%                            timer-relative-time
+           1   0%                        - seed7-inside-string-p
+           1   0%                         - syntax-ppss
+           1   0%                            parse-partial-sexp
+           8   0%                       - forward-sexp
+           8   0%                          seed7--forward-sexp-function
+           1   0%                         seed7-move-to-line
+        1419   0%                      - seed7-line-inside-set-definition-block
+        1407   0%                       - seed7-re-search-backward
+        1209   0%                          re-search-backward
+         132   0%                        - seed7-inside-comment-p
+         132   0%                         - syntax-ppss
+         131   0%                            parse-partial-sexp
+           1   0%                            make-closure
+          63   0%                        - run-with-timer
+          63   0%                         - run-at-time
+          35   0%                          - timer-activate
+          35   0%                           - timer--activate
+          35   0%                              timer--time-less-p
+          24   0%                          - timer-set-time
+          24   0%                             timer--time-setter
+           4   0%                            timer-relative-time
+           3   0%                        - seed7-inside-string-p
+           3   0%                         - syntax-ppss
+           1   0%                            syntax-ppss--update-stats
+           1   0%                            parse-partial-sexp
+           1   0%                            set-syntax-table
+           9   0%                       - forward-sexp
+           9   0%                          seed7--forward-sexp-function
+           1   0%                         seed7-move-to-line
+         216   0%                      - seed7-line-inside-assign-statement-continuation
+         206   0%                       - seed7-assign-op-pos
+         205   0%                        - seed7-re-search-backward
+         161   0%                         - seed7-inside-comment-p
+         161   0%                          - syntax-ppss
+         160   0%                             parse-partial-sexp
+           1   0%                             #<byte-code-function 002>
+          40   0%                         - run-with-timer
+          40   0%                          - run-at-time
+          19   0%                           - timer-activate
+          19   0%                            - timer--activate
+          19   0%                               timer--time-less-p
+          15   0%                           - timer-set-time
+          15   0%                              timer--time-setter
+           6   0%                             timer-relative-time
+           4   0%                           re-search-backward
+           5   0%                       - seed7-statement-end-pos
+           5   0%                        - seed7-forward-char-pos
+           5   0%                         - seed7-re-search-forward
+           2   0%                          - seed7-inside-comment-p
+           2   0%                           - syntax-ppss
+           2   0%                              parse-partial-sexp
+           2   0%                          - seed7-inside-string-p
+           2   0%                           - syntax-ppss
+           2   0%                              parse-partial-sexp
+         168   0%                      - seed7-comment-column
+         164   0%                       - seed7-calc-indent
+          98   0%                        - seed7--indent-search-boundary
+          98   0%                         - seed7--indent-search-boundary-uncached
+          97   0%                          - syntax-ppss
+          96   0%                             parse-partial-sexp
+           1   0%                             syntax-propertize
+          15   0%                        - seed7-line-inside-array-definition-block
+          15   0%                         - seed7-re-search-backward
+          15   0%                            re-search-backward
+          11   0%                        - seed7-line-inside-parens-pair-column
+          11   0%                         - seed7-line-inside-parens-pair
+          11   0%                          - seed7-re-search-backward
+           6   0%                           - seed7-inside-comment-p
+           6   0%                            - syntax-ppss
+           5   0%                               parse-partial-sexp
+           5   0%                           - run-with-timer
+           5   0%                            - run-at-time
+           3   0%                             - timer-activate
+           3   0%                              - timer--activate
+           3   0%                                 timer--time-less-p
+           2   0%                             - timer-set-time
+           2   0%                                timer--time-setter
+          10   0%                        - seed7-line-inside-set-definition-block
+          10   0%                         - seed7-re-search-backward
+          10   0%                            re-search-backward
+           8   0%                        - seed7-line-inside-a-block-cached
+           8   0%                         - seed7-line-inside-a-block
+           6   0%                          - seed7-re-search-backward
+           5   0%                           - seed7-inside-comment-p
+           5   0%                            - syntax-ppss
+           5   0%                               parse-partial-sexp
+           1   0%                           - run-with-timer
+           1   0%                            - run-at-time
+           1   0%                             - timer-activate
+           1   0%                              - timer--activate
+           1   0%                                 timer--time-less-p
+           2   0%                          - seed7--safe-enclosing-block-bounds
+           2   0%                           - seed7--block-end-pos-for
+           2   0%                            - seed7-to-block-forward
+           2   0%                             - seed7-re-search-forward
+           1   0%                              - seed7-inside-string-p
+           1   0%                               - syntax-ppss
+           1   0%                                  parse-partial-sexp
+           1   0%                              - seed7-inside-comment-p
+           1   0%                               - syntax-ppss
+           1   0%                                  parse-partial-sexp
+           5   0%                        - seed7-line-after-func-return-logic-operator-column
+           5   0%                         - seed7-move-to-line
+           5   0%                          - seed7-to-previous-non-empty-line
+           5   0%                           - seed7-inside-comment-p
+           5   0%                            - syntax-ppss
+           5   0%                               parse-partial-sexp
+           5   0%                        - seed7-line-at-endof-parenthesized-statement
+           5   0%                         - seed7-move-to-line
+           5   0%                          - seed7-to-previous-non-empty-line
+           4   0%                           - seed7-inside-comment-p
+           4   0%                            - syntax-ppss
+           3   0%                               parse-partial-sexp
+           5   0%                        - seed7-line-at-endof-set-definition-block
+           5   0%                         - seed7-move-to-line
+           5   0%                          - seed7-to-previous-non-empty-line
+           5   0%                           - seed7-inside-comment-p
+           5   0%                            - syntax-ppss
+           5   0%                               parse-partial-sexp
+           2   0%                        - seed7-line-is-defun-end
+           2   0%                         - seed7-move-to-line
+           2   0%                          - seed7-to-previous-non-empty-line
+           2   0%                           - seed7-inside-comment-p
+           2   0%                            - syntax-ppss
+           2   0%                               parse-partial-sexp
+           2   0%                        - seed7-line-starts-with-open-paren-after-logic-operator
+           1   0%                           seed7-line-starts-with
+           1   0%                         - seed7-move-to-line
+           1   0%                          - seed7-to-previous-non-empty-line
+           1   0%                           - seed7-inside-comment-p
+           1   0%                            - syntax-ppss
+           1   0%                               parse-partial-sexp
+           1   0%                        - seed7-line-at-endof-array-definition-block
+           1   0%                         - seed7-move-to-line
+           1   0%                          - seed7-to-previous-non-empty-line
+           1   0%                           - seed7-inside-comment-p
+           1   0%                            - syntax-ppss
+           1   0%                               parse-partial-sexp
+           1   0%                        - seed7-line-inside-argument-list-section
+           1   0%                         - seed7-re-search-backward
+           1   0%                          - run-with-timer
+           1   0%                           - run-at-time
+           1   0%                            - timer-set-time
+           1   0%                               timer--time-setter
+           1   0%                        - seed7-line-inside-assign-statement-continuation
+           1   0%                         - seed7-assign-op-pos
+           1   0%                          - seed7-re-search-backward
+           1   0%                           - seed7-inside-comment-p
+           1   0%                            - syntax-ppss
+           1   0%                               parse-partial-sexp
+           3   0%                       - seed7-line-code-ends-with
+           2   0%                        - seed7-move-to-line
+           2   0%                         - seed7-to-previous-non-empty-line
+           2   0%                          - seed7-inside-comment-p
+           2   0%                           - syntax-ppss
+           1   0%                              #<byte-code-function 08F>
+           1   0%                              parse-partial-sexp
+           1   0%                        - seed7-re-search-backward
+           1   0%                         - seed7-inside-comment-p
+           1   0%                          - syntax-ppss
+           1   0%                             parse-partial-sexp
+           1   0%                       - seed7-inside-comment-p
+           1   0%                        - syntax-ppss
+           1   0%                           parse-partial-sexp
+          91   0%                      - seed7-line-inside-argument-list-section
+          77   0%                       - seed7-re-search-backward
+          52   0%                        - run-with-timer
+          52   0%                         - run-at-time
+          37   0%                          - timer-activate
+          37   0%                           - timer--activate
+          37   0%                            - timer--time-less-p
+           1   0%                               timer--time
+          15   0%                          - timer-set-time
+          15   0%                             timer--time-setter
+          21   0%                          re-search-backward
+           4   0%                        - seed7-inside-comment-p
+           4   0%                         - syntax-ppss
+           4   0%                            parse-partial-sexp
+          12   0%                       - seed7-line-is-procfunc-beg-of-decl
+          12   0%                          seed7-line-starts-with
+           1   0%                       - seed7-forward-char-pos
+           1   0%                        - seed7-re-search-forward
+           1   0%                         - seed7-inside-string-p
+           1   0%                          - syntax-ppss
+           1   0%                             parse-partial-sexp
+          68   0%                      - seed7-line-inside-until-logic-expression
+          54   0%                       - seed7-re-search-backward
+          36   0%                        - run-with-timer
+          35   0%                         - run-at-time
+          23   0%                          - timer-activate
+          23   0%                           - timer--activate
+          23   0%                              timer--time-less-p
+          12   0%                          - timer-set-time
+          12   0%                             timer--time-setter
+          10   0%                          re-search-backward
+           8   0%                        - seed7-inside-comment-p
+           8   0%                         - syntax-ppss
+           8   0%                            parse-partial-sexp
+          14   0%                       - seed7-line-code-ends-with
+          14   0%                        - seed7-re-search-backward
+          11   0%                         - run-with-timer
+          11   0%                          - run-at-time
+           8   0%                           - timer-activate
+           8   0%                            - timer--activate
+           8   0%                               timer--time-less-p
+           2   0%                           - timer-set-time
+           2   0%                              timer--time-setter
+           1   0%                             timer-relative-time
+           2   0%                         - seed7-inside-string-p
+           2   0%                          - syntax-ppss
+           2   0%                             parse-partial-sexp
+           1   0%                         - seed7-inside-comment-p
+           1   0%                          - syntax-ppss
+           1   0%                             parse-partial-sexp
+          65   0%                      - seed7-line-inside-func-return-statement
+          65   0%                       - seed7-re-search-backward
+          47   0%                        - run-with-timer
+          47   0%                         - run-at-time
+          26   0%                          - timer-activate
+          26   0%                           - timer--activate
+          26   0%                              timer--time-less-p
+          20   0%                          - timer-set-time
+          20   0%                           - timer--time-setter
+           1   0%                              timerp
+           1   0%                            timer-relative-time
+          18   0%                          re-search-backward
+          65   0%                      - seed7-line-inside-logic-check-expression
+          53   0%                       - seed7-to-previous-line-starts-with
+          53   0%                        - seed7-re-search-backward
+          33   0%                         - run-with-timer
+          33   0%                          - run-at-time
+          18   0%                           - timer-activate
+          18   0%                            - timer--activate
+          18   0%                               timer--time-less-p
+          14   0%                           - timer-set-time
+          14   0%                              timer--time-setter
+           1   0%                             timer-relative-time
+          13   0%                         - seed7-inside-comment-p
+          12   0%                          - syntax-ppss
+          12   0%                             parse-partial-sexp
+           5   0%                           re-search-backward
+           2   0%                         - seed7-inside-string-p
+           2   0%                          - syntax-ppss
+           2   0%                             parse-partial-sexp
+           9   0%                       - seed7-re-search-forward
+           5   0%                        - seed7-inside-comment-p
+           5   0%                         - syntax-ppss
+           5   0%                            parse-partial-sexp
+           2   0%                        - seed7-inside-string-p
+           2   0%                         - syntax-ppss
+           2   0%                            parse-partial-sexp
+           1   0%                         seed7--current-line-nth-word
+           1   0%                         seed7-move-to-line
+          18   0%                      - seed7-line-after-func-return-logic-operator-column
+          12   0%                       - seed7-move-to-line
+          11   0%                        - seed7-to-previous-non-empty-line
+          10   0%                         - seed7-inside-comment-p
+          10   0%                          - syntax-ppss
+          10   0%                             parse-partial-sexp
+          12   0%                      - seed7-current-line-start-inside-comment-p
+          12   0%                       - seed7-inside-comment-p
+          12   0%                        - syntax-ppss
+          12   0%                           parse-partial-sexp
+           3   0%                      - seed7-line-isa-string
+           3   0%                       - seed7-line-starts-with
+           1   0%                          seed7-move-to-line
+           1   0%                        seed7-line-starts-with
+           3   0%                     - jit-lock-after-change
+           2   0%                        font-lock-extend-jit-lock-region-after-change
+           1   0%                       flyspell-after-change-function
+          88   0%         - seed7-complete-statement-or-indent
+          88   0%          - seed7-indent-region
+          88   0%           - seed7--indent-one-line
+          88   0%            - seed7-calc-indent
+          73   0%             - seed7--current-line-nth-word
+          73   0%              - thing-at-point
+          73   0%               - bounds-of-thing-at-point
+          71   0%                - #<byte-code-function 688>
+          71   0%                 - forward-thing
+          71   0%                  - forward-word
+          71   0%                   - internal--syntax-propertize
+          71   0%                    - syntax-propertize
+          66   0%                     - seed7-mode-syntax-propertize
+           1   0%                      - #<byte-code-function 0CE>
+           1   0%                         set-match-data
+           2   0%                - #<byte-code-function 18B>
+           2   0%                 - forward-thing
+           1   0%                    forward-word
+           1   0%                    format
+           6   0%             - seed7-line-at-endof-parenthesized-statement
+           5   0%              - seed7-line-code-ends-with
+           5   0%               - seed7-re-search-backward
+           5   0%                - run-with-timer
+           5   0%                 - run-at-time
+           3   0%                  - timer-activate
+           3   0%                   - timer--activate
+           3   0%                      timer--time-less-p
+           2   0%                  - timer-set-time
+           2   0%                     timer--time-setter
+           1   0%              - backward-sexp
+           1   0%               - forward-sexp
+           1   0%                - seed7--forward-sexp-function
+           1   0%                 - seed7--at-set-definition-end-line-p
+           1   0%                  - seed7-line-code-ends-with
+           1   0%                   - seed7-re-search-backward
+           1   0%                    - run-with-timer
+           1   0%                     - run-at-time
+           1   0%                      - timer-activate
+           1   0%                       - timer--activate
+           1   0%                          timer--time-less-p
+           2   0%             - seed7-line-at-endof-array-definition-block
+           2   0%              - seed7-line-code-ends-with
+           2   0%               - seed7-re-search-backward
+           2   0%                - run-with-timer
+           2   0%                 - run-at-time
+           2   0%                  - timer-activate
+           2   0%                   - timer--activate
+           2   0%                      timer--time-less-p
+           2   0%             - seed7-line-starts-with
+           2   0%              - seed7-move-to-line
+           2   0%               - seed7-to-previous-non-empty-line
+           2   0%                - seed7-inside-comment-p
+           2   0%                 - syntax-ppss
+           2   0%                    parse-partial-sexp
+           2   0%             - seed7-line-inside-nested-parens-pairs-column
+           2   0%              - seed7-line-inside-nested-parens-pairs
+           2   0%               - seed7-line-inside-parens-pair
+           2   0%                - seed7-re-search-backward
+           2   0%                 - run-with-timer
+           2   0%                  - run-at-time
+           2   0%                   - timer-activate
+           2   0%                    - timer--activate
+           2   0%                       timer--time-less-p
+           2   0%             - seed7-line-inside-logic-check-expression
+           2   0%              - seed7--current-line-nth-word
+           2   0%               - thing-at-point
+           2   0%                - bounds-of-thing-at-point
+           1   0%                 - #<byte-code-function 048>
+           1   0%                  - forward-thing
+           1   0%                     intern-soft
+           1   0%                   re-search-forward
+           1   0%             - seed7-line-after-short-func-end
+           1   0%              - seed7-move-to-line
+           1   0%               - seed7-to-previous-non-empty-line
+           1   0%                - seed7-inside-comment-p
+           1   0%                 - syntax-ppss
+           1   0%                    parse-partial-sexp
+        7953   3%   Automatic GC

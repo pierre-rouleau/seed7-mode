@@ -1,0 +1,603 @@
+     32,522,819  99% - ...
+     32,522,819  99%  - call-interactively@ido-cr+-record-current-command
+     32,522,819  99%   - #<primitive-function call-interactively>
+     32,522,819  99%    - funcall-interactively
+     32,522,819  99%     - smex
+     32,522,819  99%      - smex-read-and-run
+     32,522,819  99%       - execute-extended-command
+     32,522,819  99%        - command-execute
+     32,522,819  99%         - call-interactively
+     32,522,819  99%          - apply
+     32,522,819  99%           - call-interactively@ido-cr+-record-current-command
+     32,522,819  99%            - #<primitive-function call-interactively>
+     32,522,819  99%             - funcall-interactively
+     32,522,819  99%              - pel-profile-all
+     32,522,819  99%               - pel-profile-indent
+     32,522,819  99%                - pel-profile-indentation-test-of
+     30,953,287  94%                 - call-interactively
+     30,953,287  94%                  - apply
+     30,953,287  94%                   - call-interactively@ido-cr+-record-current-command
+     30,953,287  94%                    - #<primitive-function call-interactively>
+     30,953,287  94%                     - funcall-interactively
+     30,953,271  94%                      - seed7-complete-statement-or-indent
+     30,953,271  94%                       - seed7-indent-region
+     30,953,271  94%                        - seed7--indent-one-line
+     30,953,271  94%                         - seed7-calc-indent
+      6,863,860  20%                          - seed7-line-is-defun-end
+      2,713,109   8%                           - seed7-beg-of-defun
+      1,100,884   3%                            - seed7-re-search-backward-closest
+      1,100,884   3%                             - seed7-re-search-backward
+        764,020   2%                                re-search-backward
+        336,864   1%                              - run-with-timer
+        336,864   1%                               - run-at-time
+        164,256   0%                                - timer-activate
+        164,256   0%                                 - timer--activate
+        164,256   0%                                    timer--time-less-p
+        105,792   0%                                  timer-relative-time
+         66,816   0%                                - timer-set-time
+         66,816   0%                                   timer--time-setter
+        745,235   2%                            - seed7-re-search-backward
+        572,931   1%                               re-search-backward
+        172,304   0%                             - run-with-timer
+        172,304   0%                              - run-at-time
+         84,016   0%                               - timer-activate
+         84,016   0%                                - timer--activate
+         84,016   0%                                   timer--time-less-p
+         54,112   0%                                 timer-relative-time
+         34,176   0%                               - timer-set-time
+         34,176   0%                                  timer--time-setter
+      2,593,700   7%                           - seed7-line-starts-with-any
+      2,593,700   7%                              seed7-line-starts-with
+      1,096,687   3%                             looking-back
+        270,072   0%                           - seed7--current-line-nth-word
+        270,072   0%                            - thing-at-point
+        270,072   0%                             - bounds-of-thing-at-point
+        188,232   0%                              - #<byte-code-function F154>
+        188,232   0%                               - forward-thing
+        188,232   0%                                  format
+         81,840   0%                              - #<byte-code-function 573>
+         81,840   0%                               - forward-thing
+         81,840   0%                                  format
+        183,288   0%                           - seed7-move-to-line
+        183,288   0%                              seed7-to-previous-non-empty-line
+          7,004   0%                           - seed7--safe-current-line-defun-start-indent
+          7,004   0%                            - seed7-to-block-backward
+          7,004   0%                             - seed7-re-search-backward
+          4,100   0%                                re-search-backward
+          2,904   0%                              - run-with-timer
+          2,904   0%                               - run-at-time
+          1,416   0%                                - timer-activate
+          1,416   0%                                 - timer--activate
+          1,416   0%                                    timer--time-less-p
+            912   0%                                  timer-relative-time
+            576   0%                                - timer-set-time
+            576   0%                                   timer--time-setter
+      5,406,208  16%                          - seed7-line-inside-parens-pair-column
+      5,406,208  16%                           - seed7-line-inside-parens-pair
+      5,242,240  16%                            - seed7-re-search-backward
+      4,430,536  13%                             - run-with-timer
+      4,430,536  13%                              - run-at-time
+      2,160,344   6%                               - timer-activate
+      2,160,344   6%                                - timer--activate
+      2,160,344   6%                                   timer--time-less-p
+      1,391,408   4%                                 timer-relative-time
+        878,784   2%                               - timer-set-time
+        878,784   2%                                  timer--time-setter
+        539,328   1%                             - seed7-inside-comment-p
+        539,328   1%                              - syntax-ppss
+        538,684   1%                                 #<byte-code-function C5D>
+        272,376   0%                               re-search-backward
+        163,968   0%                            - forward-sexp
+        163,968   0%                               seed7--forward-sexp-function
+      2,645,815   8%                          - seed7-line-inside-a-block-cached
+      2,645,815   8%                           - seed7-line-inside-a-block
+      1,918,200   5%                            - seed7-re-search-backward
+      1,523,632   4%                             - run-with-timer
+      1,523,632   4%                              - run-at-time
+        742,928   2%                               - timer-activate
+        742,928   2%                                - timer--activate
+        742,928   2%                                   timer--time-less-p
+        478,496   1%                                 timer-relative-time
+        302,208   0%                               - timer-set-time
+        302,208   0%                                  timer--time-setter
+        394,568   1%                               re-search-backward
+        382,478   1%                            - seed7--safe-enclosing-block-bounds
+        382,478   1%                             - seed7--block-end-pos-for
+        361,870   1%                              - seed7-to-block-forward
+        128,198   0%                               - seed7-re-search-forward
+         29,794   0%                                - seed7-inside-comment-p
+         29,794   0%                                 - syntax-ppss
+         29,794   0%                                  - syntax-propertize
+         29,794   0%                                     seed7-mode-syntax-propertize
+        121,064   0%                               - seed7-end-of-defun
+         70,449   0%                                - seed7-top-block-name
+         58,624   0%                                 - seed7--to-top
+         43,136   0%                                  - seed7-re-search-backward
+         38,720   0%                                   - run-with-timer
+         38,720   0%                                    - run-at-time
+         18,880   0%                                     - timer-activate
+         18,880   0%                                      - timer--activate
+         18,880   0%                                         timer--time-less-p
+         12,160   0%                                       timer-relative-time
+          7,680   0%                                     - timer-set-time
+          7,680   0%                                        timer--time-setter
+          4,416   0%                                     re-search-backward
+         15,488   0%                                  - run-with-timer
+         15,488   0%                                   - run-at-time
+          7,552   0%                                    - timer-activate
+          7,552   0%                                     - timer--activate
+          7,552   0%                                        timer--time-less-p
+          4,864   0%                                      timer-relative-time
+          3,072   0%                                    - timer-set-time
+          3,072   0%                                       timer--time-setter
+         11,825   0%                                 - seed7--block-name
+         11,825   0%                                    seed7-re-search-forward
+         24,635   0%                                - seed7-re-search-forward
+          8,353   0%                                 - seed7-inside-comment-p
+          8,353   0%                                  - syntax-ppss
+          8,353   0%                                   - syntax-propertize
+          8,353   0%                                      seed7-mode-syntax-propertize
+         15,488   0%                                - seed7-re-search-backward
+         15,488   0%                                 - run-with-timer
+         15,488   0%                                  - run-at-time
+          7,552   0%                                   - timer-activate
+          7,552   0%                                    - timer--activate
+          7,552   0%                                       timer--time-less-p
+          4,864   0%                                     timer-relative-time
+          3,072   0%                                   - timer-set-time
+          3,072   0%                                      timer--time-setter
+         92,160   0%                                 seed7-inside-line-trailing-whitespace-before-line-end-comment-p
+         20,448   0%                               - seed7--current-line-nth-word
+         20,448   0%                                - thing-at-point
+         10,232   0%                                 - bounds-of-thing-at-point
+          8,184   0%                                  - #<byte-code-function 5D8>
+          8,184   0%                                   - forward-thing
+          8,184   0%                                      format
+          2,048   0%                                    re-search-forward
+         20,608   0%                              - seed7--line-ends-a-statement-p
+         12,416   0%                                 looking-at
+          8,192   0%                               - forward-sexp
+          8,192   0%                                  seed7--forward-sexp-function
+         92,288   0%                              replace-regexp-in-string
+         77,824   0%                              seed7--indent-offset-for
+         35,897   0%                            - seed7-calc-indent
+         12,280   0%                             - seed7-line-is-defun-end
+          8,184   0%                              - seed7--current-line-nth-word
+          8,184   0%                               - thing-at-point
+          8,184   0%                                - bounds-of-thing-at-point
+          8,184   0%                                 - #<byte-code-function BC9>
+          8,184   0%                                  - forward-thing
+          8,184   0%                                     format
+          3,072   0%                                looking-back
+          1,024   0%                              - seed7-move-to-line
+          1,024   0%                                 seed7-to-previous-non-empty-line
+          3,248   0%                             - seed7-line-inside-a-block-cached
+          3,248   0%                              - seed7-line-inside-a-block
+          3,248   0%                               - seed7-re-search-backward
+          1,936   0%                                - run-with-timer
+          1,936   0%                                 - run-at-time
+            944   0%                                  - timer-activate
+            944   0%                                   - timer--activate
+            944   0%                                      timer--time-less-p
+            608   0%                                    timer-relative-time
+            384   0%                                  - timer-set-time
+            384   0%                                     timer--time-setter
+          1,312   0%                                  re-search-backward
+          2,960   0%                             - seed7-line-at-endof-array-definition-block
+          2,960   0%                              - seed7-line-code-ends-with
+          2,960   0%                               - seed7-re-search-backward
+          1,936   0%                                - run-with-timer
+          1,936   0%                                 - run-at-time
+            944   0%                                  - timer-activate
+            944   0%                                   - timer--activate
+            944   0%                                      timer--time-less-p
+            608   0%                                    timer-relative-time
+            384   0%                                  - timer-set-time
+            384   0%                                     timer--time-setter
+          1,024   0%                                  re-search-backward
+          2,329   0%                             - seed7-line-inside-set-definition-block
+          2,329   0%                              - seed7-re-search-backward
+          1,361   0%                                 re-search-backward
+            968   0%                               - run-with-timer
+            968   0%                                - run-at-time
+            472   0%                                 - timer-activate
+            472   0%                                  - timer--activate
+            472   0%                                     timer--time-less-p
+            304   0%                                   timer-relative-time
+            192   0%                                 - timer-set-time
+            192   0%                                    timer--time-setter
+          2,048   0%                               seed7-line-after-short-func-end
+          1,992   0%                             - seed7-line-inside-array-definition-block
+          1,992   0%                              - seed7-re-search-backward
+          1,024   0%                                 re-search-backward
+            968   0%                               - run-with-timer
+            968   0%                                - run-at-time
+            472   0%                                 - timer-activate
+            472   0%                                  - timer--activate
+            472   0%                                     timer--time-less-p
+            304   0%                                   timer-relative-time
+            192   0%                                 - timer-set-time
+            192   0%                                    timer--time-setter
+          1,992   0%                             - seed7-line-inside-assign-statement-continuation
+          1,992   0%                              - seed7-assign-op-pos
+          1,992   0%                               - seed7-re-search-backward
+          1,024   0%                                  re-search-backward
+            968   0%                                - run-with-timer
+            968   0%                                 - run-at-time
+            472   0%                                  - timer-activate
+            472   0%                                   - timer--activate
+            472   0%                                      timer--time-less-p
+            304   0%                                    timer-relative-time
+            192   0%                                  - timer-set-time
+            192   0%                                     timer--time-setter
+          1,992   0%                             - seed7-line-inside-parens-pair-column
+          1,992   0%                              - seed7-line-inside-parens-pair
+          1,992   0%                               - seed7-re-search-backward
+          1,024   0%                                  re-search-backward
+            968   0%                                - run-with-timer
+            968   0%                                 - run-at-time
+            472   0%                                  - timer-activate
+            472   0%                                   - timer--activate
+            472   0%                                      timer--time-less-p
+            304   0%                                    timer-relative-time
+            192   0%                                  - timer-set-time
+            192   0%                                     timer--time-setter
+          1,936   0%                             - seed7-line-at-endof-set-definition-block
+          1,936   0%                              - seed7-line-code-ends-with
+          1,936   0%                               - seed7-re-search-backward
+          1,936   0%                                - run-with-timer
+          1,936   0%                                 - run-at-time
+            944   0%                                  - timer-activate
+            944   0%                                   - timer--activate
+            944   0%                                      timer--time-less-p
+            608   0%                                    timer-relative-time
+            384   0%                                  - timer-set-time
+            384   0%                                     timer--time-setter
+          1,024   0%                             - seed7-line-isa-string
+          1,024   0%                                seed7-line-starts-with
+          1,024   0%                               seed7-line-starts-with
+          1,024   0%                               seed7-line-after-func-return-logic-operator-column
+          1,024   0%                             - seed7-line-starts-with-open-paren-after-logic-operator
+          1,024   0%                                seed7-line-starts-with
+          1,024   0%                               seed7-line-indent-step
+      2,457,217   7%                          - seed7-comment-column
+      1,913,433   5%                           - seed7-calc-indent
+        272,544   0%                            - seed7-line-inside-a-block-cached
+        272,544   0%                             - seed7-line-inside-a-block
+        269,472   0%                              - seed7-re-search-backward
+        178,480   0%                                 re-search-backward
+         90,992   0%                               - run-with-timer
+         90,992   0%                                - run-at-time
+         44,368   0%                                 - timer-activate
+         44,368   0%                                  - timer--activate
+         44,368   0%                                     timer--time-less-p
+         28,576   0%                                   timer-relative-time
+         18,048   0%                                 - timer-set-time
+         18,048   0%                                    timer--time-setter
+          1,024   0%                                replace-regexp-in-string
+          1,024   0%                              - seed7--safe-enclosing-block-bounds
+          1,024   0%                               - seed7--block-end-pos-for
+          1,024   0%                                - seed7-to-block-forward
+          1,024   0%                                   seed7-re-search-forward
+          1,024   0%                                seed7--indent-offset-for
+        266,128   0%                            - seed7-line-is-defun-end
+        230,376   0%                               looking-back
+         32,736   0%                             - seed7--current-line-nth-word
+         32,736   0%                              - thing-at-point
+         32,736   0%                               - bounds-of-thing-at-point
+         24,552   0%                                - #<byte-code-function 065>
+         24,552   0%                                 - forward-thing
+         24,552   0%                                    format
+          8,184   0%                                - #<byte-code-function 85B>
+          8,184   0%                                 - forward-thing
+          8,184   0%                                    format
+          1,992   0%                             - seed7--safe-current-line-defun-start-indent
+          1,992   0%                              - seed7-to-block-backward
+          1,992   0%                               - seed7-re-search-backward
+          1,024   0%                                  re-search-backward
+            968   0%                                - run-with-timer
+            968   0%                                 - run-at-time
+            472   0%                                  - timer-activate
+            472   0%                                   - timer--activate
+            472   0%                                      timer--time-less-p
+            304   0%                                    timer-relative-time
+            192   0%                                  - timer-set-time
+            192   0%                                     timer--time-setter
+          1,024   0%                             - seed7-line-starts-with-any
+          1,024   0%                                seed7-line-starts-with
+        239,040   0%                            - seed7-line-inside-parens-pair-column
+        239,040   0%                             - seed7-line-inside-parens-pair
+        236,992   0%                              - seed7-re-search-backward
+        162,624   0%                               - run-with-timer
+        162,624   0%                                - run-at-time
+         79,296   0%                                 - timer-activate
+         79,296   0%                                  - timer--activate
+         79,296   0%                                     timer--time-less-p
+         51,072   0%                                   timer-relative-time
+         32,256   0%                                 - timer-set-time
+         32,256   0%                                    timer--time-setter
+         74,368   0%                                 re-search-backward
+          2,048   0%                              - forward-sexp
+          2,048   0%                                 seed7--forward-sexp-function
+        174,648   0%                            - seed7-line-inside-array-definition-block
+        174,648   0%                             - seed7-re-search-backward
+         91,960   0%                              - run-with-timer
+         91,960   0%                               - run-at-time
+         44,840   0%                                - timer-activate
+         44,840   0%                                 - timer--activate
+         44,840   0%                                    timer--time-less-p
+         28,880   0%                                  timer-relative-time
+         18,240   0%                                - timer-set-time
+         18,240   0%                                   timer--time-setter
+         82,688   0%                                re-search-backward
+        174,648   0%                            - seed7-line-inside-set-definition-block
+        174,648   0%                             - seed7-re-search-backward
+         91,960   0%                              - run-with-timer
+         91,960   0%                               - run-at-time
+         44,840   0%                                - timer-activate
+         44,840   0%                                 - timer--activate
+         44,840   0%                                    timer--time-less-p
+         28,880   0%                                  timer-relative-time
+         18,240   0%                                - timer-set-time
+         18,240   0%                                   timer--time-setter
+         82,688   0%                                re-search-backward
+        166,200   0%                            - seed7-line-inside-assign-statement-continuation
+        166,200   0%                             - seed7-assign-op-pos
+        166,200   0%                              - seed7-re-search-backward
+         91,960   0%                               - run-with-timer
+         91,960   0%                                - run-at-time
+         44,840   0%                                 - timer-activate
+         44,840   0%                                  - timer--activate
+         44,840   0%                                     timer--time-less-p
+         28,880   0%                                   timer-relative-time
+         18,240   0%                                 - timer-set-time
+         18,240   0%                                    timer--time-setter
+         74,240   0%                                 re-search-backward
+        134,528   0%                            - seed7-line-starts-with-open-paren-after-logic-operator
+         67,584   0%                               seed7-line-starts-with
+        125,840   0%                            - seed7-line-at-endof-array-definition-block
+        125,840   0%                             - seed7-line-code-ends-with
+        125,840   0%                              - seed7-re-search-backward
+        125,840   0%                               - run-with-timer
+        125,840   0%                                - run-at-time
+         61,360   0%                                 - timer-activate
+         61,360   0%                                  - timer--activate
+         61,360   0%                                     timer--time-less-p
+         39,520   0%                                   timer-relative-time
+         24,960   0%                                 - timer-set-time
+         24,960   0%                                    timer--time-setter
+        125,840   0%                            - seed7-line-at-endof-set-definition-block
+        125,840   0%                             - seed7-line-code-ends-with
+        125,840   0%                              - seed7-re-search-backward
+        125,840   0%                               - run-with-timer
+        125,840   0%                                - run-at-time
+         61,360   0%                                 - timer-activate
+         61,360   0%                                  - timer--activate
+         61,360   0%                                     timer--time-less-p
+         39,520   0%                                   timer-relative-time
+         24,960   0%                                 - timer-set-time
+         24,960   0%                                    timer--time-setter
+         74,240   0%                              seed7-line-starts-with
+         68,608   0%                            - seed7-line-isa-string
+         68,608   0%                               seed7-line-starts-with
+         67,584   0%                              seed7-line-after-func-return-logic-operator-column
+          8,184   0%                            - error
+          8,184   0%                               format-message
+          3,929   0%                            - seed7--indent-search-boundary
+          1,881   0%                             - seed7--indent-search-boundary-uncached
+          1,881   0%                              - syntax-ppss
+          1,250   0%                                 syntax-table
+            631   0%                                 #<byte-code-function 6E8>
+          3,448   0%                            - seed7-line-inside-argument-list-section
+          2,424   0%                             - seed7-re-search-backward
+          1,456   0%                                re-search-backward
+            968   0%                              - run-with-timer
+            968   0%                               - run-at-time
+            472   0%                                - timer-activate
+            472   0%                                 - timer--activate
+            472   0%                                    timer--time-less-p
+            304   0%                                  timer-relative-time
+            192   0%                                - timer-set-time
+            192   0%                                   timer--time-setter
+          1,024   0%                             - seed7-line-is-procfunc-beg-of-decl
+          1,024   0%                                seed7-line-starts-with
+          2,048   0%                              seed7-line-after-short-func-end
+          1,992   0%                            - seed7-line-inside-logic-check-expression
+          1,992   0%                             - seed7-to-previous-line-starts-with
+          1,992   0%                              - seed7-re-search-backward
+          1,024   0%                                 re-search-backward
+            968   0%                               - run-with-timer
+            968   0%                                - run-at-time
+            472   0%                                 - timer-activate
+            472   0%                                  - timer--activate
+            472   0%                                     timer--time-less-p
+            304   0%                                   timer-relative-time
+            192   0%                                 - timer-set-time
+            192   0%                                    timer--time-setter
+          1,992   0%                            - seed7-line-inside-until-logic-expression
+          1,992   0%                             - seed7-re-search-backward
+          1,024   0%                                re-search-backward
+            968   0%                              - run-with-timer
+            968   0%                               - run-at-time
+            472   0%                                - timer-activate
+            472   0%                                 - timer--activate
+            472   0%                                    timer--time-less-p
+            304   0%                                  timer-relative-time
+            192   0%                                - timer-set-time
+            192   0%                                   timer--time-setter
+          1,992   0%                            - seed7-line-inside-func-return-statement
+          1,992   0%                             - seed7-re-search-backward
+          1,024   0%                                re-search-backward
+            968   0%                              - run-with-timer
+            968   0%                               - run-at-time
+            472   0%                                - timer-activate
+            472   0%                                 - timer--activate
+            472   0%                                    timer--time-less-p
+            304   0%                                  timer-relative-time
+            192   0%                                - timer-set-time
+            192   0%                                   timer--time-setter
+        343,416   1%                             seed7-line-starts-with
+        133,808   0%                           - seed7-line-code-ends-with
+        132,784   0%                            - seed7-re-search-backward
+        129,712   0%                             - run-with-timer
+        129,712   0%                              - run-at-time
+         63,248   0%                               - timer-activate
+         63,248   0%                                - timer--activate
+         63,248   0%                                   timer--time-less-p
+         40,736   0%                                 timer-relative-time
+         25,728   0%                               - timer-set-time
+         25,728   0%                                  timer--time-setter
+          3,072   0%                               re-search-backward
+          1,024   0%                            - seed7-move-to-line
+          1,024   0%                               seed7-to-previous-non-empty-line
+         66,560   0%                             looking-at
+      1,897,209   5%                          - seed7-line-inside-array-definition-block
+      1,897,209   5%                           - seed7-re-search-backward
+      1,519,760   4%                            - run-with-timer
+      1,519,760   4%                             - run-at-time
+        741,040   2%                              - timer-activate
+        741,040   2%                               - timer--activate
+        741,040   2%                                  timer--time-less-p
+        477,280   1%                                timer-relative-time
+        301,440   0%                              - timer-set-time
+        301,440   0%                                 timer--time-setter
+        377,449   1%                              re-search-backward
+      1,878,784   5%                          - seed7-line-inside-set-definition-block
+      1,878,784   5%                           - seed7-re-search-backward
+      1,519,760   4%                            - run-with-timer
+      1,519,760   4%                             - run-at-time
+        741,040   2%                              - timer-activate
+        741,040   2%                               - timer--activate
+        741,040   2%                                  timer--time-less-p
+        477,280   1%                                timer-relative-time
+        301,440   0%                              - timer-set-time
+        301,440   0%                                 timer--time-setter
+        359,024   1%                              re-search-backward
+      1,858,112   5%                          - seed7-line-inside-assign-statement-continuation
+      1,858,112   5%                           - seed7-assign-op-pos
+      1,858,112   5%                            - seed7-re-search-backward
+      1,518,792   4%                             - run-with-timer
+      1,518,792   4%                              - run-at-time
+        740,568   2%                               - timer-activate
+        740,568   2%                                - timer--activate
+        740,568   2%                                   timer--time-less-p
+        476,976   1%                                 timer-relative-time
+        301,248   0%                               - timer-set-time
+        301,248   0%                                  timer--time-setter
+        339,320   1%                               re-search-backward
+      1,776,560   5%                          - seed7-line-at-endof-array-definition-block
+      1,776,560   5%                           - seed7-line-code-ends-with
+      1,776,560   5%                            - seed7-re-search-backward
+      1,594,296   4%                             - run-with-timer
+      1,594,296   4%                              - run-at-time
+        777,384   2%                               - timer-activate
+        777,384   2%                                - timer--activate
+        777,384   2%                                   timer--time-less-p
+        500,688   1%                                 timer-relative-time
+        316,224   0%                               - timer-set-time
+        316,224   0%                                  timer--time-setter
+        182,264   0%                               re-search-backward
+      1,703,753   5%                          - seed7--current-line-nth-word
+      1,611,913   4%                           - thing-at-point
+      1,610,897   4%                            - bounds-of-thing-at-point
+      1,359,153   4%                             - #<byte-code-function 10C>
+      1,359,153   4%                              - forward-thing
+      1,293,681   3%                               - forward-word
+      1,293,681   3%                                - internal--syntax-propertize
+      1,293,681   3%                                 - syntax-propertize
+      1,211,025   3%                                    seed7-mode-syntax-propertize
+         82,656   0%                                  - #<byte-code-function 7D2>
+         82,656   0%                                   - syntax-propertize-wholelines
+         82,656   0%                                      syntax--lbp
+         65,472   0%                                 format
+        163,680   0%                             - #<byte-code-function 8E0>
+        163,680   0%                              - forward-thing
+        163,680   0%                                 format
+         88,064   0%                               re-search-forward
+      1,594,333   4%                          - seed7-line-at-endof-set-definition-block
+      1,594,333   4%                           - seed7-line-code-ends-with
+      1,594,333   4%                            - seed7-re-search-backward
+      1,594,280   4%                             - run-with-timer
+      1,594,280   4%                              - run-at-time
+        777,384   2%                               - timer-activate
+        777,384   2%                                - timer--activate
+        777,384   2%                                   timer--time-less-p
+        500,672   1%                                 timer-relative-time
+        316,224   0%                               - timer-set-time
+        316,224   0%                                  timer--time-setter
+             53   0%                               re-search-backward
+        431,746   1%                            seed7-line-after-short-func-end
+        380,880   1%                          - seed7-line-isa-string
+        380,880   1%                             seed7-line-starts-with
+        365,792   1%                            seed7-line-starts-with
+        307,659   0%                          - seed7-line-inside-argument-list-section
+        189,208   0%                           - seed7-re-search-backward
+        104,024   0%                              re-search-backward
+         85,184   0%                            - run-with-timer
+         85,184   0%                             - run-at-time
+         41,536   0%                              - timer-activate
+         41,536   0%                               - timer--activate
+         41,536   0%                                  timer--time-less-p
+         26,752   0%                                timer-relative-time
+         16,896   0%                              - timer-set-time
+         16,896   0%                                 timer--time-setter
+        116,403   0%                           - seed7-line-is-procfunc-beg-of-decl
+        116,403   0%                              seed7-line-starts-with
+          2,048   0%                           - forward-sexp
+          2,048   0%                              seed7--forward-sexp-function
+        284,152   0%                          - seed7-line-after-func-return-logic-operator-column
+          2,048   0%                           - seed7-move-to-line
+          2,048   0%                              seed7-to-previous-non-empty-line
+        198,632   0%                          - seed7-line-starts-with-open-paren-after-logic-operator
+        198,632   0%                             seed7-line-starts-with
+        193,343   0%                            seed7--indent-search-boundary
+        177,416   0%                          - seed7-line-inside-until-logic-expression
+        177,416   0%                           - seed7-re-search-backward
+         91,264   0%                              re-search-backward
+         86,152   0%                            - run-with-timer
+         86,152   0%                             - run-at-time
+         42,008   0%                              - timer-activate
+         42,008   0%                               - timer--activate
+         42,008   0%                                  timer--time-less-p
+         27,056   0%                                timer-relative-time
+         17,088   0%                              - timer-set-time
+         17,088   0%                                 timer--time-setter
+        177,416   0%                          - seed7-line-inside-func-return-statement
+        177,416   0%                           - seed7-re-search-backward
+         91,264   0%                              re-search-backward
+         86,152   0%                            - run-with-timer
+         86,152   0%                             - run-at-time
+         42,008   0%                              - timer-activate
+         42,008   0%                               - timer--activate
+         42,008   0%                                  timer--time-less-p
+         27,056   0%                                timer-relative-time
+         17,088   0%                              - timer-set-time
+         17,088   0%                                 timer--time-setter
+        177,288   0%                          - seed7-line-inside-logic-check-expression
+        177,288   0%                           - seed7-to-previous-line-starts-with
+        177,288   0%                            - seed7-re-search-backward
+         91,136   0%                               re-search-backward
+         86,152   0%                             - run-with-timer
+         86,152   0%                              - run-at-time
+         42,008   0%                               - timer-activate
+         42,008   0%                                - timer--activate
+         42,008   0%                                   timer--time-less-p
+         27,056   0%                                 timer-relative-time
+         17,088   0%                               - timer-set-time
+         17,088   0%                                  timer--time-setter
+        174,080   0%                            seed7-line-indent-step
+          3,016   0%                          - seed7-line-ends-with
+          1,992   0%                           - seed7-re-search-backward
+          1,024   0%                              re-search-backward
+            968   0%                            - run-with-timer
+            968   0%                             - run-at-time
+            472   0%                              - timer-activate
+            472   0%                               - timer--activate
+            472   0%                                  timer--time-less-p
+            304   0%                                timer-relative-time
+            192   0%                              - timer-set-time
+            192   0%                                 timer--time-setter
+          1,024   0%                           - seed7-move-to-line
+          1,024   0%                              seed7-to-previous-non-empty-line
+      1,569,532   4%                   profiler-stop
+        169,264   0%   Automatic GC
