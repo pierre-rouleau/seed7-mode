@@ -1,7 +1,7 @@
 ;;; seed7-test-indent-01.el --- ERT tests for Seed7 indentation regressions  -*- lexical-binding: t; -*-
 
 ;; Author    : Pierre Rouleau <prouleau001@gmail.com>
-;; Time-stamp: <2026-07-20 17:24:13 EDT, updated by Pierre Rouleau>
+;; Time-stamp: <2026-07-21 18:59:40 EDT, updated by Pierre Rouleau>
 
 ;; This file is part of the SEED7-MODE package.
 ;; This file is not part of GNU Emacs.
@@ -336,6 +336,150 @@
              (buffer-string)
              seed7-test-indent--string-action-siblings-correct))))
 
+;; ---------------------------------------------------------------------------
+;; Cache test
+
+
+(defconst seed7-indent/begin-block/no-indent
+  "\
+(********************************************************************)
+(********************************************************************)
+
+
+$ include \"seed7_05.s7i\";
+
+#                          Where declared:
+const integer: A is 11;  # Global
+var   integer: B is 12;  # Global
+# var          V                  XX YY ZZ
+
+const proc: AA (in integer: C, in var integer: D, ref integer: E, inout integer: F,
+in integer: K, in var integer: L, ref integer: M, inout integer: N) is func
+local
+var   integer: depth is 0;
+const proc: BB (in integer: G, in var integer: H, ref integer: I, inout integer: J,
+in integer: K, in var integer: L, ref integer: M, inout integer: N) is func
+begin
+if A <> 11 then writeln(\"In BB: A: \" <& A <& \", expected: 11\"); incr(errCnt); end if;
+if B <> 51 then writeln(\"In BB: B: \" <& B <& \", expected: 51\"); incr(errCnt); end if;
+
+if var_64 <> 64 then writeln(\"In BB: var_64: \" <& var_64 <& \", expected: 64\"); incr(errCnt); end if;
+if var_68 <> 68 then writeln(\"In BB: var_68: \" <& var_68 <& \", expected: 68\"); incr(errCnt); end if;
+if depth = 0 then
+incr(depth);
+BB(G, H, I, J, K, L, M, N);
+end if;
+B := 53;
+if A <> 11 then writeln(\"In BB: A: \" <& A <& \", expected: 11\"); incr(errCnt); end if;
+if B <> 53 then writeln(\"In BB: B: \" <& B <& \", expected: 53\"); incr(errCnt); end if;
+if var_64 <> 84 then writeln(\"In BB: var_64: \" <& var_64 <& \", expected: 84\"); incr(errCnt); end if;
+if var_68 <> 88 then writeln(\"In BB: var_84: \" <& var_68 <& \", expected: 88\"); incr(errCnt); end if;
+end func;
+begin
+if A <> 11 then writeln(\"In AA before BB: A: \" <& A <& \", expected: 11\"); incr(errCnt); end if;
+if B <> 51 then writeln(\"In AA before BB: B: \" <& B <& \", expected: 51\"); incr(errCnt); end if;
+BB(61, B, 63, var_64, 65, D, 67, var_68);
+if A <> 11 then writeln(\"In AA after BB: A: \" <& A <& \", expected: 11\"); incr(errCnt); end if;
+if var_78 <> 78 then writeln(\"In AA: var_78: \" <& var_78 <& \", expected: 78\"); incr(errCnt); end if;
+D := 92;
+N := 98;
+if var_74 <> 94 then writeln(\"In AA: var_74: \" <& var_74 <& \", expected: 94\"); incr(errCnt); end if;
+if var_78 <> 98 then writeln(\"In AA: var_78: \" <& var_78 <& \", expected: 98\"); incr(errCnt); end if;
+end func;
+")
+
+(defconst seed7-indent/begin-block/correct-indent
+  "\
+(********************************************************************)
+(********************************************************************)
+
+
+$ include \"seed7_05.s7i\";
+
+#                          Where declared:
+const integer: A is 11;  # Global
+var   integer: B is 12;  # Global
+# var          V                  XX YY ZZ
+
+const proc: AA (in integer: C, in var integer: D, ref integer: E, inout integer: F,
+                in integer: K, in var integer: L, ref integer: M, inout integer: N) is func
+  local
+    var   integer: depth is 0;
+    const proc: BB (in integer: G, in var integer: H, ref integer: I, inout integer: J,
+                    in integer: K, in var integer: L, ref integer: M, inout integer: N) is func
+      begin
+        if A <> 11 then writeln(\"In BB: A: \" <& A <& \", expected: 11\"); incr(errCnt); end if;
+        if B <> 51 then writeln(\"In BB: B: \" <& B <& \", expected: 51\"); incr(errCnt); end if;
+
+        if var_64 <> 64 then writeln(\"In BB: var_64: \" <& var_64 <& \", expected: 64\"); incr(errCnt); end if;
+        if var_68 <> 68 then writeln(\"In BB: var_68: \" <& var_68 <& \", expected: 68\"); incr(errCnt); end if;
+        if depth = 0 then
+          incr(depth);
+          BB(G, H, I, J, K, L, M, N);
+        end if;
+        B := 53;
+        if A <> 11 then writeln(\"In BB: A: \" <& A <& \", expected: 11\"); incr(errCnt); end if;
+        if B <> 53 then writeln(\"In BB: B: \" <& B <& \", expected: 53\"); incr(errCnt); end if;
+        if var_64 <> 84 then writeln(\"In BB: var_64: \" <& var_64 <& \", expected: 84\"); incr(errCnt); end if;
+        if var_68 <> 88 then writeln(\"In BB: var_84: \" <& var_68 <& \", expected: 88\"); incr(errCnt); end if;
+      end func;
+  begin
+    if A <> 11 then writeln(\"In AA before BB: A: \" <& A <& \", expected: 11\"); incr(errCnt); end if;
+    if B <> 51 then writeln(\"In AA before BB: B: \" <& B <& \", expected: 51\"); incr(errCnt); end if;
+    BB(61, B, 63, var_64, 65, D, 67, var_68);
+    if A <> 11 then writeln(\"In AA after BB: A: \" <& A <& \", expected: 11\"); incr(errCnt); end if;
+    if var_78 <> 78 then writeln(\"In AA: var_78: \" <& var_78 <& \", expected: 78\"); incr(errCnt); end if;
+    D := 92;
+    N := 98;
+    if var_74 <> 94 then writeln(\"In AA: var_74: \" <& var_74 <& \", expected: 94\"); incr(errCnt); end if;
+    if var_78 <> 98 then writeln(\"In AA: var_78: \" <& var_78 <& \", expected: 98\"); incr(errCnt); end if;
+  end func;
+")
+
+(ert-deftest seed7-indent/begin-block/begin-block-is-indented ()
+  "A block following begin should be indented following block indent."
+  (ert-skip "failing test: cache failing on single if statement line after begin")
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert seed7-indent/begin-block/no-indent)
+    (seed7-mode)
+    (indent-region (point-min) (point-max))
+    ;; The indentation should all be correct
+    (should (= (seed7-test-indent--line-indentation 12) 0))
+    (should (= (seed7-test-indent--line-indentation 13) 16))
+    (should (= (seed7-test-indent--line-indentation 14) 2))
+    (should (= (seed7-test-indent--line-indentation 15) 4))
+    (should (= (seed7-test-indent--line-indentation 16) 4))
+    (should (= (seed7-test-indent--line-indentation 17) 20))
+    (should (= (seed7-test-indent--line-indentation 18) 6))
+    (should (= (seed7-test-indent--line-indentation 19) 8))
+    (should (= (seed7-test-indent--line-indentation 20) 8))
+
+    (should (= (seed7-test-indent--line-indentation 22) 8))
+    (should (= (seed7-test-indent--line-indentation 23) 8))
+    (should (= (seed7-test-indent--line-indentation 24) 8))
+    (should (= (seed7-test-indent--line-indentation 25) 10))
+    (should (= (seed7-test-indent--line-indentation 26) 10))
+    (should (= (seed7-test-indent--line-indentation 27) 8))
+    (should (= (seed7-test-indent--line-indentation 28) 8))
+    (should (= (seed7-test-indent--line-indentation 29) 8))
+    (should (= (seed7-test-indent--line-indentation 30) 8))
+    (should (= (seed7-test-indent--line-indentation 31) 8))
+    (should (= (seed7-test-indent--line-indentation 32) 8))
+    (should (= (seed7-test-indent--line-indentation 33) 6))
+    (should (= (seed7-test-indent--line-indentation 34) 4))
+    (should (= (seed7-test-indent--line-indentation 35) 6))
+    (should (= (seed7-test-indent--line-indentation 36) 6))
+    (should (= (seed7-test-indent--line-indentation 37) 6))
+    (should (= (seed7-test-indent--line-indentation 38) 6))
+    (should (= (seed7-test-indent--line-indentation 39) 6))
+    (should (= (seed7-test-indent--line-indentation 40) 6))
+    (should (= (seed7-test-indent--line-indentation 41) 6))
+    (should (= (seed7-test-indent--line-indentation 42) 6))
+    (should (= (seed7-test-indent--line-indentation 43) 6))
+    (should (= (seed7-test-indent--line-indentation 44) 4))
+    )
+  )
 ;; ---------------------------------------------------------------------------
 (provide 'seed7-test-indent-01)
 
