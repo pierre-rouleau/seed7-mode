@@ -54,17 +54,30 @@
 ;; --------------------------
 ;;
 ;; When profiling is requested, the built-in Emacs sampling profiler
-;; (`profiler' package) is activated around the `indent-region' calls so
-;; that CPU hot-spots in seed7-mode indentation logic are identified.
+;; (`profiler' package) is activated in `cpu+mem' mode around the
+;; `indent-region' calls so that both CPU and memory-allocation hot-spots in
+;; seed7-mode indentation logic are identified.
 ;;
 ;; Profiling can cover the whole run (all files) or be limited to only the
 ;; first N files (useful when the full corpus is too large and you only want
 ;; to sample a representative subset).
 ;;
-;; The profiler report is written as plain text to:
-;;   REPORT_DIR/seed7mode-indent-perf-ID-profile.txt
+;; The profiler reports are written as plain text to:
+;;   REPORT_DIR/seed7mode-indent-perf-ID-profile.txt      (CPU hot-spots)
+;;   REPORT_DIR/seed7mode-indent-perf-ID-profile-mem.txt  (memory hot-spots)
 ;;
 ;; and a summary is appended to the RST report as well.
+;;
+;; Timing Summary
+;; --------------
+;;
+;; Independently of profiling, every run also writes a plain-text per-file
+;; timing summary to REPORT_DIR/timing.txt, in the same
+;; "FILE: indented in: SECONDS seconds. LINES lines" format used by the
+;; hand-written timing.txt files found under reports/<version>/, preceded by
+;; a short "#" comment header recording the seed7-mode version and
+;; generation timestamp.  This makes future reports self-describing without
+;; requiring that header to be typed in by hand.
 ;;
 ;; Usage
 ;; -----
@@ -106,13 +119,15 @@
 ;;   OUTPUT_DIR : root of the output directory tree (created/overwritten)
 ;;   REPORT_DIR : directory where the RST report is written (created if absent)
 ;;   ID         : free-form report identifier (e.g. "01", "before-simplify")
-;;   --profile  : optional flag; activates the Emacs CPU profiler
+;;   --profile  : optional flag; activates the Emacs CPU+memory profiler
 ;;   N          : optional integer after --profile; limit profiling to first N files
 ;;
 ;; Output:
 ;;   OUTPUT_DIR/  — mirrored tree with re-indented .sd7 / .s7i files
 ;;   REPORT_DIR/seed7mode-indent-perf-ID.rst
-;;   REPORT_DIR/seed7mode-indent-perf-ID-profile.txt  (only when --profile)
+;;   REPORT_DIR/seed7mode-indent-perf-ID-profile.txt      (only when --profile)
+;;   REPORT_DIR/seed7mode-indent-perf-ID-profile-mem.txt  (only when --profile)
+;;   REPORT_DIR/timing.txt  — per-file timing summary (always written)
 
 ;;; --------------------------------------------------------------------------
 ;;; Load-path bootstrap
@@ -213,51 +228,80 @@ versions."
    ((byte-code-function-p entry) (format "#<compiled %#x>" (sxhash entry)))
    (t (format "%S" entry))))
 
-(defun sd7-indent-perf--profile-report-text ()
-  "Return the Emacs CPU profiler results as a plain-text string.
-Uses `profiler-cpu-log' and `profiler-calltree-build' to build a call tree,
-then `profiler-calltree-walk' to collect leaf-node (self-time) sample counts
-per function.  Leaf nodes represent functions where CPU time was actually
-spent (as opposed to intermediate callers), making them the best candidates
-for optimisation.  The result is a flat table sorted by descending sample
-count.  Works in both interactive and batch mode."
-  (let ((log (profiler-cpu-log)))
-    (if (null log)
-        "(no profiler CPU data — was profiler-start called?)\n"
-      ;; Build a descending call tree (roots = top-level callers, leaves =
-      ;; innermost callees where time is actually spent).
-      (let ((tree    (profiler-calltree-build log 'descending))
-            (entries '()))
-        (profiler-calltree-walk
-         tree
-         (lambda (node)
-           (when (profiler-calltree-leaf-p node)
-             (push (cons (profiler-calltree-count node)
-                         (sd7-indent-perf--format-profiler-entry
-                          (profiler-calltree-entry node)))
-                   entries))))
-        (setq entries (sort entries (lambda (a b) (> (car a) (car b)))))
-        (let ((total (apply #'+ (mapcar #'car entries))))
-          (with-temp-buffer
-            (insert (format "%-8s  %6s  %s\n" "Samples" "%" "Function"))
-            (insert (make-string 72 ?-))
-            (insert "\n")
-            (dolist (e entries)
-              (insert (format "%-8d  %5.1f%%  %s\n"
-                              (car e)
-                              (if (> total 0)
-                                  (* 100.0 (/ (float (car e)) total))
-                                0.0)
-                              (cdr e))))
-            (buffer-string)))))))
+(defun sd7-indent-perf--profile-leaf-entries (log)
+  "Return leaf-node (COUNT . NAME) pairs from the calltree built from LOG.
+LOG is the value returned by `profiler-cpu-log' or `profiler-memory-log', or
+nil.  Builds a descending call tree (roots = top-level callers, leaves =
+innermost callees where the time/memory was actually spent) and walks it
+with `profiler-calltree-walk' to collect leaf self-time/self-allocation
+counts per function.  Leaf nodes are the best candidates for optimisation.
+The result is sorted by descending COUNT.  Returns nil when LOG is nil."
+  (when log
+    (let ((tree    (profiler-calltree-build log 'descending))
+          (entries '()))
+      (profiler-calltree-walk
+       tree
+       (lambda (node)
+         (when (profiler-calltree-leaf-p node)
+           (push (cons (profiler-calltree-count node)
+                       (sd7-indent-perf--format-profiler-entry
+                        (profiler-calltree-entry node)))
+                 entries))))
+      (sort entries (lambda (a b) (> (car a) (car b)))))))
 
-(defun sd7-indent-perf--write-profile-report (report-dir id)
-  "Write the Emacs profiler CPU report.
-Write report to REPORT-DIR/seed7mode-indent-perf-ID-profile.txt.
-Returns the path of the written file, or nil if profiler data is unavailable."
-  (let ((profile-file (expand-file-name
-                       (format "seed7mode-indent-perf-%s-profile.txt" id)
-                       report-dir)))
+(defun sd7-indent-perf--format-count (n use-commas)
+  "Return N (an integer) formatted as a string.
+When USE-COMMAS is non-nil, group digits with thousands separators (used for
+byte counts to match the style of the historical hand-generated reports)."
+  (let ((s (number-to-string n)))
+    (if (not use-commas)
+        s
+      (let* ((neg    (string-prefix-p "-" s))
+             (digits (if neg (substring s 1) s))
+             (len    (length digits))
+             (out    '()))
+        (dotimes (i len)
+          (push (aref digits (- len 1 i)) out)
+          (when (and (= (mod (1+ i) 3) 0) (< (1+ i) len))
+            (push ?, out)))
+        (concat (if neg "-" "") (apply #'string out))))))
+
+(defun sd7-indent-perf--profile-table-text (entries count-header use-commas)
+  "Return a flat, sorted plain-text table for ENTRIES.
+ENTRIES is a list of (COUNT . NAME) as returned by
+`sd7-indent-perf--profile-leaf-entries'.  COUNT-HEADER is the column header
+for the count (e.g. \"Samples\" for CPU, \"Bytes\" for memory).  USE-COMMAS
+is passed to `sd7-indent-perf--format-count'."
+  (if (null entries)
+      "(no profiler data collected — was profiler-start called?)\n"
+    (let ((total (apply #'+ (mapcar #'car entries))))
+      (with-temp-buffer
+        (insert (format "%-12s  %6s  %s\n" count-header "%" "Function"))
+        (insert (make-string 72 ?-))
+        (insert "\n")
+        (dolist (e entries)
+          (insert (format "%-12s  %5.1f%%  %s\n"
+                          (sd7-indent-perf--format-count (car e) use-commas)
+                          (if (> total 0)
+                              (* 100.0 (/ (float (car e)) total))
+                            0.0)
+                          (cdr e))))
+        (buffer-string)))))
+
+(defun sd7-indent-perf--write-one-profile-report
+    (report-dir id kind entries count-header use-commas section-title notes)
+  "Write one profiler report table to REPORT-DIR.
+KIND is either \"cpu\" or \"mem\" and selects the output file name:
+  cpu → REPORT-DIR/seed7mode-indent-perf-ID-profile.txt
+  mem → REPORT-DIR/seed7mode-indent-perf-ID-profile-mem.txt
+ENTRIES, COUNT-HEADER and USE-COMMAS are passed to
+`sd7-indent-perf--profile-table-text'.  SECTION-TITLE is the report's
+section heading; NOTES is the explanatory text appended after the table.
+Returns the path of the written file, or nil if it could not be written."
+  (let* ((suffix       (if (string= kind "cpu") "" "-mem"))
+         (profile-file (expand-file-name
+                        (format "seed7mode-indent-perf-%s-profile%s.txt" id suffix)
+                        report-dir)))
     (condition-case err
         (progn
           (make-directory report-dir t)
@@ -270,25 +314,63 @@ Returns the path of the written file, or nil if profiler data is unavailable."
                             (format-time-string "%Y-%m-%dT%H:%M:%S%z")))
             (insert (format "Profiling scope    : %s\n\n"
                             (sd7-indent-perf--profile-limit-string)))
-            (insert "CPU Hot-Spots (sampled during indent-region)\n")
-            (insert "---------------------------------------------\n\n")
-            (insert (sd7-indent-perf--profile-report-text))
+            (insert section-title)
+            (insert "\n")
+            (insert (make-string (length section-title) ?-))
+            (insert "\n\n")
+            (insert (sd7-indent-perf--profile-table-text entries count-header use-commas))
             (insert "\n")
             (insert "Notes\n")
             (insert "-----\n\n")
-            (insert "Each row is a leaf call-tree node from the Emacs sampling profiler.\n")
-            (insert "\"Samples\" is the raw sample count; \"%\" is the fraction of total\n")
-            (insert "CPU samples attributed to that function.  Functions near the top\n")
-            (insert "are the hottest spots in the indentation path and are the best\n")
-            (insert "candidates for optimisation.\n\n")
-            (insert "To get an interactive call-tree, run with profiling from a live\n")
+            (insert notes)
+            (insert "\nTo get an interactive call-tree, run with profiling from a live\n")
             (insert "Emacs session via `M-x sd7-indent-perf-run-with-profile' and then\n")
             (insert "inspect the result with `M-x profiler-report'.\n"))
           profile-file)
       (error
-       (sd7-indent-perf--message "WARNING: could not write profile report: %s"
-                                 (error-message-string err))
+       (sd7-indent-perf--message "WARNING: could not write %s profile report: %s"
+                                 kind (error-message-string err))
        nil))))
+
+(defconst sd7-indent-perf--cpu-profile-notes
+  (concat
+   "Each row is a leaf call-tree node from the Emacs sampling profiler.\n"
+   "\"Samples\" is the raw sample count; \"%\" is the fraction of total\n"
+   "CPU samples attributed to that function.  Functions near the top\n"
+   "are the hottest spots in the indentation path and are the best\n"
+   "candidates for optimisation.\n")
+  "Explanatory notes appended to the CPU profile report.")
+
+(defconst sd7-indent-perf--mem-profile-notes
+  (concat
+   "Each row is a leaf call-tree node from the Emacs memory profiler.\n"
+   "\"Bytes\" is the total memory allocated (comma-grouped) while executing\n"
+   "that function; \"%\" is the fraction of total allocation attributed to\n"
+   "it.  Functions near the top allocate the most memory during\n"
+   "indentation and are the best candidates for reducing garbage\n"
+   "collection pressure.\n")
+  "Explanatory notes appended to the memory profile report.")
+
+(defun sd7-indent-perf--write-profile-report (report-dir id)
+  "Write the Emacs CPU and memory profiler reports.
+Writes REPORT-DIR/seed7mode-indent-perf-ID-profile.txt (CPU hot-spots) and
+REPORT-DIR/seed7mode-indent-perf-ID-profile-mem.txt (memory hot-spots), from
+the data accumulated by the profiler across all profiled files (see
+`sd7-indent-perf--process-file').
+Returns a plist (:cpu CPU-FILE :mem MEM-FILE); either value is nil when the
+corresponding profiler log was empty or the file could not be written."
+  (list :cpu (sd7-indent-perf--write-one-profile-report
+              report-dir id "cpu"
+              (sd7-indent-perf--profile-leaf-entries (profiler-cpu-log))
+              "Samples" nil
+              "CPU Hot-Spots (sampled during indent-region)"
+              sd7-indent-perf--cpu-profile-notes)
+        :mem (sd7-indent-perf--write-one-profile-report
+              report-dir id "mem"
+              (sd7-indent-perf--profile-leaf-entries (profiler-memory-log))
+              "Bytes" t
+              "Memory Allocation Hot-Spots (sampled during indent-region)"
+              sd7-indent-perf--mem-profile-notes)))
 
 ;;; --------------------------------------------------------------------------
 ;;; Warning capture
@@ -389,13 +471,13 @@ The original INPUT-FILE is never modified.  The re-indented content is
 written to OUTPUT-DIR/<relative-path-from-INPUT-DIR> **immediately** after
 indentation completes, before any subsequent file is processed.
 
-FILE-INDEX (1-based integer) is used to decide whether the Emacs CPU profiler
+FILE-INDEX (1-based integer) is used to decide whether the Emacs profiler
 should be active for this file.  When `sd7-indent-perf--profile' is non-nil
 and FILE-INDEX falls within the configured profiling scope, `profiler-start'
-is called before `indent-region' and `profiler-stop' is called after.  The
-profiler accumulates data across all profiled files; call
-`sd7-indent-perf--write-profile-report' once after the full run to retrieve
-the combined results.
+is called (in `cpu+mem' mode) before `indent-region' and `profiler-stop' is
+called after.  The profiler accumulates CPU and memory data across all
+profiled files; call `sd7-indent-perf--write-profile-report' once after the
+full run to retrieve the combined results.
 
 Returns a plist:
   :file        abbreviated file name (relative to INPUT-DIR)
@@ -433,9 +515,9 @@ Returns a plist:
                 (setq line-count (line-number-at-pos (point-max)))
                 (let ((t0 (current-time)))
                   (setq file-start (float-time t0))
-                  ;; Start the CPU profiler for this file if requested.
+                  ;; Start the CPU+memory profiler for this file if requested.
                   (when profile-this
-                    (profiler-start 'cpu))
+                    (profiler-start 'cpu+mem))
                   (indent-region (point-min) (point-max))
                   ;; Stop the profiler immediately after indent-region returns.
                   (when profile-this
@@ -488,12 +570,15 @@ Returns a plist:
 (defun sd7-indent-perf--write-report (results input-dir output-dir
                                                report-dir id
                                                total-elapsed
-                                               &optional profile-file)
+                                               &optional profile-file profile-mem-file
+                                               timing-file)
   "Write the RST indentation benchmark report.
 
 RESULTS is a list of plists as returned by `sd7-indent-perf--process-file'.
-PROFILE-FILE, if non-nil, is the path to the written CPU profile text file;
-its path is referenced in the RST report.
+PROFILE-FILE and PROFILE-MEM-FILE, if non-nil, are the paths to the written
+CPU and memory profile text files; their paths are referenced in the RST
+report.  TIMING-FILE, if non-nil, is the path to the written timing.txt
+summary; its path is also referenced in the RST report.
 Returns the path of the written report file."
   (let* ((report-file (expand-file-name
                        (format "seed7mode-indent-perf-%s.rst" id)
@@ -540,8 +625,12 @@ Returns the path of the written report file."
                             (sd7-indent-perf--profile-limit-string)
                             n-profiled))
             (when profile-file
-              (insert (format ":CPU profile report: %s\n" profile-file))))
+              (insert (format ":CPU profile report: %s\n" profile-file)))
+            (when profile-mem-file
+              (insert (format ":Mem profile report: %s\n" profile-mem-file))))
         (insert ":Profiling         : disabled\n"))
+      (when timing-file
+        (insert (format ":Timing summary    : %s\n" timing-file)))
       (insert "\n")
       ;; Correctness note
       (insert "Correctness Check\n")
@@ -623,6 +712,57 @@ Returns the path of the written report file."
     report-file))
 
 ;;; --------------------------------------------------------------------------
+;;; Timing summary (timing.txt)
+
+(defun sd7-indent-perf--write-timing-report (results report-dir)
+  "Write a plain-text per-file timing summary to REPORT-DIR/timing.txt.
+
+RESULTS is a list of plists as returned by `sd7-indent-perf--process-file'.
+The format mirrors the hand-written timing.txt files found under
+reports/<version>/: one line per file of the form
+
+  FILE-NAME: indented in: SECONDS seconds. LINES lines
+
+preceded by a short comment header (lines starting with \"#\") recording the
+seed7-mode version and generation timestamp, so that reports produced by
+this tool are self-describing without a manually typed-in header.
+
+Returns the path of the written file, or nil if it could not be written."
+  (let* ((timing-file (expand-file-name "timing.txt" report-dir))
+         (name-width  (max 16 (apply #'max 0
+                                     (mapcar (lambda (r)
+                                               (length (plist-get r :file)))
+                                             results)))))
+    (condition-case err
+        (progn
+          (make-directory report-dir t)
+          (with-temp-file timing-file
+            (insert "# Performance measurement: Execution of `seed7-complete-statement-or-indent`"
+                    " over the entire\n")
+            (insert "#                          file starting with all lines non-indented.\n")
+            (insert (format "# Executed with seed7-mode: %s\n" seed7-mode-version-timestamp))
+            (insert (format "# Generated on: %s\n"
+                            (format-time-string "%Y-%m-%dT%H:%M:%S%z")))
+            (insert (make-string 78 ?-))
+            (insert "\n")
+            (dolist (r results)
+              (let ((file  (plist-get r :file))
+                    (lines (plist-get r :lines))
+                    (time  (plist-get r :indent-time))
+                    (err   (plist-get r :error)))
+                (insert
+                 (if err
+                     (format (format "%%-%ds: ERROR: %%s\n" name-width) file err)
+                   (format (format "%%-%ds: indented in: %%13.4f seconds. %%-6d lines\n"
+                                   name-width)
+                           file time lines))))))
+          timing-file)
+      (error
+       (sd7-indent-perf--message "WARNING: could not write timing report: %s"
+                                 (error-message-string err))
+       nil))))
+
+;;; --------------------------------------------------------------------------
 ;;; Core runner
 
 (defun sd7-indent-perf-run-core (input-dir output-dir report-dir id)
@@ -682,22 +822,32 @@ Returns the absolute path of the written report file."
 
     (let* ((total-elapsed (- (float-time) total-start))
            (results-fwd   (nreverse results))
-           ;; Write the CPU profile report (if profiling was requested).
-           (profile-file  (when sd7-indent-perf--profile
+           ;; Write the CPU and memory profile reports (if profiling was
+           ;; requested).
+           (profile-files (when sd7-indent-perf--profile
                             (sd7-indent-perf--message
-                             "Writing CPU profile report…")
+                             "Writing CPU and memory profile reports…")
                             (sd7-indent-perf--write-profile-report
                              report-dir id)))
+           (profile-file     (plist-get profile-files :cpu))
+           (profile-mem-file (plist-get profile-files :mem))
+           ;; Always write the timing.txt summary.
+           (timing-file   (sd7-indent-perf--write-timing-report
+                           results-fwd report-dir))
            (report        (sd7-indent-perf--write-report
                            results-fwd input-dir output-dir
                            report-dir id total-elapsed
-                           profile-file)))
+                           profile-file profile-mem-file timing-file)))
       (sd7-indent-perf--message
        "Done.  Wall clock: %s"
        (sd7-indent-perf--format-duration total-elapsed))
       (sd7-indent-perf--message "Report: %s" report)
       (when profile-file
         (sd7-indent-perf--message "CPU profile: %s" profile-file))
+      (when profile-mem-file
+        (sd7-indent-perf--message "Memory profile: %s" profile-mem-file))
+      (when timing-file
+        (sd7-indent-perf--message "Timing summary: %s" timing-file))
       report)))
 
 ;;; --------------------------------------------------------------------------
@@ -707,17 +857,19 @@ Returns the absolute path of the written report file."
 (defun sd7-indent-perf-run (input-dir output-dir report-dir id &optional profile)
   "Interactively run the Seed7 indentation benchmark.
 
-Prompts for INPUT-DIR, OUTPUT-DIR, REPORT-DIR, ID, and whether to enable CPU
-profiling.  Previous values are offered as defaults and remembered within the
-session.
+Prompts for INPUT-DIR, OUTPUT-DIR, REPORT-DIR, ID, and whether to enable
+CPU+memory profiling.  Previous values are offered as defaults and
+remembered within the session.
 
 OUTPUT-DIR will mirror INPUT-DIR with re-indented file content; it is
 created if absent.  The original files in INPUT-DIR are never modified.
 
-The RST report is written to REPORT-DIR/seed7mode-indent-perf-ID.rst.
-When PROFILE is non-nil the Emacs CPU profiler is active during `indent-region'
-and the report is also written to
-REPORT-DIR/seed7mode-indent-perf-ID-profile.txt."
+The RST report is written to REPORT-DIR/seed7mode-indent-perf-ID.rst and the
+per-file timing summary to REPORT-DIR/timing.txt (always).  When PROFILE is
+non-nil the Emacs profiler is active (in `cpu+mem' mode) during
+`indent-region' and reports are also written to
+REPORT-DIR/seed7mode-indent-perf-ID-profile.txt (CPU) and
+REPORT-DIR/seed7mode-indent-perf-ID-profile-mem.txt (memory)."
   (interactive
    (let* ((in-dir  (read-directory-name "Input directory (Seed7 source tree): "
                                         sd7-indent-perf--last-input-dir))
@@ -756,14 +908,17 @@ REPORT-DIR/seed7mode-indent-perf-ID-profile.txt."
 ;;;###autoload
 (defun sd7-indent-perf-run-with-profile (input-dir output-dir report-dir id
                                                     &optional n-files)
-  "Run the Seed7 indentation benchmark with the Emacs CPU profiler enabled.
+  "Run the Seed7 indentation benchmark with the Emacs profiler enabled.
 
-Like `sd7-indent-perf-run' but always enables profiling.  If N-FILES is a
-positive integer, only the first N-FILES files are profiled (the rest are still
-re-indented and timed, but without profiler overhead).  Useful when the full
-corpus is too large and a representative sample suffices.
+Like `sd7-indent-perf-run' but always enables profiling (in `cpu+mem' mode).
+If N-FILES is a positive integer, only the first N-FILES files are profiled
+(the rest are still re-indented and timed, but without profiler overhead).
+Useful when the full corpus is too large and a representative sample
+suffices.
 
-The CPU profile is written to REPORT-DIR/seed7mode-indent-perf-ID-profile.txt."
+The CPU profile is written to REPORT-DIR/seed7mode-indent-perf-ID-profile.txt
+and the memory profile to
+REPORT-DIR/seed7mode-indent-perf-ID-profile-mem.txt."
   (interactive
    (let* ((in-dir  (read-directory-name "Input directory (Seed7 source tree): "
                                         sd7-indent-perf--last-input-dir))
@@ -805,10 +960,11 @@ Expected positional arguments (after --)::
 
   INPUT_DIR OUTPUT_DIR REPORT_DIR ID [--profile [N]]
 
-The optional --profile flag activates the Emacs CPU profiler around
-`indent-region' calls and writes the hot-spot report alongside the RST report.
-An optional integer N immediately after --profile limits profiling to the
-first N files.
+The optional --profile flag activates the Emacs CPU+memory profiler around
+`indent-region' calls and writes the CPU and memory hot-spot reports
+alongside the RST report and the timing.txt summary (the latter is always
+written, whether or not --profile is given).  An optional integer N
+immediately after --profile limits profiling to the first N files.
 
 Exits Emacs with 0 on success or 1 on error."
   (let ((args command-line-args-left))
