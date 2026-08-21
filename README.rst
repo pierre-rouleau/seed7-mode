@@ -26,7 +26,7 @@ Seed7-mode - Emacs support for the Seed7 Programming Language
    :alt: Windows Build State
    :target: https://github.com/pierre-rouleau/seed7-mode/actions/workflows/build-windows.yml
 
-🚧 **Still Under Development** Currently testing indentation of all Seed7
+🚧 **Still Under Development - but on pause** Currently testing indentation of all Seed7
 files in the `Seed7 repository`_ - some code pattern still does not indent
 properly or take an excessive amount of time on large files.  When seed7-mode
 is able to indent 100% of the Seed7 files in the prg and lib directories of
@@ -34,8 +34,10 @@ the `Seed7 repository`_ flawlessly with acceptable performance, I will create
 a release of the package and will remove this notice.
 
 However, I'm currently busy with other projects and waiting for feedback
-before proceeding with more tests and improvements. If you detect bugs
-and need a fix please file a bug request and I will process it asap.🚧
+before proceeding with more tests and improvements.
+
+If you detect bugs
+and need a fix please file a bug request and I will process it ASAP.🚧
 
 **Highlights**
 
