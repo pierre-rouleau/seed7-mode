@@ -31,7 +31,10 @@ files in the `Seed7 repository`_ - some code pattern still does not indent
 properly or take an excessive amount of time on large files.  When seed7-mode
 is able to indent 100% of the Seed7 files in the prg and lib directories of
 the `Seed7 repository`_ flawlessly with acceptable performance, I will create
-a release of the package and will remove this notice. 🚧
+a release of the package and will remove this notice.
+
+However, I'm currently busy with other projects and waiting for feedback
+before proceeding with more tests and improvements. 🚧
 
 **Highlights**
 
@@ -49,6 +52,16 @@ a release of the package and will remove this notice. 🚧
 - Seed7 top-level menu.
 - Development tools used to measure the CPU, GC and memory run-time performance of
   the seed7-mode code and its evolution over code evolution.
+
+**Limitations**
+
+- `Seed7`_ is an `extensible programming language`_ and users can create new
+  language constructs dynamically by defining them in Seed7 code.
+  The implementation of seed7-mode does not support new syntax created this
+  way; it only supports the syntax supported by the `Seed7`_ library.
+  A more powerful language support would require the use of Tree-Sitter and
+  the use of a Seed7-specific LSP server but that does not exist yet.
+
 
 **Installation**
 
@@ -1551,6 +1564,7 @@ Any help, questions, suggestions are welcome!
 .. _expand-region package:
 .. _er/expand-region:                           https://github.com/magnars/expand-region.el?tab=readme-ov-file
 .. _Seed7 repository:                           https://github.com/ThomasMertes/seed7
+.. _extensible programming language:            https://en.wikipedia.org/wiki/Extensible_programming
 
 .. ---------------------------------------------------------------------------
 
