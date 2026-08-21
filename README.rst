@@ -37,7 +37,7 @@ However, I'm currently busy with other projects and waiting for feedback
 before proceeding with more tests and improvements.
 
 If you detect bugs
-and need a fix please file a bug request and I will process it ASAP.🚧
+and need a fix please file a bug fix request (an `issue`_) and I will process it ASAP.🚧
 
 **Highlights**
 
@@ -1568,6 +1568,7 @@ Any help, questions, suggestions are welcome!
 .. _er/expand-region:                           https://github.com/magnars/expand-region.el?tab=readme-ov-file
 .. _Seed7 repository:                           https://github.com/ThomasMertes/seed7
 .. _extensible programming language:            https://en.wikipedia.org/wiki/Extensible_programming
+.. _issue: https://github.com/pierre-rouleau/seed7-mode/issues
 
 .. ---------------------------------------------------------------------------
 
