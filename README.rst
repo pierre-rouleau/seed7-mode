@@ -34,7 +34,8 @@ the `Seed7 repository`_ flawlessly with acceptable performance, I will create
 a release of the package and will remove this notice.
 
 However, I'm currently busy with other projects and waiting for feedback
-before proceeding with more tests and improvements. 🚧
+before proceeding with more tests and improvements. If you detect bugs
+and need a fix please file a bug request and I will process it asap.🚧
 
 **Highlights**
 
